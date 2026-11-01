@@ -1,0 +1,34 @@
+- [ ] Phase 0 — The one input the agent cannot make
+  - [ ] 0.1 Obtain the base patch for build edc01f3d
+- [ ] Phase 1 — The ROM writer matches VT, host only
+  - [ ] 1.1 Take over the randomizer from alttp-ds
+  - [ ] 1.2 The oracle runs the post-fill code and records the write log
+  - [ ] 1.3 Golden cases for the new settings and for combinations
+  - [ ] 1.4 Port the post-fill draws
+  - [ ] 1.5 rando_rom skeleton and claims by write group
+  - [ ] 1.6 Port the items and locations writes
+  - [ ] 1.7 Port the settings and flags writes
+  - [ ] 1.8 Port the credits writes
+  - [ ] 1.9 Port the text, dialog and hints writes
+  - [ ] 1.10 Port the initial SRAM writes
+  - [ ] 1.11 Checksum and heart beep
+  - [ ] 1.12 skill: check-e2e — whole case list, then e2e-combos
+- [ ] Phase 2 — Full ROM assembly, host only
+  - [ ] 2.1 BPS applier in C
+  - [ ] 2.2 ROM assembly pipeline
+  - [ ] 2.3 Output naming, history record and spoiler
+- [ ] Phase 3 — Onion facts, then the app's UI core and text renderer, host only
+  - [ ] 3.1 Confirm the Onion specifics from Onion's sources
+  - [ ] 3.2 Screen model and text renderer
+  - [ ] 3.3 String table (i18n)
+  - [ ] 3.4 Generate tab state machine
+  - [ ] 3.5 Generation flow
+  - [ ] 3.6 History tab
+  - [ ] 3.7 ui_cli
+- [ ] Phase 4 — Onion and PC builds
+  - [ ] 4.1 SDL renderer and input
+  - [ ] 4.2 Miyoo build and package
+  - [ ] 4.3 Performance budget
+- [ ] Phase 5 — Cleanup
+  - [ ] 5.1 skill: rework-comments
+  - [ ] 5.2 README
