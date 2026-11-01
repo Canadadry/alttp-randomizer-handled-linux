@@ -263,6 +263,67 @@ static void set_picks(Line lines[SCENE_COUNT], const RandoCredits *c)
 	set_line(&lines[SCENE_WELL], pick(rando_credits_well, RANDO_CREDITS_WELL, c->well));
 }
 
+typedef struct Override {
+	Scene scene;
+	RandoLocationClass location_class;
+	const RandoCreditsOverride *table;
+} Override;
+
+/* The six writeItem overrides, in no particular order: their scenes are not the picks'. */
+static const Override overrides[] = {
+	{SCENE_ZORA, RANDO_LOCATION_CLASS_NPC_ZORA, &rando_credits_zora},
+	{SCENE_WITCH, RANDO_LOCATION_CLASS_NPC_WITCH, &rando_credits_witch},
+	{SCENE_PEDESTAL, RANDO_LOCATION_CLASS_PEDESTAL, &rando_credits_pedestal},
+	{SCENE_KAKARIKO2, RANDO_LOCATION_CLASS_NPC_BUG_CATCHING_KID, &rando_credits_kakariko2},
+	{SCENE_GROVE, RANDO_LOCATION_CLASS_DIG_HAUNTED_GROVE, &rando_credits_grove},
+	{SCENE_HOUSE, RANDO_LOCATION_CLASS_NPC_UNCLE, &rando_credits_house},
+};
+
+/* getItemCreditsText reads the location's own item, never writeItem's substituted key. */
+static const char *override_text(const RandoCreditsOverride *table, RandoItemId item)
+{
+	const RandoItemInfo *info;
+
+	if (item == RANDO_ITEM_NONE)
+		item = RANDO_ITEM_Nothing;
+	info = rando_item_info(item);
+	if (info->item_class == RANDO_ITEM_CLASS_ALIAS) {
+		item = info->alias_target;
+		info = rando_item_info(item);
+	}
+	if (item == RANDO_ITEM_BigKeyA2 && table->big_key_a2)
+		return table->big_key_a2;
+	switch (info->item_class) {
+	case RANDO_ITEM_CLASS_KEY:
+	case RANDO_ITEM_CLASS_BIG_KEY:
+		return table->key;
+	case RANDO_ITEM_CLASS_MAP:
+		return table->map;
+	case RANDO_ITEM_CLASS_COMPASS:
+		return table->compass;
+	default:
+		break;
+	}
+	return table->items[item] ? table->items[item] : table->fallback;
+}
+
+/* World::writeToRom's item loop over the world's locations. */
+static void set_overrides(Line lines[SCENE_COUNT], const RandoWorld *world)
+{
+	int n = rando_layout_location_count(world->variant), i;
+	size_t o;
+
+	for (i = 0; i < n; i++) {
+		RandoLocationId location = rando_layout_location(world->variant, i);
+		RandoLocationClass location_class = rando_location_info(location)->location_class;
+
+		for (o = 0; o < sizeof overrides / sizeof overrides[0]; o++)
+			if (overrides[o].location_class == location_class)
+				set_line(&lines[overrides[o].scene],
+					 override_text(overrides[o].table, rando_world_item(world, location)));
+	}
+}
+
 void rando_rom_write_credits(RomOut *out, const RandoGen *gen)
 {
 	Buffer buf;
@@ -273,7 +334,7 @@ void rando_rom_write_credits(RomOut *out, const RandoGen *gen)
 	for (s = 0; s < SCENE_COUNT; s++)
 		set_default(&lines[s], (Scene)s);
 	set_picks(lines, &gen->post.credits);
-	/* TODO step 8 chunk 3: the six writeItem overrides. */
+	set_overrides(lines, &gen->world);
 
 	buf.n = 0;
 	for (s = 0; s < SCENE_COUNT; s++) {

@@ -254,11 +254,14 @@ static void check_comma_records(void)
 }
 
 /* Scenes no rule touches keep VT's default record and x: the large titles' two lines, pedestal's
- * small_alt with `.` as 52, the large `!` as E5 and F8, the small `-` as 36. */
+ * small_alt with `.` as 52, the large `!` as E5 and F8, the small `-` as 36. The pedestal and the
+ * kid hold their vanilla items, whose texts are the defaults. */
 static void check_defaults(void)
 {
 	reset();
 	gen.post.credits.smithy_breadsmiths = false;
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_MASTER_SWORD_PEDESTAL, RANDO_ITEM_L2Sword));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SICK_KID, RANDO_ITEM_BugCatchingNet));
 	run();
 	CHECK_SEGMENT(DESERT, "6264002f2f2e252d2e2b1e2c9f2b2e251e9f2d211e9f1d1e2c1e2b2d"
 			      "62e9001960616f616e709f6c5d685d5f61630900198687958794969f92838e838587");
@@ -351,6 +354,125 @@ static void check_coin(void)
 	check_only_changed(&data, &pointers, SMITHY);
 }
 
+/* Places item at location (asserting setItem accepts it), then writes. */
+static void run_with(RandoLocationId location, RandoItemId item)
+{
+	CHECK(rando_world_set_item(&gen.world, location, item));
+	run();
+}
+
+/* Witch's raw-name case 'Hammer': "stop...   hammer time", 21 bytes, x 5. */
+static void check_override_item_entry(void)
+{
+	reset();
+	run_with(RANDO_LOC_POTION_SHOP, RANDO_ITEM_Hammer);
+	CHECK_SEGMENT(WITCH, "626500292c2d28293737379f9f9f211a26261e2b9f2d22261e"
+			     "62eb0013695d63655f9f6f646b6c630b00138f83898b859f958a9192");
+}
+
+#define ZORA_LARGE "62e8001f766b6e5dd96f9f735d70616e625d68686308001f9c919483ec959f998396879488838e8e"
+#define PEDESTAL_REST \
+	"62a8001d4a433c3c474a9f383e38404552525262ec000f626b6e6172616ee5630c000f88919487988794f8"
+#define HOUSE_LARGE "62eb0013756b716e9f646b716f61630b00139b9197949f8a91979587"
+#define GROVE_LARGE "62e90019645d716a7061609f636e6b7261630900198a8397909687869f8994919887"
+
+/* An empty King Zora reads as Nothing: "Nothing, so stupid", 18 bytes at x 7, lower-cased, with
+ * its comma record. */
+static void check_override_empty(void)
+{
+	const char *nothing = "6267002327282d21222720349f2c289f2c2d2e29221d628e000135" ZORA_LARGE;
+
+	reset();
+	run_with(RANDO_LOC_KING_ZORA, RANDO_ITEM_NONE);
+	CHECK_SEGMENT(ZORA, nothing);
+	run_with(RANDO_LOC_KING_ZORA, RANDO_ITEM_Nothing);
+	CHECK_SEGMENT(ZORA, nothing);
+}
+
+/* The class switch comes before the raw names: Key and BigKey share one text, Map and Compass
+ * have their own, whatever the dungeon. */
+static void check_override_classes(void)
+{
+	reset();
+	run_with(RANDO_LOC_KING_ZORA, RANDO_ITEM_KeyD1);
+	CHECK_SEGMENT(ZORA, "626600271a1d2f1a271c1e261e272d9f1f282b9f2c1a251e" ZORA_LARGE);
+	run_with(RANDO_LOC_KING_ZORA, RANDO_ITEM_BigKeyD3);
+	CHECK_SEGMENT(ZORA, "626600271a1d2f1a271c1e261e272d9f1f282b9f2c1a251e" ZORA_LARGE);
+	run_with(RANDO_LOC_KING_ZORA, RANDO_ITEM_MapD1);
+	CHECK_SEGMENT(ZORA, "626700232d211e9f30282b251d9f1f282b9f2c1a251e" ZORA_LARGE);
+	run_with(RANDO_LOC_KING_ZORA, RANDO_ITEM_CompassH2);
+	CHECK_SEGMENT(ZORA, "626700211b1e1a2b2227202c9f1f282b9f2c1a251e" ZORA_LARGE);
+	/* The witch's "keys, keys, keys": one comma record from the first comma to the last. */
+	run_with(RANDO_LOC_POTION_SHOP, RANDO_ITEM_Key);
+	CHECK_SEGMENT(WITCH, "6268001f241e322c349f241e322c349f241e322c628c000d359f9f9f9f9f35"
+			     "62eb0013695d63655f9f6f646b6c630b00138f83898b859f958a9192");
+	/* The sick kid's key text, from a scene other than Zora's. */
+	run_with(RANDO_LOC_SICK_KID, RANDO_ITEM_BigKeyP1);
+	CHECK_SEGMENT(KAKARIKO2, "626600252d211e9f241e32362128251d2227209f24221d"
+				 "62e90019675d675d6e65676b9f706b736a630900198d838d83948b8d919f96919990");
+}
+
+/* An alias reads as its target: UncleSword as ProgressiveSword ("your uncle recovers", where
+ * UncleSword itself would fall to "your uncle does nothing"), ShopKey as a Key. */
+static void check_override_alias(void)
+{
+	reset();
+	run_with(RANDO_LOC_LINKS_UNCLE, RANDO_ITEM_UncleSword);
+	CHECK_SEGMENT(HOUSE, "6266002532282e2b9f2e271c251e9f2b1e1c282f1e2b2c" HOUSE_LARGE);
+	run_with(RANDO_LOC_LINKS_UNCLE, RANDO_ITEM_ShopKey);
+	CHECK_SEGMENT(HOUSE, "6265002b32282e2b9f2e271c251e9f29221c242c9f25281c242c" HOUSE_LARGE);
+}
+
+/* Pedestal's raw-name check for BigKeyA2 comes before its class switch; MasterSword is stored as
+ * L2Sword. */
+static void check_override_pedestal(void)
+{
+	reset();
+	run_with(RANDO_LOC_MASTER_SWORD_PEDESTAL, RANDO_ITEM_BigKeyA2);
+	CHECK_SEGMENT(PEDESTAL, "62660027251a9f241e329f281f9f1e2f22252c9f1b1a271e" PEDESTAL_REST);
+	run_with(RANDO_LOC_MASTER_SWORD_PEDESTAL, RANDO_ITEM_BigKeyA1);
+	CHECK_SEGMENT(PEDESTAL, "626a00151a271d9f2d211e9f241e32" PEDESTAL_REST);
+	run_with(RANDO_LOC_MASTER_SWORD_PEDESTAL, RANDO_ITEM_MasterSword);
+	CHECK_SEGMENT(PEDESTAL, "626600271a271d9f2d211e9f261a2c2d1e2b9f2c30282b1d" PEDESTAL_REST);
+	/* Zora has no BigKeyA2 case: the class text. */
+	run_with(RANDO_LOC_KING_ZORA, RANDO_ITEM_BigKeyA2);
+	CHECK_SEGMENT(ZORA, "626600271a1d2f1a271c1e261e272d9f1f282b9f2c1a251e" ZORA_LARGE);
+}
+
+/* The grove's texts: "body-building boy has gold again" fills 32 bytes at x 0; "'splosion boy
+ * explodes again" (28, x 2) has its apostrophe record at x 2 + 0, y 18. */
+static void check_override_grove(void)
+{
+	reset();
+	run_with(RANDO_LOC_FLUTE_SPOT, RANDO_ITEM_TitansMitt);
+	CHECK_SEGMENT(GROVE, "6260003f1b281d32361b2e22251d2227209f1b28329f211a2c9f2028251d9f1a201a2227" GROVE_LARGE);
+	run_with(RANDO_LOC_FLUTE_SPOT, RANDO_ITEM_Bomb);
+	CHECK_SEGMENT(GROVE, "62620037352c2925282c2228279f1b28329f1e312925281d1e2c9f1a201a2227"
+			     "6242000134" GROVE_LARGE);
+}
+
+/* Under rom.genericKeys, writeItem writes KeyGK, but the credits read the location's own key. */
+static void check_override_generic_keys(void)
+{
+	reset();
+	gen.world.config.rom_generic_keys = true;
+	run_with(RANDO_LOC_KING_ZORA, RANDO_ITEM_KeyD1);
+	CHECK_SEGMENT(ZORA, "626600271a1d2f1a271c1e261e272d9f1f282b9f2c1a251e" ZORA_LARGE);
+}
+
+/* Changing one override location changes only its scene's segment. */
+static void check_override_isolation(void)
+{
+	static Write data, pointers;
+
+	reset();
+	run_with(RANDO_LOC_FLUTE_SPOT, RANDO_ITEM_Nothing);
+	data = rec.writes[0];
+	pointers = rec.writes[1];
+	run_with(RANDO_LOC_FLUTE_SPOT, RANDO_ITEM_TitansMitt);
+	check_only_changed(&data, &pointers, GROVE);
+}
+
 static void check_refusal(void)
 {
 	reset();
@@ -411,11 +533,38 @@ static uint8_t *pick_field(const Fixture *fx, int scene, unsigned *count)
 	}
 }
 
-/* randomizeCredits always sets the picked scenes, so their default bytes are never written. */
+/* randomizeCredits sets the picked scenes and the item loop the override scenes, so only these
+ * keep their default bytes. */
 static bool default_untouched(int scene)
 {
-	return scene != CASTLE && scene != SANCTUARY && scene != KAKARIKO && scene != LUMBERJACKS &&
-	       scene != BRIDGE && scene != WOODS && scene != WELL;
+	return scene == DESERT || scene == HERA || scene == SMITHY;
+}
+
+static bool is_pick(int scene)
+{
+	return scene == CASTLE || scene == SANCTUARY || scene == KAKARIKO || scene == LUMBERJACKS ||
+	       scene == BRIDGE || scene == WOODS || scene == WELL;
+}
+
+/* The one location of each override scene's VT class, or RANDO_LOCATION_NONE. */
+static RandoLocationId override_location(int scene)
+{
+	switch (scene) {
+	case ZORA:
+		return RANDO_LOC_KING_ZORA;
+	case WITCH:
+		return RANDO_LOC_POTION_SHOP;
+	case PEDESTAL:
+		return RANDO_LOC_MASTER_SWORD_PEDESTAL;
+	case KAKARIKO2:
+		return RANDO_LOC_SICK_KID;
+	case GROVE:
+		return RANDO_LOC_FLUTE_SPOT;
+	case HOUSE:
+		return RANDO_LOC_LINKS_UNCLE;
+	default:
+		return RANDO_LOCATION_NONE;
+	}
 }
 
 #define WORDS_MAX 4
@@ -437,21 +586,21 @@ static int split_words(const Fixture *fx, char *line, char *words[WORDS_MAX])
 	}
 }
 
-/* credit_tables.txt: `default <scene> <hex>`, `pick <scene> <index> <hex>`; the item records are
- * chunk 3's. Every pick's index is replayed, and the counts match RANDO_CREDITS_*. */
+/* credit_tables.txt: `default <scene> <hex>`, `pick <scene> <index> <hex>`, `item <scene> <raw name>
+ * <hex>`. Every pick's index is replayed, and the counts match RANDO_CREDITS_*; every C item has an
+ * item record in each override scene. */
 static void check_credit_tables_fixture(void)
 {
 	static uint8_t seen[SCENES][64];
 	Fixture fx;
-	int defaults = 0, picks = 0, scene, nwords;
+	static uint8_t seen_items[SCENES][RANDO_ITEM_COUNT];
+	int defaults = 0, picks = 0, items = 0, scene, nwords;
 	char *word[WORDS_MAX];
 
 	fixture_open(&fx, FIXTURE_CREDIT_TABLES);
 	while (fixture_next(&fx)) {
 		if (fx.nfields != 1)
 			fixture_fail(&fx, "a tab in a space-separated record");
-		if (strncmp(fx.field[0], "item ", 5) == 0)
-			continue;
 		nwords = split_words(&fx, fx.field[0], word);
 		if (strcmp(word[0], "default") == 0) {
 			if (nwords != 3)
@@ -493,6 +642,27 @@ static void check_credit_tables_fixture(void)
 			if (!segment_is(scene, word[3]))
 				fixture_fail(&fx, "pick segment differs");
 			picks++;
+		} else if (strcmp(word[0], "item") == 0) {
+			RandoLocationId location;
+			RandoItemId item;
+
+			if (nwords != 4)
+				fixture_fail(&fx, "malformed item");
+			scene = scene_of(&fx, word[1]);
+			location = override_location(scene);
+			if (location == RANDO_LOCATION_NONE)
+				fixture_fail(&fx, "item record for a scene with no override");
+			item = rando_item_find(word[2]);
+			if (item == RANDO_ITEM_NONE)
+				fixture_fail(&fx, "an item C does not know");
+			reset();
+			if (!rando_world_set_item(&gen.world, location, item))
+				fixture_fail(&fx, "setItem refused an item VT accepted");
+			seen_items[scene][item] = 1;
+			run();
+			if (!segment_is(scene, word[3]))
+				fixture_fail(&fx, "item segment differs");
+			items++;
 		} else {
 			fixture_fail(&fx, "unknown record");
 		}
@@ -503,13 +673,19 @@ static void check_credit_tables_fixture(void)
 
 		if (scene == SMITHY)
 			count = 1;
-		else if (!default_untouched(scene))
+		else if (is_pick(scene))
 			pick_field(NULL, scene, &count);
 		for (i = 0; i < count; i++)
 			if (!seen[scene][i])
 				test_fail(TEST, "no pick record for %s %u", scene_names[scene], i);
+		if (override_location(scene) == RANDO_LOCATION_NONE)
+			continue;
+		for (i = 0; i < RANDO_ITEM_COUNT; i++)
+			if (!seen_items[scene][i])
+				test_fail(TEST, "no item record for %s %s", scene_names[scene],
+					  rando_item_info((RandoItemId)i)->name);
 	}
-	printf(TEST ": %d default and %d pick credit_tables records matched\n", defaults, picks);
+	printf(TEST ": %d default, %d pick and %d item credit_tables records matched\n", defaults, picks, items);
 }
 
 int main(int argc, char **argv)
@@ -527,6 +703,14 @@ int main(int argc, char **argv)
 	check_defaults();
 	check_picks();
 	check_coin();
+	check_override_item_entry();
+	check_override_empty();
+	check_override_classes();
+	check_override_alias();
+	check_override_pedestal();
+	check_override_grove();
+	check_override_generic_keys();
+	check_override_isolation();
 	check_refusal();
 	check_const();
 	printf(TEST ": passed\n");
