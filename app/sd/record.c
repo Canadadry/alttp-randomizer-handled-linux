@@ -446,3 +446,229 @@ bool rando_record_parse(const char *text, size_t len, RandoRecord *out, char err
 			return fail(p, "missing key \"%s\"", top_keys[key]);
 	return check_rom(p, out, rom);
 }
+
+typedef struct Outline {
+	char *out;
+	size_t cap, len, line_start;
+	bool cut;
+} Outline;
+
+static void put(Outline *o, const char *s, size_t n)
+{
+	if (o->cut)
+		return;
+	if (o->cap - o->len < n + 1) {
+		o->cut = true;
+		o->len = o->line_start;
+		return;
+	}
+	memcpy(o->out + o->len, s, n);
+	o->len += n;
+}
+
+static void line_begin(Outline *o, int indent)
+{
+	int i;
+
+	o->line_start = o->len;
+	for (i = 0; i < indent; i++)
+		put(o, "  ", 2);
+}
+
+/* put always leaves room for this newline. */
+static void line_end(Outline *o)
+{
+	if (!o->cut)
+		o->out[o->len++] = '\n';
+}
+
+/* The string token at the cursor, its bytes between the quotes as written, VT's ":<digits>" suffix dropped. */
+static bool raw_string(Parser *p, size_t *start, size_t *n)
+{
+	size_t end, i;
+
+	if (peek(p) != '"')
+		return fail(p, "spoiler: expected a string at byte %lu", (unsigned long)p->pos);
+	*start = p->pos + 1;
+	if (!skip_value(p, 0))
+		return false;
+	end = p->pos - 1;
+	for (i = end; i > *start && p->text[i - 1] >= '0' && p->text[i - 1] <= '9'; i--)
+		;
+	if (i < end && i - 1 > *start && p->text[i - 1] == ':')
+		end = i - 1;
+	*n = end - *start;
+	return true;
+}
+
+typedef struct Member {
+	size_t key, key_len, value, index;
+	bool numeric;
+} Member;
+
+static bool all_digits(const char *s, size_t n)
+{
+	size_t i;
+
+	for (i = 0; i < n; i++)
+		if (s[i] < '0' || s[i] > '9')
+			return false;
+	return n > 0;
+}
+
+/* Numeric order of two all-digit keys, then record order. */
+static bool member_before(const char *text, const Member *a, const Member *b)
+{
+	const char *x = text + a->key, *y = text + b->key;
+	size_t nx = a->key_len, ny = b->key_len;
+	int c;
+
+	while (nx > 1 && *x == '0')
+		x++, nx--;
+	while (ny > 1 && *y == '0')
+		y++, ny--;
+	if (nx != ny)
+		return nx < ny;
+	c = memcmp(x, y, nx);
+	return c != 0 ? c < 0 : a->index < b->index;
+}
+
+/* Reads the member at the cursor up to its value, which it leaves unread. */
+static bool member_head(Parser *p, size_t index, Member *m)
+{
+	if (!raw_string(p, &m->key, &m->key_len) || !expect(p, ':', "spoiler"))
+		return false;
+	m->numeric = all_digits(p->text + m->key, m->key_len);
+	m->value = p->pos;
+	m->index = index;
+	return true;
+}
+
+/* After a member's value: true with *more set on ",", cleared on close. */
+static bool member_tail(Parser *p, char close, bool *more)
+{
+	char c = peek(p);
+
+	if (c != ',' && c != close)
+		return fail(p, "spoiler: malformed at byte %lu", (unsigned long)p->pos);
+	p->pos++;
+	*more = c == ',';
+	return true;
+}
+
+static bool outline_value(Parser *p, Outline *o, int depth, int indent, const char *label, size_t label_len);
+
+/* The cursor on '{'; members at indent, numeric keys first in numeric order, then the others. */
+static bool outline_object(Parser *p, Outline *o, int depth, int indent, bool top)
+{
+	size_t start, index;
+	bool more, have_last = false;
+	Member m, best, last;
+
+	if (!expect(p, '{', "spoiler"))
+		return false;
+	start = p->pos;
+	for (;;) {
+		bool found = false;
+
+		p->pos = start;
+		more = peek(p) != '}';
+		for (index = 0; more; index++) {
+			if (!member_head(p, index, &m) || !skip_value(p, depth + 1) || !member_tail(p, '}', &more))
+				return false;
+			if (m.numeric && (!have_last || member_before(p->text, &last, &m)) &&
+			    (!found || member_before(p->text, &m, &best))) {
+				best = m;
+				found = true;
+			}
+		}
+		if (!found)
+			break;
+		p->pos = best.value;
+		if (!outline_value(p, o, depth + 1, indent, p->text + best.key, best.key_len))
+			return false;
+		last = best;
+		have_last = true;
+	}
+	p->pos = start;
+	more = peek(p) != '}';
+	for (index = 0; more; index++) {
+		bool skip;
+
+		if (!member_head(p, index, &m))
+			return false;
+		skip = m.numeric || (top && m.key_len == 4 && memcmp(p->text + m.key, "meta", 4) == 0);
+		if (!(skip ? skip_value(p, depth + 1)
+			   : outline_value(p, o, depth + 1, indent, p->text + m.key, m.key_len)) ||
+		    !member_tail(p, '}', &more))
+			return false;
+	}
+	if (index == 0)
+		p->pos++;
+	return true;
+}
+
+static bool outline_value(Parser *p, Outline *o, int depth, int indent, const char *label, size_t label_len)
+{
+	char c = peek(p);
+	size_t start, n;
+
+	if (depth > RANDO_RECORD_OUTLINE_DEPTH)
+		return fail(p, "spoiler: nested deeper than %d", RANDO_RECORD_OUTLINE_DEPTH);
+	line_begin(o, indent);
+	put(o, label, label_len);
+	if (c == '{') {
+		line_end(o);
+		return outline_object(p, o, depth, indent + 1, false);
+	}
+	if (c == '[') {
+		bool more;
+		int index = 0;
+
+		line_end(o);
+		p->pos++;
+		more = peek(p) != ']';
+		if (!more)
+			p->pos++;
+		while (more) {
+			char number[16];
+
+			sprintf(number, "%d", ++index);
+			if (!outline_value(p, o, depth + 1, indent + 1, number, strlen(number)) ||
+			    !member_tail(p, ']', &more))
+				return false;
+		}
+		return true;
+	}
+	if (c == '"') {
+		if (!raw_string(p, &start, &n))
+			return false;
+	} else {
+		start = p->pos;
+		if (!skip_value(p, depth))
+			return false;
+		n = p->pos - start;
+	}
+	put(o, ": ", 2);
+	put(o, p->text + start, n);
+	line_end(o);
+	return true;
+}
+
+bool rando_record_spoiler_outline(const char *text, size_t offset, size_t size, char *out, size_t cap,
+				  size_t *len, bool *cut)
+{
+	char error[RANDO_RECORD_ERROR_MAX];
+	Parser parser = {text + offset, size, 0, error};
+	Outline o = {out, cap, 0, 0, false};
+
+	assert(text != NULL && out != NULL && len != NULL && cut != NULL);
+	if (peek(&parser) != '{' || !outline_object(&parser, &o, 1, 0, true))
+		return false;
+	skip_ws(&parser);
+	if (parser.pos != parser.len)
+		return false;
+	*len = o.len;
+	*cut = o.cut;
+	return true;
+}

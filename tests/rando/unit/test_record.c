@@ -452,6 +452,25 @@ static void test_refusals(void)
 	test_accepts_any_layout(&record);
 }
 
+static char outline[RANDO_RECORD_TEXT_MAX];
+
+/* The parsed record's spoiler outlines whole, with no top-level meta line. */
+static void check_golden_outline(const char *case_dir, const RandoRecord *parsed)
+{
+	size_t len, pos;
+	bool cut;
+
+	if (!rando_record_spoiler_outline(text, parsed->spoiler_offset, parsed->spoiler_size, outline, sizeof outline,
+					  &len, &cut))
+		test_fail(TEST, "%s: spoiler outline refused", case_dir);
+	if (cut)
+		test_fail(TEST, "%s: spoiler outline cut", case_dir);
+	for (pos = 0; pos < len; pos = (size_t)((const char *)memchr(outline + pos, '\n', len - pos) - outline) + 1)
+		if (len - pos >= 5 && memcmp(outline + pos, "meta\n", 5) == 0)
+			test_fail(TEST, "%s: spoiler outline has a meta line", case_dir);
+	CHECK(len > 0 && outline[len - 1] == '\n');
+}
+
 /* <dir>/<name>: the record of its winning attempt, with the spoiler, carries the golden spoiler.json and
  * parses back to the case's settings and seed. */
 static void check_golden_case(const char *dir, const char *name)
@@ -472,6 +491,7 @@ static void check_golden_case(const char *dir, const char *name)
 	if (parsed.spoiler_size + 1 != strlen(golden) || golden[parsed.spoiler_size] != '\n' ||
 	    memcmp(text + parsed.spoiler_offset, golden, parsed.spoiler_size) != 0)
 		test_fail(TEST, "%s: record spoiler differs from its golden spoiler.json", case_dir);
+	check_golden_outline(case_dir, &parsed);
 }
 
 static int check_golden_dir(const char *dir)
@@ -625,6 +645,199 @@ static void test_settings_reader(void)
 	settings_refuse("a whole record", baseline_text, "code");
 }
 
+/* span is outlined from offset 3 of a text that prefixes it with junk, so the offset is honoured. */
+static bool outline_span(const char *span, size_t cap, size_t *len, bool *cut)
+{
+	static char t[RANDO_RECORD_TEXT_MAX];
+
+	CHECK(strlen(span) + 4 < sizeof t);
+	snprintf(t, sizeof t, "x{]%s", span);
+	*len = (size_t)-1;
+	*cut = true;
+	return rando_record_spoiler_outline(t, 3, strlen(span), outline, cap, len, cut);
+}
+
+static void outline_is(const char *what, const char *span, const char *expected)
+{
+	size_t len;
+	bool cut;
+
+	if (!outline_span(span, sizeof outline, &len, &cut))
+		test_fail(TEST, "%s: outline refused", what);
+	if (cut || len != strlen(expected) || memcmp(outline, expected, len) != 0)
+		test_fail(TEST, "%s: outline is \"%.*s\"%s, expected \"%s\"", what, (int)len, outline,
+			  cut ? " (cut)" : "", expected);
+}
+
+static void test_outline_layout(void)
+{
+	outline_is("layout",
+		   "{\"Bosses\": {\"Ganon\": \"Ganon\", \"Moth\": \"Mothula\"},\n \"Shops\": [{\"item\": \"Heart\", "
+		   "\"price\": 10}, 7, []], \"empty\": {}, \"n\": null, \"t\": true, \"f\": -1.5e3}",
+		   "Bosses\n"
+		   "  Ganon: Ganon\n"
+		   "  Moth: Mothula\n"
+		   "Shops\n"
+		   "  1\n"
+		   "    item: Heart\n"
+		   "    price: 10\n"
+		   "  2: 7\n"
+		   "  3\n"
+		   "empty\n"
+		   "n: null\n"
+		   "t: true\n"
+		   "f: -1.5e3\n");
+	outline_is("empty spoiler", " { } ", "");
+}
+
+static void test_outline_names(void)
+{
+	outline_is("world suffix dropped in keys and values",
+		   "{\"Dark World\": {\"Blacksmith:1\": \"KeyA1:12\", \"a:\": \"b:1x\", \":1\": \"x:1:2\"}}",
+		   "Dark World\n"
+		   "  Blacksmith: KeyA1\n"
+		   "  a:: b:1x\n"
+		   "  :1: x:1\n");
+	outline_is("escapes kept as written", "{\"say\": \"a \\\"b\\\" \\\\\"}", "say: a \\\"b\\\" \\\\\n");
+	outline_is("only the top-level meta skipped",
+		   "{\"a\": 1, \"meta\": {\"logic\": \"NoGlitches\"}, \"b\": {\"meta\": 2}, \"metas\": 3}",
+		   "a: 1\n"
+		   "b\n"
+		   "  meta: 2\n"
+		   "metas: 3\n");
+	outline_is("numeric keys first, in numeric order",
+		   "{\"playthrough\": {\"1\": 1, \"10\": 10, \"11\": 11, \"2\": 2, \"chain\": 3, \"02\": 4, \"x1\": 5, "
+		   "\"9\": {\"3\": 0, \"b\": 0, \"1\": 0}}}",
+		   "playthrough\n"
+		   "  1: 1\n"
+		   "  2: 2\n"
+		   "  02: 4\n"
+		   "  9\n"
+		   "    1: 0\n"
+		   "    3: 0\n"
+		   "    b: 0\n"
+		   "  10: 10\n"
+		   "  11: 11\n"
+		   "  chain: 3\n"
+		   "  x1: 5\n");
+}
+
+static void outline_refused(const char *what, const char *span)
+{
+	size_t len;
+	bool cut;
+
+	if (outline_span(span, sizeof outline, &len, &cut))
+		test_fail(TEST, "%s: outline accepted", what);
+}
+
+static void test_outline_refusals(void)
+{
+	outline_is("nested 8 deep", "{\"a\": {\"b\": [{\"d\": {\"e\": {\"f\": [7]}}}]}}",
+		   "a\n  b\n    1\n      d\n        e\n          f\n            1: 7\n");
+	outline_refused("nested 9 deep", "{\"a\": {\"b\": [{\"d\": {\"e\": {\"f\": [[7]]}}}]}}");
+	outline_refused("nested 9 deep, empty", "{\"a\": {\"b\": [{\"d\": {\"e\": {\"f\": [[[]]]}}}]}}");
+	outline_refused("not an object", "[1]");
+	outline_refused("empty span", "");
+	outline_refused("trailing text", "{} 1");
+	outline_refused("unclosed", "{\"a\": 1");
+	outline_refused("no colon", "{\"a\" 1}");
+	outline_refused("key not a string", "{a: 1}");
+	outline_refused("bad value", "{\"a\": nope}");
+	outline_refused("unterminated string", "{\"a\": \"b}");
+	outline_refused("missing comma", "{\"a\": [1 2]}");
+}
+
+/* The span's outline, from "a: 1\n" to "d: 4444\n", is 5 + 6 + 7 + 8 = 26 bytes. */
+static void test_outline_cut(void)
+{
+	static const char span[] = "{\"a\": 1, \"b\": 22, \"c\": 333, \"d\": 4444}";
+	static const struct {
+		size_t cap, len;
+		bool cut;
+	} cases[] = {{26, 26, false}, {27, 26, false}, {25, 18, true}, {18, 18, true}, {12, 11, true},
+		     {11, 11, true},  {5, 5, true},    {4, 0, true},   {0, 0, true}};
+	size_t i, len;
+	bool cut;
+
+	for (i = 0; i < sizeof cases / sizeof cases[0]; i++) {
+		memset(outline, '#', sizeof outline);
+		CHECK(outline_span(span, cases[i].cap, &len, &cut));
+		if (len != cases[i].len || cut != cases[i].cut)
+			test_fail(TEST, "cap %lu: outline of %lu bytes, cut %d", (unsigned long)cases[i].cap,
+				  (unsigned long)len, cut);
+		CHECK(memcmp(outline, "a: 1\nb: 22\nc: 333\nd: 4444\n", len) == 0);
+		CHECK(outline[cases[i].cap] == '#');
+	}
+}
+
+/* Line n of outline[0, len), without its newline; NULL past the end. */
+static const char *outline_line(size_t len, int n, size_t *line_len)
+{
+	size_t pos = 0;
+
+	for (; pos < len && n > 0; pos++)
+		if (outline[pos] == '\n')
+			n--;
+	if (pos >= len)
+		return NULL;
+	*line_len = (size_t)((const char *)memchr(outline + pos, '\n', len - pos) - (outline + pos));
+	return outline + pos;
+}
+
+/* Counts and lines from an independent outline of cases/baseline/spoiler.json in Python. */
+static void test_outline_of_baseline_golden(void)
+{
+	static const struct {
+		int n;
+		const char *line;
+	} pinned[] = {{0, "Bosses"},
+		      {1, "  Desert Palace: Lanmolas"},
+		      {18, "  Castle Tower - Dark Maze: KeyA1"},
+		      {96, "  Equipment Slot 1: BossHeartContainer"},
+		      {100, "  Ganon's Tower - Big Chest: ThreeBombs"},
+		      {209, "Shops"},
+		      {210, "  1"},
+		      {212, "      item: RedPotion"},
+		      {213, "      price: 150"},
+		      {386, "playthrough"},
+		      {389, "      Eastern Palace - Compass Chest: BigKeyP1"},
+		      {397, "  2"},
+		      {446, "  9"},
+		      {449, "  10"},
+		      {455, "  12"},
+		      {458, "  longest_item_chain: 12"},
+		      {459, "  regions_visited: 25"}};
+	size_t len, line_len, i;
+	const char *line;
+	bool cut;
+	int lines = 0;
+
+	read_golden("cases/baseline");
+	CHECK(rando_record_spoiler_outline(golden, 0, strlen(golden), outline, sizeof outline, &len, &cut));
+	CHECK(!cut);
+	CHECK(len == 13639);
+	for (i = 0; i < len; i++)
+		lines += outline[i] == '\n';
+	CHECK(lines == 460);
+	CHECK(outline[len - 1] == '\n');
+	for (i = 0; i < sizeof pinned / sizeof pinned[0]; i++) {
+		line = outline_line(len, pinned[i].n, &line_len);
+		if (line == NULL || line_len != strlen(pinned[i].line) || memcmp(line, pinned[i].line, line_len) != 0)
+			test_fail(TEST, "baseline outline line %d is \"%.*s\", expected \"%s\"", pinned[i].n,
+				  line ? (int)line_len : 0, line ? line : "", pinned[i].line);
+	}
+}
+
+static void test_outline(void)
+{
+	test_outline_of_baseline_golden();
+	test_outline_layout();
+	test_outline_names();
+	test_outline_refusals();
+	test_outline_cut();
+}
+
 int main(int argc, char **argv)
 {
 	int fixtures = test_fixtures_mode(TEST, argc, argv);
@@ -636,9 +849,10 @@ int main(int argc, char **argv)
 	test_refusals();
 	test_settings_writer();
 	test_settings_reader();
+	test_outline();
 	printf(TEST ": hand-written cases passed\n");
 	if (!fixtures)
 		return 0;
-	printf(TEST ": %d goldens' record spoilers matched\n", check_golden_dir("cases") + check_golden_dir("combos"));
+	printf(TEST ": %d goldens' record spoilers matched and outlined\n", check_golden_dir("cases") + check_golden_dir("combos"));
 	return 0;
 }

@@ -15,6 +15,7 @@
 #define RANDO_RECORD_FORMAT 1
 #define RANDO_RECORD_TEXT_MAX (64 * 1024)
 #define RANDO_RECORD_ERROR_MAX 256
+#define RANDO_RECORD_OUTLINE_DEPTH 8
 
 /* Local time, no offset. */
 typedef struct RandoRecordDate {
@@ -54,5 +55,12 @@ bool rando_record_settings_parse(const char *text, size_t len, RandoOptions *opt
  * settings and code make. The spoiler span points into text, which the caller keeps. On failure returns
  * false and writes into error a reason naming the offending key or value; out is unspecified. */
 bool rando_record_parse(const char *text, size_t len, RandoRecord *out, char error[RANDO_RECORD_ERROR_MAX]);
+
+/* Writes the spoiler span text[offset, +size) as an indented outline into out[0, *len), not NUL-terminated:
+ * "key: value" lines, containers as their key alone, VT's ":<digits>" suffix dropped, the top-level meta
+ * skipped. On overflow keeps whole lines only and sets *cut. False on a malformed span or one nested deeper
+ * than RANDO_RECORD_OUTLINE_DEPTH (the root counts 1); *len and *cut are then unspecified. */
+bool rando_record_spoiler_outline(const char *text, size_t offset, size_t size, char *out, size_t cap,
+				  size_t *len, bool *cut);
 
 #endif

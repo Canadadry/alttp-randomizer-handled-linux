@@ -104,6 +104,11 @@
     - [x] Chunk 4: SD runner and status tables
     - [x] Chunk 5: end to end
   - [ ] 3.6 History tab
+    - [x] Chunk 1: spoiler outline
+    - [ ] Chunk 2: core History state machine
+    - [ ] Chunk 3: SD scan and spoiler reading
+    - [ ] Chunk 4: delete and its file set
+    - [ ] Chunk 5: end to end
   - [ ] 3.7 ui_cli
 - [ ] Phase 4 — Onion and PC builds
   - [ ] 4.1 SDL renderer and input
