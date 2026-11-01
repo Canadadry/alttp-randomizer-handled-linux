@@ -68,7 +68,7 @@
   - [x] 2.1 BPS applier in C
     - [x] Chunk 1: CRC32 and the BPS header reader
     - [x] Chunk 2: rando_bps_apply
-  - [ ] 2.2 ROM assembly pipeline
+  - [x] 2.2 ROM assembly pipeline
     - [x] Chunk 1: size constants and name tables
     - [x] Chunk 2: MD5 module
     - [x] Chunk 3: header check and gate target
