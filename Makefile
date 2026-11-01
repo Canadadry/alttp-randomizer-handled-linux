@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando test-template lint check
+.PHONY: help install test test-rando test-template lint logic selftest e2e check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -6,6 +6,9 @@ help:
 	@echo "make test-rando     the randomizer's unit tests (tests/rando)"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
 	@echo "make lint           rando/ built as strict ISO C99 (-pedantic-errors)"
+	@echo "make logic          unit tests replaying the oracle fixtures (tests/rando/oracle)"
+	@echo "make selftest       the e2e driver's own self-test"
+	@echo "make e2e            every case of tests/rando/cases diffed against its golden"
 	@echo "make check          the net: everything that must be green before a push"
 
 install:
@@ -26,5 +29,14 @@ test-template:
 lint:
 	$(MAKE) -C tests/rando lint
 
+logic:
+	$(MAKE) -C tests/rando logic
+
+selftest:
+	$(MAKE) -C tests/rando selftest
+
+e2e:
+	$(MAKE) -C tests/rando e2e
+
 # The net. A change that keeps it green is correct; one that breaks it is a bug.
-check: test lint
+check: test lint logic selftest e2e

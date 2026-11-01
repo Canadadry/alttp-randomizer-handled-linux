@@ -1,0 +1,167 @@
+diff --git a/app/Helpers/number.php b/app/Helpers/number.php
+index 707dc1b..60729d3 100644
+--- a/app/Helpers/number.php
++++ b/app/Helpers/number.php
+@@ -8,9 +8,138 @@
+  *
+  * @return int
+  */
+-function get_random_int($min = PHP_INT_MIN, $max = PHP_INT_MAX)
++// int parameters coerce like random_int()'s: VT passes floor() floats (Ganon's Tower junk range).
++function get_random_int(int $min = PHP_INT_MIN, int $max = PHP_INT_MAX)
+ {
+-    return random_int($min, $max);
++    if ($min > $max || $max - $min + 1 > 0x100000000) {
++        throw new \ValueError("get_random_int($min, $max): outside the shared PRNG contract");
++    }
++    $r = $min + prng_next() % ($max - $min + 1);
++    if (OraclePrng::$attempt !== null) {
++        $stage = prng_stage(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
++        OraclePrng::$trace[] = OraclePrng::$attempt . ' ' . OraclePrng::$draw++ . " $stage $min $max -> $r";
++    }
++    return $r;
++}
++
++final class OraclePrng
++{
++    public static $s = [0, 0, 0, 0];
++    public static $attempt = null;
++    public static $draw = 1;
++    public static $label = null;
++    public static $trace = [];
++}
++
++// PHP ints are signed 64-bit: a full 32x32 product overflows to a float, so it is built from 16-bit halves.
++function prng_mul32(int $a, int $b): int
++{
++    $lo = ($a & 0xFFFF) * ($b & 0xFFFF);
++    $mid = (($a >> 16) * ($b & 0xFFFF) + ($a & 0xFFFF) * ($b >> 16)) & 0xFFFF;
++    return (($mid << 16) + $lo) & 0xFFFFFFFF;
++}
++
++function prng_rotl(int $x, int $k): int
++{
++    return (($x << $k) | ($x >> (32 - $k))) & 0xFFFFFFFF;
++}
++
++function prng_splitmix32(int $x): int
++{
++    $z = ($x + 0x9E3779B9) & 0xFFFFFFFF;
++    $z = prng_mul32($z ^ ($z >> 16), 0x85EBCA6B);
++    $z = prng_mul32($z ^ ($z >> 13), 0xC2B2AE35);
++    return $z ^ ($z >> 16);
++}
++
++function prng_seed(int $v): void
++{
++    for ($k = 0; $k < 4; ++$k) {
++        OraclePrng::$s[$k] = prng_splitmix32(($v + $k * 0x9E3779B9) & 0xFFFFFFFF);
++    }
++    if (OraclePrng::$s === [0, 0, 0, 0]) {
++        throw new \Error("prng_seed($v): all-zero xoshiro128** state");
++    }
++}
++
++function prng_next(): int
++{
++    $s = &OraclePrng::$s;
++    if ($s === [0, 0, 0, 0]) {
++        throw new \Error('prng_next(): prng_seed() was never called');
++    }
++    $r = prng_mul32(prng_rotl(($s[1] * 5) & 0xFFFFFFFF, 7), 9);
++    $t = ($s[1] << 9) & 0xFFFFFFFF;
++    $s[2] ^= $s[0];
++    $s[3] ^= $s[1];
++    $s[1] ^= $s[2];
++    $s[0] ^= $s[3];
++    $s[2] ^= $t;
++    $s[3] = prng_rotl($s[3], 11);
++    return $r;
++}
++
++/**
++ * Start tracing draws for one attempt: draws are numbered from 1 again and
++ * the previous attempt's lines are dropped.
++ */
++function prng_trace_start(int $attempt): void
++{
++    OraclePrng::$attempt = $attempt;
++    OraclePrng::$draw = 1;
++    OraclePrng::$label = null;
++    OraclePrng::$trace = [];
++}
++
++/**
++ * Stage label for draws made outside Randomizer::randomize(). Such a draw
++ * with no label set throws an Error.
++ */
++function prng_trace_label(?string $label): void
++{
++    OraclePrng::$label = $label;
++}
++
++/**
++ * Lines "<attempt> <draw#> <stage> <min> <max> -> <r>" of the current attempt.
++ */
++function prng_trace(): array
++{
++    return OraclePrng::$trace;
++}
++
++function prng_is_primitive(array $frame): bool
++{
++    if (!isset($frame['class'])) {
++        return in_array($frame['function'], ['get_random_int', 'mt_shuffle', 'fy_shuffle', 'weighted_random_pick'], true);
++    }
++    return is_a($frame['class'], 'ALttP\\Support\\Collection', true)
++        && in_array($frame['function'], ['random', 'randomCollection'], true);
++}
++
++/**
++ * The function called directly by the innermost Randomizer::randomize() or
++ * prepareWorld() frame; that frame's own name when the draw comes from its
++ * body, through RNG primitives only.
++ */
++function prng_stage(array $frames): string
++{
++    $stage = null;
++    for ($i = count($frames) - 1; $i >= 1; --$i) {
++        $anchor = $frames[$i];
++        if (($anchor['class'] ?? '') !== 'ALttP\\Randomizer'
++            || !in_array($anchor['function'], ['randomize', 'prepareWorld'], true)) {
++            continue;
++        }
++        $stage = prng_is_primitive($frames[$i - 1]) ? $anchor['function'] : $frames[$i - 1]['function'];
++    }
++    if ($stage === null) {
++        $stage = OraclePrng::$label;
++    }
++    if ($stage === null || strpos($stage, ' ') !== false) {
++        throw new \Error('get_random_int(): draw outside Randomizer::randomize() with no trace label');
++    }
++    return $stage;
+ }
+ 
+ /**
+diff --git a/app/Randomizer.php b/app/Randomizer.php
+index 1478892..8068f4a 100644
+--- a/app/Randomizer.php
++++ b/app/Randomizer.php
+@@ -78,12 +78,12 @@ class Randomizer implements RandomizerContract
+ 
+         $filler->fill($this->dungeon_items, $this->advancement_items, $this->nice_items, $this->trash_items);
+ 
+-        foreach ($this->worlds as $world) {
+-            $this->setTexts($world);
+-            $this->randomizeCredits($world);
+-        }
++        // foreach ($this->worlds as $world) {
++        //     $this->setTexts($world);
++        //     $this->randomizeCredits($world);
++        // }
+ 
+-        (new HintService($this->worlds, $this->advancement_items))->applyHints();
++        // (new HintService($this->worlds, $this->advancement_items))->applyHints();
+     }
+ 
+     /**

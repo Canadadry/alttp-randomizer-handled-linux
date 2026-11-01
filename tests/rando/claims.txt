@@ -1,0 +1,48 @@
+# One claim per line: `<case> <stage>` (the C trace matches the golden up to
+# that stage's last attempt-0 draw) or `<case> all` (trace, attempts and
+# spoiler.json match). <stage> is a stage of stages.txt with a draw in the
+# case's attempt 0. An unclaimed case is PENDING.
+baseline all
+crystals_ganon-random all
+crystals_tower-random all
+item_functionality-hard all
+item_functionality-expert all
+item_pool-hard all
+item_pool-expert all
+item_pool-crowd_control all
+state-standard all
+goal-pedestal all
+goal-triforce-hunt all
+glitches-overworld_glitches all
+weapons-swordless all
+item_placement-basic all
+weapons-assured all
+weapons-vanilla all
+dungeon_items-mc all
+dungeon_items-mcs all
+dungeon_items-full all
+accessibility-locations all
+accessibility-none all
+crystals_ganon-0 all
+crystals_ganon-1 all
+crystals_ganon-2 all
+crystals_ganon-3 all
+crystals_ganon-4 all
+crystals_ganon-5 all
+crystals_ganon-6 all
+crystals_tower-0 all
+crystals_tower-1 all
+crystals_tower-2 all
+crystals_tower-3 all
+crystals_tower-4 all
+crystals_tower-5 all
+crystals_tower-6 all
+glitches-hybrid_major_glitches all
+glitches-major_glitches all
+goal-completionist all
+goal-dungeons all
+goal-fast_ganon all
+goal-ganonhunt all
+glitches-no_logic all
+state-inverted all
+state-retro all

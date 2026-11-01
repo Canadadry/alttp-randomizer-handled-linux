@@ -14,9 +14,15 @@ in `docs/`, then `README.md`.
 - `rando/` is the randomizer library: `include/` its public headers, `src/`
   its sources. The generator, the oracle and their tests are taken over from
   `Canadadry/alttp-ds` (`rando/`, `tests/rando/`).
+- `rando/host/` is host-side code on top of the library: the case reader, the
+  spoiler JSON, the playthrough, the output, and the generator's `main`
+  (`host/main/rando_gen.c`).
 - `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
+- `tests/rando/cases/` holds the e2e cases, one directory each with its VT
+  golden; `tests/rando/oracle/` the PHP VT oracle (`gen_golden.sh`, `vt.patch`)
+  and the fixtures it writes.
 
 ## Checks
 
@@ -37,7 +43,12 @@ in `docs/`, then `README.md`.
 - `make test` = `make -C tests/rando test` (the randomizer's unit tests) plus
   `test-template` (the tooling under `.claude/`).
 - `make check` = `test` plus `lint` (`rando/` built with `-std=c99
-  -pedantic-errors`). Run `make -k check` to see every failure at once.
+  -pedantic-errors`), `logic` (unit tests replaying the oracle fixtures),
+  `selftest` (the e2e driver's own self-test) and `e2e` (every case diffed
+  against its golden, one `DIVERGENT <case>` line per failure). Run
+  `make -k check` to see every failure at once.
+- `make -C tests/rando measure`, outside the net, gives the per-case times
+  every later budget is measured against.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL PC build (`libsdl2-dev`)
   and the qemu-arm run of the cross build are CI jobs, not `check`.

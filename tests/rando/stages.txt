@@ -1,0 +1,19 @@
+# VT's stages in draw order (Randomizer::prepareWorld), then the spoiler checks
+# each stage owes: `check <stage> section <Name>`, `check <stage> keys <glob>`
+# or `check <stage> pool`.
+stage crystals
+stage getAdvancementItems
+stage setShops
+stage setMedallions
+stage placeBosses
+stage fillPrizes
+stage setFountains
+stage shufflePrizePacks
+stage prepareWorld
+stage fill
+check setShops section Shops
+check setMedallions keys *Medallion:1
+check placeBosses section Bosses
+check fillPrizes keys *- Prize:1
+check setFountains keys *Bottle:1
+check prepareWorld pool
