@@ -17,6 +17,7 @@ stage applyHints
 stage writeItem
 stage setDiggingGameRng
 stage writeRNGBlock
+stage writePrizePacksToRom
 check setShops section Shops
 check setMedallions keys *Medallion:1
 check placeBosses section Bosses

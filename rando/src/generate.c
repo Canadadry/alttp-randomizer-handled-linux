@@ -22,6 +22,7 @@ static const char *const stage_names[RANDO_STAGE_COUNT] = {
 	"writeItem",
 	"setDiggingGameRng",
 	"writeRNGBlock",
+	"writePrizePacksToRom",
 };
 
 const char *rando_stage_name(RandoStage stage)

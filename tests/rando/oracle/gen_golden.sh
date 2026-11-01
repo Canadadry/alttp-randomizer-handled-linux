@@ -1,8 +1,8 @@
 #!/bin/sh
 # Usage: gen_golden.sh [--fresh] [--out <dir>] [<case>...]
 # Without --out, each case's golden is written back into tests/rando/cases/<case>/, and the logic fixtures
-# (extract_logic.php) and the pool fixtures pool_lists.txt and prepared_pools.txt (dump_pools.php, always over
-# every case) into tests/rando/oracle/;
+# (extract_logic.php), the default text table text_default.txt (text_default.php) and the pool fixtures
+# pool_lists.txt and prepared_pools.txt (dump_pools.php, always over every case) into tests/rando/oracle/;
 # with --out, all go under <dir>.
 # Never called by `make test` or `make e2e`: regenerating goldens is a deliberate act (CLAUDE.md).
 set -eu
@@ -81,6 +81,7 @@ esac
 
 php "$oracle_dir/prng_check.php" "$vt_dir"
 php "$oracle_dir/extract_logic.php" "$vt_dir" "${out:-$oracle_dir}"
+php "$oracle_dir/text_default.php" "$vt_dir" "${out:-$oracle_dir}"
 
 for name in "$@"; do
 	php "$oracle_dir/gen_case.php" "$vt_dir" "$cases_dir/$name" "${out:-$cases_dir}/$name"

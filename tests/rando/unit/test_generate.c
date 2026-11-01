@@ -19,6 +19,7 @@
 	} while (0)
 
 #define TRACE_MAX 65536
+#define GOLDEN_TRACE_MAX (1 << 20)
 #define STAGE_TABLE "stages.txt"
 
 /* The hook's draws in trace.txt's format. */
@@ -332,7 +333,7 @@ static void check_baseline_complete(void)
  * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last fill line. */
 static void check_retry_identity(RandoFault point)
 {
-	static char golden[TRACE_MAX], expected[TRACE_MAX];
+	static char golden[GOLDEN_TRACE_MAX], expected[GOLDEN_TRACE_MAX];
 	char stage[64];
 	RandoOptions options;
 	Trace trace;
@@ -345,6 +346,8 @@ static void check_retry_identity(RandoFault point)
 		test_fail(TEST, "cases/baseline/trace.txt: cannot open");
 	len = fread(golden, 1, sizeof golden - 1, f);
 	fclose(f);
+	if (len == sizeof golden - 1)
+		test_fail(TEST, "cases/baseline/trace.txt: longer than %d bytes", GOLDEN_TRACE_MAX - 1);
 	golden[len] = '\0';
 	for (line = golden, len = 0; *line; line = strchr(line, '\n') + 1) {
 		CHECK(strchr(line, '\n') != NULL);

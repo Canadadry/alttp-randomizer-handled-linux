@@ -143,25 +143,47 @@ index 707dc1b..60729d3 100644
  }
  
  /**
-diff --git a/app/Randomizer.php b/app/Randomizer.php
-index 1478892..8068f4a 100644
---- a/app/Randomizer.php
-+++ b/app/Randomizer.php
-@@ -78,12 +78,12 @@ class Randomizer implements RandomizerContract
+diff --git a/app/Location/Prize.php b/app/Location/Prize.php
+index 6ad9fb5..8db43b7 100644
+--- a/app/Location/Prize.php
++++ b/app/Location/Prize.php
+@@ -45,7 +45,9 @@ class Prize extends Location
  
-         $filler->fill($this->dungeon_items, $this->advancement_items, $this->nice_items, $this->trash_items);
+         if (isset($this->region->music_addresses) && is_array($this->region->music_addresses)) {
+             if ($this->region->getWorld()->config('rom.mapOnPickup', false)) {
++                prng_trace_label('writeItem');
+                 $music = Arr::first(fy_shuffle([0x11, 0x16]));
++                prng_trace_label(null);
+             } else {
+                 $item = $this->getItem();
+                 $music = $item instanceof Pendant ? 0x11 : 0x16;
+diff --git a/app/World.php b/app/World.php
+index 0f4dbff..930919c 100644
+--- a/app/World.php
++++ b/app/World.php
+@@ -1234,11 +1234,15 @@ abstract class World
+         $rom->setCompassCountTotals();
+         $rom->setFreeItemTextMode($this->config('rom.freeItemText', 0x00));
+         $rom->setFreeItemMenu($this->config('rom.freeItemMenu', 0x00));
++        prng_trace_label('setDiggingGameRng');
+         $rom->setDiggingGameRng(get_random_int(1, 30));
++        prng_trace_label(null);
  
--        foreach ($this->worlds as $world) {
--            $this->setTexts($world);
--            $this->randomizeCredits($world);
--        }
-+        // foreach ($this->worlds as $world) {
-+        //     $this->setTexts($world);
-+        //     $this->randomizeCredits($world);
-+        // }
++        prng_trace_label('writeRNGBlock');
+         $rom->writeRNGBlock(function () {
+             return get_random_int(0, 0x100);
+         });
++        prng_trace_label(null);
  
--        (new HintService($this->worlds, $this->advancement_items))->applyHints();
-+        // (new HintService($this->worlds, $this->advancement_items))->applyHints();
-     }
+         $this->writePrizePacksToRom($rom);
  
-     /**
+@@ -1463,7 +1467,9 @@ abstract class World
+     public function writePrizePacksToRom(Rom $rom): void
+     {
+         $emptyDrops = $this->getEmptyDropSlots();
++        prng_trace_label('writePrizePacksToRom');
+         $drop_pool = $this->getDropsPool();
++        prng_trace_label(null);
+ 
+         for ($i = 0; $i < count($emptyDrops); $i++) {
+             $curDrop = $drop_pool[$i];
