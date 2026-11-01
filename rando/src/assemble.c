@@ -40,3 +40,66 @@ RandoAssembleStatus rando_assemble_check_patch(const uint8_t *patch, size_t patc
 		return RANDO_ASSEMBLE_PATCH_SIZES;
 	return RANDO_ASSEMBLE_OK;
 }
+
+RandoAssembleStatus rando_assemble(const RandoAssembleRequest *request, RandoAssembleWork *work, RandoBpsResult *bps)
+{
+	uint8_t digest[RANDO_MD5_SIZE];
+	RandoBpsResult code = RANDO_BPS_OK;
+	RandoAssembleStatus status;
+	RandoRomBuffer rom;
+	RandoRomWriter writer;
+	size_t target_size;
+	bool ok;
+
+	assert(request != NULL && work != NULL && request->output != NULL);
+	if (bps != NULL)
+		*bps = RANDO_BPS_OK;
+	if (request->source_size != RANDO_ROM_SOURCE_SIZE)
+		return RANDO_ASSEMBLE_SOURCE_SIZE;
+	assert(request->source != NULL);
+	rando_md5(request->source, request->source_size, digest);
+	if (memcmp(digest, request->source_md5, RANDO_MD5_SIZE) != 0)
+		return RANDO_ASSEMBLE_SOURCE_MD5;
+
+	status = rando_assemble_check_patch(request->patch, request->patch_size, &code);
+	if (bps != NULL)
+		*bps = code;
+	if (status != RANDO_ASSEMBLE_OK)
+		return status;
+	code = rando_bps_apply(request->patch, request->patch_size, request->source, request->source_size, work->rom,
+			       RANDO_ROM_SIZE, &target_size);
+	if (bps != NULL)
+		*bps = code;
+	if (code != RANDO_BPS_OK)
+		return RANDO_ASSEMBLE_PATCH;
+	assert(target_size == RANDO_ROM_SIZE);
+	rando_md5(work->rom, RANDO_ROM_SIZE, digest);
+	if (memcmp(digest, request->base_md5, RANDO_MD5_SIZE) != 0)
+		return RANDO_ASSEMBLE_BASE_MD5;
+
+	switch (rando_generate(&work->gen, &request->options, request->seed, request->max_attempts, request->trace,
+			       request->trace_ctx)) {
+	case RANDO_COMPLETE:
+		break;
+	case RANDO_UNSUPPORTED:
+		return RANDO_ASSEMBLE_UNSUPPORTED;
+	default:
+		return RANDO_ASSEMBLE_GAVE_UP;
+	}
+
+	rom.bytes = work->rom;
+	rom.size = RANDO_ROM_SIZE;
+	writer.write = rando_rom_buffer_write;
+	writer.ctx = &rom;
+	/* Every write is below 2 MiB; nothing can refuse it. */
+	ok = rando_rom_write(&work->gen, request->heart_beep, &writer);
+	assert(ok);
+	ok = rando_rom_write_cosmetic_defaults(&rom, request->source, request->source_size);
+	assert(ok);
+	ok = rando_rom_update_checksum(&rom);
+	assert(ok);
+	(void)ok;
+	if (!request->output(request->output_ctx, work->rom, RANDO_ROM_SIZE))
+		return RANDO_ASSEMBLE_OUTPUT;
+	return RANDO_ASSEMBLE_OK;
+}

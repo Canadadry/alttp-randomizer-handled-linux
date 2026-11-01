@@ -72,7 +72,7 @@
     - [x] Chunk 1: size constants and name tables
     - [x] Chunk 2: MD5 module
     - [x] Chunk 3: header check and gate target
-    - [ ] Chunk 4: the pipeline
+    - [x] Chunk 4: the pipeline
     - [ ] Chunk 5: the rando_patch CLI
   - [ ] 2.3 Output naming, history record and spoiler
 - [ ] Phase 3 — Onion facts, then the app's UI core and text renderer, host only
