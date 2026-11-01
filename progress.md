@@ -91,7 +91,7 @@
   - [x] 3.3 String table (i18n)
     - [x] Chunk 1: string table module
     - [x] Chunk 2: literal check
-  - [ ] 3.4 Generate tab state machine
+  - [x] 3.4 Generate tab state machine
     - [x] Chunk 1: settings table
     - [x] Chunk 2: settings file
     - [x] Chunk 3: input filter
