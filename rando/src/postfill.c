@@ -26,8 +26,7 @@ uint8_t rando_pick_first(RandoPrng *prng, int count)
 	return idx[0];
 }
 
-/* World::getLocationsWithItem, in world location order; returns the count written to out. */
-static int locations_with(const RandoWorld *world, RandoItemId item, uint8_t out[RANDO_LOCATION_COUNT])
+int rando_locations_with(const RandoWorld *world, RandoItemId item, uint8_t out[RANDO_LOCATION_COUNT])
 {
 	int i, n = 0;
 
@@ -40,11 +39,11 @@ static int locations_with(const RandoWorld *world, RandoItemId item, uint8_t out
 	return n;
 }
 
-static RandoLocationId first_with(const RandoWorld *world, RandoItemId item)
+RandoLocationId rando_first_with(const RandoWorld *world, RandoItemId item)
 {
 	uint8_t ids[RANDO_LOCATION_COUNT];
 
-	return locations_with(world, item, ids) > 0 ? (RandoLocationId)ids[0] : RANDO_LOCATION_NONE;
+	return rando_locations_with(world, item, ids) > 0 ? (RandoLocationId)ids[0] : RANDO_LOCATION_NONE;
 }
 
 void rando_set_texts(const RandoWorld *world, RandoPrng *prng, RandoPostFill *post)
@@ -59,11 +58,11 @@ void rando_set_texts(const RandoWorld *world, RandoPrng *prng, RandoPostFill *po
 	t->tavern_man = rando_pick_first(prng, RANDO_STRINGS_TAVERN_MAN);
 	t->ganon_1 = rando_pick_first(prng, RANDO_STRINGS_GANON_1);
 
-	silvers = first_with(world, RANDO_ITEM_SilverArrowUpgrade);
+	silvers = rando_first_with(world, RANDO_ITEM_SilverArrowUpgrade);
 	if (silvers == RANDO_LOCATION_NONE)
-		silvers = first_with(world, RANDO_ITEM_BowAndSilverArrows);
+		silvers = rando_first_with(world, RANDO_ITEM_BowAndSilverArrows);
 	/* Drawn before the overflow-count branch, whatever it decides. */
-	nbows = locations_with(world, RANDO_ITEM_ProgressiveBow, bows);
+	nbows = rando_locations_with(world, RANDO_ITEM_ProgressiveBow, bows);
 	npicked = rando_random_collection(prng, bows, nbows, 2, picked);
 
 	t->bow_locations[0] = RANDO_LOCATION_NONE;

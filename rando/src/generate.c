@@ -87,6 +87,9 @@ static void run_post_fill(RandoGen *gen, RandoStage from, RandoStage to)
 		case RANDO_STAGE_RANDOMIZE_CREDITS:
 			rando_randomize_credits(&gen->prng, &gen->post);
 			break;
+		case RANDO_STAGE_APPLY_HINTS:
+			rando_apply_hints(&gen->world, &gen->prng, gen->advancement, gen->nadvancement, &gen->post);
+			break;
 		default:
 			/* Not ported yet: no draw. */
 			break;

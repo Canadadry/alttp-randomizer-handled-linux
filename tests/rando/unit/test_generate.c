@@ -285,7 +285,7 @@ static void check_reseed(uint32_t seed)
 }
 
 /* tests/rando/cases/baseline: the fill makes lines 233-805, the golden's last fill line; setTexts 806-1060;
- * randomizeCredits 1061-1138. */
+ * randomizeCredits 1061-1138; applyHints 1139-1417. */
 static void check_baseline_fill(void)
 {
 	RandoOptions options;
@@ -305,9 +305,30 @@ static void check_baseline_fill(void)
 	      RANDO_INCOMPLETE);
 	CHECK(trace.lines == 1138);
 	check_golden_stop("baseline", &trace, "applyHints");
+	memset(&trace, 0, sizeof trace);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &trace, RANDO_STAGE_APPLY_HINTS) == RANDO_INCOMPLETE);
+	CHECK(trace.lines == 1417);
+	check_golden_stop("baseline", &trace, "setDiggingGameRng");
+	CHECK(gen.post.hints.on);
 }
 
-/* tests/rando/cases/baseline: attempts 0 and the golden trace through randomizeCredits, the last ported stage. */
+/* hints-off: applyHints draws nothing, so its stop is the randomizeCredits stop. */
+static void check_hints_off_skip(void)
+{
+	RandoOptions options;
+	Trace trace;
+
+	rando_options_init(&options);
+	options.hints = false;
+	memset(&trace, 0, sizeof trace);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &trace, RANDO_STAGE_APPLY_HINTS) == RANDO_INCOMPLETE);
+	CHECK(!gen.post.hints.on);
+	check_golden_stop("hints-off", &trace, NULL);
+	CHECK(strstr(trace.text, " applyHints ") == NULL);
+	CHECK(strstr(trace.text, " randomizeCredits ") != NULL);
+}
+
+/* tests/rando/cases/baseline: attempts 0 and the golden trace through applyHints, the last ported stage. */
 static void check_baseline_complete(void)
 {
 	RandoOptions options;
@@ -317,14 +338,14 @@ static void check_baseline_complete(void)
 	memset(&trace, 0, sizeof trace);
 	CHECK(rando_generate(&gen, &options, 1, 0, record, &trace) == RANDO_COMPLETE);
 	CHECK(gen.attempt == 0);
-	CHECK(trace.lines == 1138);
-	check_golden_stop("baseline", &trace, "applyHints");
+	CHECK(trace.lines == 1417);
+	check_golden_stop("baseline", &trace, "setDiggingGameRng");
 	check_complete_outputs("cases/baseline", "baseline", "0\n");
 }
 
 /* Attempt k of seed s is attempt 0 of seed s + k: seed 0 with attempt 0 failed at point must replay
- * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last randomizeCredits line.
- * Attempt 0 ends in the fill when it fails there, in randomizeCredits when it fails at isWinnable. */
+ * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last applyHints line.
+ * Attempt 0 ends in the fill when it fails there, in applyHints when it fails at isWinnable. */
 static void check_retry_identity(RandoFault point)
 {
 	static char golden[GOLDEN_TRACE_MAX], expected[GOLDEN_TRACE_MAX];
@@ -345,7 +366,7 @@ static void check_retry_identity(RandoFault point)
 	golden[len] = '\0';
 	for (line = golden, len = 0; *line; line = strchr(line, '\n') + 1) {
 		CHECK(strchr(line, '\n') != NULL);
-		if (sscanf(line, "%*s %*s %63s", stage) == 1 && strcmp(stage, "randomizeCredits") == 0)
+		if (sscanf(line, "%*s %*s %63s", stage) == 1 && strcmp(stage, "applyHints") == 0)
 			len = (size_t)(strchr(line, '\n') + 1 - golden);
 	}
 	CHECK(len > 0);
@@ -372,8 +393,8 @@ static void check_retry_identity(RandoFault point)
 	line = retry - 1;
 	while (line > trace.text && line[-1] != '\n')
 		line--;
-	CHECK(strstr(line, point == RANDO_FAULT_MID_FILL ? " fill " : " randomizeCredits ") != NULL);
-	CHECK(strstr(line, point == RANDO_FAULT_MID_FILL ? " fill " : " randomizeCredits ") < retry);
+	CHECK(strstr(line, point == RANDO_FAULT_MID_FILL ? " fill " : " applyHints ") != NULL);
+	CHECK(strstr(line, point == RANDO_FAULT_MID_FILL ? " fill " : " applyHints ") < retry);
 	check_complete_outputs("cases/baseline", point == RANDO_FAULT_MID_FILL ? "mid-fill retry" : "isWinnable retry",
 			       "1\n");
 }
@@ -458,11 +479,11 @@ static void check_stop_on_winning_attempt(void)
 	gen.fault = RANDO_FAULT_NONE;
 }
 
-/* On baseline, setTexts makes 255 draws and randomizeCredits 78; the stages after it make no C draws
- * yet: a stop at any of them is the randomizeCredits stop. */
+/* On baseline, setTexts makes 255 draws, randomizeCredits 78 and applyHints 279; the stages after it make
+ * no C draws yet: a stop at any of them is the applyHints stop. */
 static void check_stop_after_fill(void)
 {
-	static Trace texts, credits, last;
+	static Trace texts, credits, hints, last;
 	RandoOptions options;
 	int s;
 
@@ -477,11 +498,16 @@ static void check_stop_after_fill(void)
 	CHECK(credits.lines == 1138);
 	CHECK(strncmp(credits.text, texts.text, strlen(texts.text)) == 0);
 	CHECK(strstr(credits.text, "\n0 1061 randomizeCredits 0 2 -> ") != NULL);
-	for (s = RANDO_STAGE_RANDOMIZE_CREDITS + 1; s < RANDO_STAGE_COUNT; s++) {
+	memset(&hints, 0, sizeof hints);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &hints, RANDO_STAGE_APPLY_HINTS) == RANDO_INCOMPLETE);
+	CHECK(hints.lines == 1417);
+	CHECK(strncmp(hints.text, credits.text, strlen(credits.text)) == 0);
+	CHECK(strstr(hints.text, "\n0 1139 applyHints 0 14 -> ") != NULL);
+	for (s = RANDO_STAGE_APPLY_HINTS + 1; s < RANDO_STAGE_COUNT; s++) {
 		memset(&last, 0, sizeof last);
 		CHECK(rando_generate_until(&gen, &options, 1, 1, record, &last, (RandoStage)s) == RANDO_INCOMPLETE);
 		CHECK(gen.attempt == 0);
-		CHECK(strcmp(last.text, credits.text) == 0);
+		CHECK(strcmp(last.text, hints.text) == 0);
 	}
 }
 
@@ -615,6 +641,7 @@ int main(int argc, char **argv)
 	if (!fixtures)
 		return 0;
 	check_baseline_fill();
+	check_hints_off_skip();
 	check_baseline_complete();
 	printf(TEST ": baseline generated to completion\n");
 	check_retry_identity(RANDO_FAULT_MID_FILL);

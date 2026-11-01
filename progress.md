@@ -23,7 +23,7 @@
     - [x] Chunk 2: randomizeCredits
     - [x] Chunk 3: hint_tables.txt oracle fixture
     - [x] Chunk 4: hints as an input, hint tables and getHint
-    - [ ] Chunk 5: applyHints
+    - [x] Chunk 5: applyHints
     - [ ] Chunk 6: writeItem
     - [ ] Chunk 7: setDiggingGameRng and writeRNGBlock
     - [ ] Chunk 8: writePrizePacksToRom and every claim to all

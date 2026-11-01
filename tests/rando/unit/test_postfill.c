@@ -16,7 +16,7 @@
 			test_fail(TEST, "%s:%d: %s", __FILE__, __LINE__, #cond); \
 	} while (0)
 
-#define DRAWS_MAX 512
+#define DRAWS_MAX 1024
 #define FIXTURE_HINT_TABLES "oracle/hint_tables.txt"
 
 typedef struct Draws {
@@ -303,6 +303,158 @@ static void check_collection_hints(void)
 	CHECK(hint.location == RANDO_LOC_SAHASRAHLA);
 }
 
+/* 15 tiles, 10 picks, the five pick shuffles over 10 to 6, the count draw: drawn whatever the world. */
+#define HINT_FIXED_DRAWS (15 + 10 + 40 + 1)
+
+static void hints_world(RandoWorld *world, bool on, bool wild_big_keys)
+{
+	RandoConfig config;
+
+	rando_config_init(&config);
+	config.spoil_hints = on;
+	rando_world_init(world, RANDO_VARIANT_OPEN, &config);
+	world->config.region_wild_big_keys = wild_big_keys;
+}
+
+static int tiles_of(const RandoPostFill *post, RandoTileHintKind kind, RandoLocationId location)
+{
+	int i, n = 0;
+
+	for (i = 0; i < RANDO_TILE_COUNT; i++)
+		if (post->hints.tiles[i].kind == kind
+		    && (kind != RANDO_TILE_HINT_LOCATION || post->hints.tiles[i].location.location == location))
+			n++;
+	return n;
+}
+
+static int apply_hints(const RandoWorld *world, uint32_t seed, const uint8_t *advancement, int n, RandoPostFill *post)
+{
+	RandoPrng prng;
+	Draws draws;
+
+	seeded(&prng, seed, &draws);
+	rando_apply_hints(world, &prng, advancement, n, post);
+	return draws.n;
+}
+
+/* Hints off: no draw, no tile. */
+static void check_hints_off(void)
+{
+	static const uint8_t advancement[] = {RANDO_ITEM_FireRod};
+	RandoWorld world;
+	RandoPostFill post;
+
+	hints_world(&world, false, false);
+	CHECK(rando_world_set_item(&world, RANDO_LOC_LINKS_HOUSE, RANDO_ITEM_FireRod));
+	rando_postfill_clear(&post);
+	CHECK(apply_hints(&world, 1, advancement, 1, &post) == 0);
+	CHECK(!post.hints.on);
+	CHECK(tiles_of(&post, RANDO_TILE_HINT_NONE, RANDO_LOCATION_NONE) == RANDO_TILE_COUNT);
+}
+
+/* An empty world: only the hintables shuffle (keys, maps, compasses, bottles, swords, shields and the five
+ * named items left out; big keys too unless wild), random() over no location drawing nothing, then 15 jokes. */
+static void check_hints_empty_world(void)
+{
+	static const uint8_t advancement[] = {
+		RANDO_ITEM_FireRod, RANDO_ITEM_Hammer, RANDO_ITEM_KeyH2, RANDO_ITEM_Bottle,
+		RANDO_ITEM_ProgressiveSword, RANDO_ITEM_Mushroom, RANDO_ITEM_ProgressiveShield, RANDO_ITEM_MapH2,
+		RANDO_ITEM_CompassH2, RANDO_ITEM_BigKeyH2, RANDO_ITEM_Hookshot, RANDO_ITEM_Powder,
+	};
+	RandoWorld world;
+	RandoPostFill post;
+
+	hints_world(&world, true, false);
+	rando_postfill_clear(&post);
+	CHECK(apply_hints(&world, 1, advancement, 12, &post) == HINT_FIXED_DRAWS + 3 + 15 * RANDO_STRINGS_HINT);
+	CHECK(post.hints.on);
+	CHECK(tiles_of(&post, RANDO_TILE_HINT_JOKE, RANDO_LOCATION_NONE) == RANDO_TILE_COUNT);
+	hints_world(&world, true, true);
+	CHECK(apply_hints(&world, 1, advancement, 12, &post) == HINT_FIXED_DRAWS + 4 + 15 * RANDO_STRINGS_HINT);
+}
+
+/* The one item both hinted and drawn by randomCollection: merged once, so one tile names it. */
+static void check_hints_merge(void)
+{
+	static const uint8_t advancement[] = {RANDO_ITEM_FireRod};
+	RandoWorld world;
+	RandoPostFill post;
+	int i;
+
+	hints_world(&world, true, false);
+	CHECK(rando_world_set_item(&world, RANDO_LOC_LINKS_HOUSE, RANDO_ITEM_FireRod));
+	rando_postfill_clear(&post);
+	/* Shuffle 1, random() 1, randomCollection 1, the hint 2 + 0. */
+	CHECK(apply_hints(&world, 1, advancement, 1, &post) == HINT_FIXED_DRAWS + 5 + 14 * RANDO_STRINGS_HINT);
+	CHECK(tiles_of(&post, RANDO_TILE_HINT_LOCATION, RANDO_LOC_LINKS_HOUSE) == 1);
+	CHECK(tiles_of(&post, RANDO_TILE_HINT_JOKE, RANDO_LOCATION_NONE) == 14);
+	for (i = 0; i < RANDO_TILE_COUNT; i++)
+		if (post.hints.tiles[i].kind == RANDO_TILE_HINT_LOCATION)
+			CHECK(post.hints.tiles[i].location.item == RANDO_ITEM_FireRod);
+}
+
+/* Boots take a tile first, then the location is drawn again for a second tile. */
+static void check_hints_boots(void)
+{
+	RandoWorld world;
+	RandoPostFill post;
+
+	hints_world(&world, true, false);
+	CHECK(rando_world_set_item(&world, RANDO_LOC_LINKS_HOUSE, RANDO_ITEM_PegasusBoots));
+	rando_postfill_clear(&post);
+	CHECK(apply_hints(&world, 1, NULL, 0, &post) == 2 + HINT_FIXED_DRAWS + 1 + 2 + 13 * RANDO_STRINGS_HINT);
+	CHECK(tiles_of(&post, RANDO_TILE_HINT_LOCATION, RANDO_LOC_LINKS_HOUSE) == 2);
+}
+
+/* A single pick hints when drawn among the five, and keeps its tile otherwise; a pair pick never hints. */
+static void check_hints_picks(void)
+{
+	RandoWorld world;
+	RandoPostFill post;
+	int picked = 0, missed = 0, draws;
+	uint32_t seed;
+
+	hints_world(&world, true, false);
+	CHECK(rando_world_set_item(&world, RANDO_LOC_SAHASRAHLA, RANDO_ITEM_FireRod));
+	for (seed = 1; seed <= 16; seed++) {
+		rando_postfill_clear(&post);
+		draws = apply_hints(&world, seed, NULL, 0, &post);
+		if (draws == HINT_FIXED_DRAWS + 5 + 1 + 5 + 13 * RANDO_STRINGS_HINT) {
+			CHECK(tiles_of(&post, RANDO_TILE_HINT_LOCATION, RANDO_LOC_SAHASRAHLA) == 2);
+			picked++;
+		} else {
+			CHECK(draws == HINT_FIXED_DRAWS + 1 + 5 + 14 * RANDO_STRINGS_HINT);
+			CHECK(tiles_of(&post, RANDO_TILE_HINT_LOCATION, RANDO_LOC_SAHASRAHLA) == 1);
+			missed++;
+		}
+	}
+	CHECK(picked > 0 && missed > 0);
+
+	hints_world(&world, true, false);
+	CHECK(rando_world_set_item(&world, RANDO_LOC_MISERY_MIRE_BIG_KEY_CHEST, RANDO_ITEM_FireRod));
+	for (seed = 1; seed <= 16; seed++) {
+		rando_postfill_clear(&post);
+		CHECK(apply_hints(&world, seed, NULL, 0, &post) == HINT_FIXED_DRAWS + 1 + 4 + 14 * RANDO_STRINGS_HINT);
+	}
+}
+
+/* setTexts' swapped bow is no ProgressiveBow to getLocationsWithItem: random() finds no location. */
+static void check_hints_alternate_bow(void)
+{
+	static const uint8_t advancement[] = {RANDO_ITEM_ProgressiveBow};
+	RandoWorld world;
+	RandoPostFill post;
+
+	hints_world(&world, true, false);
+	CHECK(rando_world_set_item(&world, RANDO_LOC_LINKS_HOUSE, RANDO_ITEM_ProgressiveBow));
+	rando_postfill_clear(&post);
+	CHECK(apply_hints(&world, 1, advancement, 1, &post) == HINT_FIXED_DRAWS + 5 + 14 * RANDO_STRINGS_HINT);
+	rando_postfill_clear(&post);
+	post.texts.alternate_bow = RANDO_LOC_LINKS_HOUSE;
+	CHECK(apply_hints(&world, 1, advancement, 1, &post) == HINT_FIXED_DRAWS + 4 + 14 * RANDO_STRINGS_HINT);
+	CHECK(tiles_of(&post, RANDO_TILE_HINT_LOCATION, RANDO_LOC_LINKS_HOUSE) == 1);
+}
+
 /* Fixture names no C table holds, each with its reason. */
 static const char *const unknown_items[] = {
 	/* Boss names: getHint looks up an item's raw name, never a boss's. */
@@ -423,6 +575,12 @@ int main(int argc, char **argv)
 	check_location_hints();
 	check_generic_keys_hint();
 	check_collection_hints();
+	check_hints_off();
+	check_hints_empty_world();
+	check_hints_merge();
+	check_hints_boots();
+	check_hints_picks();
+	check_hints_alternate_bow();
 	printf(TEST ": hand-written cases passed\n");
 	if (fixtures)
 		check_hint_tables_fixture();

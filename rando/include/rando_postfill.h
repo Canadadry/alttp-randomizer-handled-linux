@@ -101,10 +101,51 @@ typedef enum RandoCollectionHint {
 RandoCollectionHint rando_collection_hint(const RandoWorld *world, const RandoLocationId *locations, int n,
 					  RandoPrng *prng, RandoLocationHint *out);
 
+/* HintService's telepathic tiles, in the order VT lists them. */
+typedef enum RandoTile {
+	RANDO_TILE_EASTERN_PALACE,
+	RANDO_TILE_TOWER_OF_HERA_FLOOR_4,
+	RANDO_TILE_SPECTACLE_ROCK,
+	RANDO_TILE_SWAMP_ENTRANCE,
+	RANDO_TILE_THIEVES_TOWN_UPSTAIRS,
+	RANDO_TILE_MISERY_MIRE,
+	RANDO_TILE_PALACE_OF_DARKNESS,
+	RANDO_TILE_DESERT_BONK_TORCH_ROOM,
+	RANDO_TILE_CASTLE_TOWER,
+	RANDO_TILE_ICE_LARGE_ROOM,
+	RANDO_TILE_TURTLE_ROCK,
+	RANDO_TILE_ICE_ENTRACE,
+	RANDO_TILE_ICE_STALFOS_KNIGHTS_ROOM,
+	RANDO_TILE_TOWER_OF_HERA_ENTRANCE,
+	RANDO_TILE_SOUTH_EAST_DARKWORLD_CAVE,
+	RANDO_TILE_COUNT,
+} RandoTile;
+
+typedef enum RandoTileHintKind {
+	RANDO_TILE_HINT_NONE,
+	RANDO_TILE_HINT_LOCATION,
+	RANDO_TILE_HINT_JOKE,
+} RandoTileHintKind;
+
+typedef struct RandoTileHint {
+	RandoTileHintKind kind;
+	/* LOCATION only. */
+	RandoLocationHint location;
+	/* JOKE only: an index into strings/hint.txt's alternatives. */
+	uint8_t joke;
+} RandoTileHint;
+
+/* applyHints' choices. Hints on fills every tile; off leaves every tile NONE. */
+typedef struct RandoHints {
+	bool on;
+	RandoTileHint tiles[RANDO_TILE_COUNT];
+} RandoHints;
+
 /* Caller-owned, no pointers: every post-fill choice, as ids and indices, for the ROM writer. */
 typedef struct RandoPostFill {
 	RandoTexts texts;
 	RandoCredits credits;
+	RandoHints hints;
 } RandoPostFill;
 
 void rando_postfill_clear(RandoPostFill *post);
@@ -115,5 +156,11 @@ void rando_set_texts(const RandoWorld *world, RandoPrng *prng, RandoPostFill *po
 
 /* Randomizer::randomizeCredits: 3 + 4 + 49 + 7, the smithy coin, then 3 + 3 + 8; 78 draws, always. */
 void rando_randomize_credits(RandoPrng *prng, RandoPostFill *post);
+
+/* HintService::applyHints over advancement[0..n), the list as prepareWorld left it; no draw with
+ * spoil.Hints off. Call after rando_set_texts: its alternate bow is no ProgressiveBow to VT. A pair pick
+ * never hints (VT's getName() suffix); random() over no location draws nothing. */
+void rando_apply_hints(const RandoWorld *world, RandoPrng *prng, const uint8_t *advancement, int n,
+		       RandoPostFill *post);
 
 #endif
