@@ -58,7 +58,7 @@
   - [ ] 1.10 Port the initial SRAM writes
     - [x] Chunk 1: the SRAM group
     - [x] Chunk 2: total item count
-    - [ ] Chunk 3: replay, claims to all setTotalItemCount
+    - [x] Chunk 3: replay, claims to all setTotalItemCount
   - [ ] 1.11 Checksum and heart beep
   - [ ] 1.12 skill: check-e2e — whole case list, then e2e-combos
 - [ ] Phase 2 — Full ROM assembly, host only
