@@ -36,6 +36,10 @@ int test_fixtures_mode(const char *test, int argc, char **argv);
 
 void test_fail(const char *test, const char *fmt, ...);
 
+/* Compares actual with the whole snapshot file at path (relative to tests/rando); on a difference prints
+ * both texts and the first differing line, then fails. No update mode: a snapshot changes by hand only. */
+void test_snapshot(const char *test, const char *path, const char *actual);
+
 /* Exits 1 when the file cannot be opened. */
 void fixture_open(Fixture *fx, const char *path);
 

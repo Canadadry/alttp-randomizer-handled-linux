@@ -86,7 +86,7 @@
   - [ ] 3.2 Screen model and text renderer
     - [x] Chunk 1: app/ directory and the SD layer move
     - [x] Chunk 2: screen model
-    - [ ] Chunk 3: grid renderer, text form and snapshots
+    - [x] Chunk 3: grid renderer, text form and snapshots
     - [ ] Chunk 4: SDL-include check
   - [ ] 3.3 String table (i18n)
   - [ ] 3.4 Generate tab state machine

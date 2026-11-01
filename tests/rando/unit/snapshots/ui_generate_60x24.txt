@@ -1,0 +1,26 @@
+ +------------------------------------------------------------+
+=|[Generate]  History                                         |
+#| Generate a seed                                            |
+ | Mode                                                Open   |
+ | Goal                                        Defeat Ganon   |
+ | Logic                                        No Glitches   |
+ | Swords                                        Randomized   |
+ | Item placement                                  Advanced   |
+ | Dungeon items                                   Standard   |
+ | Accessibility                                      Items   |
+x| Enemy shuffle                                       None   |
+ | Boss shuffle                                        None   |
+ | Generate                                                   |
+ | Item functionality                                Normal   |
+ | ROM                            Zelda no Densetsu (J).sfc   |
+ | Heart beep                                        Normal   |
+>| Spoiler log                                        < Off > |
+ | Menu speed                                        Normal   |
+ | Quickswap                                            Off   |
+ | Palette                                          Default   |
+ | Music                                                 On   |
+ |                                                            |
+ |                                                            |
+i| Left and right change the value                            |
+_| A Select  B Back  L/R Tab                                  |
+ +------------------------------------------------------------+

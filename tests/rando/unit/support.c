@@ -30,6 +30,31 @@ void test_fail(const char *test, const char *fmt, ...)
 	exit(1);
 }
 
+#define SNAPSHOT_MAX (64 * 1024)
+
+void test_snapshot(const char *test, const char *path, const char *actual)
+{
+	static char expected[SNAPSHOT_MAX + 1];
+	FILE *f = fopen(path, "rb");
+	size_t n, i;
+	long line = 1;
+
+	if (!f)
+		test_fail(test, "cannot open snapshot %s", path);
+	n = fread(expected, 1, SNAPSHOT_MAX + 1, f);
+	if (ferror(f) || n > SNAPSHOT_MAX)
+		test_fail(test, "cannot read snapshot %s (or larger than %d bytes)", path, SNAPSHOT_MAX);
+	fclose(f);
+	expected[n] = '\0';
+	if (strcmp(expected, actual) == 0)
+		return;
+	for (i = 0; expected[i] != '\0' && expected[i] == actual[i]; i++)
+		if (expected[i] == '\n')
+			line++;
+	fprintf(stderr, "%s: snapshot %s, expected:\n%s%s: actual:\n%s", test, path, expected, test, actual);
+	test_fail(test, "snapshot %s differs from line %ld", path, line);
+}
+
 void fixture_open(Fixture *fx, const char *path)
 {
 	memset(fx, 0, sizeof *fx);
