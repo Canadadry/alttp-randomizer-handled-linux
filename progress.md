@@ -32,7 +32,7 @@
   - [ ] 1.5 rando_rom skeleton and claims by write group
     - [x] Chunk 1: rando_rom skeleton, buffer and log writers
     - [x] Chunk 2: write_groups.txt and write-log claims
-    - [ ] Chunk 3: check-e2e update, e2e-arm run
+    - [x] Chunk 3: check-e2e update, e2e-arm run
   - [ ] 1.6 Port the items and locations writes
   - [ ] 1.7 Port the settings and flags writes
   - [ ] 1.8 Port the credits writes

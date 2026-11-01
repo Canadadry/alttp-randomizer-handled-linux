@@ -41,4 +41,5 @@ sources at `OnionUI/Onion` commit
 - `make e2e-arm` builds the generator with the host `e2e` flags, Onion's
   flags above and `-static` (so `qemu-arm` needs no sysroot), checks it is a
   32-bit ARM EABI executable, and runs the host e2e driver on it under
-  `qemu-arm`.
+  `qemu-arm`. Its comparison is the host's, claims included, so a write-group
+  claim (`<case> all <group>`) compares the ARM build's `rom_writes.txt` too.
