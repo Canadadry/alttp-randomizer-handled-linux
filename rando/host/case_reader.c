@@ -63,16 +63,55 @@ static const char *parse_string(Parser *ps, char out[CASE_STRING_MAX])
 	return "unterminated string";
 }
 
-bool rando_case_parse_config(const char *text, size_t len, const char *file, RandoOptions *out,
+static const char *const heart_beep_names[] = {"off", "half", "quarter", "double", "normal"};
+
+typedef enum CaseKey {
+	CASE_KEY_HINTS,
+	CASE_KEY_HEART_BEEP,
+	CASE_KEY_COUNT,
+} CaseKey;
+
+static CaseKey case_key_find(const char *key)
+{
+	if (strcmp(key, "hints") == 0)
+		return CASE_KEY_HINTS;
+	if (strcmp(key, "heart_beep") == 0)
+		return CASE_KEY_HEART_BEEP;
+	return CASE_KEY_COUNT;
+}
+
+/* Returns false when value is not one of key's values. */
+static bool set_case_key(RandoCase *out, CaseKey key, const char *value)
+{
+	size_t i;
+
+	if (key == CASE_KEY_HINTS) {
+		if (strcmp(value, "on") != 0 && strcmp(value, "off") != 0)
+			return false;
+		out->hints = strcmp(value, "on") == 0;
+		return true;
+	}
+	for (i = 0; i < sizeof heart_beep_names / sizeof heart_beep_names[0]; i++)
+		if (strcmp(value, heart_beep_names[i]) == 0) {
+			out->heart_beep = (RandoHeartBeep)i;
+			return true;
+		}
+	return false;
+}
+
+bool rando_case_parse_config(const char *text, size_t len, const char *file, RandoCase *out,
 			     char error[RANDO_CASE_ERROR_MAX])
 {
 	Parser ps = {text, text + len};
 	bool seen[RANDO_OPTION_KEY_COUNT] = {false};
+	bool case_seen[CASE_KEY_COUNT] = {false};
 	char key[CASE_STRING_MAX], value[CASE_STRING_MAX];
 	const char *why;
 	int k;
 
-	rando_options_init(out);
+	rando_options_init(&out->options);
+	out->hints = true;
+	out->heart_beep = RANDO_HEART_BEEP_HALF;
 	skip_space(&ps);
 	if (!at(&ps, '{'))
 		return fail(error, file, "not a JSON object");
@@ -83,6 +122,7 @@ bool rando_case_parse_config(const char *text, size_t len, const char *file, Ran
 	else
 		for (;;) {
 			RandoOptionKey option;
+			CaseKey case_key;
 
 			skip_space(&ps);
 			if (!at(&ps, '"'))
@@ -98,14 +138,23 @@ bool rando_case_parse_config(const char *text, size_t len, const char *file, Ran
 				return fail(error, file, "%s is not a string", key);
 			if ((why = parse_string(&ps, value)) != NULL)
 				return fail(error, file, "%s: %s", key, why);
-			option = rando_option_key_find(key);
-			if (option == RANDO_OPTION_KEY_COUNT)
-				return fail(error, file, "unknown key %s", key);
-			if (seen[option])
-				return fail(error, file, "duplicate key %s", key);
-			if (!rando_options_set(out, key, value))
-				return fail(error, file, "unknown %s %s", key, value);
-			seen[option] = true;
+			case_key = case_key_find(key);
+			if (case_key != CASE_KEY_COUNT) {
+				if (case_seen[case_key])
+					return fail(error, file, "duplicate key %s", key);
+				if (!set_case_key(out, case_key, value))
+					return fail(error, file, "unknown %s %s", key, value);
+				case_seen[case_key] = true;
+			} else {
+				option = rando_option_key_find(key);
+				if (option == RANDO_OPTION_KEY_COUNT)
+					return fail(error, file, "unknown key %s", key);
+				if (seen[option])
+					return fail(error, file, "duplicate key %s", key);
+				if (!rando_options_set(&out->options, key, value))
+					return fail(error, file, "unknown %s %s", key, value);
+				seen[option] = true;
+			}
 			skip_space(&ps);
 			if (at(&ps, ',')) {
 				ps.p++;
@@ -196,7 +245,7 @@ bool rando_case_read(const char *case_dir, RandoCase *out, char error[RANDO_CASE
 	r = read_file(path, buf, &len, error);
 	if (r == READ_ABSENT)
 		return fail(error, path, "missing");
-	if (r == READ_FAILED || !rando_case_parse_config(buf, len, path, &out->options, error))
+	if (r == READ_FAILED || !rando_case_parse_config(buf, len, path, out, error))
 		return false;
 
 	if (!case_path(path, case_dir, "seed", error))

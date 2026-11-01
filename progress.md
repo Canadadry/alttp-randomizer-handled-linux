@@ -6,6 +6,12 @@
     - [x] Chunk 2: skills and oracle reproduction
     - [x] Chunk 3: Onion toolchain and the cross target
   - [ ] 1.2 The oracle runs the post-fill code and records the write log
+    - [x] Chunk 1: case format keys
+    - [ ] Chunk 2: run_e2e.sh attempts check and pool due rule
+    - [ ] Chunk 3: C stage table and the stop on the winning attempt
+    - [ ] Chunk 4: fill claims
+    - [ ] Chunk 5: the oracle runs the post-fill code and logs
+    - [ ] Chunk 6: regenerate the goldens
   - [ ] 1.3 Golden cases for the new settings and for combinations
   - [ ] 1.4 Port the post-fill draws
   - [ ] 1.5 rando_rom skeleton and claims by write group

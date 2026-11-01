@@ -5,6 +5,11 @@ const CONFIG_KEYS = [
     'glitches', 'item_placement', 'dungeon_items', 'accessibility', 'goal', 'crystals_tower',
     'crystals_ganon', 'state', 'weapons', 'item_pool', 'item_functionality',
 ];
+// Optional keys, each with its values; the first is the default.
+const CASE_KEYS = [
+    'hints' => ['on', 'off'],
+    'heart_beep' => ['half', 'off', 'quarter', 'double', 'normal'],
+];
 const LOGIC_BY_GLITCHES = [
     'none' => 'NoGlitches',
     'overworld_glitches' => 'OverworldGlitches',
@@ -13,19 +18,49 @@ const LOGIC_BY_GLITCHES = [
     'no_logic' => 'NoLogic',
 ];
 
+// json_decode keeps the last of duplicate keys, so a duplicate is found in the raw text.
+function oracle_duplicate_key(string $json): ?string
+{
+    preg_match_all('/"((?:[^"\\\\]|\\\\.)*)"\s*:/', $json, $m);
+    $counts = array_count_values($m[1]);
+    foreach ($counts as $key => $n) {
+        if ($n > 1) {
+            return (string) $key;
+        }
+    }
+    return null;
+}
+
 function die_case(string $case, string $why): never
 {
     fwrite(STDERR, basename($_SERVER['argv'][0], '.php') . ": $case: $why\n");
     exit(1);
 }
 
-/** @return array{name: string, config: array<string,string>, seed: int, logic: string} dies on an invalid case */
+/**
+ * config holds every option and case key, the absent case keys at their defaults.
+ * @return array{name: string, config: array<string,string>, seed: int, logic: string} dies on an invalid case
+ */
 function oracle_load_case(string $case_dir): array
 {
     $case = basename($case_dir);
-    $config = json_decode((string) @file_get_contents("$case_dir/config.json"), true);
+    $json = (string) @file_get_contents("$case_dir/config.json");
+    $config = json_decode($json, true);
     if (!is_array($config)) {
         die_case($case, 'config.json is missing or not a JSON object');
+    }
+    $duplicate = oracle_duplicate_key($json);
+    if ($duplicate !== null) {
+        die_case($case, "config.json: duplicate key $duplicate");
+    }
+    foreach (CASE_KEYS as $key => $values) {
+        if (!array_key_exists($key, $config)) {
+            $config[$key] = $values[0];
+        } elseif (!is_string($config[$key])) {
+            die_case($case, "config.json: $key is not a string");
+        } elseif (!in_array($config[$key], $values, true)) {
+            die_case($case, "config.json: unknown $key {$config[$key]}");
+        }
     }
     foreach (CONFIG_KEYS as $key) {
         if (!isset($config[$key]) || !is_string($config[$key])) {
@@ -33,7 +68,7 @@ function oracle_load_case(string $case_dir): array
         }
     }
     foreach (array_keys($config) as $key) {
-        if (!in_array($key, CONFIG_KEYS, true)) {
+        if (!in_array($key, CONFIG_KEYS, true) && !array_key_exists($key, CASE_KEYS)) {
             die_case($case, "config.json: unknown key $key");
         }
     }
@@ -99,7 +134,7 @@ function oracle_attempt_world(array $case, int $attempt): ALttP\World
         'allow_quickswap' => true,
         'override_start_screen' => false,
         'pseudoboots' => false,
-        'spoil.Hints' => 'on',
+        'spoil.Hints' => $config['hints'],
         'logic' => $case['logic'],
         'item.pool' => $config['item_pool'],
         'item.functionality' => $config['item_functionality'],

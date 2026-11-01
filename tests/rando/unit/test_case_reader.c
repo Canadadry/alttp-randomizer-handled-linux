@@ -27,6 +27,8 @@ static void check_baseline(void)
 	CHECK(memcmp(&c.options, &baseline, sizeof baseline) == 0);
 	CHECK(c.seed == 1);
 	CHECK(c.has_attempts && c.attempts == 0);
+	CHECK(c.hints);
+	CHECK(c.heart_beep == RANDO_HEART_BEEP_HALF);
 }
 
 /* Every committed case must be readable by the driver. */
@@ -80,10 +82,10 @@ static const char *edited(char *buf, size_t cap, const char *from, const char *t
 /* The error must name the file and contain says. */
 static void check_config_refused(const char *text, const char *why, const char *says)
 {
-	RandoOptions options;
+	RandoCase c;
 	char error[RANDO_CASE_ERROR_MAX];
 
-	if (rando_case_parse_config(text, strlen(text), "dir/config.json", &options, error))
+	if (rando_case_parse_config(text, strlen(text), "dir/config.json", &c, error))
 		test_fail(TEST, "accepted a config with %s:\n%s", why, text);
 	if (strncmp(error, "dir/config.json: ", 17) != 0 || strstr(error, says) == NULL)
 		test_fail(TEST, "the error for %s does not name the file or say \"%s\": %s", why, says, error);
@@ -94,36 +96,37 @@ static void check_config_rejected(const char *text, const char *why)
 	check_config_refused(text, why, "");
 }
 
-static void check_config_accepted(const char *text, RandoOptions *options)
+static void check_config_accepted(const char *text, RandoCase *c)
 {
 	char error[RANDO_CASE_ERROR_MAX];
 
-	if (!rando_case_parse_config(text, strlen(text), "dir/config.json", options, error))
+	if (!rando_case_parse_config(text, strlen(text), "dir/config.json", c, error))
 		test_fail(TEST, "rejected %s\n%s", error, text);
 }
 
 static void check_config(void)
 {
 	char buf[1024];
-	RandoOptions options;
+	RandoCase c;
+	RandoOptions *options = &c.options;
 
 	check_config_accepted("{\"glitches\":\"no_logic\",\"item_placement\":\"basic\",\"dungeon_items\":\"full\","
 			      "\"accessibility\":\"none\",\"goal\":\"ganonhunt\",\"crystals_tower\":\"random\","
 			      "\"crystals_ganon\":\"0\",\"state\":\"retro\",\"weapons\":\"swordless\","
 			      "\"item_pool\":\"crowd_control\",\"item_functionality\":\"expert\"}",
-			      &options);
-	CHECK(options.glitches == RANDO_GLITCHES_NO_LOGIC);
-	CHECK(options.item_placement == RANDO_OPTION_PLACEMENT_BASIC);
-	CHECK(options.dungeon_items == RANDO_OPTION_DUNGEON_ITEMS_FULL);
-	CHECK(options.accessibility == RANDO_OPTION_ACCESSIBILITY_NONE);
-	CHECK(options.goal == RANDO_OPTION_GOAL_GANONHUNT);
-	CHECK(options.crystals_tower == RANDO_CRYSTALS_RANDOM);
-	CHECK(options.crystals_ganon == RANDO_CRYSTALS_0);
-	CHECK(options.state == RANDO_OPTION_STATE_RETRO);
-	CHECK(options.weapons == RANDO_OPTION_WEAPONS_SWORDLESS);
-	CHECK(options.item_pool == RANDO_ITEM_POOL_CROWD_CONTROL);
-	CHECK(options.item_functionality == RANDO_ITEM_FUNCTIONALITY_EXPERT);
-	check_config_accepted(edited(buf, sizeof buf, "{", " \r\n\t{ \t"), &options);
+			      &c);
+	CHECK(options->glitches == RANDO_GLITCHES_NO_LOGIC);
+	CHECK(options->item_placement == RANDO_OPTION_PLACEMENT_BASIC);
+	CHECK(options->dungeon_items == RANDO_OPTION_DUNGEON_ITEMS_FULL);
+	CHECK(options->accessibility == RANDO_OPTION_ACCESSIBILITY_NONE);
+	CHECK(options->goal == RANDO_OPTION_GOAL_GANONHUNT);
+	CHECK(options->crystals_tower == RANDO_CRYSTALS_RANDOM);
+	CHECK(options->crystals_ganon == RANDO_CRYSTALS_0);
+	CHECK(options->state == RANDO_OPTION_STATE_RETRO);
+	CHECK(options->weapons == RANDO_OPTION_WEAPONS_SWORDLESS);
+	CHECK(options->item_pool == RANDO_ITEM_POOL_CROWD_CONTROL);
+	CHECK(options->item_functionality == RANDO_ITEM_FUNCTIONALITY_EXPERT);
+	check_config_accepted(edited(buf, sizeof buf, "{", " \r\n\t{ \t"), &c);
 
 	check_config_rejected(edited(buf, sizeof buf, "{", "{\"seed\": \"1\","), "an extra key");
 	check_config_rejected(edited(buf, sizeof buf, "{", "{\"goal\": \"ganon\","), "a duplicate key");
@@ -141,6 +144,56 @@ static void check_config(void)
 	check_config_rejected("[]", "an array");
 	check_config_rejected("", "an empty file");
 	check_config_rejected("{}", "an empty object");
+}
+
+static void check_case_keys(void)
+{
+	static const struct {
+		const char *name;
+		RandoHeartBeep value;
+	} beeps[] = {
+		{"off", RANDO_HEART_BEEP_OFF},		 {"half", RANDO_HEART_BEEP_HALF},
+		{"quarter", RANDO_HEART_BEEP_QUARTER}, {"double", RANDO_HEART_BEEP_DOUBLE},
+		{"normal", RANDO_HEART_BEEP_NORMAL},
+	};
+	char buf[1024], key[64];
+	RandoCase c, plain;
+	size_t i;
+
+	check_config_accepted(baseline_json, &plain);
+	CHECK(plain.hints);
+	CHECK(plain.heart_beep == RANDO_HEART_BEEP_HALF);
+
+	check_config_accepted(edited(buf, sizeof buf, "{", "{\"hints\": \"off\","), &c);
+	CHECK(!c.hints);
+	CHECK(c.heart_beep == RANDO_HEART_BEEP_HALF);
+	CHECK(memcmp(&c.options, &plain.options, sizeof c.options) == 0);
+	check_config_accepted(edited(buf, sizeof buf, "{", "{\"hints\": \"on\","), &c);
+	CHECK(c.hints);
+	for (i = 0; i < sizeof beeps / sizeof beeps[0]; i++) {
+		snprintf(key, sizeof key, "{\"heart_beep\": \"%s\",", beeps[i].name);
+		check_config_accepted(edited(buf, sizeof buf, "{", key), &c);
+		if (c.heart_beep != beeps[i].value || !c.hints)
+			test_fail(TEST, "heart_beep %s read as %d", beeps[i].name, (int)c.heart_beep);
+	}
+	check_config_accepted(edited(buf, sizeof buf, "\"normal\"\n}", "\"normal\",\"heart_beep\":\"off\",\"hints\":\"off\"}"),
+			      &c);
+	CHECK(!c.hints && c.heart_beep == RANDO_HEART_BEEP_OFF);
+
+	check_config_refused(edited(buf, sizeof buf, "{", "{\"hints\": \"maybe\","), "an unknown hints", "hints maybe");
+	check_config_refused(edited(buf, sizeof buf, "{", "{\"hints\": \"On\","), "a capitalised hints", "hints On");
+	check_config_refused(edited(buf, sizeof buf, "{", "{\"heart_beep\": \"fast\","), "an unknown heart_beep",
+			     "heart_beep fast");
+	check_config_refused(edited(buf, sizeof buf, "{", "{\"hints\": true,"), "a boolean hints", "hints is not a string");
+	check_config_refused(edited(buf, sizeof buf, "{", "{\"heart_beep\": 2,"), "a number heart_beep",
+			     "heart_beep is not a string");
+	check_config_refused(edited(buf, sizeof buf, "{", "{\"hints\": \"on\", \"hints\": \"on\","), "a duplicate hints",
+			     "duplicate key hints");
+	check_config_refused(edited(buf, sizeof buf, "{", "{\"heart_beep\": \"half\", \"heart_beep\": \"off\","),
+			     "a duplicate heart_beep", "duplicate key heart_beep");
+	check_config_refused(edited(buf, sizeof buf, "{", "{\"hints\": \"on\", \"heartbeep\": \"half\","),
+			     "an extra key next to hints", "unknown key heartbeep");
+	check_config_refused("{\"hints\": \"on\", \"heart_beep\": \"half\"}", "only the case keys", "missing key");
 }
 
 static void check_seed_rejected(const char *text, size_t len)
@@ -200,6 +253,7 @@ int main(int argc, char **argv)
 	check_baseline();
 	check_every_case();
 	check_config();
+	check_case_keys();
 	check_seed();
 	check_missing_case();
 	printf(TEST ": hand-written cases passed\n");
