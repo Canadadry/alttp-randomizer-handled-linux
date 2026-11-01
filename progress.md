@@ -132,5 +132,5 @@
     - [x] app/sd, app/sdl, app/main
     - [x] unit tests a-r and support
     - [x] other tests, scripts, Makefiles
-    - [ ] record.c assert and orphaned assert messages
+    - [x] record.c assert and orphaned assert messages
   - [ ] 5.2 README

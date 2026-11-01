@@ -564,8 +564,7 @@ static void write_location(RomOut *out, const RandoGen *gen, RandoRegionId regio
 	bool prize = rando_location_is_a(rando_location_info(location)->location_class, RANDO_LOCATION_CLASS_PRIZE);
 	int i;
 
-	/* VT's Prize::setItem(Nothing) throws before any write. */
-	assert(!prize || rando_world_has_item(world, location, RANDO_ITEM_NONE));
+	assert((!prize || rando_world_has_item(world, location, RANDO_ITEM_NONE)) && "VT's Prize::setItem(Nothing) throws before any write");
 	item = substituted(&world->config, region, location, item);
 	if (rando_item_info(item)->item_class == RANDO_ITEM_CLASS_ALIAS)
 		item = rando_item_info(item)->alias_target;

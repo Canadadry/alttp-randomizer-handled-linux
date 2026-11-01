@@ -91,9 +91,8 @@ RandoAssembleStatus rando_assemble(const RandoAssembleRequest *request, RandoAss
 	rom.size = RANDO_ROM_SIZE;
 	writer.write = rando_rom_buffer_write;
 	writer.ctx = &rom;
-	/* Every write is below 2 MiB; nothing can refuse it. */
 	ok = rando_rom_write(&work->gen, request->heart_beep, &writer);
-	assert(ok);
+	assert(ok && "every write is below 2 MiB");
 	ok = rando_rom_write_cosmetic_defaults(&rom, request->source, request->source_size);
 	assert(ok);
 	ok = rando_rom_update_checksum(&rom);

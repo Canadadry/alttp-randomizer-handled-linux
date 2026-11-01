@@ -472,6 +472,7 @@ static void line_begin(Outline *o, int indent)
 
 static void line_end(Outline *o)
 {
+	assert((o->cut || o->len < o->cap) && "put leaves room for this newline");
 	if (!o->cut)
 		o->out[o->len++] = '\n';
 }
