@@ -59,7 +59,7 @@
     - [x] Chunk 1: the SRAM group
     - [x] Chunk 2: total item count
     - [x] Chunk 3: replay, claims to all setTotalItemCount
-  - [ ] 1.11 Checksum and heart beep
+  - [x] 1.11 Checksum and heart beep
     - [x] Chunk 1: heart beep and whole-log claims
     - [x] Chunk 2: checksum
     - [x] Chunk 3: browser defaults
