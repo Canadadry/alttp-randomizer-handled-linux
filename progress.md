@@ -9,7 +9,7 @@
     - [x] Chunk 1: case format keys
     - [x] Chunk 2: run_e2e.sh attempts check and pool due rule
     - [x] Chunk 3: C stage table and the stop on the winning attempt
-    - [ ] Chunk 4: fill claims
+    - [x] Chunk 4: fill claims
     - [ ] Chunk 5: the oracle runs the post-fill code and logs
     - [ ] Chunk 6: regenerate the goldens
   - [ ] 1.3 Golden cases for the new settings and for combinations

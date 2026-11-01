@@ -81,7 +81,7 @@ chmod +x "$g/gen"
 gate() {
 	printf '%s' "$2" >"$g/claims.txt"
 	status=0
-	out="$(RANDO_CASES="$g/cases" RANDO_CLAIMS="$g/claims.txt" RANDO_STAGES="$g/stages.txt" \
+	out="$(RANDO_CASES="$g/cases" RANDO_CLAIMS="$g/claims.txt" RANDO_STAGES="${stages_override:-$g/stages.txt}" \
 		RANDO_GEN="${gen_override:-$g/gen}" FAKE_OUT="$g/out" "$here/run_e2e.sh" ${named:-} 2>"$tmp/err")" || status=$?
 	expect "$1 status" "$status" "$3"
 	expect "$1 stdout" "$out" "$4"
@@ -407,6 +407,52 @@ gate "pool not due to a later claim" "two beta$nl" 0 "PASS two (beta)${nl}e2e: 1
 fake trace.txt "$(golden_lines 2)$nl"
 gate "pool still due at its own stage" "two alpha$nl" 1 \
 	"DIVERGENT two${nl}  alpha: pool:${nl}    golden: Arrow:1 x2${nl}    c: Arrow:1 x0${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+# The committed stages.txt: a fill claim compares the whole placement.
+stages_override="$here/stages.txt"
+mkdir "$g/keep"
+cp "$g/cases/two/trace.txt" "$g/cases/two/spoiler.json" "$g/keep/"
+cat >"$g/cases/two/trace.txt" <<'EOF2'
+0 1 crystals 0 6 -> 3
+0 2 fill 0 6 -> 4
+1 1 crystals 0 6 -> 5
+1 2 fill 0 6 -> 1
+EOF2
+cat >"$g/cases/two/spoiler.json" <<'EOF2'
+{
+    "Eastern Palace": {
+        "Eastern Palace - Big Chest:1": "Bow:1"
+    },
+    "Light World": {
+        "Link's House:1": "Arrow:1",
+        "Uncle:1": "Sword:1"
+    },
+    "meta": {
+        "seed": 1
+    },
+    "playthrough": {
+        "1": {
+            "Light World": {
+                "Uncle:1": "Sword:1"
+            }
+        }
+    }
+}
+EOF2
+cp "$g/cases/two/trace.txt" "$g/cases/two/attempts" "$g/cases/two/spoiler.json" "$g/out/two/"
+rm -f "$g/out/two/pool.txt"
+gate "fill claim, real table, pass" "two fill$nl" 0 "PASS two (fill)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+
+sed 's/"Link'"'"'s House:1": "Arrow:1"/"Link'"'"'s House:1": "Bomb:1"/' "$g/cases/two/spoiler.json" >"$g/out/two/spoiler.json"
+gate "fill claim, real table, placement differs" "two fill$nl" 1 \
+	"DIVERGENT two${nl}  fill: section Light World:${nl}    golden:         \"Link's House:1\": \"Arrow:1\",${nl}    c:         \"Link's House:1\": \"Bomb:1\",${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+cp "$g/cases/two/spoiler.json" "$g/out/two/"
+fake attempts "0$nl"
+gate "fill claim, real table, attempts differ" "two fill$nl" 1 \
+	"DIVERGENT two${nl}  fill: attempts:${nl}    golden: 1${nl}    c: 0${nl}e2e: 0 pass, 1 divergent, 0 pending"
+stages_override=
+cp "$g/keep/trace.txt" "$g/keep/spoiler.json" "$g/cases/two/"
 named=
 
 mkdir -p "$g/cases/one" "$g/out/one"

@@ -53,7 +53,7 @@ FILENAME == ARGV[1] {
 		next
 	}
 	if ($1 == "check" && NF >= 3) {
-		if ($3 == "section" && NF != 4 || $3 == "keys" && NF < 4 || ($3 == "pool" || $3 == "attempts") && NF != 3) bad("malformed line")
+		if (($3 == "section" || $3 == "keys") && NF < 4 || ($3 == "pool" || $3 == "attempts") && NF != 3) bad("malformed line")
 		if ($3 != "section" && $3 != "keys" && $3 != "pool" && $3 != "attempts") bad("unknown check kind: " $3)
 		arg = $0
 		sub(/^[ \t]*check[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]*/, "", arg)
