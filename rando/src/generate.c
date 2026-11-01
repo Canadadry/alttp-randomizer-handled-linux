@@ -16,6 +16,12 @@ static const char *const stage_names[RANDO_STAGE_COUNT] = {
 	"shufflePrizePacks",
 	"prepareWorld",
 	"fill",
+	"setTexts",
+	"randomizeCredits",
+	"applyHints",
+	"writeItem",
+	"setDiggingGameRng",
+	"writeRNGBlock",
 };
 
 const char *rando_stage_name(RandoStage stage)
@@ -149,12 +155,13 @@ static bool run_attempt(RandoGen *gen, RandoStatus *status)
 		gen->stage = RANDO_STAGE_NONE;
 		return false;
 	}
-	if (end_stage(gen, status))
-		return true;
+	gen->stage = RANDO_STAGE_NONE;
 	if (fault_fires(gen, RANDO_FAULT_IS_WINNABLE) || !rando_world_is_winnable(&gen->world))
 		return false;
 
-	*status = RANDO_COMPLETE;
+	/* The stages after the fill are not ported: they complete with no draws. */
+	assert(gen->last >= RANDO_STAGE_FILL);
+	*status = gen->last == RANDO_STAGE_NONE ? RANDO_COMPLETE : RANDO_INCOMPLETE;
 	return true;
 }
 

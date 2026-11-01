@@ -20,6 +20,12 @@ typedef enum RandoStage {
 	RANDO_STAGE_SHUFFLE_PRIZE_PACKS,
 	RANDO_STAGE_PREPARE_WORLD,
 	RANDO_STAGE_FILL,
+	RANDO_STAGE_SET_TEXTS,
+	RANDO_STAGE_RANDOMIZE_CREDITS,
+	RANDO_STAGE_APPLY_HINTS,
+	RANDO_STAGE_WRITE_ITEM,
+	RANDO_STAGE_SET_DIGGING_GAME_RNG,
+	RANDO_STAGE_WRITE_RNG_BLOCK,
 	RANDO_STAGE_COUNT,
 	RANDO_STAGE_NONE = RANDO_STAGE_COUNT,
 } RandoStage;
@@ -77,7 +83,9 @@ typedef struct RandoGen {
 RandoStatus rando_generate(RandoGen *gen, const RandoOptions *options, uint32_t seed, uint32_t max_attempts,
 			   RandoTraceFn trace, void *trace_ctx);
 
-/* rando_generate, but RANDO_INCOMPLETE right after stage last completes on the attempt that reaches it.
+/* rando_generate, but RANDO_INCOMPLETE right after stage last completes. Before fill: on the first
+ * attempt that reaches it. At fill or later: on the first attempt that completes the fill and is
+ * winnable, losing attempts retrying, the unported stages after the fill making no draws.
  * RANDO_STAGE_NONE runs every ported stage. */
 RandoStatus rando_generate_until(RandoGen *gen, const RandoOptions *options, uint32_t seed, uint32_t max_attempts,
 				 RandoTraceFn trace, void *trace_ctx, RandoStage last);

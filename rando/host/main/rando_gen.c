@@ -21,13 +21,14 @@ enum {
 
 static RandoGen gen;
 static RandoPlaythrough playthrough;
-static bool complete;
+/* A complete run, or a stop at fill or later: the winning attempt is known. */
+static bool won;
 
 typedef bool (*Writer)(FILE *out);
 
 static bool spoiler_json(FILE *out)
 {
-	return rando_spoiler_write_json(out, &gen.world, &gen.options, complete ? &playthrough : NULL);
+	return rando_spoiler_write_json(out, &gen.world, &gen.options, won ? &playthrough : NULL);
 }
 
 static bool pool_txt(FILE *out)
@@ -96,9 +97,14 @@ int main(int argc, char **argv)
 		fprintf(stderr, "rando_gen: %s\n", out_error);
 		return EXIT_INPUT;
 	}
-	complete = status == RANDO_COMPLETE;
-	if (complete)
+	won = status == RANDO_COMPLETE || (status == RANDO_INCOMPLETE && last >= RANDO_STAGE_FILL);
+	if (won) {
 		rando_playthrough(&gen.world, &playthrough);
+		if (!rando_attempts_write(argv[2], gen.attempt, out_error)) {
+			fprintf(stderr, "rando_gen: %s\n", out_error);
+			return EXIT_INPUT;
+		}
+	}
 	if ((status == RANDO_COMPLETE || status == RANDO_INCOMPLETE)
 	    && !write_file(argv[2], "spoiler.json", spoiler_json))
 		return EXIT_INPUT;
@@ -106,10 +112,6 @@ int main(int argc, char **argv)
 		return EXIT_INPUT;
 	switch (status) {
 	case RANDO_COMPLETE:
-		if (!rando_attempts_write(argv[2], gen.attempt, out_error)) {
-			fprintf(stderr, "rando_gen: %s\n", out_error);
-			return EXIT_INPUT;
-		}
 		return EXIT_COMPLETE;
 	case RANDO_INCOMPLETE:
 		return EXIT_INCOMPLETE;

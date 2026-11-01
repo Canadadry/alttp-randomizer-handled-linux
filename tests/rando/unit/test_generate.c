@@ -5,6 +5,7 @@
 #include "support.h"
 
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,8 +98,19 @@ static RandoStatus generate(const char *key, const char *value, uint32_t seed, T
 }
 
 /* The C draws must be the first lines of the case's golden trace; with next_stage, the golden's next
- * line must belong to that stage, GOLDEN_END meaning there is none. */
-static const char GOLDEN_END[] = "";
+ * line must belong to that stage, AFTER_FILL meaning there is none or it belongs to a stage ranked
+ * after fill. */
+static const char AFTER_FILL[] = "";
+
+static bool ranked_after_fill(const char *stage)
+{
+	int s;
+
+	for (s = RANDO_STAGE_FILL + 1; s < RANDO_STAGE_COUNT; s++)
+		if (strcmp(stage, rando_stage_name((RandoStage)s)) == 0)
+			return true;
+	return false;
+}
 
 static void check_golden_stop(const char *name, const Trace *trace, const char *next_stage)
 {
@@ -122,9 +134,10 @@ static void check_golden_stop(const char *name, const Trace *trace, const char *
 	if (strcmp(trace->text, golden) != 0)
 		test_fail(TEST, "%s: C draws\n%s\ndiffer from the golden's first %d lines\n%s", name, trace->text,
 			  trace->lines, golden);
-	if (next_stage == GOLDEN_END) {
-		if (next[0] != '\0')
-			test_fail(TEST, "%s: the golden goes on with \"%s\" after the C draws", name, next);
+	if (next_stage == AFTER_FILL) {
+		if (next[0] != '\0' && (sscanf(next, "%*s %*s %63s", stage) != 1 || !ranked_after_fill(stage)))
+			test_fail(TEST, "%s: the golden goes on with \"%s\" after the C draws, not a stage after fill",
+				  name, next);
 	} else if (next_stage && (sscanf(next, "%*s %*s %63s", stage) != 1 || strcmp(stage, next_stage) != 0))
 		test_fail(TEST, "%s: the golden goes on with \"%s\" after the C draws, not stage %s", name, next,
 			  next_stage);
@@ -287,7 +300,7 @@ static void check_reseed(uint32_t seed)
 	CHECK(gen.draw == 232);
 }
 
-/* tests/rando/cases/baseline: the fill makes lines 233-805, the golden's last. */
+/* tests/rando/cases/baseline: the fill makes lines 233-805, the golden's last fill line. */
 static void check_baseline_fill(void)
 {
 	RandoOptions options;
@@ -297,10 +310,10 @@ static void check_baseline_fill(void)
 	memset(&trace, 0, sizeof trace);
 	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &trace, RANDO_STAGE_FILL) == RANDO_INCOMPLETE);
 	CHECK(trace.lines == 805);
-	check_golden_stop("baseline", &trace, GOLDEN_END);
+	check_golden_stop("baseline", &trace, AFTER_FILL);
 }
 
-/* tests/rando/cases/baseline: attempts 0 and the whole golden trace. */
+/* tests/rando/cases/baseline: attempts 0 and the golden trace through the fill. */
 static void check_baseline_complete(void)
 {
 	RandoOptions options;
@@ -311,15 +324,16 @@ static void check_baseline_complete(void)
 	CHECK(rando_generate(&gen, &options, 1, 0, record, &trace) == RANDO_COMPLETE);
 	CHECK(gen.attempt == 0);
 	CHECK(trace.lines == 805);
-	check_golden_stop("baseline", &trace, GOLDEN_END);
+	check_golden_stop("baseline", &trace, AFTER_FILL);
 	check_complete_outputs("cases/baseline", "baseline", "0\n");
 }
 
 /* Attempt k of seed s is attempt 0 of seed s + k: seed 0 with attempt 0 failed at point must replay
- * tests/rando/cases/baseline (seed 1) at attempt 1. */
+ * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last fill line. */
 static void check_retry_identity(RandoFault point)
 {
 	static char golden[TRACE_MAX], expected[TRACE_MAX];
+	char stage[64];
 	RandoOptions options;
 	Trace trace;
 	const char *retry, *line;
@@ -331,6 +345,13 @@ static void check_retry_identity(RandoFault point)
 		test_fail(TEST, "cases/baseline/trace.txt: cannot open");
 	len = fread(golden, 1, sizeof golden - 1, f);
 	fclose(f);
+	golden[len] = '\0';
+	for (line = golden, len = 0; *line; line = strchr(line, '\n') + 1) {
+		CHECK(strchr(line, '\n') != NULL);
+		if (sscanf(line, "%*s %*s %63s", stage) == 1 && strcmp(stage, "fill") == 0)
+			len = (size_t)(strchr(line, '\n') + 1 - golden);
+	}
+	CHECK(len > 0);
 	golden[len] = '\0';
 	memcpy(expected, golden, len + 1);
 	for (line = golden; *line; line = strchr(line, '\n') + 1) {
@@ -401,6 +422,49 @@ static void check_stop_stage(void)
 	      RANDO_INCOMPLETE);
 	CHECK(trace.lines == 232);
 	check_golden_prefix("glitches-overworld_glitches", &trace);
+}
+
+/* A stop at or after the fill comes on the winning attempt; one before it on the first attempt that
+ * reaches it. */
+static void check_stop_on_winning_attempt(void)
+{
+	RandoOptions options;
+	Trace trace;
+
+	rando_options_init(&options);
+	memset(&trace, 0, sizeof trace);
+	gen.fault = RANDO_FAULT_IS_WINNABLE;
+	gen.fault_attempts = 2;
+	gen.fault_fired = 0;
+	CHECK(rando_generate_until(&gen, &options, 1, 0, record, &trace, RANDO_STAGE_FILL) == RANDO_INCOMPLETE);
+	CHECK(gen.attempt == 2);
+	CHECK(gen.fault_fired == 2);
+	CHECK(strstr(trace.text, "\n2 1 getAdvancementItems ") != NULL);
+
+	memset(&trace, 0, sizeof trace);
+	gen.fault_fired = 0;
+	CHECK(rando_generate_until(&gen, &options, 1, 0, record, &trace, RANDO_STAGE_PREPARE_WORLD) ==
+	      RANDO_INCOMPLETE);
+	CHECK(gen.attempt == 0);
+	CHECK(gen.fault_fired == 0);
+	gen.fault = RANDO_FAULT_NONE;
+}
+
+/* The stages after the fill make no C draws yet: a stop at the last one is the fill stop. */
+static void check_stop_after_fill(void)
+{
+	static Trace fill, last;
+	RandoOptions options;
+
+	rando_options_init(&options);
+	memset(&fill, 0, sizeof fill);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &fill, RANDO_STAGE_FILL) == RANDO_INCOMPLETE);
+	memset(&last, 0, sizeof last);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &last, RANDO_STAGE_WRITE_RNG_BLOCK) ==
+	      RANDO_INCOMPLETE);
+	CHECK(gen.attempt == 0);
+	CHECK(last.lines == 805);
+	CHECK(strcmp(last.text, fill.text) == 0);
 }
 
 /* The gate labels claims with stages.txt's names: a renamed or reordered stage fails here. */
@@ -511,6 +575,8 @@ int main(int argc, char **argv)
 	check_reseed(UINT32_MAX);
 	check_stop_stage();
 	check_stage_table();
+	check_stop_on_winning_attempt();
+	check_stop_after_fill();
 	printf(TEST ": hand-written cases passed\n");
 	if (!fixtures)
 		return 0;

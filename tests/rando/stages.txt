@@ -11,6 +11,12 @@ stage setFountains
 stage shufflePrizePacks
 stage prepareWorld
 stage fill
+stage setTexts
+stage randomizeCredits
+stage applyHints
+stage writeItem
+stage setDiggingGameRng
+stage writeRNGBlock
 check setShops section Shops
 check setMedallions keys *Medallion:1
 check placeBosses section Bosses
