@@ -208,3 +208,23 @@ Took over `rando/` and `tests/rando/` verbatim from `Canadadry/alttp-ds` `8d7725
 - Oracle reproduction: php 8.3.6, Composer 2.8.12, VT `219fcafd`; `VT_DIR=tmp/vt<N> gen_golden.sh --out tmp/oracle-b<N>` in four parallel batches of 11 cases: identical, 44 cases, 10 fixtures, in every batch.
 - Cross build: `make e2e-arm` (outside `test`, `e2e`, `check`) builds `rando_gen` static in `aemiii91/miyoomini-toolchain@sha256:e5123590ad75d27f0f4c91196e3119a255cad45f3ae15243e29a8e0a2ec50132` (Onion's `Makefile` `TOOLCHAIN`, `:latest` on 2026-11-01; gcc 8.3.0, glibc 2.28) through `onion-toolchain.sh`, with Onion's miyoomini flags; `file`: ELF 32-bit ARM EABI5; under qemu-arm 8.2.2: 44 pass, 0 divergent. Facts and links in `docs/toolchain.md` (OnionUI/Onion `07505ea5`). Needs `dockerd` running and `qemu-user`; a missing one prints a `setup:` line. Write-log comparison joins it at step 5.
 - Plan review after this step: accepted five method changes (heart-beep group after `setTotalItemCount`, owned by step 11; `getHint` draws counted under `applyHints`; step 4 skips stages a case draws nothing in; `measure` gates only per-case time; Phase 2 applies the "reproduced in C" writes).
+
+### Step 1.2
+
+- **Oracle:** `vt.patch` turns `setTexts`, `randomizeCredits` and `applyHints` back on and labels `writeToRom`'s draw sites. On the winning attempt, after `isWinnable`, `gen_case.php` runs `writeToRom($rom, false)` on a sourceless logging `Rom` (`oracle_rom.php`), then `setHeartBeepSpeed(<case>)`, and writes `rom_writes.txt` (`%06X <HEX> <tag>`, tag = first non-closure, non-`Collection` frame below `writeToRom`) and `rom_buffers.txt` (`text`, `credit`, `sram` setter calls). New fixture `oracle/text_default.txt` (408 ids). Self-checks: the log equals `getWriteLog()`; the setter logs rebuild the `writeText` and `writeInitialSram` writes.
+- **Stages** after `fill`: `setTexts`, `randomizeCredits`, `applyHints` (`getHint` draws included), `writeItem` (only `dungeon_items` mc, mcs, full), `setDiggingGameRng`, `writeRNGBlock`, and `writePrizePacksToRom`. **Deviation:** the last one (`getDropsPool`'s `fy_shuffle` of the 63 drops, every case) was in neither the plan nor the PRD; found when the oracle threw on an unlabelled draw, added as the last stage.
+- **Harness:** `check <stage> attempts`; a claim owes an earlier stage's checks except `pool`; `fill` checks every spoiler section plus `attempts`. All 44 claims are `fill`; a real-table selftest proves a changed placement prints `DIVERGENT`. A stop at `fill` or later retries to the winning attempt; `rando_gen` then writes `attempts` and the playthrough. Case keys `hints` (on/off) and `heart_beep` (off/half/quarter/double/normal), defaults `on`, `half`.
+- **Regeneration:** php 8.3.6, Composer 2.8.12, VT `219fcafd`. Three runs, each four parallel `--out` batches of 11 cases, gave identical files (`diff -r` empty). Against the old goldens: each trace is the old one plus post-fill draws; `spoiler.json`, `attempts` (all 0) and the 10 old fixtures byte-identical; every `rom_writes.txt` ends `180033 40 setHeartBeepSpeed`. The longer baseline trace (72 KB) overflowed `test_generate`'s 64 KiB golden buffer; fixed before the goldens commit.
+- **`$save` = `false`:** `true` only adds `setSeedString` and `setStartScreenHash`, both left out below.
+- **ROM writes outside the log** (re-read `prepSeed`, `writeToRom`, `rom.js`, the settings and sprite components; nothing beyond this list):
+
+| Write | Outcome |
+|---|---|
+| `setSeedString`, `setStartScreenHash` (under `$save`) | left out: alttpr.com seed-record hash; no seed database or sharing on the device |
+| `prepSeed` Enemizer, `setTournamentType`, `rummageTable` | left out: Enemizer and tournament are out of scope |
+| `prepSeed` `applyPatchFile` (base patch, `$log = false`) | not a seed write: it is `data/base.bps` (Phase 2) |
+| `setMSU1Resume`, palette and SFX shuffle | left out: write nothing at VT's defaults |
+| heart beep (`setHeartBeepSpeed`) | in the log, last line |
+| `setQuickswap` (`0x18004B`=`00`), `setMusicVolume` (`0x18021A`=`00`), `setReduceFlashing` (`0x18017F`=`00`), `setMenuSpeed` normal (`0x180048`=`08`, `0x6DD9A`=`11`, `0x6DF2A`=`12`, `0x6E0E9`=`12`), `setHeartColor` red (branch on base-patched byte `0x7FE2`), default Link sprite (from the JP ROM: gfx `0x80000`, palette `0xDD308`, gloves `0xDEDF5`, author `0x118002`/`0x118020`), `updateChecksum` | reproduced in C, step 11, applied in that order by Phase 2 step 2 |
+
+- Noted: `writeToRom`'s `crystals.tower === 0` is false for the string `'0'` that the web form and the oracle pass, so `crystals_tower-0` makes no `preOpenGanonsTower` call.
