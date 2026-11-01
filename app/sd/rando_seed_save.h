@@ -16,6 +16,15 @@
 /* Onion's SNES list caches, removed after a new ROM so the list shows it. */
 #define RANDO_SD_LIST_CACHE6 "Roms/SFC/SFC_cache6.db"
 #define RANDO_SD_LIST_CACHE2 "Roms/SFC/SFC_cache2.db"
+/* RetroArch's per-profile folders (Guest Mode renames them), the default core's folder name under their
+ * saves and states folders, and the per-ROM core overrides of the ROM folder. */
+#define RANDO_SD_PROFILE_CURRENT "Saves/CurrentProfile"
+#define RANDO_SD_PROFILE_MAIN "Saves/MainProfile"
+#define RANDO_SD_PROFILE_GUEST "Saves/GuestProfile"
+#define RANDO_SD_CORE_DIR "Supafaust"
+#define RANDO_SD_SAVES_DIR "saves"
+#define RANDO_SD_STATES_DIR "states"
+#define RANDO_SD_GAME_CONFIG_DIR RANDO_SD_ROM_DIR "/.game_config"
 #define RANDO_SEED_PATH_MAX 1024
 /* rom_dir and history_dir are shorter: room for "/<rom>" and "/<code>.json". */
 #define RANDO_SEED_DIR_MAX (RANDO_SEED_PATH_MAX - RANDO_NAME_ROM_MAX - 2)

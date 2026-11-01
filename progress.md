@@ -106,7 +106,7 @@
   - [ ] 3.6 History tab
     - [x] Chunk 1: spoiler outline
     - [x] Chunk 2: core History state machine
-    - [ ] Chunk 3: SD scan and spoiler reading
+    - [x] Chunk 3: SD scan and spoiler reading
     - [ ] Chunk 4: delete and its file set
     - [ ] Chunk 5: end to end
   - [ ] 3.7 ui_cli
