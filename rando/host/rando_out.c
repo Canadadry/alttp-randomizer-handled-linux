@@ -66,6 +66,51 @@ bool rando_trace_close(RandoTraceFile *trace, char error[RANDO_OUT_ERROR_MAX])
 	return ok;
 }
 
+bool rando_rom_log_open(RandoRomLog *log, const char *out_dir, char error[RANDO_OUT_ERROR_MAX])
+{
+	char path[OUT_PATH_MAX];
+
+	log->file = NULL;
+	log->failed = false;
+	if (!out_path(path, out_dir, "rom_writes.txt", error))
+		return false;
+	log->file = fopen(path, "w");
+	if (!log->file)
+		return io_fail(error, path, errno);
+	return true;
+}
+
+bool rando_rom_log_write(void *ctx, uint32_t address, const uint8_t *bytes, size_t count, const char *method)
+{
+	RandoRomLog *log = ctx;
+	size_t i;
+
+	if (count == 0 || log->failed) {
+		log->failed = true;
+		return false;
+	}
+	if (fprintf(log->file, "%06" PRIX32 " ", address) < 0)
+		log->failed = true;
+	for (i = 0; i < count && !log->failed; i++)
+		if (fprintf(log->file, "%02X", (unsigned)bytes[i]) < 0)
+			log->failed = true;
+	if (!log->failed && fprintf(log->file, " %s\n", method) < 0)
+		log->failed = true;
+	return !log->failed;
+}
+
+bool rando_rom_log_close(RandoRomLog *log, char error[RANDO_OUT_ERROR_MAX])
+{
+	bool ok = !log->failed;
+
+	if (fclose(log->file) != 0)
+		ok = false;
+	log->file = NULL;
+	if (!ok)
+		snprintf(error, RANDO_OUT_ERROR_MAX, "rom_writes.txt: write failed");
+	return ok;
+}
+
 bool rando_attempts_write(const char *out_dir, uint32_t attempt, char error[RANDO_OUT_ERROR_MAX])
 {
 	char path[OUT_PATH_MAX];

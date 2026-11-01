@@ -2,6 +2,7 @@
 #include "rando_case.h"
 #include "rando_out.h"
 #include "rando_playthrough.h"
+#include "rando_rom.h"
 #include "rando_spoiler.h"
 
 #include <errno.h>
@@ -56,6 +57,25 @@ static bool write_file(const char *out_dir, const char *name, Writer writer)
 	return ok;
 }
 
+static bool rom_writes_txt(const char *out_dir, RandoHeartBeep heart_beep)
+{
+	RandoRomLog log;
+	RandoRomWriter writer = {rando_rom_log_write, &log};
+	char error[RANDO_OUT_ERROR_MAX];
+	bool ok;
+
+	if (!rando_rom_log_open(&log, out_dir, error)) {
+		fprintf(stderr, "rando_gen: %s\n", error);
+		return false;
+	}
+	ok = rando_rom_write(&gen, heart_beep, &writer);
+	if (!rando_rom_log_close(&log, error))
+		ok = false;
+	if (!ok)
+		fprintf(stderr, "rando_gen: %s/rom_writes.txt: write failed\n", out_dir);
+	return ok;
+}
+
 /* RANDO_STAGE_COUNT when name is no stage. */
 static RandoStage stage_named(const char *name)
 {
@@ -107,6 +127,8 @@ int main(int argc, char **argv)
 	}
 	if ((status == RANDO_COMPLETE || status == RANDO_INCOMPLETE)
 	    && !write_file(argv[2], "spoiler.json", spoiler_json))
+		return EXIT_INPUT;
+	if (status == RANDO_COMPLETE && !rom_writes_txt(argv[2], c.heart_beep))
 		return EXIT_INPUT;
 	if (status == RANDO_INCOMPLETE && !write_file(argv[2], "pool.txt", pool_txt))
 		return EXIT_INPUT;

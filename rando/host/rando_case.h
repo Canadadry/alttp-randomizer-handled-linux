@@ -2,20 +2,13 @@
 #define RANDO_CASE_H
 
 #include "rando_options.h"
+#include "rando_rom.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #define RANDO_CASE_ERROR_MAX 512
-
-typedef enum RandoHeartBeep {
-	RANDO_HEART_BEEP_OFF,
-	RANDO_HEART_BEEP_HALF,
-	RANDO_HEART_BEEP_QUARTER,
-	RANDO_HEART_BEEP_DOUBLE,
-	RANDO_HEART_BEEP_NORMAL,
-} RandoHeartBeep;
 
 typedef struct RandoCase {
 	RandoOptions options;
