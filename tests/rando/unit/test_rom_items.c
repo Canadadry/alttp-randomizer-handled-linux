@@ -225,6 +225,172 @@ static void check_blacksmith(void)
 	CHECK(find(0x18002A) < 0);
 }
 
+static void vanilla_keys(RandoConfig *config)
+{
+	config->rom_vanilla_keys = true;
+}
+
+/* A key of the location's region becomes Key; KeyH2 stays itself at Secret Passage and Link's Uncle. */
+static void check_vanilla_keys(void)
+{
+	build(&gen, vanilla_keys);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_COMPASS_CHEST, RANDO_ITEM_KeyP1));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_MAP_CHEST, RANDO_ITEM_KeyP2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SECRET_PASSAGE, RANDO_ITEM_KeyH2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_LINKS_UNCLE, RANDO_ITEM_KeyH2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SEWERS_DARK_CROSS, RANDO_ITEM_KeyH2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_TOWER_OF_HERA_BASEMENT_CAGE, RANDO_ITEM_KeyP3));
+	run();
+	check_tags();
+	CHECK(byte_at(0xE977) == 0x24);
+	CHECK(byte_at(0xE9F5) == 0xA3);
+	CHECK(byte_at(0xE971) == 0xA0);
+	CHECK(byte_at(0x2DF45) == 0xA0);
+	CHECK(byte_at(0xE96E) == 0x24);
+	CHECK(byte_at(0x180162) == 0x24 && byte_at(0x4E3BB) == 0xE4);
+
+	build(&gen, NULL);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_COMPASS_CHEST, RANDO_ITEM_KeyP1));
+	run();
+	CHECK(byte_at(0xE977) == 0xA2);
+}
+
+static void vanilla_dungeon_items(RandoConfig *config)
+{
+	config->rom_vanilla_big_keys = true;
+	config->rom_vanilla_maps = true;
+	config->rom_vanilla_compasses = true;
+}
+
+/* Region big keys, maps and compasses become BigKey, Map and Compass; only MapH2 keeps the escape exception. */
+static void check_vanilla_dungeon_items(void)
+{
+	build(&gen, vanilla_dungeon_items);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_COMPASS_CHEST, RANDO_ITEM_CompassP1));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_BIG_KEY_CHEST, RANDO_ITEM_BigKeyP1));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_MAP_CHEST, RANDO_ITEM_MapP1));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_CANNONBALL_CHEST, RANDO_ITEM_MapP2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SECRET_PASSAGE, RANDO_ITEM_MapH2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_LINKS_UNCLE, RANDO_ITEM_BigKeyH2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SEWERS_DARK_CROSS, RANDO_ITEM_MapH2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_HYRULE_CASTLE_BOOMERANG_CHEST, RANDO_ITEM_CompassH2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_HYRULE_CASTLE_MAP_CHEST, RANDO_ITEM_KeyH2));
+	run();
+	check_tags();
+	CHECK(byte_at(0xE977) == 0x25);
+	CHECK(byte_at(0xE9B9) == 0x32);
+	CHECK(byte_at(0xE9F5) == 0x33);
+	CHECK(byte_at(0xE9B3) == 0x7C);
+	CHECK(byte_at(0xE971) == 0x7F);
+	CHECK(byte_at(0x2DF45) == 0x32);
+	CHECK(byte_at(0xE96E) == 0x33);
+	CHECK(byte_at(0xE974) == 0x25);
+	CHECK(byte_at(0xEB0C) == 0xA0);
+
+	build(&gen, NULL);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_BIG_KEY_CHEST, RANDO_ITEM_BigKeyP1));
+	run();
+	CHECK(byte_at(0xE9B9) == 0x9D);
+}
+
+static void generic_keys(RandoConfig *config)
+{
+	config->rom_generic_keys = true;
+}
+
+static void generic_and_vanilla_keys(RandoConfig *config)
+{
+	config->rom_generic_keys = true;
+	config->rom_vanilla_keys = true;
+}
+
+/* Any key becomes KeyGK, after the vanilla keys rule; a big key is no key. */
+static void check_generic_keys(void)
+{
+	build(&gen, generic_keys);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_COMPASS_CHEST, RANDO_ITEM_KeyP2));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_BIG_KEY_CHEST, RANDO_ITEM_BigKeyP1));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SECRET_PASSAGE, RANDO_ITEM_KeyH2));
+	run();
+	check_tags();
+	CHECK(byte_at(0xE977) == 0xAF);
+	CHECK(byte_at(0xE9B9) == 0x9D);
+	CHECK(byte_at(0xE971) == 0xAF);
+
+	build(&gen, generic_and_vanilla_keys);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_COMPASS_CHEST, RANDO_ITEM_KeyP1));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_TOWER_OF_HERA_BASEMENT_CAGE, RANDO_ITEM_KeyP3));
+	run();
+	CHECK(byte_at(0xE977) == 0xAF);
+	CHECK(byte_at(0x180162) == 0xAF && byte_at(0x4E3BB) == 0xE4);
+}
+
+static void map_on_pickup(RandoConfig *config)
+{
+	config->rom_map_on_pickup = true;
+}
+
+/* Under rom.mapOnPickup the music is post.prize_music's draw, not the prize's: here the opposite of it. */
+static void check_map_on_pickup_music(void)
+{
+	static const uint32_t desert[4] = {0x1559B, 0x1559C, 0x1559D, 0x1559E};
+	static const uint8_t crystal_music[4] = {0x16, 0x16, 0x16, 0x16};
+	RandoPrizeMusic *music = &gen.post.prize_music;
+	int i;
+
+	build(&gen, map_on_pickup);
+	for (i = 0; i < 3; i++) {
+		music->locations[music->count] = pendant_prizes[i];
+		music->music[music->count++] = 0x16;
+	}
+	for (i = 0; i < 7; i++) {
+		music->locations[music->count] = crystal_prizes[i];
+		music->music[music->count++] = 0x11;
+	}
+	music->locations[music->count] = RANDO_LOC_AGAHNIM_2;
+	music->music[music->count++] = 0x11;
+	run();
+	check_tags();
+	check_bytes_at(find(0xC6FF) + 1, desert, crystal_music, 4);
+	CHECK(byte_at(0x155B8) == 0x11);
+	CHECK(byte_at(0x155C9) == 0x11);
+}
+
+/* HeraBasement::writeItem: its own byte, then 0x4E3BB from its item before any substitution. */
+static void check_hera_basement(void)
+{
+	int cage;
+
+	build(&gen, NULL);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_TOWER_OF_HERA_BASEMENT_CAGE, RANDO_ITEM_KeyP3));
+	run();
+	check_tags();
+	cage = find(0x180162);
+	CHECK(cage >= 0 && rec.writes[cage].byte == 0xAA);
+	CHECK(find(0x4E3BB) == cage + 1 && byte_at(0x4E3BB) == 0xE4);
+
+	build(&gen, NULL);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_TOWER_OF_HERA_BASEMENT_CAGE, RANDO_ITEM_Hammer));
+	run();
+	CHECK(byte_at(0x4E3BB) == 0xEB);
+
+	build(&gen, NULL);
+	run();
+	CHECK(byte_at(0x180162) == 0x5A && byte_at(0x4E3BB) == 0xEB);
+}
+
+/* Randomizer::setTexts swaps one ProgressiveBow for Bow('ProgressiveBow', [0x65]); the others keep 0x64. */
+static void check_alternate_bow(void)
+{
+	build(&gen, NULL);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SAHASRAHLAS_HUT_LEFT, RANDO_ITEM_ProgressiveBow));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SAHASRAHLAS_HUT_MIDDLE, RANDO_ITEM_ProgressiveBow));
+	gen.post.texts.alternate_bow = RANDO_LOC_SAHASRAHLAS_HUT_MIDDLE;
+	run();
+	CHECK(byte_at(0xEA82) == 0x64);
+	CHECK(byte_at(0xEA85) == 0x65);
+}
+
 /* Handed over by step 5: nothing is written after a refused write. */
 static void check_refusal(void)
 {
@@ -256,6 +422,12 @@ int main(int argc, char **argv)
 	check_prizes();
 	check_medallions();
 	check_blacksmith();
+	check_hera_basement();
+	check_vanilla_keys();
+	check_vanilla_dungeon_items();
+	check_generic_keys();
+	check_map_on_pickup_music();
+	check_alternate_bow();
 	check_refusal();
 	check_gen_unchanged();
 	printf(TEST ": passed\n");

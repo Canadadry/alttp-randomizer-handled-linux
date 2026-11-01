@@ -479,10 +479,14 @@ static const MusicAddresses music_addresses[RANDO_REGION_COUNT] = {
 	[RANDO_REGION_GANONS_TOWER] = {1, {0x155C9}},
 };
 
+#define HERA_BASEMENT_KEY_FANFARE 0x4E3BB
+
 /* Blacksmith's address in VT is chosen by region.swordsInPool when the region is built. */
 #define BLACKSMITH_SWORDS_OUT_OF_POOL 0x3355C
 
 static const char METHOD[] = "writeItem";
+
+static const ItemBytes alternate_bow = {0x0001, {0x65}};
 
 static RandoItemId item_written(const RandoWorld *world, RandoLocationId location)
 {
@@ -491,13 +495,70 @@ static RandoItemId item_written(const RandoWorld *world, RandoLocationId locatio
 	return item == RANDO_ITEM_NONE ? RANDO_ITEM_Nothing : item;
 }
 
-static void write_music(RomOut *out, const RandoWorld *world, RandoRegionId region, RandoLocationId location)
+static bool region_item(RandoRegionId region, RandoItemId item)
 {
+	const RandoRegionInfo *info = rando_region_info(region);
+	int i;
+
+	for (i = 0; i < info->nitems; i++)
+		if (info->items[i] == item)
+			return true;
+	return false;
+}
+
+static bool escape_exception(RandoLocationId location, RandoItemId item, RandoItemId h2)
+{
+	return (location == RANDO_LOC_SECRET_PASSAGE || location == RANDO_LOC_LINKS_UNCLE) && item == h2;
+}
+
+/* Location::writeItem's rom.vanilla* and rom.genericKeys substitutions, in VT's order. */
+static RandoItemId substituted(const RandoConfig *config, RandoRegionId region, RandoLocationId location,
+			       RandoItemId item)
+{
+	RandoItemClass item_class = rando_item_info(item)->item_class;
+
+	if (config->rom_vanilla_keys && item_class == RANDO_ITEM_CLASS_KEY && region_item(region, item) &&
+	    !escape_exception(location, item, RANDO_ITEM_KeyH2))
+		item = RANDO_ITEM_Key;
+	if (config->rom_vanilla_big_keys && item_class == RANDO_ITEM_CLASS_BIG_KEY && region_item(region, item))
+		item = RANDO_ITEM_BigKey;
+	if (config->rom_vanilla_maps && item_class == RANDO_ITEM_CLASS_MAP && region_item(region, item) &&
+	    !escape_exception(location, item, RANDO_ITEM_MapH2))
+		item = RANDO_ITEM_Map;
+	if (config->rom_vanilla_compasses && item_class == RANDO_ITEM_CLASS_COMPASS && region_item(region, item))
+		item = RANDO_ITEM_Compass;
+	if (config->rom_generic_keys && item_class == RANDO_ITEM_CLASS_KEY)
+		item = RANDO_ITEM_KeyGK;
+	return item;
+}
+
+/* Under rom.mapOnPickup, the music drawn for the location; asserts it has one. */
+static uint8_t drawn_music(const RandoPrizeMusic *prize_music, RandoLocationId location)
+{
+	int i;
+
+	for (i = 0; i < prize_music->count; i++)
+		if (prize_music->locations[i] == location)
+			return prize_music->music[i];
+	assert(!"prize location without drawn music");
+	return 0x16;
+}
+
+static void write_music(RomOut *out, const RandoGen *gen, RandoRegionId region, RandoLocationId location)
+{
+	const RandoWorld *world = &gen->world;
 	const MusicAddresses *music = &music_addresses[region];
 	uint8_t byte;
 	int i;
 
-	byte = rando_item_info(rando_world_item(world, location))->item_class == RANDO_ITEM_CLASS_PENDANT ? 0x11 : 0x16;
+	if (music->count == 0)
+		return;
+	if (world->config.rom_map_on_pickup)
+		byte = drawn_music(&gen->post.prize_music, location);
+	else if (rando_item_info(rando_world_item(world, location))->item_class == RANDO_ITEM_CLASS_PENDANT)
+		byte = 0x11;
+	else
+		byte = 0x16;
 	for (i = 0; i < music->count; i++)
 		rando_rom_emit(out, music->address[i], &byte, 1, METHOD);
 }
@@ -513,9 +574,10 @@ static void write_location(RomOut *out, const RandoGen *gen, RandoRegionId regio
 
 	/* VT's Prize::setItem(Nothing) throws before any write. */
 	assert(!prize || rando_world_has_item(world, location, RANDO_ITEM_NONE));
+	item = substituted(&world->config, region, location, item);
 	if (rando_item_info(item)->item_class == RANDO_ITEM_CLASS_ALIAS)
 		item = rando_item_info(item)->alias_target;
-	bytes = &item_bytes[item];
+	bytes = location == gen->post.texts.alternate_bow ? &alternate_bow : &item_bytes[item];
 	for (i = 0; i < addresses->count; i++) {
 		uint32_t address = addresses->at[i].address;
 		Slot slot = (Slot)addresses->at[i].slot;
@@ -526,7 +588,13 @@ static void write_location(RomOut *out, const RandoGen *gen, RandoRegionId regio
 			rando_rom_emit(out, address, &bytes->bytes[slot], 1, METHOD);
 	}
 	if (prize)
-		write_music(out, world, region, location);
+		write_music(out, gen, region, location);
+	if (rando_location_is_a(rando_location_info(location)->location_class, RANDO_LOCATION_CLASS_STANDING_HERA_BASEMENT)) {
+		RandoItemId own = rando_world_item(world, location);
+		uint8_t fanfare = own == RANDO_ITEM_Key || own == RANDO_ITEM_KeyP3 ? 0xE4 : 0xEB;
+
+		rando_rom_emit(out, HERA_BASEMENT_KEY_FANFARE, &fanfare, 1, METHOD);
+	}
 }
 
 void rando_rom_write_items(RomOut *out, const RandoGen *gen)
