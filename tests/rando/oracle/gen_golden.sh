@@ -3,7 +3,8 @@
 # A <case> names a directory of tests/rando/cases/ or of tests/rando/combos/; with none, every case of both.
 # Without --out, each case's golden is written back into its own directory, and the logic fixtures
 # (extract_logic.php), the default text table text_default.txt (text_default.php), the hint and string
-# alternative counts hint_tables.txt (hint_tables.php) and the pool fixtures
+# alternative counts hint_tables.txt (hint_tables.php), the credits scene segments credit_tables.txt
+# (credit_tables.php) and the pool fixtures
 # pool_lists.txt and prepared_pools.txt (dump_pools.php, always over every case of cases/ only) into
 # tests/rando/oracle/; with --out, all go under <dir>, a combination at <dir>/combos/<case>.
 # Never called by `make test` or `make e2e`: regenerating goldens is a deliberate act (CLAUDE.md).
@@ -86,6 +87,7 @@ php "$oracle_dir/prng_check.php" "$vt_dir"
 php "$oracle_dir/extract_logic.php" "$vt_dir" "${out:-$oracle_dir}"
 php "$oracle_dir/text_default.php" "$vt_dir" "${out:-$oracle_dir}"
 php "$oracle_dir/hint_tables.php" "$vt_dir" "${out:-$oracle_dir}"
+php "$oracle_dir/credit_tables.php" "$vt_dir" "${out:-$oracle_dir}"
 
 for dir in "$@"; do
 	name="${dir##*/}"
