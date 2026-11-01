@@ -47,7 +47,7 @@
     - [x] Chunk 1: credit_tables.txt oracle fixture
     - [x] Chunk 2: encoder, scenes and picks
     - [x] Chunk 3: the six override tables
-    - [ ] Chunk 4: claims to all credits
+    - [x] Chunk 4: claims to all credits
   - [ ] 1.9 Port the text, dialog and hints writes
   - [ ] 1.10 Port the initial SRAM writes
   - [ ] 1.11 Checksum and heart beep
