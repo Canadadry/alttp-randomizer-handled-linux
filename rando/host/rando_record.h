@@ -39,4 +39,9 @@ typedef struct RandoRecord {
 bool rando_record_write(FILE *out, const RandoRecord *record, const RandoWorld *world,
 			const RandoPlaythrough *playthrough);
 
+/* Parses a whole record, strictly: keys in any order, each once, spoiler optional, rom equal to the name the
+ * settings and code make. The spoiler span points into text, which the caller keeps. On failure returns
+ * false and writes into error a reason naming the offending key or value; out is unspecified. */
+bool rando_record_parse(const char *text, size_t len, RandoRecord *out, char error[RANDO_RECORD_ERROR_MAX]);
+
 #endif
