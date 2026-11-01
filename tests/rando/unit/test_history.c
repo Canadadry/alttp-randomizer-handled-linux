@@ -4,6 +4,8 @@
 #include "rando_record.h"
 #include "rando_seed_save.h"
 #include "support.h"
+#include "ui_grid.h"
+#include "ui_history.h"
 
 #include <dirent.h>
 #include <stdio.h>
@@ -665,6 +667,105 @@ static void test_delete_table(void)
 	CHECK(rando_history_delete_text(RANDO_HISTORY_DELETE_FILES) == UI_STR_HISTORY_DELETE_FILES);
 }
 
+static UiHistory tab;
+
+static void snapshot(const char *name)
+{
+	static UiScreen screen;
+	static UiGrid grid;
+	static char frame[UI_GRID_TEXT_MAX];
+	char path[128];
+
+	ui_history_screen(&tab, &screen);
+	CHECK(ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	CHECK(ui_grid_render(&grid, &screen));
+	CHECK(ui_grid_text(&grid, frame, sizeof frame) > 0);
+	snprintf(path, sizeof path, "unit/snapshots/%s", name);
+	test_snapshot(TEST, path, frame);
+}
+
+/* Scans the card and starts the tab on it with the real SD functions. */
+static void start_tab(void)
+{
+	UiHistoryInit init;
+
+	rando_history_scan(&history, &list);
+	init.strings = NULL;
+	init.page = UI_GRID_DEFAULT_LINES - 4;
+	init.width = UI_GRID_DEFAULT_COLS - 2;
+	init.list = &list;
+	init.spoiler_fn = rando_history_spoiler;
+	init.delete_fn = rando_history_delete;
+	init.ctx = &history;
+	ui_history_init(&tab, &init);
+}
+
+static void press(UiButton button, int n)
+{
+	while (n-- > 0)
+		CHECK(ui_history_key(&tab, button) == UI_HISTORY_NONE);
+}
+
+/* Three seeds, one with the baseline spoiler, one whose ROM is gone: the tab lists two, shows the spoiler,
+ * deletes it on the card, and forgets a ROM removed by hand at the next scan. */
+static void test_end_to_end(void)
+{
+	RandoRecord spoiler_seed = record_of(1, 11, 2, 8, 15, 0), plain = record_of(2, 11, 1, 10, 0, 0);
+	RandoRecord orphan = record_of(3, 11, 3, 9, 0, 0);
+	static Paths gone_files, kept_files;
+	int i;
+
+	make_root(true);
+	CHECK(strcmp(spoiler_seed.name.code, "1CA10A") == 0 && strcmp(plain.name.code, "910B6B") == 0 &&
+	      strcmp(orphan.name.code, "1592B4") == 0);
+	write_record(&spoiler_seed, true, true);
+	write_record(&plain, false, true);
+	write_record(&orphan, false, false);
+	gone_files.count = kept_files.count = 0;
+	add(&gone_files, "%s/%s", RANDO_SD_ROM_DIR, spoiler_seed.name.rom);
+	add(&gone_files, "%s%s", record_rel(spoiler_seed.name.code), "");
+	add(&gone_files, "%s/saves/Supafaust/Open-Ganon-1CA10A.srm%s", RANDO_SD_PROFILE_CURRENT, "");
+	add(&gone_files, "%s/states/Supafaust/Open-Ganon-1CA10A.state%s", RANDO_SD_PROFILE_CURRENT, "");
+	add(&gone_files, "%s/states/Supafaust/Open-Ganon-1CA10A.state.auto%s", RANDO_SD_PROFILE_CURRENT, "");
+	add(&gone_files, "%s/states/Supafaust/Open-Ganon-1CA10A.state2.png%s", RANDO_SD_PROFILE_GUEST, "");
+	add(&gone_files, "%s/Open-Ganon-1CA10A.cfg%s", RANDO_SD_GAME_CONFIG_DIR, "");
+	add(&gone_files, "%s%s", RANDO_SD_LIST_CACHE6, "");
+	add(&gone_files, "%s%s", RANDO_SD_LIST_CACHE2, "");
+	add(&kept_files, "%s/%s", RANDO_SD_ROM_DIR, plain.name.rom);
+	add(&kept_files, "%s%s", record_rel(plain.name.code), "");
+	add(&kept_files, "%s%s", record_rel(orphan.name.code), "");
+	add(&kept_files, "%s/saves/Supafaust/Open-Ganon-910B6B.srm%s", RANDO_SD_PROFILE_CURRENT, "");
+	add(&kept_files, "%s/states/Supafaust/Open-Ganon-910B6B.state%s", RANDO_SD_PROFILE_CURRENT, "");
+	add(&kept_files, "%s/saves/Supafaust/Open-Ganon-1592B4.srm%s", RANDO_SD_PROFILE_CURRENT, "");
+	for (i = 0; i < gone_files.count; i++)
+		if (!exists(gone_files.rel[i]))
+			put(gone_files.rel[i]);
+	for (i = 0; i < kept_files.count; i++)
+		if (!exists(kept_files.rel[i]))
+			put(kept_files.rel[i]);
+
+	start_tab();
+	snapshot("history_e2e_list.txt");
+	press(UI_BUTTON_A, 1);
+	press(UI_BUTTON_R2, 3);
+	snapshot("history_e2e_detail.txt");
+	press(UI_BUTTON_X, 1);
+	snapshot("history_e2e_confirm.txt");
+	press(UI_BUTTON_A, 1);
+	snapshot("history_e2e_deleted.txt");
+	check_paths(&gone_files, false);
+	check_paths(&kept_files, true);
+
+	start_tab();
+	CHECK(list.count == 1 && strcmp(list.entries[0].name.rom, plain.name.rom) == 0);
+	CHECK(remove(at(rom_rel(plain.name.rom))) == 0);
+	start_tab();
+	snapshot("history_empty.txt");
+	CHECK(exists(record_rel(plain.name.code)) && exists(record_rel(orphan.name.code)));
+	CHECK(exists(RANDO_SD_PROFILE_CURRENT "/saves/Supafaust/Open-Ganon-910B6B.srm"));
+	drop_root();
+}
+
 int main(void)
 {
 	atexit(drop_root);
@@ -680,6 +781,7 @@ int main(void)
 	test_delete_full_tree();
 	test_delete_failures();
 	test_delete_table();
+	test_end_to_end();
 	printf(TEST ": passed\n");
 	return 0;
 }

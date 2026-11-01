@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Delete 1CA10A?                         |
+ | Open-Ganon-1CA10A.sfc                  |
+ | Removes the ROM, its save and states   |
+ | This cannot be undone                  |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+_| A Delete  B Keep                       |
+ +----------------------------------------+

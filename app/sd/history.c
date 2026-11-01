@@ -215,10 +215,13 @@ static bool find_state(const char *dir, const char *prefix, char path[DELETE_PAT
 		return false;
 	while (!found && (ent = readdir(d)) != NULL) {
 		struct stat st;
+		int len;
 
 		if (strncmp(ent->d_name, prefix, n) != 0)
 			continue;
-		snprintf(path, DELETE_PATH_MAX, "%s/%s", dir, ent->d_name);
+		len = snprintf(path, DELETE_PATH_MAX, "%s/%s", dir, ent->d_name);
+		if (len < 0 || len >= DELETE_PATH_MAX)
+			continue;
 		found = lstat(path, &st) == 0 && S_ISREG(st.st_mode);
 	}
 	closedir(d);

@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Open-Ganon-1CA10A.sfc                  |
+ |   Tower Of Hera: Moldorm              ^|
+ |   Turtle Rock: Trinexx                 |
+ | Castle Tower                           |
+ |   Castle Tower - Dark Maze: KeyA1      |
+ |   Castle Tower - Room 03: KeyA1        |
+ | Dark Palace                            |
+ |   Palace of Darkness - Big Chest:      |
+ |     ProgressiveBow                     |
+ |   Palace of Darkness - Big Key Chest:  |
+ |     PieceOfHeart                       |
+ |   Palace of Darkness - Boss:          v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+
