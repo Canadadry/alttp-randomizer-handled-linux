@@ -99,8 +99,10 @@ static void run_post_fill(RandoGen *gen, RandoStage from, RandoStage to)
 		case RANDO_STAGE_WRITE_RNG_BLOCK:
 			rando_rng_block(&gen->prng, &gen->post);
 			break;
+		case RANDO_STAGE_WRITE_PRIZE_PACKS_TO_ROM:
+			rando_prize_packs_to_rom(&gen->world, &gen->prng);
+			break;
 		default:
-			/* Not ported yet: no draw. */
 			break;
 		}
 		gen->stage = RANDO_STAGE_NONE;

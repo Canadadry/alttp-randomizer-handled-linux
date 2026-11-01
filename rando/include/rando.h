@@ -94,8 +94,8 @@ RandoStatus rando_generate(RandoGen *gen, const RandoOptions *options, uint32_t 
  * attempt that reaches it. At fill or later: on the first winnable attempt, right after last. Every
  * attempt that completes the fill runs setTexts, randomizeCredits and applyHints up to last, then the
  * winnability check (VT's Randomizer::randomize, then isWinnable); the winning attempt then runs the
- * writeToRom stages up to last, continuing its draw count. A stage not ported yet completes with no
- * draw. RANDO_STAGE_NONE runs every stage and returns RANDO_COMPLETE. */
+ * writeToRom stages up to last, continuing its draw count. RANDO_STAGE_NONE runs every stage and returns
+ * RANDO_COMPLETE. */
 RandoStatus rando_generate_until(RandoGen *gen, const RandoOptions *options, uint32_t seed, uint32_t max_attempts,
 				 RandoTraceFn trace, void *trace_ctx, RandoStage last);
 

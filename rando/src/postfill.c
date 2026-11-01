@@ -171,3 +171,40 @@ void rando_rng_block(RandoPrng *prng, RandoPostFill *post)
 	for (i = 0; i < RANDO_RNG_BLOCK_SIZE; i++)
 		post->rng_block[i] = (uint8_t)(rando_random_int(prng, 0, 0x100) & 0xFF);
 }
+
+typedef struct DropCount {
+	RandoDrop drop;
+	uint8_t count;
+} DropCount;
+
+/* config/item.php's drop table, BeeGood and Bee at 0 left out. */
+static const DropCount drop_pool[] = {
+	{RANDO_DROP_HEART, 13},		 {RANDO_DROP_RUPEE_GREEN, 9},	     {RANDO_DROP_RUPEE_BLUE, 7},
+	{RANDO_DROP_RUPEE_RED, 6},	 {RANDO_DROP_BOMB_REFILL_1, 7},	     {RANDO_DROP_BOMB_REFILL_4, 1},
+	{RANDO_DROP_BOMB_REFILL_8, 2},	 {RANDO_DROP_MAGIC_REFILL_SMALL, 6}, {RANDO_DROP_MAGIC_REFILL_FULL, 3},
+	{RANDO_DROP_ARROW_REFILL_5, 5},	 {RANDO_DROP_ARROW_REFILL_10, 3},    {RANDO_DROP_FAIRY, 1},
+};
+
+#define DROP_POOL_SIZE 63
+
+void rando_prize_packs_to_rom(RandoWorld *world, RandoPrng *prng)
+{
+	uint8_t pool[DROP_POOL_SIZE];
+	size_t k;
+	int i, pack, slot, n = 0;
+
+	for (k = 0; k < sizeof drop_pool / sizeof drop_pool[0]; k++)
+		for (i = 0; i < drop_pool[k].count; i++) {
+			assert(n < DROP_POOL_SIZE);
+			pool[n++] = (uint8_t)drop_pool[k].drop;
+		}
+	assert(n == DROP_POOL_SIZE);
+	rando_fy_shuffle(prng, pool, (size_t)n, 1);
+	i = 0;
+	for (pack = 0; pack < RANDO_PRIZE_PACK_COUNT; pack++)
+		for (slot = 0; slot < rando_prize_pack_slots((RandoPrizePack)pack); slot++)
+			if (rando_world_drop(world, (RandoPrizePack)pack, slot) == RANDO_DROP_NONE) {
+				assert(i < n && "more empty drop slots than drops: VT reads past its pool");
+				rando_world_set_drop(world, (RandoPrizePack)pack, slot, (RandoDrop)pool[i++]);
+			}
+}

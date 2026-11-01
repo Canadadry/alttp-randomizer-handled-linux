@@ -26,7 +26,8 @@
     - [x] Chunk 5: applyHints
     - [x] Chunk 6: writeItem
     - [x] Chunk 7: setDiggingGameRng and writeRNGBlock
-    - [ ] Chunk 8: writePrizePacksToRom and every claim to all
+    - [x] Chunk 8: writePrizePacksToRom and every claim to all
+    - [ ] Chunk 8b: every claim back to all
     - [ ] Chunk 9: measure against step 1.1
   - [ ] 1.5 rando_rom skeleton and claims by write group
   - [ ] 1.6 Port the items and locations writes

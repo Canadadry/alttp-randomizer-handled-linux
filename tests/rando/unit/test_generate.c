@@ -99,7 +99,7 @@ static RandoStatus generate(const char *key, const char *value, uint32_t seed, T
 }
 
 /* The C draws must be the first lines of the case's golden trace; with next_stage, the golden's next
- * line must belong to that stage. */
+ * line must belong to that stage, or with "", the golden must end there. */
 static void check_golden_stop(const char *name, const Trace *trace, const char *next_stage)
 {
 	char path[256], golden[TRACE_MAX], next[128] = "", stage[64] = "";
@@ -122,7 +122,9 @@ static void check_golden_stop(const char *name, const Trace *trace, const char *
 	if (strcmp(trace->text, golden) != 0)
 		test_fail(TEST, "%s: C draws\n%s\ndiffer from the golden's first %d lines\n%s", name, trace->text,
 			  trace->lines, golden);
-	if (next_stage && (sscanf(next, "%*s %*s %63s", stage) != 1 || strcmp(stage, next_stage) != 0))
+	if (next_stage && !*next_stage && *next)
+		test_fail(TEST, "%s: the golden goes on with \"%s\" after the C draws", name, next);
+	if (next_stage && *next_stage && (sscanf(next, "%*s %*s %63s", stage) != 1 || strcmp(stage, next_stage) != 0))
 		test_fail(TEST, "%s: the golden goes on with \"%s\" after the C draws, not stage %s", name, next,
 			  next_stage);
 }
@@ -369,30 +371,35 @@ static void check_golden_write(const char *name, const char *address, const uint
 		test_fail(TEST, "%s: the write at %s is not the C bytes %s", path, address, hex);
 }
 
-/* tests/rando/cases/baseline: attempts 0 and the golden trace through writeRNGBlock, the last ported stage. */
+/* tests/rando/cases/baseline: attempts 0 and the whole golden trace. */
 static void check_baseline_complete(void)
 {
 	RandoOptions options;
 	Trace trace;
+	uint8_t drops[7 * RANDO_PRIZE_PACK_SLOTS];
+	int i;
 
 	rando_options_init(&options);
 	memset(&trace, 0, sizeof trace);
 	CHECK(rando_generate(&gen, &options, 1, 0, record, &trace) == RANDO_COMPLETE);
 	CHECK(gen.attempt == 0);
-	CHECK(trace.lines == 2442);
-	check_golden_stop("baseline", &trace, "writePrizePacksToRom");
+	CHECK(trace.lines == 2505);
+	check_golden_stop("baseline", &trace, "");
 	check_golden_write("baseline", "180020", &gen.post.digging_game, 1);
 	check_golden_write("baseline", "178000", gen.post.rng_block, RANDO_RNG_BLOCK_SIZE);
+	for (i = 0; i < 7 * RANDO_PRIZE_PACK_SLOTS; i++)
+		drops[i] = (uint8_t)(0xD7 + rando_world_drop(&gen.world, (RandoPrizePack)(i / RANDO_PRIZE_PACK_SLOTS),
+							       i % RANDO_PRIZE_PACK_SLOTS));
+	check_golden_write("baseline", "037A78", drops, 7 * RANDO_PRIZE_PACK_SLOTS);
 	check_complete_outputs("cases/baseline", "baseline", "0\n");
 }
 
 /* Attempt k of seed s is attempt 0 of seed s + k: seed 0 with attempt 0 failed at point must replay
- * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last writeRNGBlock line.
+ * tests/rando/cases/baseline (seed 1) at attempt 1, its whole golden trace.
  * Attempt 0 ends in the fill when it fails there, in applyHints when it fails at isWinnable. */
 static void check_retry_identity(RandoFault point)
 {
 	static char golden[GOLDEN_TRACE_MAX], expected[GOLDEN_TRACE_MAX];
-	char stage[64];
 	RandoOptions options;
 	Trace trace;
 	const char *retry, *line;
@@ -407,13 +414,7 @@ static void check_retry_identity(RandoFault point)
 	if (len == sizeof golden - 1)
 		test_fail(TEST, "cases/baseline/trace.txt: longer than %d bytes", GOLDEN_TRACE_MAX - 1);
 	golden[len] = '\0';
-	for (line = golden, len = 0; *line; line = strchr(line, '\n') + 1) {
-		CHECK(strchr(line, '\n') != NULL);
-		if (sscanf(line, "%*s %*s %63s", stage) == 1 && strcmp(stage, "writeRNGBlock") == 0)
-			len = (size_t)(strchr(line, '\n') + 1 - golden);
-	}
-	CHECK(len > 0);
-	golden[len] = '\0';
+	CHECK(len > 0 && golden[len - 1] == '\n');
 	memcpy(expected, golden, len + 1);
 	for (line = golden; *line; line = strchr(line, '\n') + 1) {
 		CHECK(line[0] == '0' && line[1] == ' ');
@@ -523,12 +524,11 @@ static void check_stop_on_winning_attempt(void)
 }
 
 /* On baseline, setTexts makes 255 draws, randomizeCredits 78 and applyHints 279; writeItem none (no
- * map-on-pickup), setDiggingGameRng 1 and writeRNGBlock 1024; writePrizePacksToRom makes no C draw yet. */
+ * map-on-pickup), setDiggingGameRng 1, writeRNGBlock 1024 and writePrizePacksToRom 63, the golden's last. */
 static void check_stop_after_fill(void)
 {
 	static Trace texts, credits, hints, digging, block, last;
 	RandoOptions options;
-	int s;
 
 	rando_options_init(&options);
 	memset(&texts, 0, sizeof texts);
@@ -562,12 +562,13 @@ static void check_stop_after_fill(void)
 	CHECK(block.lines == 2442);
 	CHECK(strncmp(block.text, digging.text, strlen(digging.text)) == 0);
 	check_golden_stop("baseline", &block, "writePrizePacksToRom");
-	for (s = RANDO_STAGE_WRITE_RNG_BLOCK + 1; s < RANDO_STAGE_COUNT; s++) {
-		memset(&last, 0, sizeof last);
-		CHECK(rando_generate_until(&gen, &options, 1, 1, record, &last, (RandoStage)s) == RANDO_INCOMPLETE);
-		CHECK(gen.attempt == 0);
-		CHECK(strcmp(last.text, block.text) == 0);
-	}
+	memset(&last, 0, sizeof last);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &last, RANDO_STAGE_WRITE_PRIZE_PACKS_TO_ROM) ==
+	      RANDO_INCOMPLETE);
+	CHECK(gen.attempt == 0);
+	CHECK(last.lines == 2505);
+	CHECK(strncmp(last.text, block.text, strlen(block.text)) == 0);
+	check_golden_stop("baseline", &last, "");
 }
 
 /* The advancement list as prepareWorld leaves it, whatever the fill takes from the pools. */

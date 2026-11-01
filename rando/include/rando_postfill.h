@@ -193,4 +193,9 @@ void rando_digging_game(RandoPrng *prng, RandoPostFill *post);
 /* World::writeToRom's writeRNGBlock over get_random_int(0, 0x100): 1024 draws. */
 void rando_rng_block(RandoPrng *prng, RandoPostFill *post);
 
+/* World::writePrizePacksToRom's draws: getDropsPool's fy_shuffle of all 63 drops at VT's drop counts, even
+ * when fewer slots are empty; then the empty slots, in getPrizePacks() order, take the pool from its start.
+ * 63 draws. */
+void rando_prize_packs_to_rom(RandoWorld *world, RandoPrng *prng);
+
 #endif

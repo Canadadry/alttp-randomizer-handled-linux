@@ -1,4 +1,5 @@
 #include "rando_postfill.h"
+#include "rando_prepare.h"
 #include "rando_prng.h"
 #include "rando_world.h"
 #include "support.h"
@@ -531,6 +532,66 @@ static void check_digging_and_rng_block(void)
 	CHECK(wrapped > 0);
 }
 
+/* getDropsPool's 63 drops, in config/item.php's drop order before the shuffle. */
+static const struct {
+	RandoDrop drop;
+	int count;
+} drop_counts[] = {
+	{RANDO_DROP_HEART, 13},		    {RANDO_DROP_RUPEE_GREEN, 9},	{RANDO_DROP_RUPEE_BLUE, 7},
+	{RANDO_DROP_RUPEE_RED, 6},	    {RANDO_DROP_BOMB_REFILL_1, 7},	{RANDO_DROP_BOMB_REFILL_4, 1},
+	{RANDO_DROP_BOMB_REFILL_8, 2},	    {RANDO_DROP_MAGIC_REFILL_SMALL, 6}, {RANDO_DROP_MAGIC_REFILL_FULL, 3},
+	{RANDO_DROP_ARROW_REFILL_5, 5},	    {RANDO_DROP_ARROW_REFILL_10, 3},	{RANDO_DROP_FAIRY, 1},
+};
+
+static void shuffled_drops(uint32_t seed, uint8_t pool[63])
+{
+	RandoPrng prng;
+	size_t k;
+	int i, n = 0;
+
+	for (k = 0; k < sizeof drop_counts / sizeof drop_counts[0]; k++)
+		for (i = 0; i < drop_counts[k].count; i++)
+			pool[n++] = (uint8_t)drop_counts[k].drop;
+	CHECK(n == 63);
+	seeded(&prng, seed, NULL);
+	rando_fy_shuffle(&prng, pool, 63, 1);
+}
+
+/* writePrizePacksToRom shuffles the whole pool (63 draws) and fills only the empty slots, in
+ * getPrizePacks() order: all 63 under custom prize packs, the pull, crab, stun and fish ones after
+ * shufflePrizePacks. */
+static void check_prize_packs_to_rom(bool custom)
+{
+	RandoConfig config;
+	RandoWorld world, before;
+	RandoPrng prng;
+	Draws draws;
+	uint8_t pool[63];
+	int pack, slot, next = 0;
+
+	rando_config_init(&config);
+	config.custom_prize_packs = custom;
+	rando_world_init(&world, RANDO_VARIANT_OPEN, &config);
+	seeded(&prng, 3, NULL);
+	rando_shuffle_prize_packs(&world, &prng);
+	before = world;
+	shuffled_drops(11, pool);
+
+	seeded(&prng, 11, &draws);
+	rando_prize_packs_to_rom(&world, &prng);
+	CHECK(draws.n == 63);
+	for (pack = 0; pack < RANDO_PRIZE_PACK_COUNT; pack++)
+		for (slot = 0; slot < rando_prize_pack_slots((RandoPrizePack)pack); slot++) {
+			RandoDrop was = rando_world_drop(&before, (RandoPrizePack)pack, slot);
+			RandoDrop now = rando_world_drop(&world, (RandoPrizePack)pack, slot);
+
+			CHECK(now == (was == RANDO_DROP_NONE ? (RandoDrop)pool[next] : was));
+			if (was == RANDO_DROP_NONE)
+				next++;
+		}
+	CHECK(next == (custom ? 63 : 7));
+}
+
 static const char *const unknown_items[] = {
 	/* Boss names: getHint looks up an item's raw name, never a boss's. */
 	"Armos Knights", "Lanmolas", "Moldorm", "Helmasaur King", "Arrghus", "Mothula", "Blind",
@@ -659,6 +720,8 @@ int main(int argc, char **argv)
 	check_prize_music(RANDO_VARIANT_OPEN);
 	check_prize_music(RANDO_VARIANT_INVERTED);
 	check_digging_and_rng_block();
+	check_prize_packs_to_rom(false);
+	check_prize_packs_to_rom(true);
 	printf(TEST ": hand-written cases passed\n");
 	if (fixtures)
 		check_hint_tables_fixture();
