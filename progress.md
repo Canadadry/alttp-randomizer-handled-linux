@@ -83,7 +83,7 @@
   - [x] 3.1 Confirm the Onion specifics from Onion's sources
     - [x] Chunk 1: Onion facts in docs/onion.md
     - [x] Chunk 2: checked against the plan
-  - [ ] 3.2 Screen model and text renderer
+  - [x] 3.2 Screen model and text renderer
     - [x] Chunk 1: app/ directory and the SD layer move
     - [x] Chunk 2: screen model
     - [x] Chunk 3: grid renderer, text form and snapshots
