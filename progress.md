@@ -64,7 +64,7 @@
     - [x] Chunk 2: checksum
     - [x] Chunk 3: browser defaults
   - [x] 1.12 skill: check-e2e — whole case list, then e2e-combos
-- [ ] Phase 2 — Full ROM assembly, host only
+- [x] Phase 2 — Full ROM assembly, host only
   - [x] 2.1 BPS applier in C
     - [x] Chunk 1: CRC32 and the BPS header reader
     - [x] Chunk 2: rando_bps_apply
@@ -74,7 +74,7 @@
     - [x] Chunk 3: header check and gate target
     - [x] Chunk 4: the pipeline
     - [x] Chunk 5: the rando_patch CLI
-  - [ ] 2.3 Output naming, history record and spoiler
+  - [x] 2.3 Output naming, history record and spoiler
     - [x] Chunk 1: getter and naming
     - [x] Chunk 2: record writer
     - [x] Chunk 3: record reader and round-trip

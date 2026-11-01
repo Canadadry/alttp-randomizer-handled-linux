@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando test-template lint logic selftest e2e e2e-combos e2e-arm patch-header check
+.PHONY: help install test test-rando test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm patch-header check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -11,6 +11,7 @@ help:
 	@echo "make e2e            every case of tests/rando/cases diffed against its golden"
 	@echo "make e2e-combos     every case of tests/rando/combos diffed against its golden, kept out of e2e"
 	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
+	@echo "make unit-arm       every unit test on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make patch-header   the base patch's declared sizes checked (BPS=<file>, default data/base.bps), kept out of check"
 	@echo "make check          the net: everything that must be green before a push"
 
@@ -47,6 +48,10 @@ e2e-combos:
 # Outside the net: needs docker and qemu-user.
 e2e-arm:
 	$(MAKE) -C tests/rando e2e-arm
+
+# Outside the net: needs docker and qemu-user.
+unit-arm:
+	$(MAKE) -C tests/rando unit-arm
 
 # Outside the net until data/base.bps exists. BPS is relative to this directory.
 patch-header:

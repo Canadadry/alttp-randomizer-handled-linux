@@ -141,18 +141,19 @@ The goals behind every rule below:
    - the exact RetroArch save and save-state paths for the default SNES core (e.g. under `Saves/CurrentProfile/`).
 
    Verified by: each item cites the Onion source file, and each §2 path and layout (`App/ALttPR/`, `Roms/SFC/ALttPR/`, the `.srm` and save-state locations) is checked against these facts; a mismatch stops the step and asks the user before steps 4 and 6.
-2. **Screen model and text renderer.** The screen description struct and a renderer to a fixed character grid. Verified by a snapshot test of a hand-built screen.
+2. **Screen model and text renderer.** The screen description struct and a renderer to a fixed character grid. Verified by a snapshot test of a hand-built screen; by `make lint` building the UI core's sources with `-pedantic-errors`; by a check in `make test` that no UI-core source includes an SDL header; and by `make unit-arm` running the snapshot test under qemu-arm (its sources added to `ARM_UNIT_SRC` if outside `rando/`).
 3. **String table (i18n).** Every UI string goes through an id and the English table; a test fails if the UI core contains a string literal that is shown to the user. Verified by that test.
 4. **Generate tab state machine.**
-   - Every setting of §2 is a row; left and right change the value, and up and down move.
+   - First, the settings list becomes one library table (every RandoOptionKey, then hints, then heart_beep, each with its key name and value names, owned outside rando_rom.h); name.c, record.c, case_reader.c and patch_cli.c iterate it instead of their own lists, and the uint32 parser record.c and patch_cli.c take from rando_case.h moves with it. Verified by test_name, test_record, test_case_reader, test_patch_cli, e2e and e2e-combos green and unchanged.
+   - Every setting of §2 is a row, one per table entry; left and right change the value, and up and down move.
    - Unsupported combinations from Phase 1 step 3 are greyed out with a reason.
    - The rows include the spoiler option (default off), the heart beep option, and the Generate action.
-   - The last settings are saved and restored.
+   - The last settings are saved and restored through rando_record's settings writer and reader, not a new parser.
 
    Verified by key-sequence snapshot tests, including restoring from a saved settings file.
-5. **Generation flow.** First, the step note estimates the Cortex-A7 generation time from the slowest case's host `-O2` time at the end of Phase 1, and decides the progress indicator per generator stage (if over about 10 s) so this screen and its tests include it. A "Generating…" screen, then success (the file name) or an error message: base ROM missing or wrong MD5, generator gave up, SD card write failed. Verified by snapshot tests with an injected generator, for success and for each failure.
+5. **Generation flow.** First, the step note estimates the Cortex-A7 generation time from the slowest case's host `-O2` time at the end of Phase 1, and decides the progress indicator per generator stage (if over about 10 s) so this screen and its tests include it. A "Generating…" screen, then success (the file name) or an error message: base ROM missing or wrong MD5, generator gave up, SD card write failed. Every value of RandoSaveStatus, RandoAssembleStatus and RandoBpsResult maps to a string id through a table sized by the enum's count, with a test failing on a value without one; patch_cli.c's BPS result names follow the same rule. Verified by snapshot tests with an injected generator, for success and for each failure.
 6. **History tab.** The list is newest first and reconciled at start with the ROMs actually present. It has a detail view (settings, spoiler if kept, scrollable) and a delete action with confirmation, which removes the ROM, `.srm` and save states, then the record. Verified by snapshot tests on a temporary directory tree mimicking the SD card, checking the files removed and the files kept.
-7. **`ui_cli`: key sequence in, text screen out**, for the agent's own checks. Verified by a smoke test in `make test`.
+7. **`ui_cli`: key sequence in, text screen out**, for the agent's own checks. Verified by a smoke test in `make test`, whose binary links only the objects `make test` already builds (`$(RANDO_LIB)`, `$(HOST_LIB)`), never the `-O2` set (`GEN_OBJ`); a clean `make test` is timed before and after, numbers in the step note.
 
 ### Phase 4 — Onion and PC builds
 
@@ -182,7 +183,7 @@ CI is manual-only (`workflow_dispatch`) until the owner turns it on: each step's
 ## 5. Open questions
 
 1. ~~Which repository.~~ Resolved: this repository (`Canadadry/alttp-randomizer-handled-linux`), bootstrapped at the same paths as `alttp-ds` (`rando/`, `tests/rando/`); Phase 1 step 1 takes the code over.
-2. Whether the app's UI core and host tools live under `rando/host/` or a new top-level `app/` directory: decide when the repository exists.
+2. Whether the app's UI core and host tools live under `rando/host/` or a new top-level `app/` directory, and where the device-bound `record.c` and `seed_save.c` (today in `rando/host/`) live. Decided by Phase 3 step 2's PRD, recorded in its step note and struck through here with the answer. Wherever it lands, the UI core is built by `make lint` and `make unit-arm`, and includes no SDL header.
 
 ## 6. Step notes
 
@@ -311,3 +312,14 @@ Took over `rando/` and `tests/rando/` verbatim from `Canadadry/alttp-ds` `8d7725
 - **Tests:** `test_assemble` (every path, order tests, the sprite ranges hold the source's bytes, and a golden replay: synthetic base + each case's `rom_writes.txt` + defaults + checksum = the assembled image byte for byte, baseline in `make test`, all 73 in `make logic`); `test_patch_header` and `make patch-header` (outside `check`; reports `data/base.bps` missing for now) for Phase 4's gate; `test_patch_cli` (default request carries `03a63945…`/`edc01f3d…`; end to end on synthetic files).
 - **Not tested:** `UNSUPPORTED` (no combination reaches it, step 1.3); a refused `rando_rom_write` into the 2 MiB buffer is impossible and asserted; the partial-file removal after a failing `fwrite`/`fclose` (only a failing `fopen` is tested). Side effect: `patch_cli.c`'s static buffers (~7 MiB `bss`) are linked into `rando_gen` and the ARM build too, by the host wildcard.
 - H-2.1 hypotheses held (the BPS no-overlap rule is a contract, not a run-time check).
+
+### Step 2.3
+
+- **Naming** (`rando_name.h`, library, no stdio): `<Mode>-<Goal>-<code>[-<n>].sfc`, mode Open/Standard/Inverted/Retro, goal Ganon/FastGanon/Dungeons/Pedestal/TriforceHunt/GanonHunt/Completionist; code = low 24 bits of the CRC32 of a fixed text of the seed and all 13 settings (heart beep included), 6 uppercase hex; suffix `-2`…`-99` through a caller "taken" check (ROM or record present), never overwriting. Baseline seed 1 → `Open-Ganon-1CA10A.sfc`. `rando_options_get` added.
+- **Record** (`rando/host/rando_record.h`, `record.c`): JSON sorted and indented like the spoiler — `code`, `date` (local ISO 8601, caller-supplied), `format` 1, `rom`, `seed`, `settings` (13 by name), optional `spoiler` last, written by `spoiler_json.c` unchanged. `rando_record_parse` is strict and allocation-free, returns the spoiler as a span, and refuses a record whose `rom` differs from the name its settings and code give (History can only delete files the app named).
+- **Save** (`rando_seed_save.h`, `seed_save.c`): name, assemble straight into `Roms/SFC/ALttPR/<name>`, then `App/ALttPR/history/<code>.json`; a failed record removes the ROM (both or neither); the spoiler option never reaches the ROM. Directories are not created (C99 has no `mkdir`): left to Phases 3–4. The ROM file writer moved from `patch_cli.c` to `rando_out`; the synthetic base builder to `tests/rando/unit/synthetic_base.c`.
+- **Deviation:** the PRD's chunk 5 (`rando_patch --sd/--spoiler`) was dropped before triage as beyond the step; `rando_patch` keeps step 2.2's interface.
+- **Tests:** `test_name` (28 names, codes from Python's `zlib`, a code change per setting, collisions), `test_record` (exact text; spoiler span = baseline golden; round-trip with every setting, hints and heart beep non-default, with and without spoiler; every refusal; `--fixtures` on all 73), `test_seed_save` (success, spoiler on/off same ROM, collisions, each failure leaving nothing).
+- **End of Phase 2, ARM:** `make unit-arm` (new, outside `check`) cross-builds all 31 unit tests in the Onion toolchain and runs them under qemu-arm plus the 12 fixture replays: all pass; `make e2e-arm` 50 pass. It needs `-D_FILE_OFFSET_BITS=64`: qemu-user on a 64-bit host kernel gives the 32-bit test binaries ext4 directory positions that overflow `readdir` (`EOVERFLOW`); a 32-bit device kernel does not, and only tests list directories so far (matters for History's tests).
+- **Fix found by plan review:** `make test` depended on `rando_patch`, rebuilding the whole library at `-O2` (a clean `make test` doubled); the dependency moved to `e2e`, so `make check` still builds it. Clean `make test`: 11 s.
+- **Plan review after Phase 2** (accepted): one settings table before the Generate tab (step 3.4); open question 2 decided at step 3.2, with the UI core in `lint`, `unit-arm` and an SDL-include check; `ui_cli` links only `make test`'s objects (step 3.7); every save/assemble/BPS status mapped to a string id by an enum-sized table (step 3.5). Warnings left open: `notes/phase2-warn-review.md`.

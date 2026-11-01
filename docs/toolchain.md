@@ -43,3 +43,10 @@ sources at `OnionUI/Onion` commit
   32-bit ARM EABI executable, and runs the host e2e driver on it under
   `qemu-arm`. Its comparison is the host's, claims included, so a write-group
   claim (`<case> all <group>`) compares the ARM build's `rom_writes.txt` too.
+- `make unit-arm` builds every unit test of `tests/rando/Makefile`'s
+  `UNIT_TESTS` with the same flags plus `-D_FILE_OFFSET_BITS=64`, and runs
+  each under `qemu-arm` from `tests/rando`, then each of `LOGIC_TESTS` with
+  `--fixtures`. The extra define is for qemu-user only: on a 64-bit host
+  kernel, ext4 hands the 32-bit guest 64-bit directory cookies, and a 32-bit
+  `readdir` fails with `EOVERFLOW` (the tests that list `cases/` see an empty
+  directory). A 32-bit kernel, as on the device, returns 32-bit cookies.

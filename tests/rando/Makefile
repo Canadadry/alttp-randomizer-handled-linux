@@ -47,10 +47,12 @@ ONION_CFLAGS := -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=
 ARM_DIR := $(BUILD)/arm
 ARM_GEN := $(ARM_DIR)/rando_gen
 ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
+ARM_UNIT_DIR := $(ARM_DIR)/unit
+ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) unit/support.c unit/synthetic_base.c
 
-.PHONY: test lint logic selftest e2e e2e-combos e2e-arm measure patch-header clean
+.PHONY: test lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
 
-test: $(UNIT_BINS) $(PATCH_CLI)
+test: $(UNIT_BINS)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@./selftest.sh discovery
 	@echo "test: $(words $(UNIT_TESTS)) unit tests and the discovery self-test ran"
@@ -68,7 +70,7 @@ selftest:
 patch-header: $(BUILD)/test_patch_header
 	@./$(BUILD)/test_patch_header --file $(BPS)
 
-e2e: $(GEN)
+e2e: $(GEN) $(PATCH_CLI)
 	@./run_e2e.sh
 
 e2e-combos: $(GEN)
@@ -88,6 +90,23 @@ e2e-arm:
 	@printf '#!/bin/sh\nexec qemu-arm "%s" "$$@"\n' "$(abspath $(ARM_GEN))" > $(ARM_WRAPPER)
 	@chmod +x $(ARM_WRAPPER)
 	@RANDO_GEN="$(abspath $(ARM_WRAPPER))" ./run_e2e.sh
+
+# unit-arm: every unit test built like e2e-arm's generator, run under qemu-arm
+# from here (fixture paths are relative), LOGIC_TESTS with --fixtures too.
+# _FILE_OFFSET_BITS=64: on a 64-bit host kernel ext4 hands qemu-arm 64-bit
+# d_off cookies, so a 32-bit readdir fails with EOVERFLOW (not on the device).
+unit-arm:
+	@command -v qemu-arm >/dev/null 2>&1 || { echo "setup: qemu-arm not found on PATH (install qemu-user)" >&2; exit 1; }
+	@rm -rf $(ARM_UNIT_DIR) && mkdir -p $(ARM_UNIT_DIR)/obj
+	@echo "unit-arm: building $(words $(UNIT_TESTS)) unit tests in $(ARM_UNIT_DIR) with Onion's toolchain"
+	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 $(INCLUDES)"; \
+		for s in $(ARM_UNIT_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f -c -o $(ARM_UNIT_DIR)/obj/\$$(basename {} .c).o {}"; \
+		for t in $(UNIT_TESTS); do "$$cc" $$f -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o; done'
+	@file $(ARM_UNIT_DIR)/test_prng | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_UNIT_DIR)/test_prng; echo "unit-arm: $(ARM_UNIT_DIR)/test_prng is not a 32-bit ARM EABI executable" >&2; exit 1; }
+	@qemu-arm --version | head -n 1
+	@set -e; for t in $(UNIT_TESTS); do qemu-arm $(ARM_UNIT_DIR)/$$t; done
+	@set -e; for t in $(LOGIC_TESTS); do qemu-arm $(ARM_UNIT_DIR)/$$t --fixtures; done
+	@echo "unit-arm: $(words $(UNIT_TESTS)) unit tests and $(words $(LOGIC_TESTS)) fixture replays passed under qemu-arm"
 
 $(BUILD)/obj/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)

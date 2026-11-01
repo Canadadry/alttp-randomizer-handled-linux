@@ -42,8 +42,8 @@ defaults to `data/base.bps` and a missing `--seed` is drawn at random.
 
 `make e2e-arm` cross-builds the generator with Onion's own toolchain (a
 pinned docker image, see `docs/toolchain.md`) and runs the e2e cases on it
-under `qemu-arm`; it needs docker and `qemu-user`, and is not part of
-`make check`.
+under `qemu-arm`; `make unit-arm` does the same with every unit test. Both
+need docker and `qemu-user`, and are not part of `make check`.
 
 ## Working with Claude
 

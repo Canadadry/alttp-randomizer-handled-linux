@@ -53,8 +53,11 @@ in `docs/`, then `README.md`.
   every later budget is measured against.
 - `make e2e-arm`, outside the net, builds the generator with Onion's pinned
   toolchain (`onion-toolchain.sh`, `docs/toolchain.md`) and runs the e2e
-  cases on it under `qemu-arm`. It needs docker and qemu-user; a missing one
-  fails with a `setup:` line, a setup problem, not a bug.
+  cases on it under `qemu-arm`. `make unit-arm`, outside the net too, builds
+  every unit test the same way and runs it under `qemu-arm` from
+  `tests/rando`, `--fixtures` included for `LOGIC_TESTS`. Both need docker
+  and qemu-user; a missing one fails with a `setup:` line, a setup problem,
+  not a bug.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL PC build (`libsdl2-dev`)
   and the qemu-arm run of the cross build are CI jobs, not `check`.
