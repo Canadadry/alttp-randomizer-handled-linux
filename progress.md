@@ -120,10 +120,10 @@
     - [x] Chunk 3: frame loop, SDL main and smoke
     - [x] Chunk 4: sdl-arm, CI job and docs
   - [ ] 4.2 Miyoo build and package
-  - [ ] 4.3 Performance budget
+  - [x] 4.3 Performance budget
     - [x] Chunk 1: driver modes and make measure sections
     - [x] Chunk 2: measure-compare
-    - [ ] Chunk 3: the run and its record
+    - [x] Chunk 3: the run and its record
 - [ ] Phase 5 — Cleanup
   - [ ] 5.1 skill: rework-comments
   - [ ] 5.2 README
