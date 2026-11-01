@@ -12,9 +12,8 @@ void rando_rom_write_text(RomOut *out, const RandoGen *gen)
 	size_t total = 0, n;
 	int id;
 
-	(void)gen;
 	for (id = 0; id < RANDO_TEXT_COUNT; id++) {
-		n = rando_text_default((RandoTextId)id, entry);
+		n = rando_text_seed(gen, (RandoTextId)id, entry, NULL);
 		/* VT's getByteArray throws "Too BIG" here; no table on this path reaches it. */
 		assert(n <= sizeof table - total);
 		memcpy(table + total, entry, n);

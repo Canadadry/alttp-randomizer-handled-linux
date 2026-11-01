@@ -8,6 +8,8 @@
 void rando_postfill_clear(RandoPostFill *post)
 {
 	memset(post, 0, sizeof *post);
+	/* ALTERNATE, the zero value, would need two bow locations. */
+	post->texts.bow_hint = RANDO_BOW_HINT_FAKE;
 	post->texts.bow_locations[0] = RANDO_LOCATION_NONE;
 	post->texts.bow_locations[1] = RANDO_LOCATION_NONE;
 	post->texts.silvers_location = RANDO_LOCATION_NONE;

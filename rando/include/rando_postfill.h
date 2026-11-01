@@ -168,6 +168,7 @@ typedef struct RandoPostFill {
 	uint8_t rng_block[RANDO_RNG_BLOCK_SIZE];
 } RandoPostFill;
 
+/* Every index 0, the fake-silvers bow hint, every location RANDO_LOCATION_NONE, hints off. */
 void rando_postfill_clear(RandoPostFill *post);
 
 /* Randomizer::setTexts with spoil.BootsLocation off. Draws 55 + 77 + 51 + 31, then min(2, progressive

@@ -1,6 +1,7 @@
 #ifndef RANDO_TEXT_H
 #define RANDO_TEXT_H
 
+#include "rando.h"
 #include "rando_text_ids.h"
 
 #include <stdbool.h>
@@ -25,5 +26,10 @@ RandoTextId rando_text_find(const char *name);
 /* The id's bytes as VT's Rom constructor leaves them (Text::en(), then removeUnwanted()), into out;
  * returns their count, never 0. Asserts id < RANDO_TEXT_COUNT. */
 size_t rando_text_default(RandoTextId id, uint8_t out[RANDO_TEXT_ENTRY_MAX]);
+
+/* The id's bytes in gen's text table, gen read as const: the seed's text when a seed-dependent VT setter
+ * (setTexts, applyHints, setInvertedMode, a writeItem override) sets the id, with *seed_set true; else
+ * rando_text_default's bytes, *seed_set false. seed_set may be NULL. Returns the count, never 0. */
+size_t rando_text_seed(const RandoGen *gen, RandoTextId id, uint8_t out[RANDO_TEXT_ENTRY_MAX], bool *seed_set);
 
 #endif

@@ -1,13 +1,18 @@
 #include "rando.h"
+#include "rando_case.h"
 #include "rando_rom.h"
 #include "rando_text.h"
 #include "support.h"
 
+#include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define TEST "test_rom_text"
 #define FIXTURE_TEXT_DEFAULT "oracle/text_default.txt"
+#define FIXTURE_TEXT_TABLES "oracle/text_tables.txt"
+#define ORACLE_WATCHDOG 1000u
 #define TEXT_ADDRESS 0x0E0000u
 #define ROM_SIZE (2u * 1024 * 1024)
 
@@ -297,7 +302,7 @@ static void test_group_shape(void)
 	CHECK(rec.address == TEXT_ADDRESS);
 	CHECK(rec.address <= ROM_SIZE && rec.count <= ROM_SIZE - rec.address);
 	for (id = 0; id < RANDO_TEXT_COUNT; id++) {
-		n = rando_text_default((RandoTextId)id, entry);
+		n = rando_text_seed(&gen, (RandoTextId)id, entry, NULL);
 		CHECK(total + n <= sizeof table);
 		memcpy(table + total, entry, n);
 		total += n;
@@ -323,6 +328,256 @@ static void test_const(void)
 	memset(&rec, 0, sizeof rec);
 	CHECK(rando_rom_write(&gen, RANDO_HEART_BEEP_NORMAL, &writer));
 	CHECK(memcmp(&before, &gen, sizeof gen) == 0);
+}
+
+static RandoGen edited;
+
+/* The seed's text of id in g is utf8 through the encoder; the encoder is proven on its own above. */
+static void expect_seed(const char *what, const RandoGen *g, RandoTextId id, const char *utf8, bool pause)
+{
+	uint8_t want[RANDO_TEXT_ENTRY_MAX], got[RANDO_TEXT_ENTRY_MAX];
+	size_t nwant, ngot;
+	bool set = false;
+
+	nwant = rando_text_encode(utf8, pause, want);
+	ngot = rando_text_seed(g, id, got, &set);
+	if (!set)
+		test_fail(TEST, "%s: %s not seed-set", what, rando_text_name(id));
+	if (ngot != nwant || memcmp(got, want, nwant) != 0)
+		test_fail(TEST, "%s: %s differs", what, rando_text_name(id));
+}
+
+static void expect_unset(const char *what, const RandoGen *g, RandoTextId id)
+{
+	uint8_t want[RANDO_TEXT_ENTRY_MAX], got[RANDO_TEXT_ENTRY_MAX];
+	size_t nwant, ngot;
+	bool set = true;
+
+	nwant = rando_text_default(id, want);
+	ngot = rando_text_seed(g, id, got, &set);
+	if (set)
+		test_fail(TEST, "%s: %s seed-set", what, rando_text_name(id));
+	if (ngot != nwant || memcmp(got, want, nwant) != 0)
+		test_fail(TEST, "%s: %s is not its default", what, rando_text_name(id));
+}
+
+/* First and last alternative of each string file, typed from VT's strings/<file>.txt. */
+static void test_alternatives(void)
+{
+	memcpy(&edited, &gen, sizeof gen);
+	expect_unset("no setter", &edited, RANDO_TEXT_set_cursor);
+	expect_unset("no setter", &edited, RANDO_TEXT_uncle_dying_sewer);
+	edited.post.texts.uncle = 0;
+	expect_seed("uncle first", &edited, RANDO_TEXT_uncle_leaving_text, "We're out of\nWeetabix. To\nthe store!", true);
+	edited.post.texts.uncle = RANDO_STRINGS_UNCLE - 1;
+	expect_seed("uncle last", &edited, RANDO_TEXT_uncle_leaving_text, "Off to buy us\na second bed!\nLater!", true);
+	edited.post.texts.blind = 0;
+	expect_seed("blind first", &edited, RANDO_TEXT_blind_by_the_light, "I hate insect\npuns, they\nreally bug me.", true);
+	edited.post.texts.blind = RANDO_STRINGS_BLIND - 1;
+	expect_seed("blind last", &edited, RANDO_TEXT_blind_by_the_light, "Ice Trinexx is\npolar-icing", true);
+	edited.post.texts.tavern_man = 0;
+	expect_seed("tavern first", &edited, RANDO_TEXT_kakariko_tavern_fisherman,
+		    "What do you\ncall a blind\ndinosaur?\na doyouthink-\nhesaurus.", true);
+	edited.post.texts.tavern_man = RANDO_STRINGS_TAVERN_MAN - 1;
+	expect_seed("tavern last", &edited, RANDO_TEXT_kakariko_tavern_fisherman,
+		    "Hardhat Beetle\nwon't\nLet It Be?\nTell it to Get\nBack or give\nit a Ticket to\nRide down\na hole!", true);
+	edited.post.texts.ganon_1 = 0;
+	expect_seed("ganon_1 first", &edited, RANDO_TEXT_ganon_fall_in,
+		    "Start your day\nsmiling with a\ndelicious\nwhole grain\nbreakfast\ncreated for\nyour incredible\ninsides.",
+		    true);
+	edited.post.texts.ganon_1 = RANDO_STRINGS_GANON_1 - 1;
+	expect_seed("ganon_1 last", &edited, RANDO_TEXT_ganon_fall_in,
+		    "@:\nHello there\n\n...\n\n\nGanon:\nGeneral Kenobi\n", true);
+	edited.post.texts.triforce = 0;
+	expect_seed("triforce first", &edited, RANDO_TEXT_end_triforce, "{NOBORDER}\n\n     G G", true);
+	edited.post.texts.triforce = RANDO_STRINGS_TRIFORCE - 1;
+	expect_seed("triforce last", &edited, RANDO_TEXT_end_triforce, "{NOBORDER}\nBreakfast\nis served!", true);
+	expect_seed("fixed", &edited, RANDO_TEXT_ganon_phase_3_alt, "Got wax in\nyour ears?\nI cannot die!", true);
+}
+
+/* Swaps item, wherever the world holds it, with what location holds. */
+static void move_item(RandoGen *g, RandoItemId item, RandoLocationId location)
+{
+	RandoItemId there = rando_world_item(&g->world, location);
+	int l;
+
+	for (l = 0; l < RANDO_LOCATION_COUNT; l++)
+		if (rando_world_item(&g->world, (RandoLocationId)l) == item) {
+			CHECK(rando_world_set_item(&g->world, (RandoLocationId)l, there));
+			CHECK(rando_world_set_item(&g->world, location, item));
+			return;
+		}
+	test_fail(TEST, "no location holds the item");
+}
+
+static void test_regions(void)
+{
+	memcpy(&edited, &gen, sizeof gen);
+	move_item(&edited, RANDO_ITEM_PendantOfCourage, RANDO_LOC_PALACE_OF_DARKNESS_PRIZE);
+	move_item(&edited, RANDO_ITEM_Crystal5, RANDO_LOC_TOWER_OF_HERA_PRIZE);
+	move_item(&edited, RANDO_ITEM_Crystal6, RANDO_LOC_EASTERN_PALACE_PRIZE);
+	expect_seed("pendant region", &edited, RANDO_TEXT_sahasrahla_bring_courage,
+		    "Want something\nfor free? Go\nearn the green\npendant in\nDark Palace\nand I'll give\nyou something.",
+		    true);
+	expect_seed("crystal regions", &edited, RANDO_TEXT_bomb_shop,
+		    "bring me the\ncrystals from\nTower Of Hera\nand\nEastern Palace\nso I can make\na big bomb!", true);
+}
+
+static void test_bow_hint(void)
+{
+	static const char *const light = "Did you find\nthe arrows in\nLight World";
+	static const char *const tower = "Did you find\nthe arrows in\nMy tower?";
+	RandoTexts *t = &edited.post.texts;
+
+	memcpy(&edited, &gen, sizeof gen);
+	t->bow_hint = RANDO_BOW_HINT_ALTERNATE;
+	t->bow_locations[0] = RANDO_LOC_GANONS_TOWER_BOBS_TORCH;
+	t->bow_locations[1] = RANDO_LOC_SAHASRAHLA;
+	expect_seed("first bow in the tower", &edited, RANDO_TEXT_ganon_phase_3_no_silvers, tower, true);
+	expect_seed("second bow", &edited, RANDO_TEXT_ganon_phase_3_no_silvers_alt, light, true);
+	t->bow_locations[0] = RANDO_LOC_SAHASRAHLA;
+	t->bow_locations[1] = RANDO_LOC_GANONS_TOWER_BOBS_TORCH;
+	expect_seed("first bow", &edited, RANDO_TEXT_ganon_phase_3_no_silvers, light, true);
+	expect_seed("second bow in the tower", &edited, RANDO_TEXT_ganon_phase_3_no_silvers_alt, tower, true);
+
+	t->bow_hint = RANDO_BOW_HINT_SILVERS;
+	t->silvers_location = RANDO_LOC_GANONS_TOWER_BOBS_TORCH;
+	expect_seed("silvers in the tower", &edited, RANDO_TEXT_ganon_phase_3_no_silvers, tower, true);
+	expect_seed("silvers in the tower", &edited, RANDO_TEXT_ganon_phase_3_no_silvers_alt, tower, true);
+	t->silvers_location = RANDO_LOC_SAHASRAHLA;
+	expect_seed("silvers", &edited, RANDO_TEXT_ganon_phase_3_no_silvers, light, true);
+	expect_seed("silvers", &edited, RANDO_TEXT_ganon_phase_3_no_silvers_alt, light, true);
+
+	t->bow_hint = RANDO_BOW_HINT_FAKE;
+	t->fake_silvers = 0;
+	expect_seed("fake first", &edited, RANDO_TEXT_ganon_phase_3_no_silvers,
+		    "Did you find\nthe arrows on\nPlanet Zebes?", true);
+	expect_seed("fake first", &edited, RANDO_TEXT_ganon_phase_3_no_silvers_alt,
+		    "Did you find\nthe arrows on\nPlanet Zebes?", true);
+	t->fake_silvers = RANDO_STRINGS_GANON_PHASE_3_NO_SILVERS - 1;
+	expect_seed("fake last", &edited, RANDO_TEXT_ganon_phase_3_no_silvers,
+		    "No, painting\narrows silver\nwon't work.", true);
+	edited.world.config.item_pool = RANDO_ITEM_POOL_CROWD_CONTROL;
+	expect_seed("crowd control", &edited, RANDO_TEXT_ganon_phase_3_no_silvers,
+		    "Chat said no\nto Silvers.\nIt's over Hero", true);
+	expect_seed("crowd control", &edited, RANDO_TEXT_ganon_phase_3_no_silvers_alt,
+		    "Chat said no\nto Silvers.\nIt's over Hero", true);
+}
+
+static void test_tower_sign(void)
+{
+	memcpy(&edited, &gen, sizeof gen);
+	edited.world.config.crystals_tower = 7;
+	expect_unset("seven crystals", &edited, RANDO_TEXT_sign_ganons_tower);
+	edited.world.config.crystals_tower = 1;
+	expect_seed("one crystal", &edited, RANDO_TEXT_sign_ganons_tower, "You need 1 crystal to enter.", true);
+	edited.world.config.crystals_tower = 0;
+	expect_seed("no crystal", &edited, RANDO_TEXT_sign_ganons_tower, "You need 0 crystals to enter.", true);
+	edited.world.config.crystals_tower = 6;
+	expect_seed("six crystals", &edited, RANDO_TEXT_sign_ganons_tower, "You need 6 crystals to enter.", true);
+}
+
+static void expect_goal(RandoGoal goal, int crystals, int required, const char *sign, const char *fall_in)
+{
+	memcpy(&edited, &gen, sizeof gen);
+	edited.world.config.goal = goal;
+	edited.world.config.crystals_ganon = crystals;
+	edited.world.config.item_goal_required = required;
+	expect_seed(sign, &edited, RANDO_TEXT_sign_ganon, sign, true);
+	expect_seed(sign, &edited, RANDO_TEXT_ganon_fall_in_alt, fall_in, true);
+	if (goal != RANDO_GOAL_TRIFORCE_HUNT)
+		expect_unset(sign, &edited, RANDO_TEXT_murahdahla);
+}
+
+static void test_goals(void)
+{
+	static const char *const dingus = "You think you\nare ready to\nface me?\n\nI will not die\n\nunless you\ncomplete your\n"
+					  "goals. Dingus!";
+
+	expect_goal(RANDO_GOAL_GANON, 7, 0,
+		    "To beat Ganon you must collect 7 Crystals and defeat his minion at the top of his tower.", dingus);
+	expect_goal(RANDO_GOAL_GANON, 1, 0,
+		    "To beat Ganon you must collect 1 Crystal and defeat his minion at the top of his tower.", dingus);
+	expect_goal(RANDO_GOAL_FAST_GANON, 1, 0, "You need 1 Crystal to beat Ganon.", dingus);
+	expect_goal(RANDO_GOAL_FAST_GANON, 0, 0, "You need 0 Crystals to beat Ganon.", dingus);
+	expect_goal(RANDO_GOAL_GANONHUNT, 1, 25, "To beat Ganon you must collect 25 Triforce Pieces.", dingus);
+	expect_goal(RANDO_GOAL_PEDESTAL, 7, 0, "You need to get to the pedestal... Dingus!",
+		    "You cannot\nkill me. You\nshould go for\nyour real goal\nIt's on the\npedestal.\n\nYou dingus!\n");
+	expect_goal(RANDO_GOAL_DUNGEONS, 7, 0, "You need to defeat all of Ganon's bosses.", dingus);
+	expect_goal(RANDO_GOAL_COMPLETIONIST, 7, 0, "You need to collect EVERY item and defeat EVERY boss.", dingus);
+	expect_goal(RANDO_GOAL_TRIFORCE_HUNT, 7, 20, "Go find the Triforce pieces... Dingus!",
+		    "So you thought\nyou could come\nhere and beat\nme? I have\nhidden the\nTriforce\npieces well.\n"
+		    "Without them,\nyou can't win!");
+	expect_seed("murahdahla", &edited, RANDO_TEXT_murahdahla,
+		    "Hello @. I\nam Murahdahla, brother of\nSahasrahla and Aginah. Behold the power of\ninvisibility.\n\n\n\n"
+		    "\xE2\x80\xA6 \xE2\x80\xA6 \xE2\x80\xA6\n\nWait! you can see me? I knew I should have\n"
+		    "hidden in  a hollow tree. If you bring\n20 triforce pieces, I can reassemble it.",
+		    true);
+}
+
+static void test_hints(void)
+{
+	RandoHints *h = &edited.post.hints;
+	int tile;
+
+	memcpy(&edited, &gen, sizeof gen);
+	edited.world.config.spoil_hints = false;
+	memset(h, 0, sizeof *h);
+	expect_seed("hints off", &edited, RANDO_TEXT_sign_north_of_links_house, "Randomizer v31\n\n>    -veetorp", true);
+	expect_unset("hints off", &edited, RANDO_TEXT_telepathic_tile_eastern_palace);
+	expect_unset("hints off", &edited, RANDO_TEXT_telepathic_tile_south_east_darkworld_cave);
+
+	edited.world.config.spoil_hints = true;
+	h->on = true;
+	for (tile = 0; tile < RANDO_TILE_COUNT; tile++)
+		h->tiles[tile].kind = RANDO_TILE_HINT_JOKE;
+	h->tiles[RANDO_TILE_SOUTH_EAST_DARKWORLD_CAVE].joke = RANDO_STRINGS_HINT - 1;
+	expect_unset("hints on", &edited, RANDO_TEXT_sign_north_of_links_house);
+	expect_seed("joke first", &edited, RANDO_TEXT_telepathic_tile_eastern_palace,
+		    "It\xE2\x80\x99s a secret\nto everybody.\n            >", true);
+	expect_seed("joke last", &edited, RANDO_TEXT_telepathic_tile_south_east_darkworld_cave,
+		    "The hobo's\nfire sheds\nno light.  >", true);
+	expect_unset("no tile", &edited, RANDO_TEXT_telepathic_tile_under_ganon);
+}
+
+static void test_inverted(void)
+{
+	static const RandoTextId ids[] = {
+		RANDO_TEXT_sign_path_to_death_mountain, RANDO_TEXT_sign_bumper_cave, RANDO_TEXT_sign_east_of_bomb_shop,
+		RANDO_TEXT_sign_east_of_links_house, RANDO_TEXT_kiki_leaving_screen, RANDO_TEXT_dark_sanctuary,
+		RANDO_TEXT_dark_sanctuary_yes, RANDO_TEXT_dark_sanctuary_no, RANDO_TEXT_menu_start_2,
+		RANDO_TEXT_menu_start_3, RANDO_TEXT_intro_main,
+	};
+	size_t i;
+
+	memcpy(&edited, &gen, sizeof gen);
+	CHECK(edited.world.config.mode_state != RANDO_STATE_INVERTED);
+	for (i = 0; i < sizeof ids / sizeof ids[0]; i++)
+		expect_unset("not inverted", &edited, ids[i]);
+	edited.world.config.mode_state = RANDO_STATE_INVERTED;
+	expect_seed("inverted", &edited, RANDO_TEXT_sign_path_to_death_mountain,
+		    "\xE2\x86\x92 Bumper Cave\nYou need Cape and Mirror, but not Hookshot", true);
+	expect_seed("inverted", &edited, RANDO_TEXT_sign_bumper_cave, "Cave to lost, old man.\nGood luck.", true);
+	expect_seed("inverted", &edited, RANDO_TEXT_sign_east_of_bomb_shop, "\n\xE2\x86\x90 Your House", true);
+	expect_seed("inverted", &edited, RANDO_TEXT_sign_east_of_links_house, "\n\xE2\x86\x90 Bomb Shoppe", true);
+	expect_seed("inverted", &edited, RANDO_TEXT_kiki_leaving_screen, "{NOTEXT}", false);
+	expect_seed("inverted", &edited, RANDO_TEXT_dark_sanctuary, "{NOTEXT}", false);
+	expect_seed("inverted", &edited, RANDO_TEXT_dark_sanctuary_yes, "{NOTEXT}", false);
+	expect_seed("inverted", &edited, RANDO_TEXT_dark_sanctuary_no,
+		    "If you want that healing you're gonna need 20 rupees.", true);
+	expect_seed("inverted", &edited, RANDO_TEXT_menu_start_2,
+		    "{MENU}\n{SPEED0}\n\xE2\x89\xA5@'s House\n Dark Chapel\n{CHOICE3}", false);
+	expect_seed("inverted", &edited, RANDO_TEXT_menu_start_3,
+		    "{MENU}\n{SPEED0}\n\xE2\x89\xA5@'s House\n Dark Chapel\n Dark Mountain\n{CHOICE2}", false);
+	expect_seed("inverted", &edited, RANDO_TEXT_intro_main,
+		    "{INTRO}\n Episode  III\n{PAUSE3}\n A Link to\n   the Past\n"
+		    "{PAUSE3}\nInverted\n  Randomizer\n{PAUSE3}\nAfter mostly disregarding what happened in the first two games,\n"
+		    "{PAUSE3}\nLink has been transported to the Dark World\n{PAUSE3}\nWhile he was slumbering,\n"
+		    "{PAUSE3}\nWhatever will happen?\n{PAUSE3}\n{CHANGEPIC}\nGanon has moved around all the items in Hyrule.\n"
+		    "{PAUSE7}\nYou will have to find all the items necessary to beat Ganon.\n"
+		    "{PAUSE7}\nThis is your chance to be a hero.\n{PAUSE3}\n{CHANGEPIC}\n"
+		    "You must get the 7 crystals to beat Ganon.\n{PAUSE9}\n{CHANGEPIC}",
+		    false);
 }
 
 static int hex_value(char c)
@@ -372,6 +627,246 @@ static void check_text_default_fixture(void)
 	printf(TEST ": %d text_default records matched\n", id);
 }
 
+/* Splits a space-separated record in place; returns the field count, at most max. */
+static int split_spaces(char *line, char **field, int max)
+{
+	int n = 0;
+
+	while (*line != '\0' && n < max) {
+		field[n++] = line;
+		line = strchr(line, ' ');
+		if (line == NULL)
+			break;
+		*line++ = '\0';
+	}
+	return n;
+}
+
+/* Whether hex is exactly bytes[0..n). */
+static bool hex_equals(const char *hex, const uint8_t *bytes, size_t n)
+{
+	size_t i;
+
+	if (strlen(hex) != 2 * n)
+		return false;
+	for (i = 0; i < n; i++) {
+		int hi = hex_value(hex[2 * i]), lo = hex_value(hex[2 * i + 1]);
+
+		if (hi < 0 || lo < 0 || bytes[i] != (uint8_t)(hi << 4 | lo))
+			return false;
+	}
+	return true;
+}
+
+static void print_hex(const char *label, const uint8_t *bytes, size_t n)
+{
+	size_t i;
+
+	fprintf(stderr, "%s ", label);
+	for (i = 0; i < n; i++)
+		fprintf(stderr, "%02X", bytes[i]);
+	fprintf(stderr, "\n");
+}
+
+typedef struct PickFile {
+	const char *file;
+	RandoTextId id;
+	int count;
+	int seen;
+} PickFile;
+
+/* Sets the choice that makes pick's file give its index-th alternative. */
+static void apply_pick(RandoGen *g, const char *file, int index)
+{
+	if (strcmp(file, "uncle") == 0) {
+		g->post.texts.uncle = (uint8_t)index;
+	} else if (strcmp(file, "blind") == 0) {
+		g->post.texts.blind = (uint8_t)index;
+	} else if (strcmp(file, "tavern_man") == 0) {
+		g->post.texts.tavern_man = (uint8_t)index;
+	} else if (strcmp(file, "ganon_1") == 0) {
+		g->post.texts.ganon_1 = (uint8_t)index;
+	} else if (strcmp(file, "triforce") == 0) {
+		g->post.texts.triforce = (uint8_t)index;
+	} else if (strcmp(file, "ganon_phase_3_no_silvers") == 0) {
+		g->post.texts.bow_hint = RANDO_BOW_HINT_FAKE;
+		g->post.texts.fake_silvers = (uint8_t)index;
+		g->world.config.item_pool = RANDO_ITEM_POOL_NORMAL;
+	} else {
+		int tile;
+
+		g->post.hints.on = true;
+		for (tile = 0; tile < RANDO_TILE_COUNT; tile++)
+			g->post.hints.tiles[tile].kind = RANDO_TILE_HINT_JOKE;
+		g->post.hints.tiles[RANDO_TILE_EASTERN_PALACE].joke = (uint8_t)index;
+	}
+}
+
+static void check_text_tables_fixture(void)
+{
+	PickFile files[] = {
+		{"uncle", RANDO_TEXT_uncle_leaving_text, RANDO_STRINGS_UNCLE, 0},
+		{"blind", RANDO_TEXT_blind_by_the_light, RANDO_STRINGS_BLIND, 0},
+		{"tavern_man", RANDO_TEXT_kakariko_tavern_fisherman, RANDO_STRINGS_TAVERN_MAN, 0},
+		{"ganon_1", RANDO_TEXT_ganon_fall_in, RANDO_STRINGS_GANON_1, 0},
+		{"ganon_phase_3_no_silvers", RANDO_TEXT_ganon_phase_3_no_silvers, RANDO_STRINGS_GANON_PHASE_3_NO_SILVERS, 0},
+		{"triforce", RANDO_TEXT_end_triforce, RANDO_STRINGS_TRIFORCE, 0},
+		{"hint", RANDO_TEXT_telepathic_tile_eastern_palace, RANDO_STRINGS_HINT, 0},
+	};
+	const size_t nfiles = sizeof files / sizeof files[0];
+	Fixture fx;
+	uint8_t got[RANDO_TEXT_ENTRY_MAX];
+	int picks = 0;
+	size_t f;
+
+	fixture_open(&fx, FIXTURE_TEXT_TABLES);
+	while (fixture_next(&fx)) {
+		char *field[6];
+		int n, index;
+		size_t ngot;
+		bool set;
+
+		if (fx.nfields != 1)
+			fixture_fail(&fx, "malformed record");
+		n = split_spaces(fx.field[0], field, 6);
+		if (n < 1 || strcmp(field[0], "pick") != 0)
+			continue;
+		if (n != 5)
+			fixture_fail(&fx, "malformed pick");
+		for (f = 0; f < nfiles && strcmp(files[f].file, field[2]) != 0; f++)
+			;
+		if (f == nfiles)
+			fixture_fail(&fx, "unknown string file");
+		if (rando_text_find(field[1]) != files[f].id)
+			fixture_fail(&fx, "pick id is not its file's");
+		index = atoi(field[3]);
+		if (index != files[f].seen || index >= files[f].count)
+			fixture_fail(&fx, "pick index out of order or past the file's count");
+		files[f].seen++;
+		memcpy(&edited, &gen, sizeof gen);
+		apply_pick(&edited, files[f].file, index);
+		ngot = rando_text_seed(&edited, files[f].id, got, &set);
+		if (!set || !hex_equals(field[4], got, ngot)) {
+			print_hex("C", got, ngot);
+			fixture_fail(&fx, "pick bytes differ");
+		}
+		picks++;
+	}
+	fixture_close(&fx);
+	for (f = 0; f < nfiles; f++)
+		if (files[f].seen != files[f].count)
+			test_fail(TEST, "%s: %d pick records, expected %d", files[f].file, files[f].seen, files[f].count);
+	printf(TEST ": %d text_tables pick records matched\n", picks);
+}
+
+/* TODO step 9 chunk 5: every id, with the set equality over all of them. */
+static const RandoTextId golden_ids[] = {
+	RANDO_TEXT_uncle_leaving_text,
+	RANDO_TEXT_sahasrahla_bring_courage,
+	RANDO_TEXT_bomb_shop,
+	RANDO_TEXT_blind_by_the_light,
+	RANDO_TEXT_kakariko_tavern_fisherman,
+	RANDO_TEXT_ganon_fall_in,
+	RANDO_TEXT_ganon_phase_3_alt,
+	RANDO_TEXT_ganon_phase_3_no_silvers,
+	RANDO_TEXT_ganon_phase_3_no_silvers_alt,
+	RANDO_TEXT_sign_ganons_tower,
+	RANDO_TEXT_sign_ganon,
+	RANDO_TEXT_ganon_fall_in_alt,
+	RANDO_TEXT_murahdahla,
+	RANDO_TEXT_end_triforce,
+	RANDO_TEXT_sign_north_of_links_house,
+	RANDO_TEXT_sign_path_to_death_mountain,
+	RANDO_TEXT_sign_bumper_cave,
+	RANDO_TEXT_sign_east_of_bomb_shop,
+	RANDO_TEXT_sign_east_of_links_house,
+	RANDO_TEXT_kiki_leaving_screen,
+	RANDO_TEXT_dark_sanctuary,
+	RANDO_TEXT_dark_sanctuary_yes,
+	RANDO_TEXT_dark_sanctuary_no,
+	RANDO_TEXT_menu_start_2,
+	RANDO_TEXT_menu_start_3,
+	RANDO_TEXT_intro_main,
+};
+
+/* The golden's last `text` line per listed id, against the C seed texts of the case's generation. */
+static void check_golden_case(const char *dir, const char *name)
+{
+	static char golden[RANDO_TEXT_COUNT][2 * RANDO_TEXT_ENTRY_MAX + 1];
+	bool in_golden[RANDO_TEXT_COUNT] = {false};
+	char path[512], error[RANDO_CASE_ERROR_MAX];
+	uint8_t got[RANDO_TEXT_ENTRY_MAX];
+	RandoCase c;
+	Fixture fx;
+	uint32_t cap;
+	size_t i;
+
+	snprintf(path, sizeof path, "%s/%s", dir, name);
+	if (!rando_case_read(path, &c, error))
+		test_fail(TEST, "%s", error);
+	cap = !c.has_attempts ? ORACLE_WATCHDOG : c.attempts == UINT32_MAX ? 0 : c.attempts + 1;
+	if (rando_generate(&edited, &c.options, c.seed, cap, NULL, NULL) != RANDO_COMPLETE)
+		test_fail(TEST, "%s: the generation does not complete", path);
+	snprintf(path, sizeof path, "%s/%s/rom_buffers.txt", dir, name);
+	fixture_open(&fx, path);
+	while (fixture_next(&fx)) {
+		char *field[3];
+		RandoTextId id;
+
+		if (strncmp(fx.field[0], "text ", 5) != 0)
+			continue;
+		if (fx.nfields != 1 || split_spaces(fx.field[0], field, 3) != 3)
+			fixture_fail(&fx, "malformed text line");
+		id = rando_text_find(field[1]);
+		if (id == RANDO_TEXT_NONE)
+			fixture_fail(&fx, "unknown text id");
+		if (strlen(field[2]) >= sizeof golden[id])
+			fixture_fail(&fx, "text longer than an entry");
+		strcpy(golden[id], field[2]);
+		in_golden[id] = true;
+	}
+	fixture_close(&fx);
+	for (i = 0; i < sizeof golden_ids / sizeof golden_ids[0]; i++) {
+		RandoTextId id = golden_ids[i];
+		bool set;
+		size_t n = rando_text_seed(&edited, id, got, &set);
+
+		if (set != in_golden[id])
+			test_fail(TEST, "%s/%s: %s is %sset by the C but %sin the golden", dir, name, rando_text_name(id),
+				  set ? "" : "not ", in_golden[id] ? "" : "not ");
+		if (set && !hex_equals(golden[id], got, n)) {
+			print_hex("C     ", got, n);
+			fprintf(stderr, "golden %s\n", golden[id]);
+			test_fail(TEST, "%s/%s: %s differs", dir, name, rando_text_name(id));
+		}
+	}
+}
+
+static int check_golden_dir(const char *dir)
+{
+	DIR *d = opendir(dir);
+	struct dirent *entry;
+	int n = 0;
+
+	if (d == NULL)
+		test_fail(TEST, "cannot open %s/", dir);
+	while ((entry = readdir(d)) != NULL) {
+		if (entry->d_name[0] == '.')
+			continue;
+		check_golden_case(dir, entry->d_name);
+		n++;
+	}
+	closedir(d);
+	return n;
+}
+
+static void check_goldens(void)
+{
+	int n = check_golden_dir("cases") + check_golden_dir("combos");
+
+	printf(TEST ": %d goldens' text lines matched for %d ids\n", n, (int)(sizeof golden_ids / sizeof golden_ids[0]));
+}
+
 int main(int argc, char **argv)
 {
 	RandoOptions options;
@@ -389,8 +884,18 @@ int main(int argc, char **argv)
 	test_group_shape();
 	test_refusal();
 	test_const();
+	test_alternatives();
+	test_regions();
+	test_bow_hint();
+	test_tower_sign();
+	test_goals();
+	test_hints();
+	test_inverted();
 	printf(TEST ": passed\n");
-	if (fixtures)
+	if (fixtures) {
 		check_text_default_fixture();
+		check_text_tables_fixture();
+		check_goldens();
+	}
 	return 0;
 }
