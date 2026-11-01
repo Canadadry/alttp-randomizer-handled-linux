@@ -1,4 +1,5 @@
 #include "rando_case.h"
+#include "rando_settings.h"
 
 #include <errno.h>
 #include <stdarg.h>
@@ -63,41 +64,17 @@ static const char *parse_string(Parser *ps, char out[CASE_STRING_MAX])
 	return "unterminated string";
 }
 
-typedef enum CaseKey {
-	CASE_KEY_HINTS,
-	CASE_KEY_HEART_BEEP,
-	CASE_KEY_COUNT,
-} CaseKey;
-
-static CaseKey case_key_find(const char *key)
-{
-	if (strcmp(key, "hints") == 0)
-		return CASE_KEY_HINTS;
-	if (strcmp(key, "heart_beep") == 0)
-		return CASE_KEY_HEART_BEEP;
-	return CASE_KEY_COUNT;
-}
-
-/* Returns false when value is not one of key's values. */
-static bool set_case_key(RandoCase *out, CaseKey key, const char *value)
-{
-	if (key == CASE_KEY_HINTS)
-		return rando_hints_find(value, &out->options.hints);
-	return rando_heart_beep_find(value, &out->heart_beep);
-}
-
 bool rando_case_parse_config(const char *text, size_t len, const char *file, RandoCase *out,
 			     char error[RANDO_CASE_ERROR_MAX])
 {
 	Parser ps = {text, text + len};
-	bool seen[RANDO_OPTION_KEY_COUNT] = {false};
-	bool case_seen[CASE_KEY_COUNT] = {false};
+	bool seen[RANDO_SETTING_COUNT] = {false};
 	char key[CASE_STRING_MAX], value[CASE_STRING_MAX];
 	const char *why;
 	int k;
 
 	rando_options_init(&out->options);
-	out->heart_beep = RANDO_HEART_BEEP_HALF;
+	out->heart_beep = (RandoHeartBeep)rando_setting_default(RANDO_SETTING_HEART_BEEP);
 	skip_space(&ps);
 	if (!at(&ps, '{'))
 		return fail(error, file, "not a JSON object");
@@ -107,8 +84,8 @@ bool rando_case_parse_config(const char *text, size_t len, const char *file, Ran
 		ps.p++;
 	else
 		for (;;) {
-			RandoOptionKey option;
-			CaseKey case_key;
+			RandoSettingId setting;
+			int v;
 
 			skip_space(&ps);
 			if (!at(&ps, '"'))
@@ -124,23 +101,16 @@ bool rando_case_parse_config(const char *text, size_t len, const char *file, Ran
 				return fail(error, file, "%s is not a string", key);
 			if ((why = parse_string(&ps, value)) != NULL)
 				return fail(error, file, "%s: %s", key, why);
-			case_key = case_key_find(key);
-			if (case_key != CASE_KEY_COUNT) {
-				if (case_seen[case_key])
-					return fail(error, file, "duplicate key %s", key);
-				if (!set_case_key(out, case_key, value))
-					return fail(error, file, "unknown %s %s", key, value);
-				case_seen[case_key] = true;
-			} else {
-				option = rando_option_key_find(key);
-				if (option == RANDO_OPTION_KEY_COUNT)
-					return fail(error, file, "unknown key %s", key);
-				if (seen[option])
-					return fail(error, file, "duplicate key %s", key);
-				if (!rando_options_set(&out->options, key, value))
-					return fail(error, file, "unknown %s %s", key, value);
-				seen[option] = true;
-			}
+			setting = rando_setting_find(key);
+			if (setting == RANDO_SETTING_COUNT)
+				return fail(error, file, "unknown key %s", key);
+			if (seen[setting])
+				return fail(error, file, "duplicate key %s", key);
+			v = rando_setting_value_find(setting, value);
+			if (v < 0)
+				return fail(error, file, "unknown %s %s", key, value);
+			rando_setting_set(&out->options, &out->heart_beep, setting, v);
+			seen[setting] = true;
 			skip_space(&ps);
 			if (at(&ps, ',')) {
 				ps.p++;
@@ -156,27 +126,15 @@ bool rando_case_parse_config(const char *text, size_t len, const char *file, Ran
 		return fail(error, file, "trailing data after the object");
 	for (k = 0; k < RANDO_OPTION_KEY_COUNT; k++)
 		if (!seen[k])
-			return fail(error, file, "missing key %s", rando_option_key_name((RandoOptionKey)k));
+			return fail(error, file, "missing key %s", rando_setting_key((RandoSettingId)k));
 	return true;
 }
 
 bool rando_case_parse_uint32(const char *text, size_t len, const char *file, uint32_t *out,
 			     char error[RANDO_CASE_ERROR_MAX])
 {
-	size_t digits = len > 0 && text[len - 1] == '\n' ? len - 1 : len;
-	unsigned long long v = 0;
-	size_t i;
-
-	if (digits < 1 || digits > 10)
+	if (!rando_parse_uint32(text, len, out))
 		return fail(error, file, "not a decimal uint32 on one line");
-	for (i = 0; i < digits; i++) {
-		if (text[i] < '0' || text[i] > '9')
-			return fail(error, file, "not a decimal uint32 on one line");
-		v = v * 10 + (unsigned)(text[i] - '0');
-	}
-	if (v > 0xFFFFFFFFull)
-		return fail(error, file, "not a decimal uint32 on one line");
-	*out = (uint32_t)v;
 	return true;
 }
 

@@ -1,33 +1,11 @@
 #include "rando_record.h"
-#include "rando_case.h"
+#include "rando_settings.h"
 #include "rando_spoiler.h"
 
 #include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-
-/* Bytewise sorted: the record's settings keys. */
-static const char *const settings_keys[] = {
-	"accessibility", "crystals_ganon", "crystals_tower", "dungeon_items",  "glitches",
-	"goal",		 "heart_beep",	   "hints",	     "item_functionality", "item_placement",
-	"item_pool",	 "state",	   "weapons",
-};
-
-#define SETTINGS_COUNT (sizeof settings_keys / sizeof settings_keys[0])
-
-static const char *settings_value(const RandoRecord *record, const char *key)
-{
-	RandoOptionKey option;
-
-	if (strcmp(key, "hints") == 0)
-		return rando_hints_name(record->options.hints);
-	if (strcmp(key, "heart_beep") == 0)
-		return rando_heart_beep_name(record->heart_beep);
-	option = rando_option_key_find(key);
-	assert(option < RANDO_OPTION_KEY_COUNT);
-	return rando_option_value_name(option, rando_options_get(&record->options, option));
-}
 
 static void assert_date(const RandoRecordDate *d)
 {
@@ -44,7 +22,7 @@ bool rando_record_write(FILE *out, const RandoRecord *record, const RandoWorld *
 			const RandoPlaythrough *playthrough)
 {
 	const RandoRecordDate *d = &record->date;
-	size_t i;
+	int rank;
 	bool ok = true;
 
 	assert_date(d);
@@ -60,10 +38,14 @@ bool rando_record_write(FILE *out, const RandoRecord *record, const RandoWorld *
 		    record->name.code, d->year, d->month, d->day, d->hour, d->minute, d->second, RANDO_RECORD_FORMAT,
 		    record->name.rom, (unsigned long)record->seed) < 0)
 		ok = false;
-	for (i = 0; i < SETTINGS_COUNT; i++)
-		if (fprintf(out, "        \"%s\": \"%s\"%s\n", settings_keys[i], settings_value(record, settings_keys[i]),
-			    i + 1 < SETTINGS_COUNT ? "," : "") < 0)
+	for (rank = 0; rank < RANDO_SETTING_COUNT; rank++) {
+		RandoSettingId id = rando_setting_sorted(rank);
+
+		if (fprintf(out, "        \"%s\": \"%s\"%s\n", rando_setting_key(id),
+			    rando_setting_value_name(id, rando_setting_get(&record->options, record->heart_beep, id)),
+			    rank + 1 < RANDO_SETTING_COUNT ? "," : "") < 0)
 			ok = false;
+	}
 	if (record->has_spoiler) {
 		if (fputs("    },\n    \"spoiler\": ", out) == EOF)
 			ok = false;
@@ -276,8 +258,8 @@ static bool parse_date(Parser *p, const char *s, RandoRecordDate *d)
 
 static bool parse_settings(Parser *p, RandoRecord *out)
 {
-	bool seen[SETTINGS_COUNT] = {false}, more = true;
-	size_t i;
+	bool seen[RANDO_SETTING_COUNT] = {false}, more = true;
+	int rank;
 
 	rando_options_init(&out->options);
 	if (!expect(p, '{', "settings"))
@@ -288,33 +270,29 @@ static bool parse_settings(Parser *p, RandoRecord *out)
 	}
 	while (more) {
 		char key[STRING_MAX], value[STRING_MAX];
-		bool ok;
+		RandoSettingId id;
+		int v;
 
 		if (!parse_string(p, "settings", key))
 			return false;
-		for (i = 0; i < SETTINGS_COUNT && strcmp(settings_keys[i], key) != 0; i++)
-			;
-		if (i == SETTINGS_COUNT)
+		id = rando_setting_find(key);
+		if (id == RANDO_SETTING_COUNT)
 			return fail(p, "settings: unknown key \"%s\"", key);
-		if (seen[i])
+		if (seen[id])
 			return fail(p, "settings: duplicate key \"%s\"", key);
-		seen[i] = true;
+		seen[id] = true;
 		if (!expect(p, ':', key) || !parse_string(p, key, value))
 			return false;
-		if (strcmp(key, "hints") == 0)
-			ok = rando_hints_find(value, &out->options.hints);
-		else if (strcmp(key, "heart_beep") == 0)
-			ok = rando_heart_beep_find(value, &out->heart_beep);
-		else
-			ok = rando_options_set(&out->options, key, value);
-		if (!ok)
+		v = rando_setting_value_find(id, value);
+		if (v < 0)
 			return fail(p, "settings: %s: unknown value \"%s\"", key, value);
+		rando_setting_set(&out->options, &out->heart_beep, id, v);
 		if (!next_member(p, "settings", &more))
 			return false;
 	}
-	for (i = 0; i < SETTINGS_COUNT; i++)
-		if (!seen[i])
-			return fail(p, "settings: missing key \"%s\"", settings_keys[i]);
+	for (rank = 0; rank < RANDO_SETTING_COUNT; rank++)
+		if (!seen[rando_setting_sorted(rank)])
+			return fail(p, "settings: missing key \"%s\"", rando_setting_key(rando_setting_sorted(rank)));
 	return true;
 }
 
@@ -348,7 +326,7 @@ static bool check_rom(Parser *p, RandoRecord *out, const char *rom)
 
 static bool parse_member(Parser *p, int key, RandoRecord *out, char rom[STRING_MAX])
 {
-	char value[STRING_MAX], seed_error[RANDO_CASE_ERROR_MAX];
+	char value[STRING_MAX];
 	size_t start, n;
 
 	switch (key) {
@@ -372,8 +350,8 @@ static bool parse_member(Parser *p, int key, RandoRecord *out, char rom[STRING_M
 	case KEY_SEED:
 		if (!number_token(p, "seed", &start, &n))
 			return false;
-		if (!rando_case_parse_uint32(p->text + start, n, "seed", &out->seed, seed_error))
-			return fail(p, "%s", seed_error);
+		if (!rando_parse_uint32(p->text + start, n, &out->seed))
+			return fail(p, "seed: not a decimal uint32 on one line");
 		return true;
 	case KEY_SETTINGS:
 		return parse_settings(p, out);

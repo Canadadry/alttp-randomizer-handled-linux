@@ -1,4 +1,5 @@
 #include "rando_options.h"
+#include "rando_settings.h"
 
 #include <assert.h>
 #include <string.h>
@@ -80,126 +81,57 @@ void rando_config_from_options(const RandoOptions *o, int crystals_ganon, int cr
 	c->spoil_hints = o->hints;
 }
 
-static const char *const glitches_names[] = {"none", "overworld_glitches", "hybrid_major_glitches", "major_glitches",
-					     "no_logic", NULL};
-static const char *const placement_names[] = {"advanced", "basic", NULL};
-static const char *const dungeon_items_names[] = {"standard", "mc", "mcs", "full", NULL};
-static const char *const accessibility_names[] = {"items", "locations", "none", NULL};
-static const char *const goal_names[] = {"ganon", "fast_ganon", "dungeons", "pedestal", "triforce-hunt", "ganonhunt",
-					 "completionist", NULL};
-static const char *const crystals_names[] = {"0", "1", "2", "3", "4", "5", "6", "7", "random", NULL};
-static const char *const state_names[] = {"open", "standard", "inverted", "retro", NULL};
-static const char *const weapons_names[] = {"randomized", "assured", "vanilla", "swordless", NULL};
-static const char *const item_pool_names[] = {"normal", "hard", "expert", "crowd_control", NULL};
-static const char *const item_functionality_names[] = {"normal", "hard", "expert", NULL};
-
-typedef struct OptionKeyInfo {
-	const char *name;
-	const char *const *values;
-} OptionKeyInfo;
-
-static const OptionKeyInfo keys[RANDO_OPTION_KEY_COUNT] = {
-	[RANDO_OPTION_GLITCHES] = {"glitches", glitches_names},
-	[RANDO_OPTION_ITEM_PLACEMENT] = {"item_placement", placement_names},
-	[RANDO_OPTION_DUNGEON_ITEMS] = {"dungeon_items", dungeon_items_names},
-	[RANDO_OPTION_ACCESSIBILITY] = {"accessibility", accessibility_names},
-	[RANDO_OPTION_GOAL] = {"goal", goal_names},
-	[RANDO_OPTION_CRYSTALS_TOWER] = {"crystals_tower", crystals_names},
-	[RANDO_OPTION_CRYSTALS_GANON] = {"crystals_ganon", crystals_names},
-	[RANDO_OPTION_STATE] = {"state", state_names},
-	[RANDO_OPTION_WEAPONS] = {"weapons", weapons_names},
-	[RANDO_OPTION_ITEM_POOL] = {"item_pool", item_pool_names},
-	[RANDO_OPTION_ITEM_FUNCTIONALITY] = {"item_functionality", item_functionality_names},
-};
-
 RandoOptionKey rando_option_key_find(const char *key)
 {
-	int k;
+	RandoSettingId id = rando_setting_find(key);
 
-	for (k = 0; k < RANDO_OPTION_KEY_COUNT; k++)
-		if (strcmp(keys[k].name, key) == 0)
-			return (RandoOptionKey)k;
-	return RANDO_OPTION_KEY_COUNT;
+	return id < (RandoSettingId)RANDO_OPTION_KEY_COUNT ? (RandoOptionKey)id : RANDO_OPTION_KEY_COUNT;
 }
 
 const char *rando_option_key_name(RandoOptionKey key)
 {
 	assert(key < RANDO_OPTION_KEY_COUNT);
-	return keys[key].name;
+	return rando_setting_key((RandoSettingId)key);
 }
 
 const char *rando_option_value_name(RandoOptionKey key, int value)
 {
-	int v;
-
-	assert(key < RANDO_OPTION_KEY_COUNT && value >= 0);
-	for (v = 0; v < value; v++)
-		assert(keys[key].values[v] != NULL && "option value out of range");
-	assert(keys[key].values[value] != NULL && "option value out of range");
-	return keys[key].values[value];
+	assert(key < RANDO_OPTION_KEY_COUNT);
+	return rando_setting_value_name((RandoSettingId)key, value);
 }
 
 const char *rando_hints_name(bool hints)
 {
-	return hints ? "on" : "off";
+	return rando_setting_value_name(RANDO_SETTING_HINTS, hints ? 0 : 1);
 }
 
 bool rando_hints_find(const char *name, bool *out)
 {
-	if (strcmp(name, "on") == 0)
-		*out = true;
-	else if (strcmp(name, "off") == 0)
-		*out = false;
-	else
+	int v = rando_setting_value_find(RANDO_SETTING_HINTS, name);
+
+	if (v < 0)
 		return false;
+	*out = v == 0;
 	return true;
 }
 
 bool rando_options_set(RandoOptions *o, const char *key, const char *value)
 {
 	RandoOptionKey k = rando_option_key_find(key);
+	RandoHeartBeep unused = RANDO_HEART_BEEP_HALF;
 	int v;
 
 	if (k == RANDO_OPTION_KEY_COUNT)
 		return false;
-	for (v = 0; keys[k].values[v] != NULL; v++)
-		if (strcmp(keys[k].values[v], value) == 0)
-			break;
-	if (keys[k].values[v] == NULL)
+	v = rando_setting_value_find((RandoSettingId)k, value);
+	if (v < 0)
 		return false;
-	switch (k) {
-	case RANDO_OPTION_GLITCHES: o->glitches = (RandoGlitches)v; break;
-	case RANDO_OPTION_ITEM_PLACEMENT: o->item_placement = (RandoOptionPlacement)v; break;
-	case RANDO_OPTION_DUNGEON_ITEMS: o->dungeon_items = (RandoOptionDungeonItems)v; break;
-	case RANDO_OPTION_ACCESSIBILITY: o->accessibility = (RandoOptionAccessibility)v; break;
-	case RANDO_OPTION_GOAL: o->goal = (RandoOptionGoal)v; break;
-	case RANDO_OPTION_CRYSTALS_TOWER: o->crystals_tower = (RandoCrystals)v; break;
-	case RANDO_OPTION_CRYSTALS_GANON: o->crystals_ganon = (RandoCrystals)v; break;
-	case RANDO_OPTION_STATE: o->state = (RandoOptionState)v; break;
-	case RANDO_OPTION_WEAPONS: o->weapons = (RandoOptionWeapons)v; break;
-	case RANDO_OPTION_ITEM_POOL: o->item_pool = (RandoItemPool)v; break;
-	case RANDO_OPTION_ITEM_FUNCTIONALITY: o->item_functionality = (RandoItemFunctionality)v; break;
-	case RANDO_OPTION_KEY_COUNT: break;
-	}
+	rando_setting_set(o, &unused, (RandoSettingId)k, v);
 	return true;
 }
 
 int rando_options_get(const RandoOptions *o, RandoOptionKey key)
 {
-	switch (key) {
-	case RANDO_OPTION_GLITCHES: return (int)o->glitches;
-	case RANDO_OPTION_ITEM_PLACEMENT: return (int)o->item_placement;
-	case RANDO_OPTION_DUNGEON_ITEMS: return (int)o->dungeon_items;
-	case RANDO_OPTION_ACCESSIBILITY: return (int)o->accessibility;
-	case RANDO_OPTION_GOAL: return (int)o->goal;
-	case RANDO_OPTION_CRYSTALS_TOWER: return (int)o->crystals_tower;
-	case RANDO_OPTION_CRYSTALS_GANON: return (int)o->crystals_ganon;
-	case RANDO_OPTION_STATE: return (int)o->state;
-	case RANDO_OPTION_WEAPONS: return (int)o->weapons;
-	case RANDO_OPTION_ITEM_POOL: return (int)o->item_pool;
-	case RANDO_OPTION_ITEM_FUNCTIONALITY: return (int)o->item_functionality;
-	case RANDO_OPTION_KEY_COUNT: break;
-	}
-	assert(!"option key out of range");
-	return -1;
+	assert(key < RANDO_OPTION_KEY_COUNT && "option key out of range");
+	return rando_setting_get(o, RANDO_HEART_BEEP_HALF, (RandoSettingId)key);
 }

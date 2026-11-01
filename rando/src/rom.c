@@ -11,30 +11,6 @@ void rando_rom_emit(RomOut *out, uint32_t address, const uint8_t *bytes, size_t 
 		out->ok = out->writer->write(out->writer->ctx, address, bytes, count, method);
 }
 
-static const char *const heart_beep_names[RANDO_HEART_BEEP_COUNT] = {
-	[RANDO_HEART_BEEP_OFF] = "off",		[RANDO_HEART_BEEP_HALF] = "half",
-	[RANDO_HEART_BEEP_QUARTER] = "quarter", [RANDO_HEART_BEEP_DOUBLE] = "double",
-	[RANDO_HEART_BEEP_NORMAL] = "normal",
-};
-
-const char *rando_heart_beep_name(RandoHeartBeep heart_beep)
-{
-	assert((unsigned)heart_beep < RANDO_HEART_BEEP_COUNT);
-	return heart_beep_names[heart_beep];
-}
-
-bool rando_heart_beep_find(const char *name, RandoHeartBeep *out)
-{
-	int i;
-
-	for (i = 0; i < RANDO_HEART_BEEP_COUNT; i++)
-		if (strcmp(name, heart_beep_names[i]) == 0) {
-			*out = (RandoHeartBeep)i;
-			return true;
-		}
-	return false;
-}
-
 static void write_heart_beep(RomOut *out, RandoHeartBeep heart_beep)
 {
 	static const uint8_t speeds[RANDO_HEART_BEEP_COUNT] = {

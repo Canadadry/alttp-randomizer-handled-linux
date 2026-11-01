@@ -92,6 +92,11 @@
     - [x] Chunk 1: string table module
     - [x] Chunk 2: literal check
   - [ ] 3.4 Generate tab state machine
+    - [x] Chunk 1: settings table
+    - [ ] Chunk 2: settings file
+    - [ ] Chunk 3: input filter
+    - [ ] Chunk 4: Generate tab
+    - [ ] Chunk 5: greying and restore
   - [ ] 3.5 Generation flow
   - [ ] 3.6 History tab
   - [ ] 3.7 ui_cli

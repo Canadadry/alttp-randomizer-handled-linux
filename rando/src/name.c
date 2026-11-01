@@ -1,6 +1,7 @@
 #include "rando_name.h"
 
 #include "rando_crc32.h"
+#include "rando_settings.h"
 
 #include <assert.h>
 #include <string.h>
@@ -67,11 +68,10 @@ uint32_t rando_name_code(const RandoOptions *options, RandoHeartBeep heart_beep,
 		seed /= 10u;
 	} while (seed != 0);
 	at = append_line(at, end, "seed", d);
-	for (k = 0; k < RANDO_OPTION_KEY_COUNT; k++)
-		at = append_line(at, end, rando_option_key_name((RandoOptionKey)k),
-				 rando_option_value_name((RandoOptionKey)k, rando_options_get(options, (RandoOptionKey)k)));
-	at = append_line(at, end, "hints", rando_hints_name(options->hints));
-	at = append_line(at, end, "heart_beep", rando_heart_beep_name(heart_beep));
+	for (k = 0; k < RANDO_SETTING_COUNT; k++)
+		at = append_line(at, end, rando_setting_key((RandoSettingId)k),
+				 rando_setting_value_name((RandoSettingId)k,
+							  rando_setting_get(options, heart_beep, (RandoSettingId)k)));
 	return rando_crc32((const uint8_t *)text, (size_t)(at - text)) & 0xFFFFFFu;
 }
 

@@ -1,7 +1,7 @@
 #include "rando_patch.h"
 
-#include "rando_case.h"
 #include "rando_out.h"
+#include "rando_settings.h"
 
 #include <errno.h>
 #include <stdarg.h>
@@ -10,10 +10,6 @@
 
 #define PATCH_FILE_MAX (4u << 20)
 #define KEY_MAX 64
-/* The RandoOptionKey keys, then hints and heart_beep. */
-#define SETTING_HINTS RANDO_OPTION_KEY_COUNT
-#define SETTING_HEART_BEEP (RANDO_OPTION_KEY_COUNT + 1)
-#define SETTING_COUNT (RANDO_OPTION_KEY_COUNT + 2)
 
 enum {
 	EXIT_OK = 0,
@@ -35,52 +31,36 @@ static bool refuse(char error[RANDO_PATCH_ERROR_MAX], const char *fmt, ...)
 	return false;
 }
 
-/* -1 when the key is unknown. */
-static int setting_find(const char *key)
-{
-	if (strcmp(key, "hints") == 0)
-		return SETTING_HINTS;
-	if (strcmp(key, "heart_beep") == 0)
-		return SETTING_HEART_BEEP;
-	if (rando_option_key_find(key) == RANDO_OPTION_KEY_COUNT)
-		return -1;
-	return (int)rando_option_key_find(key);
-}
-
-static bool set_setting(RandoPatchArgs *args, const char *arg, bool seen[SETTING_COUNT],
+static bool set_setting(RandoPatchArgs *args, const char *arg, bool seen[RANDO_SETTING_COUNT],
 			char error[RANDO_PATCH_ERROR_MAX])
 {
 	const char *eq = strchr(arg, '=');
 	const char *value = eq + 1;
 	char key[KEY_MAX];
 	size_t len = (size_t)(eq - arg);
-	int setting;
-	bool ok;
+	RandoSettingId setting;
+	int v;
 
 	if (len >= KEY_MAX)
 		return refuse(error, "unknown key %.*s", (int)len, arg);
 	memcpy(key, arg, len);
 	key[len] = '\0';
-	setting = setting_find(key);
-	if (setting < 0)
+	setting = rando_setting_find(key);
+	if (setting == RANDO_SETTING_COUNT)
 		return refuse(error, "unknown key %s", key);
 	if (seen[setting])
 		return refuse(error, "%s given twice", key);
 	seen[setting] = true;
-	if (setting == SETTING_HINTS)
-		ok = rando_hints_find(value, &args->request.options.hints);
-	else if (setting == SETTING_HEART_BEEP)
-		ok = rando_heart_beep_find(value, &args->request.heart_beep);
-	else
-		ok = rando_options_set(&args->request.options, key, value);
-	if (!ok)
+	v = rando_setting_value_find(setting, value);
+	if (v < 0)
 		return refuse(error, "unknown value %s for %s", value, key);
+	rando_setting_set(&args->request.options, &args->request.heart_beep, setting, v);
 	return true;
 }
 
 bool rando_patch_parse_args(int argc, char **argv, RandoPatchArgs *args, char error[RANDO_PATCH_ERROR_MAX])
 {
-	bool seen[SETTING_COUNT] = { false };
+	bool seen[RANDO_SETTING_COUNT] = { false };
 	bool bps_given = false;
 	int i;
 
@@ -109,10 +89,8 @@ bool rando_patch_parse_args(int argc, char **argv, RandoPatchArgs *args, char er
 				return refuse(error, "%s needs a value", arg);
 			i++;
 			if (is_seed) {
-				char seed_error[RANDO_CASE_ERROR_MAX];
-				if (!rando_case_parse_uint32(argv[i], strlen(argv[i]), "--seed", &args->seed,
-							     seed_error))
-					return refuse(error, "%s", seed_error);
+				if (!rando_parse_uint32(argv[i], strlen(argv[i]), &args->seed))
+					return refuse(error, "--seed: not a decimal uint32 on one line");
 				args->has_seed = true;
 			} else {
 				*path = argv[i];

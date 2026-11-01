@@ -2,6 +2,7 @@
 #define RANDO_ROM_H
 
 #include "rando.h"
+#include "rando_settings.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -10,20 +11,6 @@
 /* VT's Rom::SIZE, the randomized image, and the headerless JP 1.0 ROM it is built from. */
 #define RANDO_ROM_SIZE 0x200000u
 #define RANDO_ROM_SOURCE_SIZE 0x100000u
-
-typedef enum RandoHeartBeep {
-	RANDO_HEART_BEEP_OFF,
-	RANDO_HEART_BEEP_HALF,
-	RANDO_HEART_BEEP_QUARTER,
-	RANDO_HEART_BEEP_DOUBLE,
-	RANDO_HEART_BEEP_NORMAL,
-	RANDO_HEART_BEEP_COUNT,
-} RandoHeartBeep;
-
-/* The case format's name: "off", "half", "quarter", "double", "normal". Asserts the range. */
-const char *rando_heart_beep_name(RandoHeartBeep heart_beep);
-/* Returns false and leaves *out unchanged on an unknown name. */
-bool rando_heart_beep_find(const char *name, RandoHeartBeep *out);
 
 /* One write of count bytes (never 0) at a PC address. method is the oracle's tag for the write, a
  * static string the module owns: never freed. Returning false refuses the write. */
