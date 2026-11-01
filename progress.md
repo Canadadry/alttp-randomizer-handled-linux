@@ -51,7 +51,7 @@
   - [ ] 1.9 Port the text, dialog and hints writes
     - [x] Chunk 1: the encoder
     - [x] Chunk 2: the default table and the text group
-    - [ ] Chunk 3: text_tables.txt oracle fixture
+    - [x] Chunk 3: text_tables.txt oracle fixture
     - [ ] Chunk 4: setTexts strings, hints-off sign, inverted texts
     - [ ] Chunk 5: hint texts, tablets and pedestal
     - [ ] Chunk 6: claims to all text
