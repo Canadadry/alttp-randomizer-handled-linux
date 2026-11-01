@@ -1,4 +1,5 @@
 #include "rando_app_shell.h"
+#include "rando_record.h"
 #include "rando_settings.h"
 #include "ui_app.h"
 #include "ui_grid.h"
@@ -117,7 +118,8 @@ static bool parse_date(const char *s, RandoRecordDate *d)
 	return strlen(s) == 19 && s[4] == '-' && s[7] == '-' && s[10] == 'T' && s[13] == ':' && s[16] == ':' &&
 	       field(s, 0, 4, 0, 9999, &d->year) && field(s, 5, 2, 1, 12, &d->month) &&
 	       field(s, 8, 2, 1, 31, &d->day) && field(s, 11, 2, 0, 23, &d->hour) &&
-	       field(s, 14, 2, 0, 59, &d->minute) && field(s, 17, 2, 0, 59, &d->second);
+	       field(s, 14, 2, 0, 59, &d->minute) && field(s, 17, 2, 0, 59, &d->second) &&
+	       rando_record_date_valid(d);
 }
 
 static void add_key(const char *token)

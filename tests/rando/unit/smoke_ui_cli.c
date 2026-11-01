@@ -242,6 +242,7 @@ static void test_usage(void)
 {
 	static char before[OUT_MAX], after[OUT_MAX];
 	const char *bad[] = {"bogus", "r1*0", "r1*1000", "--cols 21", "--lines 41", "--date 2026-13-01T00:00:00",
+			     "--date 1969-12-31T23:59:59 --every start a",
 			     "--seed x", "--base-md5 abc", "--every"};
 	char args[1024];
 	size_t i;

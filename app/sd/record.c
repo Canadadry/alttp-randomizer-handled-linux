@@ -7,15 +7,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void assert_date(const RandoRecordDate *d)
+bool rando_record_date_valid(const RandoRecordDate *d)
 {
-	assert(d->year >= 1970 && d->year <= 9999);
-	assert(d->month >= 1 && d->month <= 12);
-	assert(d->day >= 1 && d->day <= 31);
-	assert(d->hour >= 0 && d->hour <= 23);
-	assert(d->minute >= 0 && d->minute <= 59);
-	assert(d->second >= 0 && d->second <= 59);
-	(void)d;
+	return d->year >= 1970 && d->year <= 9999 && d->month >= 1 && d->month <= 12 && d->day >= 1 &&
+	       d->day <= 31 && d->hour >= 0 && d->hour <= 23 && d->minute >= 0 && d->minute <= 59 &&
+	       d->second >= 0 && d->second <= 59;
 }
 
 static bool write_indent(FILE *out, int depth)
@@ -54,7 +50,7 @@ bool rando_record_write(FILE *out, const RandoRecord *record, const RandoWorld *
 	const RandoRecordDate *d = &record->date;
 	bool ok = true;
 
-	assert_date(d);
+	assert(rando_record_date_valid(d));
 	assert(!record->has_spoiler || (world != NULL && playthrough != NULL));
 	if (fprintf(out,
 		    "{\n"

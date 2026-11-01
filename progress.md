@@ -134,5 +134,5 @@
     - [x] other tests, scripts, Makefiles
     - [x] record.c assert and orphaned assert messages
     - [x] fix: test_app_shell path snprintf under Onion's gcc
-    - [ ] fix: ui_cli and app_gen dates outside the record's range
+    - [x] fix: ui_cli and app_gen dates outside the record's range
   - [ ] 5.2 README

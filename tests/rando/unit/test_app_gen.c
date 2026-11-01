@@ -283,6 +283,48 @@ static void test_success_from_an_empty_root(void)
 	drop_root();
 }
 
+static void zero_date_fn(RandoRecordDate *out)
+{
+	memset(out, 0, sizeof *out);
+}
+
+static void before_epoch_date_fn(RandoRecordDate *out)
+{
+	static const RandoRecordDate d = {1969, 12, 31, 19, 0, 0};
+
+	*out = d;
+}
+
+/* A clock the record cannot hold (localtime failed, or a clock at the epoch west of UTC) still saves a readable seed. */
+static void test_out_of_range_date(void)
+{
+	RandoAppDateFn fns[] = {zero_date_fn, before_epoch_date_fn};
+	RandoRecord record;
+	char error[RANDO_RECORD_ERROR_MAX];
+	char path[128];
+	FILE *f;
+	long n;
+	size_t i;
+
+	for (i = 0; i < sizeof fns / sizeof fns[0]; i++) {
+		UiGenOutcome o;
+
+		make_root();
+		gen.date = fns[i];
+		o = run(false);
+		CHECK(o.ok);
+		snprintf(path, sizeof path, "%s/%.*s.json", RANDO_SD_HISTORY_DIR, 6, o.rom + strlen(o.rom) - 10);
+		f = fopen(at(path), "rb");
+		CHECK(f != NULL);
+		n = f != NULL ? (long)fread(text, 1, RANDO_RECORD_TEXT_MAX, f) : 0;
+		if (f != NULL)
+			fclose(f);
+		if (!rando_record_parse(text, (size_t)n, &record, error))
+			test_fail(TEST, "%s: %s", path, error);
+		drop_root();
+	}
+}
+
 static void test_caches(void)
 {
 	UiGenOutcome o;
@@ -466,6 +508,7 @@ int main(int argc, char **argv)
 	test_init_defaults();
 	test_tables();
 	test_success_from_an_empty_root();
+	test_out_of_range_date();
 	test_caches();
 	test_real_failures();
 	test_unreachable_statuses();

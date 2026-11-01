@@ -31,6 +31,8 @@ typedef struct RandoRecord {
 	size_t spoiler_offset, spoiler_size;
 } RandoRecord;
 
+bool rando_record_date_valid(const RandoRecordDate *d);
+
 bool rando_record_write(FILE *out, const RandoRecord *record, const RandoWorld *world,
 			const RandoPlaythrough *playthrough);
 

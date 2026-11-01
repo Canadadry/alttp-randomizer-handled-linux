@@ -254,6 +254,11 @@ void rando_app_gen_run(void *ctx, const UiGenRequest *request, UiGenOutcome *out
 	assemble.heart_beep = request->heart_beep;
 	assemble.seed = gen->seed();
 	gen->date(&date);
+	if (!rando_record_date_valid(&date)) {
+		static const RandoRecordDate epoch = {1970, 1, 1, 0, 0, 0};
+
+		date = epoch;
+	}
 	saved = gen->save(gen->rom_dir, gen->history_dir, &assemble, &gen->work, &date, request->spoiler, &gen->result);
 	if (saved != RANDO_SAVE_OK) {
 		fail_save(outcome, saved, &gen->result);
