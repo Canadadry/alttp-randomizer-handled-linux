@@ -149,6 +149,8 @@ typedef struct RandoConfig {
 	bool can_bunny_surf;
 	bool can_bunny_revive;
 	bool custom_prize_packs;
+	/* spoil.Hints === 'on'. */
+	bool spoil_hints;
 } RandoConfig;
 
 /* Every key absent, as in a World built with no config. */

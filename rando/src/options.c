@@ -8,6 +8,7 @@ void rando_options_init(RandoOptions *options)
 	memset(options, 0, sizeof *options);
 	options->crystals_tower = RANDO_CRYSTALS_7;
 	options->crystals_ganon = RANDO_CRYSTALS_7;
+	options->hints = true;
 }
 
 static const RandoLogic logic_of[] = {
@@ -76,6 +77,7 @@ void rando_config_from_options(const RandoOptions *o, int crystals_ganon, int cr
 	c->crystals_tower = crystals_tower;
 	c->item_pool = o->item_pool;
 	c->item_functionality = o->item_functionality;
+	c->spoil_hints = o->hints;
 }
 
 static const char *const glitches_names[] = {"none", "overworld_glitches", "hybrid_major_glitches", "major_glitches",

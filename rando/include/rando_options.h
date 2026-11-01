@@ -96,9 +96,11 @@ typedef struct RandoOptions {
 	RandoOptionWeapons weapons;
 	RandoItemPool item_pool;
 	RandoItemFunctionality item_functionality;
+	/* Not a RandoOptionKey: rando_options_set never sets it. */
+	bool hints;
 } RandoOptions;
 
-/* The baseline: VT's default preset. */
+/* The baseline: VT's default preset, hints on. */
 void rando_options_init(RandoOptions *options);
 
 /* VT's key and value strings, e.g. ("goal", "triforce-hunt"). Returns false and leaves options

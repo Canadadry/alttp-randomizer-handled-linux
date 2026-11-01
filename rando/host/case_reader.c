@@ -88,7 +88,7 @@ static bool set_case_key(RandoCase *out, CaseKey key, const char *value)
 	if (key == CASE_KEY_HINTS) {
 		if (strcmp(value, "on") != 0 && strcmp(value, "off") != 0)
 			return false;
-		out->hints = strcmp(value, "on") == 0;
+		out->options.hints = strcmp(value, "on") == 0;
 		return true;
 	}
 	for (i = 0; i < sizeof heart_beep_names / sizeof heart_beep_names[0]; i++)
@@ -110,7 +110,6 @@ bool rando_case_parse_config(const char *text, size_t len, const char *file, Ran
 	int k;
 
 	rando_options_init(&out->options);
-	out->hints = true;
 	out->heart_beep = RANDO_HEART_BEEP_HALF;
 	skip_space(&ps);
 	if (!at(&ps, '{'))

@@ -42,7 +42,7 @@ static void write_case(const char *case_dir)
 	      RANDO_INCOMPLETE);
 	f = tmpfile();
 	CHECK(f != NULL);
-	CHECK(rando_spoiler_write_json(f, &gen.world, &gen.options, c.hints, NULL));
+	CHECK(rando_spoiler_write_json(f, &gen.world, &gen.options, NULL));
 	rewind(f);
 	read_stream(f, case_dir, spoiler);
 	fclose(f);
@@ -221,7 +221,7 @@ static void write_world(const RandoWorld *world)
 
 	rando_options_init(&options);
 	CHECK(f != NULL);
-	CHECK(rando_spoiler_write_json(f, world, &options, true, NULL));
+	CHECK(rando_spoiler_write_json(f, world, &options, NULL));
 	rewind(f);
 	read_stream(f, "world", spoiler);
 	fclose(f);
@@ -277,7 +277,7 @@ static void check_equipped_and_meta(const char *case_dir)
 	CHECK(strstr(spoiler, "\"playthrough\"") == NULL);
 }
 
-/* meta.hints is the case's hints key, nothing else of the world. */
+/* meta.hints is options.hints, nothing else of the world. */
 static void check_hints_meta(void)
 {
 	static RandoWorld world;
@@ -290,9 +290,10 @@ static void check_hints_meta(void)
 	rando_world_init(&world, RANDO_VARIANT_OPEN, &config);
 	rando_options_init(&options);
 	for (hints = 0; hints < 2; hints++) {
+		options.hints = hints != 0;
 		f = tmpfile();
 		CHECK(f != NULL);
-		CHECK(rando_spoiler_write_json(f, &world, &options, hints != 0, NULL));
+		CHECK(rando_spoiler_write_json(f, &world, &options, NULL));
 		rewind(f);
 		read_stream(f, "hints", spoiler);
 		fclose(f);

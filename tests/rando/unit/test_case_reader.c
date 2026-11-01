@@ -31,7 +31,7 @@ static void check_baseline(void)
 	CHECK(memcmp(&c.options, &baseline, sizeof baseline) == 0);
 	CHECK(c.seed == 1);
 	CHECK(c.has_attempts && c.attempts == 0);
-	CHECK(c.hints);
+	CHECK(c.options.hints);
 	CHECK(c.heart_beep == RANDO_HEART_BEEP_HALF);
 }
 
@@ -81,8 +81,7 @@ static void add_entry(CaseEntry *set, size_t *n, const char *dir, const char *na
 	e->dir = dir;
 	snprintf(e->name, sizeof e->name, "%s", name);
 	rando_options_init(&e->c.options);
-	e->c.hints = true;
-	e->c.heart_beep = RANDO_HEART_BEEP_HALF;
+		e->c.heart_beep = RANDO_HEART_BEEP_HALF;
 	e->c.seed = 1;
 	e->c.has_attempts = false;
 	if ((k1 && !rando_options_set(&e->c.options, k1, v1)) || (k2 && !rando_options_set(&e->c.options, k2, v2)))
@@ -147,9 +146,11 @@ static bool missing_pair(const CaseEntry *set, size_t n, char *missing)
 	missing[0] = '\0';
 	for (i = 0; i < np; i++) {
 		pair_options(pairs[i], &want);
-		for (j = 0; j < n; j++)
+		for (j = 0; j < n; j++) {
+			want.hints = set[j].c.options.hints;
 			if (memcmp(&set[j].c.options, &want, sizeof want) == 0)
 				break;
+		}
 		if (j == n) {
 			pair_name(pairs[i], missing, 128);
 			return true;
@@ -315,24 +316,25 @@ static void check_case_keys(void)
 	size_t i;
 
 	check_config_accepted(baseline_json, &plain);
-	CHECK(plain.hints);
+	CHECK(plain.options.hints);
 	CHECK(plain.heart_beep == RANDO_HEART_BEEP_HALF);
 
 	check_config_accepted(edited(buf, sizeof buf, "{", "{\"hints\": \"off\","), &c);
-	CHECK(!c.hints);
+	CHECK(!c.options.hints);
 	CHECK(c.heart_beep == RANDO_HEART_BEEP_HALF);
+	c.options.hints = true;
 	CHECK(memcmp(&c.options, &plain.options, sizeof c.options) == 0);
 	check_config_accepted(edited(buf, sizeof buf, "{", "{\"hints\": \"on\","), &c);
-	CHECK(c.hints);
+	CHECK(c.options.hints);
 	for (i = 0; i < sizeof beeps / sizeof beeps[0]; i++) {
 		snprintf(key, sizeof key, "{\"heart_beep\": \"%s\",", beeps[i].name);
 		check_config_accepted(edited(buf, sizeof buf, "{", key), &c);
-		if (c.heart_beep != beeps[i].value || !c.hints)
+		if (c.heart_beep != beeps[i].value || !c.options.hints)
 			test_fail(TEST, "heart_beep %s read as %d", beeps[i].name, (int)c.heart_beep);
 	}
 	check_config_accepted(edited(buf, sizeof buf, "\"normal\"\n}", "\"normal\",\"heart_beep\":\"off\",\"hints\":\"off\"}"),
 			      &c);
-	CHECK(!c.hints && c.heart_beep == RANDO_HEART_BEEP_OFF);
+	CHECK(!c.options.hints && c.heart_beep == RANDO_HEART_BEEP_OFF);
 
 	check_config_refused(edited(buf, sizeof buf, "{", "{\"hints\": \"maybe\","), "an unknown hints", "hints maybe");
 	check_config_refused(edited(buf, sizeof buf, "{", "{\"hints\": \"On\","), "a capitalised hints", "hints On");
@@ -425,7 +427,7 @@ static void check_coverage_guard(void)
 		test_fail(TEST, "a pair with a third setting changed still counted: %s", missing);
 	n = 0;
 	add_required(set, &n);
-	set[n - 1].c.hints = false;
+	set[n - 1].c.options.hints = false;
 	set[n - 1].c.heart_beep = RANDO_HEART_BEEP_OFF;
 	if (missing_pair(set, n, missing))
 		test_fail(TEST, "hints or heart_beep stopped a pair counting: %s", missing);

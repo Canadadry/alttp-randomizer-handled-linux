@@ -51,7 +51,7 @@ static void write_playthrough(void)
 	rando_playthrough(&world, &playthrough);
 	CHECK(memcmp(&before, &world, sizeof world) == 0);
 	CHECK(f != NULL);
-	CHECK(rando_spoiler_write_json(f, &world, &options, true, &playthrough));
+	CHECK(rando_spoiler_write_json(f, &world, &options, &playthrough));
 	rewind(f);
 	n = fread(spoiler, 1, TEXT_MAX - 1, f);
 	fclose(f);

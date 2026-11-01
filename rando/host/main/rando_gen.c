@@ -23,13 +23,12 @@ static RandoGen gen;
 static RandoPlaythrough playthrough;
 /* A complete run, or a stop at fill or later: the winning attempt is known. */
 static bool won;
-static bool hints;
 
 typedef bool (*Writer)(FILE *out);
 
 static bool spoiler_json(FILE *out)
 {
-	return rando_spoiler_write_json(out, &gen.world, &gen.options, hints, won ? &playthrough : NULL);
+	return rando_spoiler_write_json(out, &gen.world, &gen.options, won ? &playthrough : NULL);
 }
 
 static bool pool_txt(FILE *out)
@@ -87,7 +86,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "rando_gen: %s\n", case_error);
 		return EXIT_INPUT;
 	}
-	hints = c.hints;
 	/* The golden's attempts file holds the 0-based index of its winning attempt. */
 	cap = !c.has_attempts ? ORACLE_WATCHDOG : c.attempts == UINT32_MAX ? 0 : c.attempts + 1;
 	if (!rando_trace_open(&trace, argv[2], out_error)) {

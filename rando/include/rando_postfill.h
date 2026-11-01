@@ -14,6 +14,8 @@
 #define RANDO_STRINGS_GANON_1 31
 #define RANDO_STRINGS_GANON_PHASE_3_NO_SILVERS 36
 #define RANDO_STRINGS_TRIFORCE 39
+/* HintService's joke hints. */
+#define RANDO_STRINGS_HINT 37
 
 /* The alternatives of each Randomizer::randomizeCredits pick at 219fcafd. */
 #define RANDO_CREDITS_CASTLE 3
@@ -62,6 +64,42 @@ typedef struct RandoCredits {
 	/* The coin drew 1: "the dwarven breadsmiths"; otherwise the scene keeps its default text. */
 	bool smithy_breadsmiths;
 } RandoCredits;
+
+/* hint.item.<raw name> or hint.location.<name> at 219fcafd has no key: __() returns the key, with no draw. */
+#define RANDO_HINT_MISSING (-1)
+
+/* The alternatives of hint.item.<raw name>: 0 for a plain string, else the array's length. Asserts the
+ * id is below the count. */
+int rando_hint_item_alternatives(RandoItemId item);
+/* Likewise for hint.location.<name>. */
+int rando_hint_location_alternatives(RandoLocationId location);
+
+/* One Location::getHint, as ids and indices. */
+typedef struct RandoLocationHint {
+	RandoLocationId location;
+	/* The item whose hint.item text names it: KeyGK for a key under rom.genericKeys, an alias's target. */
+	RandoItemId item;
+	/* The picked alternative of hint.item and of hint.location; 0 when that text is no array. */
+	uint8_t item_name;
+	uint8_t location_name;
+} RandoLocationHint;
+
+/* Location::getHint: draws the item's alternatives, then the location's, each only when it has some
+ * (rando_hint_*_alternatives above 0). False, with no draw and out unchanged, when location holds no item. */
+bool rando_location_hint(const RandoWorld *world, RandoLocationId location, RandoPrng *prng, RandoLocationHint *out);
+
+typedef enum RandoCollectionHint {
+	RANDO_COLLECTION_HINT_NONE,
+	RANDO_COLLECTION_HINT_ONE,
+	RANDO_COLLECTION_HINT_MANY,
+} RandoCollectionHint;
+
+/* LocationCollection::getHint over locations[0..n), in order. NONE, no draw: no location holds an item.
+ * ONE: exactly one does, and out is its rando_location_hint. MANY, no draw: VT's name lookups use
+ * getName(), whose ":<world id>" suffix misses every key; out->location is the first location holding an
+ * item, out->item RANDO_ITEM_NONE and both indices 0. out is unchanged on NONE. */
+RandoCollectionHint rando_collection_hint(const RandoWorld *world, const RandoLocationId *locations, int n,
+					  RandoPrng *prng, RandoLocationHint *out);
 
 /* Caller-owned, no pointers: every post-fill choice, as ids and indices, for the ROM writer. */
 typedef struct RandoPostFill {

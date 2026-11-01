@@ -1,5 +1,7 @@
 #include "rando_postfill.h"
 
+#include "postfill_draw.h"
+
 #include <assert.h>
 #include <string.h>
 
@@ -12,8 +14,7 @@ void rando_postfill_clear(RandoPostFill *post)
 	post->texts.alternate_bow = RANDO_LOCATION_NONE;
 }
 
-/* Arr::first(fy_shuffle(alternatives)): count draws. */
-static uint8_t pick_text(RandoPrng *prng, int count)
+uint8_t rando_pick_first(RandoPrng *prng, int count)
 {
 	uint8_t idx[256];
 	int i;
@@ -53,10 +54,10 @@ void rando_set_texts(const RandoWorld *world, RandoPrng *prng, RandoPostFill *po
 	RandoLocationId silvers;
 	int nbows, npicked;
 
-	t->uncle = pick_text(prng, RANDO_STRINGS_UNCLE);
-	t->blind = pick_text(prng, RANDO_STRINGS_BLIND);
-	t->tavern_man = pick_text(prng, RANDO_STRINGS_TAVERN_MAN);
-	t->ganon_1 = pick_text(prng, RANDO_STRINGS_GANON_1);
+	t->uncle = rando_pick_first(prng, RANDO_STRINGS_UNCLE);
+	t->blind = rando_pick_first(prng, RANDO_STRINGS_BLIND);
+	t->tavern_man = rando_pick_first(prng, RANDO_STRINGS_TAVERN_MAN);
+	t->ganon_1 = rando_pick_first(prng, RANDO_STRINGS_GANON_1);
 
 	silvers = first_with(world, RANDO_ITEM_SilverArrowUpgrade);
 	if (silvers == RANDO_LOCATION_NONE)
@@ -80,22 +81,22 @@ void rando_set_texts(const RandoWorld *world, RandoPrng *prng, RandoPostFill *po
 		t->silvers_location = silvers;
 	} else {
 		t->bow_hint = RANDO_BOW_HINT_FAKE;
-		t->fake_silvers = pick_text(prng, RANDO_STRINGS_GANON_PHASE_3_NO_SILVERS);
+		t->fake_silvers = rando_pick_first(prng, RANDO_STRINGS_GANON_PHASE_3_NO_SILVERS);
 	}
 
-	t->triforce = pick_text(prng, RANDO_STRINGS_TRIFORCE);
+	t->triforce = rando_pick_first(prng, RANDO_STRINGS_TRIFORCE);
 }
 
 void rando_randomize_credits(RandoPrng *prng, RandoPostFill *post)
 {
 	RandoCredits *c = &post->credits;
 
-	c->castle = pick_text(prng, RANDO_CREDITS_CASTLE);
-	c->sanctuary = pick_text(prng, RANDO_CREDITS_SANCTUARY);
-	c->kakariko = pick_text(prng, RANDO_CREDITS_KAKARIKO);
-	c->lumberjacks = pick_text(prng, RANDO_CREDITS_LUMBERJACKS);
+	c->castle = rando_pick_first(prng, RANDO_CREDITS_CASTLE);
+	c->sanctuary = rando_pick_first(prng, RANDO_CREDITS_SANCTUARY);
+	c->kakariko = rando_pick_first(prng, RANDO_CREDITS_KAKARIKO);
+	c->lumberjacks = rando_pick_first(prng, RANDO_CREDITS_LUMBERJACKS);
 	c->smithy_breadsmiths = rando_random_int(prng, 0, 1) == 1;
-	c->bridge = pick_text(prng, RANDO_CREDITS_BRIDGE);
-	c->woods = pick_text(prng, RANDO_CREDITS_WOODS);
-	c->well = pick_text(prng, RANDO_CREDITS_WELL);
+	c->bridge = rando_pick_first(prng, RANDO_CREDITS_BRIDGE);
+	c->woods = rando_pick_first(prng, RANDO_CREDITS_WOODS);
+	c->well = rando_pick_first(prng, RANDO_CREDITS_WELL);
 }

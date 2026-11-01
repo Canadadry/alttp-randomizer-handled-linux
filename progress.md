@@ -22,7 +22,7 @@
     - [x] Chunk 1: new stage order, RandoPostFill and setTexts
     - [x] Chunk 2: randomizeCredits
     - [x] Chunk 3: hint_tables.txt oracle fixture
-    - [ ] Chunk 4: hints as an input, hint tables and getHint
+    - [x] Chunk 4: hints as an input, hint tables and getHint
     - [ ] Chunk 5: applyHints
     - [ ] Chunk 6: writeItem
     - [ ] Chunk 7: setDiggingGameRng and writeRNGBlock

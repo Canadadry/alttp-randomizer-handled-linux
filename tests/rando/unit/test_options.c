@@ -27,6 +27,7 @@ static void baseline_config(RandoConfig *c)
 	c->crystals_tower = 7;
 	c->item_pool = RANDO_ITEM_POOL_NORMAL;
 	c->item_functionality = RANDO_ITEM_FUNCTIONALITY_NORMAL;
+	c->spoil_hints = true;
 }
 
 static void check_baseline(void)
@@ -134,6 +135,22 @@ static void check_crowd_control(void)
 	CHECK(memcmp(&expected, &actual, sizeof actual) == 0);
 }
 
+/* hints is no option key: the Generate tab sets it directly, and it reaches spoil.Hints alone. */
+static void check_hints(void)
+{
+	RandoOptions options;
+	RandoConfig expected, actual;
+
+	rando_options_init(&options);
+	CHECK(options.hints);
+	options.hints = false;
+	baseline_config(&expected);
+	expected.spoil_hints = false;
+	rando_config_from_options(&options, 7, 7, &actual);
+	CHECK(memcmp(&expected, &actual, sizeof actual) == 0);
+	CHECK(!rando_options_set(&options, "hints", "on"));
+}
+
 static void check_resolved_crystals(void)
 {
 	RandoOptions options;
@@ -191,6 +208,7 @@ int main(int argc, char **argv)
 	check_baseline();
 	check_every_value();
 	check_crowd_control();
+	check_hints();
 	check_resolved_crystals();
 	check_rejections();
 	check_keys();
