@@ -93,7 +93,7 @@ typedef struct Pair {
 	int value;
 } Pair;
 
-/* The pairs the plan requires, each with state; in this order. */
+/* The required pairs, each with state; in this order. */
 static size_t required_pairs(Pair out[][2])
 {
 	static const RandoOptionGoal goals[] = {RANDO_OPTION_GOAL_TRIFORCE_HUNT, RANDO_OPTION_GOAL_GANONHUNT};

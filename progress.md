@@ -130,7 +130,7 @@
     - [x] regions and rando/host
     - [x] app/core
     - [x] app/sd, app/sdl, app/main
-    - [ ] unit tests a-r and support
+    - [x] unit tests a-r and support
     - [ ] other tests, scripts, Makefiles
     - [ ] record.c assert and orphaned assert messages
   - [ ] 5.2 README

@@ -185,7 +185,7 @@ static void parse_or_fail(const char *what, const char *t, size_t len, RandoReco
 		test_fail(TEST, "%s: refused: %s", what, error);
 }
 
-/* The plan's check: every setting, hints and heart beep away from its default, a suffixed code, a date
+/* Every setting, hints and heart beep away from its default, a suffixed code, a date
  * with every field non-zero and two digits. */
 static void round_trip_record(RandoRecord *record, bool spoiler)
 {

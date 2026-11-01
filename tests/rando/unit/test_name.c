@@ -91,7 +91,7 @@ static void check_code(const char *what, const RandoOptions *options, RandoHeart
 	check_str(what, name.code, expected);
 }
 
-/* The PRD's worked example: CRC32 DB1CA10A of the baseline text with seed 1. */
+/* CRC32 DB1CA10A of the baseline text with seed 1. */
 static void test_baseline_code(void)
 {
 	RandoOptions options;

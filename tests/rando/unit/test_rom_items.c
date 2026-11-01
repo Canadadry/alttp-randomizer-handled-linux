@@ -408,7 +408,7 @@ static void check_alternate_bow(void)
 	CHECK(byte_at(0xEA85) == 0x65);
 }
 
-/* Handed over by step 5: nothing is written after a refused write. */
+/* Nothing is written after a refused write. */
 static void check_refusal(void)
 {
 	RandoRomWriter writer = {record, &rec};

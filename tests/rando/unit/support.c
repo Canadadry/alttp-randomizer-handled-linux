@@ -317,7 +317,7 @@ void fixture_apply_config(const Fixture *fx, RandoConfig *c, const char *key, co
 	else if (strcmp(key, "rom.BottleFill.Magic") == 0)
 		c->rom_bottle_fill_magic = int_value(fx, json);
 	else if (strcmp(key, "rom.freeItemMenu") == 0)
-		(void)int_value(fx, json);
+		(void)int_value(fx, json); /* VT reads it only when writing the ROM. */
 	else
 		fixture_fail(fx, "unknown config key");
 }
@@ -588,7 +588,8 @@ static int replay_row(Fixture *fx)
 	}
 	for (i = 0; i < n; i++)
 		if (strncmp(parts[i], "logic=", 6) == 0) {
-			/* apply_overrides splits its entry in place; the pass after init needs it whole. */
+			/* Logic alone before init, which derives its glitch flags as VT resolves them lazily;
+			 * apply_overrides splits its entry in place, and the pass after init needs it whole. */
 			char logic[FIXTURE_LINE_MAX], *entry = logic;
 
 			strcpy(logic, parts[i]);

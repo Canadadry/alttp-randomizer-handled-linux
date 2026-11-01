@@ -501,7 +501,7 @@ static void check_fountain_preset(void)
 #define F RANDO_DROP_FAIRY
 
 /* VT's packs 0 to 6 after Randomizer::randomize() on cases/baseline attempt 0 (trace lines 73-79:
- * 1 0 1 3 0 1 0), dumped from VT itself when step 2.3.5 was written. */
+ * 1 0 1 3 0 1 0), dumped from VT itself. */
 static const RandoDrop baseline_packs[7][RANDO_PRIZE_PACK_SLOTS] = {
 	{MF, MS, MS, RB, MF, MS, H, MS},
 	{A5, H, A5, A10, A5, H, A5, A10},
