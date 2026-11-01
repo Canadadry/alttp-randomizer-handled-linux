@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Open-Ganon-1CA10A.sfc                  |
+ | Tower Crystals                     7  ^|
+ | Ganon Crystals                     7   |
+ | World State                     Open   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal   |
+ | Hints                             On   |
+ | Heart Beep                Half Speed   |
+ | Spoiler in History                On   |
+ |                                        |
+ | Spoiler could not be read              |
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+

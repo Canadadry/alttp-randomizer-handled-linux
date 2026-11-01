@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Generated Seeds                        |
+ | Open-Ganon-100001.sfc                 ^|
+ | Open-Ganon-100002.sfc                  |
+ | Open-Ganon-100003.sfc                  |
+ | Open-Ganon-100004.sfc                  |
+ | Open-Ganon-100005.sfc                  |
+ | Open-Ganon-100006.sfc                  |
+ | Open-Ganon-100007.sfc                  |
+ | Open-Ganon-100008.sfc                  |
+ | Open-Ganon-100009.sfc                  |
+ | Open-Ganon-100010.sfc                  |
+>| Open-Ganon-100011.sfc                 v|
+i| Generated 2026-11-01 12:48             |
+_| A Details  X Delete                    |
+ +----------------------------------------+

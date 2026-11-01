@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Open-Ganon-1CA10A-2.sfc                |
+ | Spoiler                               ^|
+ | Bosses                                 |
+ |   Ganon: Ganon                         |
+ | Light World                            |
+ |   Mini Moldorm Cave - Far Right:       |
+ |     ProgressiveSword                   |
+ | playthrough                            |
+ |   1                                    |
+ |     Light World                        |
+ |       Blind's Hideout - Far Left:      |
+ |         Flippers                       |
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+
