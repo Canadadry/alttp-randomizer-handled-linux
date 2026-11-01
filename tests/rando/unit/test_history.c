@@ -114,7 +114,9 @@ static void make_root(bool with_history)
 
 static void drop_root(void)
 {
-	remove_all(root);
+	if (root[0] != '\0')
+		remove_all(root);
+	root[0] = '\0';
 }
 
 /* Baseline settings, the given seed and date, suffix 1. */
@@ -396,8 +398,276 @@ static void test_spoiler(void)
 	drop_root();
 }
 
+static UiHistoryEntry entry_from(const RandoRecord *r)
+{
+	UiHistoryEntry e;
+
+	memset(&e, 0, sizeof e);
+	e.name = r->name;
+	e.seed = r->seed;
+	e.options = r->options;
+	e.heart_beep = r->heart_beep;
+	return e;
+}
+
+static UiHistoryDeleteOutcome delete_seed(const RandoRecord *r)
+{
+	UiHistoryEntry e = entry_from(r);
+	UiHistoryDeleteOutcome o;
+
+	o.ok = true;
+	o.list_stale = true;
+	o.status = UI_STR_COUNT;
+	rando_history_delete(&history, &e, &o);
+	return o;
+}
+
+#define BASE "Open-Ganon-1CA10A"
+#define SIBLING "Open-Ganon-1CA10A-2"
+
+static const char *const profiles[] = {RANDO_SD_PROFILE_CURRENT, RANDO_SD_PROFILE_MAIN, RANDO_SD_PROFILE_GUEST};
+
+static const char *const state_names[] = {".state",  ".state1",	    ".state10",	      ".state27",
+					  ".state.auto", ".state3.png", ".state.auto.png"};
+
+static void make_dirs(const char *rel)
+{
+	char path[256], *slash;
+
+	snprintf(path, sizeof path, "%s", rel);
+	for (slash = strchr(path, '/'); slash != NULL; slash = strchr(slash + 1, '/')) {
+		*slash = '\0';
+		if (!exists(path))
+			make_dir(path);
+		*slash = '/';
+	}
+	if (!exists(path))
+		make_dir(path);
+}
+
+/* Writes rel, creating its folders. */
+static void put(const char *rel)
+{
+	char dir[256], *slash;
+
+	snprintf(dir, sizeof dir, "%s", rel);
+	slash = strrchr(dir, '/');
+	CHECK(slash != NULL);
+	*slash = '\0';
+	make_dirs(dir);
+	write_text(rel, "x");
+}
+
+typedef struct Paths {
+	char rel[64][128];
+	int count;
+} Paths;
+
+static Paths removed, kept;
+
+static void add(Paths *paths, const char *fmt, const char *a, const char *b)
+{
+	CHECK(paths->count < 64);
+	snprintf(paths->rel[paths->count++], sizeof paths->rel[0], fmt, a, b);
+}
+
+/* The seed's files in the first profile_count profiles, the look-alikes and stand-ins Onion keeps;
+ * removed and kept list them. */
+static void full_tree(const RandoRecord *seed, const RandoRecord *sibling, const RandoRecord *other, int profile_count)
+{
+	int p, i;
+
+	removed.count = kept.count = 0;
+	add(&removed, "%s/%s", RANDO_SD_ROM_DIR, seed->name.rom);
+	add(&removed, "%s/%s.cfg", RANDO_SD_GAME_CONFIG_DIR, BASE);
+	for (p = 0; p < profile_count; p++) {
+		add(&removed, "%s/saves/Supafaust/%s.srm", profiles[p], BASE);
+		for (i = 0; i < (int)(sizeof state_names / sizeof state_names[0]); i++) {
+			char rel[128];
+
+			snprintf(rel, sizeof rel, "%s/states/Supafaust/" BASE "%s", profiles[p], state_names[i]);
+			add(&removed, "%s%s", rel, "");
+		}
+		add(&kept, "%s/saves/Supafaust/%s.srm", profiles[p], SIBLING);
+		add(&kept, "%s/states/Supafaust/%s.state", profiles[p], SIBLING);
+		add(&kept, "%s/saves/Supafaust/%s.srm.bak", profiles[p], BASE);
+		add(&kept, "%s/states/Supafaust/%s.state9/inside", profiles[p], BASE);
+		add(&kept, "%s/states/Supafaust/%s.stat", profiles[p], BASE);
+		add(&kept, "%s/states/Supafaust/x%s.state", profiles[p], BASE);
+		add(&kept, "%s/saves/Snes9x/%s.srm", profiles[p], BASE);
+		add(&kept, "%s/states/Snes9x/%s.state", profiles[p], BASE);
+		add(&kept, "%s/content_history.lpl%s", profiles[p], "");
+	}
+	add(&kept, "%s/%s", RANDO_SD_ROM_DIR, sibling->name.rom);
+	add(&kept, "%s/%s.cfg", RANDO_SD_GAME_CONFIG_DIR, SIBLING);
+	add(&kept, "%s/%s", RANDO_SD_ROM_DIR, other->name.rom);
+	add(&kept, "Roms/SFC/%s%s", seed->name.rom, "");
+	add(&kept, "Roms/SFC/Hacks/%s%s", seed->name.rom, "");
+	add(&kept, "%s%s", RANDO_SD_SETTINGS_FILE, "");
+	add(&kept, "Roms/recentlist.json%s%s", "", "");
+	for (i = 0; i < removed.count; i++)
+		put(removed.rel[i]);
+	for (i = 0; i < kept.count; i++)
+		put(kept.rel[i]);
+	write_record(seed, false, false);
+	write_record(sibling, false, false);
+	write_record(other, false, false);
+	add(&kept, "%s%s", record_rel(sibling->name.code), "");
+	add(&kept, "%s%s", record_rel(other->name.code), "");
+	write_text(RANDO_SD_LIST_CACHE6, "x");
+	write_text(RANDO_SD_LIST_CACHE2, "x");
+}
+
+static void check_paths(const Paths *paths, bool present)
+{
+	int i;
+
+	for (i = 0; i < paths->count; i++)
+		if (exists(paths->rel[i]) != present)
+			test_fail(TEST, "%s %s", paths->rel[i], present ? "was removed" : "is still there");
+}
+
+static RandoRecord seed_record, sibling_record, other_record;
+
+static void three_records(void)
+{
+	seed_record = record_of(1, 11, 1, 10, 0, 0);
+	CHECK(strcmp(seed_record.name.rom, BASE ".sfc") == 0);
+	sibling_record = seed_record;
+	rando_name_make(&sibling_record.options, rando_name_code(&sibling_record.options, sibling_record.heart_beep, 1),
+			2, &sibling_record.name);
+	CHECK(strcmp(sibling_record.name.rom, SIBLING ".sfc") == 0);
+	other_record = record_of(2, 11, 1, 10, 0, 0);
+}
+
+static void check_outcome(UiHistoryDeleteOutcome o, bool ok, bool list_stale, RandoHistoryDeleteStatus status)
+{
+	CHECK(o.ok == ok);
+	CHECK(o.list_stale == list_stale);
+	CHECK(o.status == rando_history_delete_text(status));
+}
+
+static void test_delete_full_tree(void)
+{
+	int profile_count;
+
+	three_records();
+	for (profile_count = 3; profile_count >= 0; profile_count -= 2) {
+		make_root(true);
+		full_tree(&seed_record, &sibling_record, &other_record, profile_count);
+		check_outcome(delete_seed(&seed_record), true, false, RANDO_HISTORY_DELETE_OK);
+		check_paths(&removed, false);
+		check_paths(&kept, true);
+		CHECK(!exists(record_rel(seed_record.name.code)));
+		CHECK(!exists(RANDO_SD_LIST_CACHE6) && !exists(RANDO_SD_LIST_CACHE2));
+		rando_history_scan(&history, &list);
+		CHECK(list.count == 2);
+		drop_root();
+	}
+}
+
+/* Makes rel a non-empty folder, so remove cannot take it. */
+static void block(const char *rel)
+{
+	char inside[256];
+
+	if (exists(rel))
+		CHECK(remove(at(rel)) == 0);
+	snprintf(inside, sizeof inside, "%s/inside", rel);
+	put(inside);
+}
+
+static void unblock(const char *rel)
+{
+	remove_all(at(rel));
+}
+
+static void test_delete_failures(void)
+{
+	char srm[128], rom_path[128];
+
+	three_records();
+	snprintf(rom_path, sizeof rom_path, "%s", rom_rel(seed_record.name.rom));
+
+	make_root(true);
+	full_tree(&seed_record, &sibling_record, &other_record, 3);
+	block(rom_path);
+	check_outcome(delete_seed(&seed_record), false, false, RANDO_HISTORY_DELETE_ROM);
+	check_paths(&kept, true);
+	CHECK(exists(record_rel(seed_record.name.code)));
+	CHECK(exists(RANDO_SD_LIST_CACHE6) && exists(RANDO_SD_LIST_CACHE2));
+	CHECK(exists(RANDO_SD_GAME_CONFIG_DIR "/" BASE ".cfg"));
+	CHECK(exists(RANDO_SD_PROFILE_GUEST "/states/Supafaust/" BASE ".state.auto.png"));
+	unblock(rom_path);
+	check_outcome(delete_seed(&seed_record), true, false, RANDO_HISTORY_DELETE_OK);
+	drop_root();
+
+	make_root(true);
+	full_tree(&seed_record, &sibling_record, &other_record, 3);
+	snprintf(srm, sizeof srm, RANDO_SD_PROFILE_MAIN "/saves/Supafaust/%s.srm", BASE);
+	block(srm);
+	check_outcome(delete_seed(&seed_record), false, false, RANDO_HISTORY_DELETE_FILES);
+	CHECK(!exists(rom_path));
+	CHECK(!exists(RANDO_SD_GAME_CONFIG_DIR "/" BASE ".cfg"));
+	CHECK(!exists(RANDO_SD_PROFILE_MAIN "/states/Supafaust/" BASE ".state10"));
+	CHECK(!exists(RANDO_SD_PROFILE_GUEST "/saves/Supafaust/" BASE ".srm"));
+	CHECK(exists(record_rel(seed_record.name.code)));
+	CHECK(!exists(RANDO_SD_LIST_CACHE6) && !exists(RANDO_SD_LIST_CACHE2));
+	check_paths(&kept, true);
+	unblock(srm);
+	write_text(RANDO_SD_LIST_CACHE6, "x");
+	check_outcome(delete_seed(&seed_record), true, false, RANDO_HISTORY_DELETE_OK);
+	check_paths(&removed, false);
+	CHECK(!exists(RANDO_SD_LIST_CACHE6));
+	drop_root();
+
+	make_root(true);
+	full_tree(&seed_record, &sibling_record, &other_record, 3);
+	block(RANDO_SD_GAME_CONFIG_DIR "/" BASE ".cfg");
+	check_outcome(delete_seed(&seed_record), false, false, RANDO_HISTORY_DELETE_FILES);
+	CHECK(!exists(RANDO_SD_PROFILE_CURRENT "/saves/Supafaust/" BASE ".srm"));
+	CHECK(exists(record_rel(seed_record.name.code)));
+	drop_root();
+
+	make_root(true);
+	full_tree(&seed_record, &sibling_record, &other_record, 3);
+	block(record_rel(seed_record.name.code));
+	check_outcome(delete_seed(&seed_record), false, false, RANDO_HISTORY_DELETE_RECORD);
+	check_paths(&removed, false);
+	check_paths(&kept, true);
+	CHECK(!exists(RANDO_SD_LIST_CACHE6) && !exists(RANDO_SD_LIST_CACHE2));
+	unblock(record_rel(seed_record.name.code));
+	check_outcome(delete_seed(&seed_record), true, false, RANDO_HISTORY_DELETE_OK);
+	drop_root();
+
+	make_root(true);
+	full_tree(&seed_record, &sibling_record, &other_record, 3);
+	block(RANDO_SD_LIST_CACHE2);
+	check_outcome(delete_seed(&seed_record), true, true, RANDO_HISTORY_DELETE_OK);
+	check_paths(&removed, false);
+	CHECK(!exists(RANDO_SD_LIST_CACHE6) && !exists(record_rel(seed_record.name.code)));
+	drop_root();
+}
+
+static void test_delete_table(void)
+{
+	int s, t;
+
+	for (s = 0; s < RANDO_HISTORY_DELETE_STATUS_COUNT; s++) {
+		UiStrId id = rando_history_delete_text((RandoHistoryDeleteStatus)s);
+
+		CHECK(id != UI_STR_NONE && (int)id > 0 && (int)id < UI_STR_COUNT);
+		CHECK(ui_str_arity(id) == 0);
+		for (t = 0; t < s; t++)
+			CHECK(rando_history_delete_text((RandoHistoryDeleteStatus)t) != id);
+	}
+	CHECK(rando_history_delete_text(RANDO_HISTORY_DELETE_OK) == UI_STR_HISTORY_DELETED);
+	CHECK(rando_history_delete_text(RANDO_HISTORY_DELETE_FILES) == UI_STR_HISTORY_DELETE_FILES);
+}
+
 int main(void)
 {
+	atexit(drop_root);
 	test_init();
 	test_missing_folder();
 	test_unlistable_folder();
@@ -407,6 +677,9 @@ int main(void)
 	test_ignored_names();
 	test_truncated();
 	test_spoiler();
+	test_delete_full_tree();
+	test_delete_failures();
+	test_delete_table();
 	printf(TEST ": passed\n");
 	return 0;
 }

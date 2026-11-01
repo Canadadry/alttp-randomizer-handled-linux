@@ -50,6 +50,10 @@ typedef struct RandoSaveResult {
  * spoiler. request's output and output_ctx are replaced by the save's file writer; every other field is
  * used as given. Both directories must exist and be shorter than RANDO_SEED_DIR_MAX (asserted). After OK
  * both files exist; after any other status, neither file of this seed does. Not reentrant. */
+/* Removes both SNES list caches under sd_root; true when one is still present afterwards (an absent one is
+ * fine). */
+bool rando_sd_remove_list_caches(const char *sd_root);
+
 RandoSaveStatus rando_seed_save(const char *rom_dir, const char *history_dir, const RandoAssembleRequest *request,
 				RandoAssembleWork *work, const RandoRecordDate *date, bool spoiler,
 				RandoSaveResult *result);

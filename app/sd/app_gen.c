@@ -144,9 +144,7 @@ bool rando_app_gen_init(RandoAppGen *gen, const char *sd_root)
 	    !join(gen->history_dir, sizeof gen->history_dir, sd_root, RANDO_SD_HISTORY_DIR) ||
 	    !join(gen->settings, sizeof gen->settings, sd_root, RANDO_SD_SETTINGS_FILE) ||
 	    !join(gen->base_rom, sizeof gen->base_rom, sd_root, RANDO_SD_BASE_ROM_FILE) ||
-	    !join(gen->base_patch, sizeof gen->base_patch, sd_root, RANDO_SD_BASE_PATCH_FILE) ||
-	    !join(gen->cache6, sizeof gen->cache6, sd_root, RANDO_SD_LIST_CACHE6) ||
-	    !join(gen->cache2, sizeof gen->cache2, sd_root, RANDO_SD_LIST_CACHE2))
+	    !join(gen->base_patch, sizeof gen->base_patch, sd_root, RANDO_SD_BASE_PATCH_FILE))
 		return false;
 	memcpy(gen->source_md5, rando_assemble_jp10_md5, RANDO_MD5_SIZE);
 	memcpy(gen->base_md5, rando_assemble_base_md5, RANDO_MD5_SIZE);
@@ -177,15 +175,6 @@ static bool make_folders(const char *root)
 		if (!make_dir(root, dirs[i]))
 			return false;
 	return true;
-}
-
-/* False when the file is still there. */
-static bool remove_cache(const char *path)
-{
-	struct stat st;
-
-	remove(path);
-	return stat(path, &st) != 0;
 }
 
 static RandoAppGenStatus read_inputs(RandoAppGen *gen, size_t *source_size, size_t *patch_size)
@@ -274,7 +263,5 @@ void rando_app_gen_run(void *ctx, const UiGenRequest *request, UiGenOutcome *out
 	outcome->ok = true;
 	snprintf(outcome->rom, sizeof outcome->rom, "%s", gen->result.name.rom);
 	outcome->spoiler = request->spoiler;
-	outcome->list_stale = !remove_cache(gen->cache6);
-	if (!remove_cache(gen->cache2))
-		outcome->list_stale = true;
+	outcome->list_stale = rando_sd_remove_list_caches(gen->root);
 }

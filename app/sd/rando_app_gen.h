@@ -53,7 +53,6 @@ typedef struct RandoAppGen {
 	char root[RANDO_SEED_DIR_MAX];
 	char rom_dir[RANDO_SEED_DIR_MAX], history_dir[RANDO_SEED_DIR_MAX];
 	char settings[RANDO_SEED_PATH_MAX], base_rom[RANDO_SEED_PATH_MAX], base_patch[RANDO_SEED_PATH_MAX];
-	char cache6[RANDO_SEED_PATH_MAX], cache2[RANDO_SEED_PATH_MAX];
 	uint8_t source_md5[RANDO_MD5_SIZE], base_md5[RANDO_MD5_SIZE];
 	RandoAppSeedFn seed;
 	RandoAppDateFn date;

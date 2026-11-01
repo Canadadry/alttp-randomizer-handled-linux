@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "rando_seed_save.h"
 #include "rando_out.h"
 #include "rando_playthrough.h"
@@ -5,6 +7,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 
 static RandoPlaythrough playthrough;
 
@@ -100,4 +103,23 @@ RandoSaveStatus rando_seed_save(const char *rom_dir, const char *history_dir, co
 		return RANDO_SAVE_RECORD;
 	}
 	return RANDO_SAVE_OK;
+}
+
+/* True when path is still there after remove. */
+static bool remove_cache(const char *sd_root, const char *rel)
+{
+	char path[RANDO_SEED_PATH_MAX];
+	struct stat st;
+	int n = snprintf(path, sizeof path, "%s/%s", sd_root, rel);
+
+	assert(n >= 0 && (size_t)n < sizeof path);
+	remove(path);
+	return lstat(path, &st) == 0;
+}
+
+bool rando_sd_remove_list_caches(const char *sd_root)
+{
+	bool stale = remove_cache(sd_root, RANDO_SD_LIST_CACHE6);
+
+	return remove_cache(sd_root, RANDO_SD_LIST_CACHE2) || stale;
 }

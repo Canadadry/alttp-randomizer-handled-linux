@@ -169,3 +169,111 @@ bool rando_history_spoiler(void *ctx, const UiHistoryEntry *entry, UiHistorySpoi
 	return rando_record_spoiler_outline(h->buf, h->record.spoiler_offset, h->record.spoiler_size, out->text,
 					    sizeof out->text, &out->len, &out->cut);
 }
+
+static const UiStrId delete_texts[RANDO_HISTORY_DELETE_STATUS_COUNT] = {
+	[RANDO_HISTORY_DELETE_OK] = UI_STR_HISTORY_DELETED,
+	[RANDO_HISTORY_DELETE_ROM] = UI_STR_HISTORY_DELETE_ROM,
+	[RANDO_HISTORY_DELETE_FILES] = UI_STR_HISTORY_DELETE_FILES,
+	[RANDO_HISTORY_DELETE_RECORD] = UI_STR_HISTORY_DELETE_RECORD,
+};
+
+UiStrId rando_history_delete_text(RandoHistoryDeleteStatus status)
+{
+	assert((size_t)status < RANDO_HISTORY_DELETE_STATUS_COUNT);
+	return delete_texts[status];
+}
+
+/* Room for a profile folder, "/states/<core>/" and any file name. */
+#define DELETE_PATH_MAX (RANDO_SEED_PATH_MAX + 512)
+
+static bool present(const char *path)
+{
+	struct stat st;
+
+	return lstat(path, &st) == 0;
+}
+
+/* True when the file at <dir>/<name><ext> is absent afterwards, whatever it was. */
+static bool gone(const char *dir, const char *name, const char *ext)
+{
+	char path[DELETE_PATH_MAX];
+
+	snprintf(path, sizeof path, "%s/%s%s", dir, name, ext);
+	remove(path);
+	return !present(path);
+}
+
+/* The first regular file of dir starting with prefix, into path; false when none (or dir cannot be listed). */
+static bool find_state(const char *dir, const char *prefix, char path[DELETE_PATH_MAX])
+{
+	size_t n = strlen(prefix);
+	DIR *d = opendir(dir);
+	struct dirent *ent;
+	bool found = false;
+
+	if (d == NULL)
+		return false;
+	while (!found && (ent = readdir(d)) != NULL) {
+		struct stat st;
+
+		if (strncmp(ent->d_name, prefix, n) != 0)
+			continue;
+		snprintf(path, DELETE_PATH_MAX, "%s/%s", dir, ent->d_name);
+		found = lstat(path, &st) == 0 && S_ISREG(st.st_mode);
+	}
+	closedir(d);
+	return found;
+}
+
+/* The .srm and the states of one profile folder; false when one stays. No removal runs while dir is open. */
+static bool delete_profile(const char *profile, const char *base)
+{
+	char dir[DELETE_PATH_MAX], prefix[RANDO_NAME_ROM_MAX + 8], path[DELETE_PATH_MAX];
+	struct stat st;
+	bool ok;
+
+	if (stat(profile, &st) != 0 || !S_ISDIR(st.st_mode))
+		return true;
+	snprintf(dir, sizeof dir, "%s/" RANDO_SD_SAVES_DIR "/" RANDO_SD_CORE_DIR, profile);
+	ok = gone(dir, base, ".srm");
+	snprintf(dir, sizeof dir, "%s/" RANDO_SD_STATES_DIR "/" RANDO_SD_CORE_DIR, profile);
+	snprintf(prefix, sizeof prefix, "%s.state", base);
+	while (find_state(dir, prefix, path)) {
+		remove(path);
+		if (present(path))
+			return false;
+	}
+	return ok;
+}
+
+static RandoHistoryDeleteStatus delete_files(RandoHistory *h, const UiHistoryEntry *entry)
+{
+	char base[RANDO_NAME_ROM_MAX];
+	size_t n = strlen(entry->name.rom);
+	bool ok;
+	int i;
+
+	assert(rando_name_code_valid(entry->name.code));
+	assert(n > 4 && n < sizeof base && strcmp(entry->name.rom + n - 4, ".sfc") == 0);
+	memcpy(base, entry->name.rom, n - 4);
+	base[n - 4] = '\0';
+	if (!gone(h->rom_dir, entry->name.rom, ""))
+		return RANDO_HISTORY_DELETE_ROM;
+	ok = gone(h->game_config_dir, base, ".cfg");
+	for (i = 0; i < RANDO_HISTORY_PROFILES; i++)
+		if (!delete_profile(h->profiles[i], base))
+			ok = false;
+	if (!ok)
+		return RANDO_HISTORY_DELETE_FILES;
+	return gone(h->history_dir, entry->name.code, ".json") ? RANDO_HISTORY_DELETE_OK : RANDO_HISTORY_DELETE_RECORD;
+}
+
+void rando_history_delete(void *ctx, const UiHistoryEntry *entry, UiHistoryDeleteOutcome *outcome)
+{
+	RandoHistory *h = ctx;
+	RandoHistoryDeleteStatus status = delete_files(h, entry);
+
+	outcome->ok = status == RANDO_HISTORY_DELETE_OK;
+	outcome->list_stale = status != RANDO_HISTORY_DELETE_ROM && rando_sd_remove_list_caches(h->root);
+	outcome->status = rando_history_delete_text(status);
+}

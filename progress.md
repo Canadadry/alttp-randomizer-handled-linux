@@ -107,7 +107,7 @@
     - [x] Chunk 1: spoiler outline
     - [x] Chunk 2: core History state machine
     - [x] Chunk 3: SD scan and spoiler reading
-    - [ ] Chunk 4: delete and its file set
+    - [x] Chunk 4: delete and its file set
     - [ ] Chunk 5: end to end
   - [ ] 3.7 ui_cli
 - [ ] Phase 4 — Onion and PC builds
