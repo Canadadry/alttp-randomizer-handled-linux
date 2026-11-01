@@ -12,12 +12,12 @@
     - [x] Chunk 4: fill claims
     - [x] Chunk 5: the oracle runs the post-fill code and logs
     - [x] Chunk 6: regenerate the goldens
-  - [ ] 1.3 Golden cases for the new settings and for combinations
+  - [x] 1.3 Golden cases for the new settings and for combinations
     - [x] Chunk 1: e2e-combos target and two case directories
     - [x] Chunk 2: the 29 case configs and their goldens
     - [x] Chunk 3: fill claims and the coverage guard
     - [x] Chunk 4: fixes for divergent combinations
-    - [ ] Chunk 5: measure against step 1.1
+    - [x] Chunk 5: measure against step 1.1
   - [ ] 1.4 Port the post-fill draws
   - [ ] 1.5 rando_rom skeleton and claims by write group
   - [ ] 1.6 Port the items and locations writes

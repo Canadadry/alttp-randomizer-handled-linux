@@ -308,15 +308,17 @@ for c in $case_names; do
 		die "unreadable case: $c"
 done
 
-# Step 1.1 note: baseline's golden draws.
+# Step 1.1 and 1.2 notes: baseline's golden draws.
 awk -v stages="$(echo $stage_list)" '
 BEGIN {
 	want["getAdvancementItems"] = 4; want["setMedallions"] = 2; want["fillPrizes"] = 64; want["setFountains"] = 2
 	want["shufflePrizePacks"] = 7; want["prepareWorld"] = 153; want["fill"] = 573
+	want["setTexts"] = 255; want["randomizeCredits"] = 78; want["applyHints"] = 279
+	want["setDiggingGameRng"] = 1; want["writeRNGBlock"] = 1024; want["writePrizePacksToRom"] = 63
 }
 $2 == "baseline" {
 	found = 1
-	if ($4 != 805) { printf "baseline golden has %d draws, expected 805\n", $4; bad = 1 }
+	if ($4 != 2505) { printf "baseline golden has %d draws, expected 2505\n", $4; bad = 1 }
 	n = split(stages, s, " "); split($6, v, "/")
 	for (i = 1; i <= n; i++)
 		if (v[i] != want[s[i]] + 0) { printf "baseline golden stage %s has %d draws, expected %d\n", s[i], v[i], want[s[i]]; bad = 1 }
