@@ -155,6 +155,32 @@ static const RandoTextId tile_texts[RANDO_TILE_COUNT] = {
 	[RANDO_TILE_SOUTH_EAST_DARKWORLD_CAVE] = RANDO_TEXT_telepathic_tile_south_east_darkworld_cave,
 };
 
+/* __('hint.<kind>.<name>'): the picked alternative, or the key itself when hint.php has none. */
+static void hint_name(Str *s, const RandoHintName *hint, const char *kind, const char *name, int index)
+{
+	if (hint->names == NULL) {
+		str_add(s, "hint.");
+		str_add(s, kind);
+		str_add(s, ".");
+		str_add(s, name);
+		return;
+	}
+	assert(index == 0 || index < hint->count);
+	str_add(s, hint->names[index]);
+}
+
+/* Location::getHint: ucfirst("$item_name $location_name"). */
+static void location_hint(const RandoLocationHint *hint, Str *s)
+{
+	assert(hint->item < RANDO_ITEM_COUNT && hint->location < RANDO_LOCATION_COUNT);
+	hint_name(s, &rando_hint_items[hint->item], "item", rando_item_info(hint->item)->name, hint->item_name);
+	str_add(s, " ");
+	hint_name(s, &rando_hint_locations[hint->location], "location", rando_location_info(hint->location)->name,
+		  hint->location_name);
+	if (s->text[0] >= 'a' && s->text[0] <= 'z')
+		s->text[0] = (char)(s->text[0] - 'a' + 'A');
+}
+
 /* HintService::applyHints' tile text; hints off sets none. */
 static bool tile_hint(const RandoGen *gen, RandoTextId id, Str *s)
 {
@@ -168,15 +194,63 @@ static bool tile_hint(const RandoGen *gen, RandoTextId id, Str *s)
 		return false;
 	hint = &h->tiles[tile];
 	assert(hint->kind != RANDO_TILE_HINT_NONE);
-	switch (hint->kind) {
-	case RANDO_TILE_HINT_JOKE:
+	if (hint->kind == RANDO_TILE_HINT_JOKE) {
 		assert(hint->joke < RANDO_STRINGS_HINT);
 		str_add(s, rando_strings_hint[hint->joke]);
-		return true;
-	default:
-		/* TODO step 9 chunk 5: the location hints. */
-		return false;
+	} else {
+		location_hint(&hint->location, s);
 	}
+	return true;
+}
+
+typedef struct ItemText {
+	RandoTextId id;
+	RandoLocationClass location_class;
+	const char *const *texts;
+} ItemText;
+
+/* The writeItem overrides that set a text. */
+static const ItemText item_texts[] = {
+	{RANDO_TEXT_tablet_ether_book, RANDO_LOCATION_CLASS_DROP_ETHER, rando_text_ether},
+	{RANDO_TEXT_tablet_bombos_book, RANDO_LOCATION_CLASS_DROP_BOMBOS, rando_text_bombos},
+	{RANDO_TEXT_mastersword_pedestal_translated, RANDO_LOCATION_CLASS_PEDESTAL, rando_text_pedestal},
+};
+
+/* The item of the one location of location_class, an empty one read as Nothing. */
+static RandoItemId class_item(const RandoWorld *world, RandoLocationClass location_class)
+{
+	int n = rando_layout_location_count(world->variant), i;
+
+	for (i = 0; i < n; i++) {
+		RandoLocationId location = rando_layout_location(world->variant, i);
+
+		if (rando_location_info(location)->location_class == location_class) {
+			RandoItemId item = rando_world_item(world, location);
+
+			return item == RANDO_ITEM_NONE ? RANDO_ITEM_Nothing : item;
+		}
+	}
+	assert(!"no location of the class");
+	return RANDO_ITEM_Nothing;
+}
+
+/* The table holds every alias's target text, so only rom.genericKeys' KeyGK is substituted here. */
+static bool item_text(const RandoGen *gen, RandoTextId id, Str *s)
+{
+	size_t i;
+
+	for (i = 0; i < sizeof item_texts / sizeof item_texts[0]; i++)
+		if (item_texts[i].id == id) {
+			RandoItemId item = class_item(&gen->world, item_texts[i].location_class);
+			const char *text;
+
+			if (gen->world.config.rom_generic_keys && rando_item_info(item)->item_class == RANDO_ITEM_CLASS_KEY)
+				item = RANDO_ITEM_KeyGK;
+			text = item_texts[i].texts[item];
+			str_add(s, text != NULL ? text : "Don't waste\nyour time!");
+			return true;
+		}
+	return false;
 }
 
 typedef struct InvertedText {
@@ -301,7 +375,7 @@ static bool seed_string(const RandoGen *gen, RandoTextId id, Str *s, bool *pause
 		str_add(s, "Randomizer v31\n\n>    -veetorp");
 		return true;
 	default:
-		return tile_hint(gen, id, s) || inverted_text(gen, id, s, pause);
+		return tile_hint(gen, id, s) || item_text(gen, id, s) || inverted_text(gen, id, s, pause);
 	}
 }
 

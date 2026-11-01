@@ -540,6 +540,75 @@ static void test_hints(void)
 	expect_unset("no tile", &edited, RANDO_TEXT_telepathic_tile_under_ganon);
 }
 
+static void set_location_tile(RandoGen *g, RandoTile tile, RandoItemId item, int item_name, RandoLocationId location,
+			      int location_name)
+{
+	RandoTileHint *hint = &g->post.hints.tiles[tile];
+
+	hint->kind = RANDO_TILE_HINT_LOCATION;
+	hint->location.item = item;
+	hint->location.item_name = (uint8_t)item_name;
+	hint->location.location = location;
+	hint->location.location_name = (uint8_t)location_name;
+}
+
+/* Names typed from VT's resources/lang/en/hint.php. */
+static void test_location_hints(void)
+{
+	int tile;
+
+	memcpy(&edited, &gen, sizeof gen);
+	edited.world.config.spoil_hints = true;
+	edited.post.hints.on = true;
+	for (tile = 0; tile < RANDO_TILE_COUNT; tile++)
+		edited.post.hints.tiles[tile].kind = RANDO_TILE_HINT_JOKE;
+	set_location_tile(&edited, RANDO_TILE_CASTLE_TOWER, RANDO_ITEM_FireRod, 0, RANDO_LOC_SAHASRAHLA, 1);
+	expect_seed("ucfirst, both arrays", &edited, RANDO_TEXT_telepathic_tile_castle_tower,
+		    "The Fire Rod is held by the Kakariko village elder", true);
+	set_location_tile(&edited, RANDO_TILE_CASTLE_TOWER, RANDO_ITEM_FireRod, 1, RANDO_LOC_ETHER_TABLET, 0);
+	expect_seed("second item name", &edited, RANDO_TEXT_telepathic_tile_castle_tower, "A unique item is on a Tablet",
+		    true);
+	set_location_tile(&edited, RANDO_TILE_TURTLE_ROCK, RANDO_ITEM_KeyGK, 0, RANDO_LOC_ETHER_TABLET, 1);
+	expect_seed("plain item name", &edited, RANDO_TEXT_telepathic_tile_turtle_rock,
+		    "A Generic Key requires the book", true);
+	set_location_tile(&edited, RANDO_TILE_TURTLE_ROCK, RANDO_ITEM_ProgressiveBowAlternate, 0, RANDO_LOC_BOMB_MERCHANT, 0);
+	expect_seed("missing keys", &edited, RANDO_TEXT_telepathic_tile_turtle_rock,
+		    "Hint.item.ProgressiveBowAlternate hint.location.Bomb Merchant", true);
+}
+
+static void expect_override(const char *what, RandoLocationId location, RandoItemId item, RandoTextId id,
+			    const char *utf8)
+{
+	CHECK(rando_world_set_item(&edited.world, location, item));
+	expect_seed(what, &edited, id, utf8, true);
+}
+
+/* Texts typed from VT's Drop\Ether, Drop\Bombos and Pedestal at 219fcafd. */
+static void test_item_texts(void)
+{
+	memcpy(&edited, &gen, sizeof gen);
+	edited.world.config.rom_generic_keys = false;
+	expect_override("ether", RANDO_LOC_ETHER_TABLET, RANDO_ITEM_Bombos, RANDO_TEXT_tablet_ether_book,
+			"Burn, baby,\nburn! Fear my\nring of fire!");
+	expect_override("ether alias", RANDO_LOC_ETHER_TABLET, RANDO_ITEM_ShopArrow, RANDO_TEXT_tablet_ether_book,
+			"a lonely arrow\nsits here.");
+	expect_override("ether default", RANDO_LOC_ETHER_TABLET, RANDO_ITEM_Crystal1, RANDO_TEXT_tablet_ether_book,
+			"Don't waste\nyour time!");
+	expect_override("ether empty", RANDO_LOC_ETHER_TABLET, RANDO_ITEM_NONE, RANDO_TEXT_tablet_ether_book,
+			"Don't waste\nyour time!");
+	expect_override("bombos", RANDO_LOC_BOMBOS_TABLET, RANDO_ITEM_KeyD1, RANDO_TEXT_tablet_bombos_book,
+			"A small key\nthat steals\nlight");
+	expect_override("pedestal", RANDO_LOC_MASTER_SWORD_PEDESTAL, RANDO_ITEM_BigKeyD4,
+			RANDO_TEXT_mastersword_pedestal_translated, "The Big Key\nof rogues");
+	expect_override("pedestal master sword", RANDO_LOC_MASTER_SWORD_PEDESTAL, RANDO_ITEM_MasterSword,
+			RANDO_TEXT_mastersword_pedestal_translated, "I thought this\nwas meant to\nbe randomized?");
+	edited.world.config.rom_generic_keys = true;
+	expect_override("generic key", RANDO_LOC_BOMBOS_TABLET, RANDO_ITEM_KeyD1, RANDO_TEXT_tablet_bombos_book,
+			"A small key\nto the Kingdom");
+	expect_override("generic big key", RANDO_LOC_BOMBOS_TABLET, RANDO_ITEM_BigKeyD1, RANDO_TEXT_tablet_bombos_book,
+			"Hammeryump\nwith this\nbig key");
+}
+
 static void test_inverted(void)
 {
 	static const RandoTextId ids[] = {
@@ -702,6 +771,132 @@ static void apply_pick(RandoGen *g, const char *file, int index)
 	}
 }
 
+/* Decodes hex into a NUL-terminated string; false when malformed or too long. */
+static bool hex_string(const char *hex, char *out, size_t size)
+{
+	size_t n = strlen(hex), i;
+
+	if (n % 2 != 0 || n / 2 >= size)
+		return false;
+	for (i = 0; i < n / 2; i++) {
+		int hi = hex_value(hex[2 * i]), lo = hex_value(hex[2 * i + 1]);
+
+		if (hi < 0 || lo < 0)
+			return false;
+		out[i] = (char)(hi << 4 | lo);
+	}
+	out[n / 2] = '\0';
+	return true;
+}
+
+/* rando_text_seed's text of g's castle tower tile against VT's getHint string, through the encoder. */
+static bool tile_matches(const RandoGen *g, const char *hint)
+{
+	uint8_t want[RANDO_TEXT_ENTRY_MAX], got[RANDO_TEXT_ENTRY_MAX];
+	size_t nwant = rando_text_encode(hint, true, want), ngot;
+	bool set;
+
+	ngot = rando_text_seed(g, RANDO_TEXT_telepathic_tile_castle_tower, got, &set);
+	return set && ngot == nwant && memcmp(got, want, ngot) == 0;
+}
+
+static RandoGen hinted;
+
+/* hint_item <raw name> <index> <HEX>, the raw name holding spaces: named with Bomb Merchant, which
+ * hint.php lacks (checked below), so no name is cut at 19 characters. */
+static void replay_hint_item(const Fixture *fx, char *record, int *item_seen)
+{
+	char name[256], hint[512];
+	char *hex = strrchr(record, ' '), *index_field;
+	RandoItemId item;
+	int index;
+
+	if (hex == NULL)
+		fixture_fail(fx, "malformed hint_item");
+	*hex++ = '\0';
+	index_field = strrchr(record, ' ');
+	if (index_field == NULL || index_field == record)
+		fixture_fail(fx, "malformed hint_item");
+	*index_field++ = '\0';
+	item = rando_item_find(record);
+	if (item == RANDO_ITEM_NONE)
+		return;
+	index = atoi(index_field);
+	if (index != item_seen[item] || !hex_string(hex, name, sizeof name))
+		fixture_fail(fx, "hint_item index out of order or malformed name");
+	item_seen[item]++;
+	set_location_tile(&hinted, RANDO_TILE_CASTLE_TOWER, item, index, RANDO_LOC_BOMB_MERCHANT, 0);
+	snprintf(hint, sizeof hint, "%s hint.location.Bomb Merchant", name);
+	if (hint[0] >= 'a' && hint[0] <= 'z')
+		hint[0] = (char)(hint[0] - 'a' + 'A');
+	if (!tile_matches(&hinted, hint))
+		fixture_fail(fx, "hint_item name differs");
+}
+
+/* hint_location <index> <HEX> <name>, named with KeyGK's plain "a Generic Key". */
+static void replay_hint_location(const Fixture *fx, char *record, int *location_seen)
+{
+	char name[256], hint[512];
+	char *hex = strchr(record, ' '), *location_name;
+	RandoLocationId location;
+	int index;
+
+	location_name = hex == NULL ? NULL : strchr(hex + 1, ' ');
+	if (location_name == NULL)
+		fixture_fail(fx, "malformed hint_location");
+	*hex++ = '\0';
+	*location_name++ = '\0';
+	location = rando_location_find(location_name);
+	if (location == RANDO_LOCATION_NONE)
+		fixture_fail(fx, "a location the C world does not know");
+	index = atoi(record);
+	if (index != location_seen[location] || !hex_string(hex, name, sizeof name))
+		fixture_fail(fx, "hint_location index out of order or malformed name");
+	location_seen[location]++;
+	set_location_tile(&hinted, RANDO_TILE_CASTLE_TOWER, RANDO_ITEM_KeyGK, 0, location, index);
+	snprintf(hint, sizeof hint, "A Generic Key %s", name);
+	if (!tile_matches(&hinted, hint))
+		fixture_fail(fx, "hint_location name differs");
+}
+
+/* A count of 0 is a plain string, its one record at index 0. */
+static bool count_matches(int alternatives, int seen)
+{
+	return alternatives == RANDO_HINT_MISSING ? seen == 0 : seen == (alternatives == 0 ? 1 : alternatives);
+}
+
+typedef struct ItemTextId {
+	RandoTextId id;
+	RandoLocationId location;
+	int seen;
+} ItemTextId;
+
+/* item <id> <raw name> <HEX>: the item set on the id's one location, rom.genericKeys off. */
+static void replay_item(const Fixture *fx, char **field, ItemTextId *ids, size_t nids)
+{
+	uint8_t got[RANDO_TEXT_ENTRY_MAX];
+	RandoItemId item = rando_item_find(field[2]);
+	size_t i, ngot;
+	bool set;
+
+	for (i = 0; i < nids && rando_text_find(field[1]) != ids[i].id; i++)
+		;
+	if (i == nids)
+		fixture_fail(fx, "unknown item text id");
+	if (item == RANDO_ITEM_NONE)
+		fixture_fail(fx, "an item the C world does not know");
+	memcpy(&edited, &gen, sizeof gen);
+	edited.world.config.rom_generic_keys = false;
+	if (!rando_world_set_item(&edited.world, ids[i].location, item))
+		fixture_fail(fx, "the C world refuses the item");
+	ngot = rando_text_seed(&edited, ids[i].id, got, &set);
+	if (!set || !hex_equals(field[3], got, ngot)) {
+		print_hex("C", got, ngot);
+		fixture_fail(fx, "item text bytes differ");
+	}
+	ids[i].seen++;
+}
+
 static void check_text_tables_fixture(void)
 {
 	PickFile files[] = {
@@ -714,11 +909,22 @@ static void check_text_tables_fixture(void)
 		{"hint", RANDO_TEXT_telepathic_tile_eastern_palace, RANDO_STRINGS_HINT, 0},
 	};
 	const size_t nfiles = sizeof files / sizeof files[0];
+	ItemTextId ids[] = {
+		{RANDO_TEXT_tablet_ether_book, RANDO_LOC_ETHER_TABLET, 0},
+		{RANDO_TEXT_tablet_bombos_book, RANDO_LOC_BOMBOS_TABLET, 0},
+		{RANDO_TEXT_mastersword_pedestal_translated, RANDO_LOC_MASTER_SWORD_PEDESTAL, 0},
+	};
+	const size_t nids = sizeof ids / sizeof ids[0];
+	static int item_seen[RANDO_ITEM_COUNT], location_seen[RANDO_LOCATION_COUNT];
 	Fixture fx;
 	uint8_t got[RANDO_TEXT_ENTRY_MAX];
-	int picks = 0;
+	int picks = 0, names = 0, i;
 	size_t f;
 
+	memcpy(&hinted, &gen, sizeof gen);
+	hinted.post.hints.on = true;
+	for (i = 0; i < RANDO_TILE_COUNT; i++)
+		hinted.post.hints.tiles[i].kind = RANDO_TILE_HINT_JOKE;
 	fixture_open(&fx, FIXTURE_TEXT_TABLES);
 	while (fixture_next(&fx)) {
 		char *field[6];
@@ -728,9 +934,23 @@ static void check_text_tables_fixture(void)
 
 		if (fx.nfields != 1)
 			fixture_fail(&fx, "malformed record");
-		n = split_spaces(fx.field[0], field, 6);
-		if (n < 1 || strcmp(field[0], "pick") != 0)
+		if (strncmp(fx.field[0], "hint_item ", 10) == 0) {
+			replay_hint_item(&fx, fx.field[0] + 10, item_seen);
+			names++;
 			continue;
+		}
+		if (strncmp(fx.field[0], "hint_location ", 14) == 0) {
+			replay_hint_location(&fx, fx.field[0] + 14, location_seen);
+			names++;
+			continue;
+		}
+		n = split_spaces(fx.field[0], field, 6);
+		if (n == 4 && strcmp(field[0], "item") == 0) {
+			replay_item(&fx, field, ids, nids);
+			continue;
+		}
+		if (n < 1 || strcmp(field[0], "pick") != 0)
+			fixture_fail(&fx, "unknown record");
 		if (n != 5)
 			fixture_fail(&fx, "malformed pick");
 		for (f = 0; f < nfiles && strcmp(files[f].file, field[2]) != 0; f++)
@@ -756,40 +976,24 @@ static void check_text_tables_fixture(void)
 	for (f = 0; f < nfiles; f++)
 		if (files[f].seen != files[f].count)
 			test_fail(TEST, "%s: %d pick records, expected %d", files[f].file, files[f].seen, files[f].count);
-	printf(TEST ": %d text_tables pick records matched\n", picks);
+	for (f = 0; f < nids; f++)
+		if (ids[f].seen != RANDO_ITEM_COUNT)
+			test_fail(TEST, "%s: %d item records, expected %d", rando_text_name(ids[f].id), ids[f].seen,
+				  RANDO_ITEM_COUNT);
+	for (i = 0; i < RANDO_ITEM_COUNT; i++)
+		if (!count_matches(rando_hint_item_alternatives((RandoItemId)i), item_seen[i]))
+			test_fail(TEST, "hint.item.%s: %d hint_item records, the C count disagrees",
+				  rando_item_info((RandoItemId)i)->name, item_seen[i]);
+	for (i = 0; i < RANDO_LOCATION_COUNT; i++)
+		if (!count_matches(rando_hint_location_alternatives((RandoLocationId)i), location_seen[i]))
+			test_fail(TEST, "hint.location.%s: %d hint_location records, the C count disagrees",
+				  rando_location_info((RandoLocationId)i)->name, location_seen[i]);
+	printf(TEST ": %d text_tables pick, %d item and %d hint name records matched\n", picks,
+	       (int)(nids * RANDO_ITEM_COUNT), names);
 }
 
-/* TODO step 9 chunk 5: every id, with the set equality over all of them. */
-static const RandoTextId golden_ids[] = {
-	RANDO_TEXT_uncle_leaving_text,
-	RANDO_TEXT_sahasrahla_bring_courage,
-	RANDO_TEXT_bomb_shop,
-	RANDO_TEXT_blind_by_the_light,
-	RANDO_TEXT_kakariko_tavern_fisherman,
-	RANDO_TEXT_ganon_fall_in,
-	RANDO_TEXT_ganon_phase_3_alt,
-	RANDO_TEXT_ganon_phase_3_no_silvers,
-	RANDO_TEXT_ganon_phase_3_no_silvers_alt,
-	RANDO_TEXT_sign_ganons_tower,
-	RANDO_TEXT_sign_ganon,
-	RANDO_TEXT_ganon_fall_in_alt,
-	RANDO_TEXT_murahdahla,
-	RANDO_TEXT_end_triforce,
-	RANDO_TEXT_sign_north_of_links_house,
-	RANDO_TEXT_sign_path_to_death_mountain,
-	RANDO_TEXT_sign_bumper_cave,
-	RANDO_TEXT_sign_east_of_bomb_shop,
-	RANDO_TEXT_sign_east_of_links_house,
-	RANDO_TEXT_kiki_leaving_screen,
-	RANDO_TEXT_dark_sanctuary,
-	RANDO_TEXT_dark_sanctuary_yes,
-	RANDO_TEXT_dark_sanctuary_no,
-	RANDO_TEXT_menu_start_2,
-	RANDO_TEXT_menu_start_3,
-	RANDO_TEXT_intro_main,
-};
-
-/* The golden's last `text` line per listed id, against the C seed texts of the case's generation. */
+/* The golden's last `text` line per id, against the C seed texts of the case's generation: the same ids,
+ * the same bytes. */
 static void check_golden_case(const char *dir, const char *name)
 {
 	static char golden[RANDO_TEXT_COUNT][2 * RANDO_TEXT_ENTRY_MAX + 1];
@@ -826,8 +1030,8 @@ static void check_golden_case(const char *dir, const char *name)
 		in_golden[id] = true;
 	}
 	fixture_close(&fx);
-	for (i = 0; i < sizeof golden_ids / sizeof golden_ids[0]; i++) {
-		RandoTextId id = golden_ids[i];
+	for (i = 0; i < RANDO_TEXT_COUNT; i++) {
+		RandoTextId id = (RandoTextId)i;
 		bool set;
 		size_t n = rando_text_seed(&edited, id, got, &set);
 
@@ -864,7 +1068,7 @@ static void check_goldens(void)
 {
 	int n = check_golden_dir("cases") + check_golden_dir("combos");
 
-	printf(TEST ": %d goldens' text lines matched for %d ids\n", n, (int)(sizeof golden_ids / sizeof golden_ids[0]));
+	printf(TEST ": %d goldens' text lines matched for every id\n", n);
 }
 
 int main(int argc, char **argv)
@@ -890,6 +1094,8 @@ int main(int argc, char **argv)
 	test_tower_sign();
 	test_goals();
 	test_hints();
+	test_location_hints();
+	test_item_texts();
 	test_inverted();
 	printf(TEST ": passed\n");
 	if (fixtures) {
