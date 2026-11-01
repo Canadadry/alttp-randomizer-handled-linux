@@ -1,7 +1,7 @@
 - [x] Phase 0 — The one input the agent cannot make
   - [x] 0.1 Obtain the base patch for build edc01f3d
 - [ ] Phase 1 — The ROM writer matches VT, host only
-  - [ ] 1.1 Take over the randomizer from alttp-ds
+  - [x] 1.1 Take over the randomizer from alttp-ds
     - [x] Chunk 1: take over the code and the checks
     - [x] Chunk 2: skills and oracle reproduction
     - [x] Chunk 3: Onion toolchain and the cross target
