@@ -87,6 +87,17 @@ static const UiStrTable english = { {
 	[UI_STR_GENERATE_FOOTER] = "</> Change  Y Default  START Generate",
 	[UI_STR_GENERATE_UNSUPPORTED] = "Not supported with {}",
 	[UI_STR_GENERATE_SETTINGS_UNREADABLE] = "Saved settings unreadable: defaults",
+	[UI_STR_GENFLOW_GENERATING_TITLE] = "Generating Seed",
+	[UI_STR_GENFLOW_WAIT] = "Please wait...",
+	[UI_STR_GENFLOW_FEW_SECONDS] = "This takes a few seconds",
+	[UI_STR_GENFLOW_READY_TITLE] = "Seed Ready",
+	[UI_STR_GENFLOW_SAVED_IN] = "Saved in Roms/SFC/ALttPR as:",
+	[UI_STR_GENFLOW_SPOILER_KEPT] = "Spoiler kept in History",
+	[UI_STR_GENFLOW_SPOILER_NOT_KEPT] = "Spoiler not kept",
+	[UI_STR_GENFLOW_PLAY] = "Play it from the SNES list",
+	[UI_STR_GENFLOW_REFRESH] = "Refresh the SNES list to see it",
+	[UI_STR_GENFLOW_FAILED_TITLE] = "Generation Failed",
+	[UI_STR_GENFLOW_FOOTER] = "A Back",
 } };
 
 const UiStrTable *ui_str_english(void)
