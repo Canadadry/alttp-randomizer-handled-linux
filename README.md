@@ -29,6 +29,11 @@ make check
 `make test` is the fast loop (unit tests); `make check` is everything that
 must be green before a push.
 
+`make e2e-arm` cross-builds the generator with Onion's own toolchain (a
+pinned docker image, see `docs/toolchain.md`) and runs the e2e cases on it
+under `qemu-arm`; it needs docker and `qemu-user`, and is not part of
+`make check`.
+
 ## Working with Claude
 
 ### Skills you run

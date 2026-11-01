@@ -36,7 +36,15 @@ MEASURE_REPS ?= 5
 LINT_DIR := $(BUILD)/lint
 LINT_OBJ := $(patsubst $(RANDO)/src/%.c,$(LINT_DIR)/%.o,$(RANDO_SRC))
 
-.PHONY: test lint logic selftest e2e measure clean
+# e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
+# flags (docs/toolchain.md), run under qemu-arm by the same e2e driver.
+TOOLCHAIN := ../../onion-toolchain.sh
+ONION_CFLAGS := -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve
+ARM_DIR := $(BUILD)/arm
+ARM_GEN := $(ARM_DIR)/rando_gen
+ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
+
+.PHONY: test lint logic selftest e2e e2e-arm measure clean
 
 test: $(UNIT_BINS)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -55,6 +63,20 @@ selftest:
 
 e2e: $(GEN)
 	@./run_e2e.sh
+
+# -static: qemu-arm then needs no copy of the image's sysroot (-L).
+# The wrapper exists because run_e2e.sh runs RANDO_GEN as one word.
+e2e-arm:
+	@command -v qemu-arm >/dev/null 2>&1 || { echo "setup: qemu-arm not found on PATH (install qemu-user)" >&2; exit 1; }
+	@mkdir -p $(ARM_DIR)
+	@echo "e2e-arm: building $(ARM_GEN) with Onion's toolchain"
+	@$(TOOLCHAIN) sh -c '"$${CROSS_COMPILE}gcc" $(CFLAGS) -O2 $(ONION_CFLAGS) -static $(INCLUDES) -o $(ARM_GEN) $(RANDO)/host/main/rando_gen.c $(RANDO_SRC) $(HOST_SRC)'
+	@file $(ARM_GEN) | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_GEN); echo "e2e-arm: $(ARM_GEN) is not a 32-bit ARM EABI executable" >&2; exit 1; }
+	@file $(ARM_GEN)
+	@qemu-arm --version | head -n 1
+	@printf '#!/bin/sh\nexec qemu-arm "%s" "$$@"\n' "$(abspath $(ARM_GEN))" > $(ARM_WRAPPER)
+	@chmod +x $(ARM_WRAPPER)
+	@RANDO_GEN="$(abspath $(ARM_WRAPPER))" ./run_e2e.sh
 
 $(BUILD)/obj/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
