@@ -32,4 +32,7 @@ bool rando_patch_parse_args(int argc, char **argv, RandoPatchArgs *args, char er
  * on failure. Returns the exit code: 0, 1 input or output, 4 unsupported, 5 gave up. */
 int rando_patch_run(const RandoPatchArgs *args, FILE *out, FILE *err);
 
+/* The enumerator's name without its prefix ("PATCH_CRC"); "unknown" out of range. */
+const char *rando_patch_bps_name(RandoBpsResult result);
+
 #endif

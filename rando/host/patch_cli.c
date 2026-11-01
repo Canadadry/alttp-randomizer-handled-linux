@@ -111,12 +111,19 @@ bool rando_patch_parse_args(int argc, char **argv, RandoPatchArgs *args, char er
 	return true;
 }
 
-static const char *bps_name(RandoBpsResult result)
+const char *rando_patch_bps_name(RandoBpsResult result)
 {
-	static const char *const names[] = {
-		"OK", "NOT_BPS", "MALFORMED", "PATCH_CRC", "SOURCE_SIZE", "SOURCE_CRC", "TARGET_TOO_SMALL", "TARGET_CRC",
+	static const char *const names[RANDO_BPS_RESULT_COUNT] = {
+		[RANDO_BPS_OK] = "OK",
+		[RANDO_BPS_NOT_BPS] = "NOT_BPS",
+		[RANDO_BPS_MALFORMED] = "MALFORMED",
+		[RANDO_BPS_PATCH_CRC] = "PATCH_CRC",
+		[RANDO_BPS_SOURCE_SIZE] = "SOURCE_SIZE",
+		[RANDO_BPS_SOURCE_CRC] = "SOURCE_CRC",
+		[RANDO_BPS_TARGET_TOO_SMALL] = "TARGET_TOO_SMALL",
+		[RANDO_BPS_TARGET_CRC] = "TARGET_CRC",
 	};
-	return (size_t)result < sizeof names / sizeof names[0] ? names[result] : "unknown";
+	return (size_t)result < RANDO_BPS_RESULT_COUNT ? names[result] : "unknown";
 }
 
 /* Reads at most max bytes into buf; *size is max + 1 when the file is larger, the true size then in
@@ -210,7 +217,7 @@ int rando_patch_run(const RandoPatchArgs *args, FILE *out, FILE *err)
 		fprintf(err, "rando_patch: %s: MD5 mismatch, not the JP 1.0 ROM\n", args->base_path);
 		return EXIT_INPUT;
 	case RANDO_ASSEMBLE_PATCH:
-		fprintf(err, "rando_patch: %s: patch refused (%s)\n", args->bps_path, bps_name(bps));
+		fprintf(err, "rando_patch: %s: patch refused (%s)\n", args->bps_path, rando_patch_bps_name(bps));
 		return EXIT_INPUT;
 	case RANDO_ASSEMBLE_PATCH_SIZES:
 		fprintf(err, "rando_patch: %s: does not patch %u bytes into %u\n", args->bps_path,
@@ -230,6 +237,8 @@ int rando_patch_run(const RandoPatchArgs *args, FILE *out, FILE *err)
 	case RANDO_ASSEMBLE_OUTPUT:
 		fprintf(err, "rando_patch: %s: write failed\n", args->out_path);
 		return EXIT_INPUT;
+	case RANDO_ASSEMBLE_STATUS_COUNT:
+		break;
 	}
 	return EXIT_INPUT;
 }

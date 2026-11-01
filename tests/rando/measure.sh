@@ -158,7 +158,13 @@ frames() {
 	: >"$dir/$1/su"
 	for o in $objs; do
 		su="${o%.o}.su"
-		[ -f "$su" ] || die "missing stack usage: $su"
+		if [ ! -f "$su" ]; then
+			# clang writes no .su for a file without functions; gcc writes an empty one.
+			"$(nm_of "$1")" --defined-only "$o" >"$dir/$1/su.nm" || die "cannot read $o"
+			awk '$2 ~ /^[Tt]$/ && $3 !~ /^\$/ { found = 1 } END { exit !found }' "$dir/$1/su.nm" &&
+				die "missing stack usage: $su"
+			continue
+		fi
 		cat "$su" >>"$dir/$1/su"
 	done
 	awk -F '\t' '{

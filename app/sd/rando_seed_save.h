@@ -20,6 +20,7 @@ typedef enum RandoSaveStatus {
 	RANDO_SAVE_NO_NAME,  /* every suffix taken */
 	RANDO_SAVE_ASSEMBLE, /* rando_assemble failed: see result->assemble and result->bps */
 	RANDO_SAVE_RECORD,   /* the record could not be written; the ROM was removed */
+	RANDO_SAVE_STATUS_COUNT, /* never returned */
 } RandoSaveStatus;
 
 typedef struct RandoSaveResult {

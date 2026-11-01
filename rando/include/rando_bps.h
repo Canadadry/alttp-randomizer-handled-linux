@@ -13,6 +13,7 @@ typedef enum RandoBpsResult {
 	RANDO_BPS_SOURCE_CRC,
 	RANDO_BPS_TARGET_TOO_SMALL,
 	RANDO_BPS_TARGET_CRC,
+	RANDO_BPS_RESULT_COUNT, /* never returned */
 } RandoBpsResult;
 
 /* Offsets are into the patch; the metadata is not parsed. The actions run from actions_offset up

@@ -376,12 +376,34 @@ static void test_run_refusals(void)
 	CHECK(read_written(missing_out) == -1);
 }
 
+static void test_bps_names(void)
+{
+	static const char *const expected[] = {
+		"OK", "NOT_BPS", "MALFORMED", "PATCH_CRC", "SOURCE_SIZE", "SOURCE_CRC", "TARGET_TOO_SMALL", "TARGET_CRC",
+	};
+	int i, j;
+	CHECK(ARGC(expected) == RANDO_BPS_RESULT_COUNT);
+	for (i = 0; i < RANDO_BPS_RESULT_COUNT; i++) {
+		const char *name = rando_patch_bps_name((RandoBpsResult)i);
+		if (name == NULL || name[0] == '\0')
+			test_fail(TEST, "BPS result %d has no name", i);
+		if (i < ARGC(expected) && strcmp(name, expected[i]) != 0)
+			test_fail(TEST, "BPS result %d is named %s, not %s", i, name, expected[i]);
+		for (j = 0; j < i; j++)
+			if (strcmp(name, rando_patch_bps_name((RandoBpsResult)j)) == 0)
+				test_fail(TEST, "BPS results %d and %d share the name %s", j, i, name);
+	}
+	CHECK(strcmp(rando_patch_bps_name(RANDO_BPS_RESULT_COUNT), "unknown") == 0);
+	CHECK(strcmp(rando_patch_bps_name((RandoBpsResult)99), "unknown") == 0);
+}
+
 int main(int argc, char **argv)
 {
 	(void)test_fixtures_mode(TEST, argc, argv);
 	test_defaults();
 	test_every_key_lands();
 	test_refusals();
+	test_bps_names();
 	setup();
 	test_run_writes_the_assembled_rom();
 	test_run_draws_a_seed();

@@ -24,6 +24,7 @@ typedef enum RandoAssembleStatus {
 	RANDO_ASSEMBLE_UNSUPPORTED,
 	RANDO_ASSEMBLE_GAVE_UP,
 	RANDO_ASSEMBLE_OUTPUT, /* the output function returned false */
+	RANDO_ASSEMBLE_STATUS_COUNT, /* never returned */
 } RandoAssembleStatus;
 
 /* Returning false reports a failed write. rom is only valid during the call. */
