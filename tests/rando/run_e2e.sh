@@ -1,11 +1,12 @@
 #!/bin/sh
 # Usage: run_e2e.sh [<case>...]
-# RANDO_CASES, RANDO_CLAIMS, RANDO_STAGES and RANDO_GEN override the cases
-# directory, claims.txt, stages.txt and the generator (build/rando_gen).
+# RANDO_CASES, RANDO_CLAIMS, RANDO_STAGES, RANDO_GROUPS and RANDO_GEN override
+# the cases directory, claims.txt, stages.txt, write_groups.txt and the
+# generator (build/rando_gen).
 # The generator is run as `<generator> <case_dir> <out_dir> [<stage>]`, with a
 # stage claim's stage and no third argument for an `all` claim.
-# Exit 0 when no case is DIVERGENT, 1 when one is, 2 on a usage, claims-file or
-# stage-table error.
+# Exit 0 when no case is DIVERGENT, 1 when one is, 2 on a usage, claims-file,
+# stage-table or write-group-table error.
 set -eu
 export LC_ALL=C
 
@@ -14,6 +15,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 cases_dir="${RANDO_CASES:-$here/cases}"
 claims="${RANDO_CLAIMS:-$here/claims.txt}"
 stages="${RANDO_STAGES:-$here/stages.txt}"
+groups="${RANDO_GROUPS:-$here/write_groups.txt}"
 gen="${RANDO_GEN:-$here/build/rando_gen}"
 
 tmp="$(mktemp -d)"
@@ -24,12 +26,14 @@ fail() {
 	exit 2
 }
 
-for f in "$claims" "$stages"; do
+for f in "$claims" "$stages" "$groups"; do
 	[ -f "$f" ] || fail "no such file: $f"
 done
 
-# Writes $tmp/claims, one "<case>\t<stage>\t<draws>\t<due file or ->" line per
-# claim, and $tmp/due.<rank>, the "<stage>\t<kind>\t<arg>" checks a claim at the
+# Writes $tmp/claims, one "<case>\t<stage>\t<draws>\t<due file or ->\t<write
+# group or ->\t<writes>\t<1 if last group>" line per claim, where <writes> is
+# the golden write-log prefix the group claims; $tmp/tags, the "<tag>\t<group>"
+# lines of the write-group table, "*" for the default; and $tmp/due.<rank>, the "<stage>\t<kind>\t<arg>" checks a claim at the
 # stage of that rank owes, in table order: those of its stage and earlier ones,
 # except an earlier stage's pool, which the fill no longer leaves unplaced.
 CASES="$cases_dir" TMP="$tmp" awk '
@@ -42,6 +46,14 @@ function end_stages(   n) {
 			printf "%s:%d: check names unknown stage: %s\n", ARGV[1], check_line[n], check_stage[n]
 			return 1
 		}
+	return 0
+}
+function end_groups() {
+	groups_done = 1
+	if (defgroup == "") {
+		printf "%s: no default group\n", ARGV[2]
+		return 1
+	}
 	return 0
 }
 FILENAME == ARGV[1] {
@@ -69,15 +81,36 @@ FILENAME == ARGV[1] {
 }
 !stages_done && end_stages() { err = 1; exit }
 /^[ \t]*(#|$)/ { next }
-NF != 2 { bad("malformed line") }
+FILENAME == ARGV[2] {
+	if ($1 != "group" || NF < 3) bad("malformed line")
+	if ($2 in grank) bad("duplicate group: " $2)
+	grank[$2] = ++ngroups
+	for (f = 3; f <= NF; f++) {
+		if ($f == "*") {
+			if (NF != 3) bad("* beside another tag")
+			if (defgroup != "") bad("second default group: " $2)
+			defgroup = $2
+		} else {
+			if ($f in group_of) bad("tag in two groups: " $f)
+			group_of[$f] = $2
+		}
+	}
+	next
+}
+!groups_done && end_groups() { err = 1; exit }
+NF != 2 && NF != 3 { bad("malformed line") }
 $1 in claimed { bad("duplicate case: " $1) }
-{ claimed[$1] = 1; nclaims++; cl_line[nclaims] = FNR; cl_name[nclaims] = $1; cl_stage[nclaims] = $2 }
+{ claimed[$1] = 1; nclaims++; cl_line[nclaims] = FNR; cl_name[nclaims] = $1; cl_stage[nclaims] = $2; cl_group[nclaims] = $3 }
 END {
-	if (err || !stages_done && end_stages()) exit 2
+	if (err || !stages_done && end_stages() || !groups_done && end_groups()) exit 2
+	tags = ENVIRON["TMP"] "/tags"
+	printf "*\t%s\n", defgroup > tags
+	for (tg in group_of) printf "%s\t%s\n", tg, group_of[tg] > tags
+	close(tags)
 	out = ENVIRON["TMP"] "/claims"
 	printf "" > out
 	for (i = 1; i <= nclaims; i++) {
-		name = cl_name[i]; s = cl_stage[i]; where = ARGV[2] ":" cl_line[i]
+		name = cl_name[i]; s = cl_stage[i]; grp = cl_group[i]; where = ARGV[3] ":" cl_line[i]
 		f = ENVIRON["CASES"] "/" name "/config.json"
 		if ((getline line < f) < 0) die(where ": no such case: " name)
 		close(f)
@@ -98,6 +131,25 @@ END {
 			if (!k) die(where ": " s " makes no draw in attempt 0 of " name)
 		} else if (r < 0) die(name ": cannot read " t)
 		if (msg != "") die(name ": " msg)
+		if (grp != "") {
+			if (!(grp in grank)) die(where ": unknown write group: " grp)
+			if (s != "all") die(where ": write group " grp " needs an all claim")
+		}
+		w = ENVIRON["CASES"] "/" name "/rom_writes.txt"
+		wn = 0; wtop = 0; msg = ""; split("", wend)
+		while ((wr = (getline wline < w)) > 0) {
+			wn++
+			split(wline, WF, " ")
+			g = WF[3] in group_of ? group_of[WF[3]] : defgroup
+			if (msg != "") continue
+			if (grank[g] < wtop) msg = "golden write group " g " out of table order"
+			else { wtop = grank[g]; wend[wtop] = wn }
+		}
+		close(w)
+		if (grp != "" && wr < 0) die(name ": cannot read " w)
+		if (msg != "") die(name ": " msg)
+		if (grp != "" && !(grank[grp] in wend)) die(where ": " grp " makes no write in " name)
+		wclaim = grp == "" ? "-\t0\t0" : grp "\t" wend[grank[grp]] "\t" (grank[grp] == ngroups)
 		due = "-"
 		if (s != "all") {
 			rank = seen[s]
@@ -114,9 +166,9 @@ END {
 				close(due)
 			}
 		}
-		print name "\t" s "\t" (s == "all" ? n : k) "\t" due > out
+		print name "\t" s "\t" (s == "all" ? n : k) "\t" due "\t" wclaim > out
 	}
-}' "$stages" "$claims" >"$tmp/err" || fail "$(cat "$tmp/err")"
+}' "$stages" "$groups" "$claims" >"$tmp/err" || fail "$(cat "$tmp/err")"
 
 names="$(discover_cases "$cases_dir" run_e2e.sh "$@")"
 if [ -z "$names" ]; then
@@ -126,7 +178,9 @@ fi
 
 # Compares one claim's C output (O) with its golden (G), prints the detail lines
 # of the first failure and exits 1, or exits 0. MODE is "all" or "stage"; a
-# stage claim compares the first DRAWS trace lines, then runs the checks of DUE.
+# stage claim compares the first DRAWS trace lines, then runs the checks of DUE;
+# an all claim with a write GROUP then compares the first NWRITES log lines, the
+# whole log when LAST is 1, naming groups by the table in TAGS.
 CLAIM_AWK='
 function slurp(path, L,   s, r, n) {
 	split("", L)
@@ -308,6 +362,26 @@ function check_pool(   np, k, v, g, c, all, x, first, at, pre, bad, y) {
 	out = sprintf("    golden: %s x%d\n    c: %s x%d\n", first, g[first], first, c[first])
 	return 0
 }
+function write_group(line,   W) {
+	split(line, W, " ")
+	return W[3] in TAG ? TAG[W[3]] : TAG["*"]
+}
+function check_writes(   nt, k, i, need, ng, ge, nc, ce, pc) {
+	nc = slurp(ENVIRON["O"] "/rom_writes.txt", CW); ce = nl_end
+	if (nc < 0) fail("  c wrote no rom_writes.txt\n")
+	ng = slurp(ENVIRON["G"] "/rom_writes.txt", GW); ge = nl_end
+	need = ENVIRON["NWRITES"] + 0
+	pc = ENVIRON["LAST"] == "1" || nc < need ? nc : need
+	if (same(GW, need, CW, pc) && (need < ng || ge) == (pc < nc || ce)) return
+	if (first_diff(GW, need, CW, pc)) {
+		if (fd_c == "<end>")
+			fail("  rom_writes.txt: c ends after " nc " writes, claim needs " need "\n")
+		nt = slurp(ENVIRON["TAGS"], TL)
+		for (k = 1; k <= nt; k++) { i = index(TL[k], "\t"); TAG[substr(TL[k], 1, i - 1)] = substr(TL[k], i + 1) }
+		fail("  rom_writes.txt: " (fd_g == "<end>" ? ENVIRON["GROUP"] : write_group(fd_g)) ": first differing write " fd_n ":\n    golden: " fd_g "\n    c: " fd_c "\n")
+	}
+	fail("  rom_writes.txt: line endings differ\n")
+}
 function check_attempts(   ng, nc) {
 	nc = slurp(ENVIRON["O"] "/attempts", CA)
 	if (nc < 0) { out = "    c wrote no attempts\n"; return 0 }
@@ -325,6 +399,7 @@ BEGIN {
 		check_file("attempts")
 		check_trace()
 		check_file("spoiler.json")
+		if (ENVIRON["GROUP"] != "-") check_writes()
 		exit 0
 	}
 	check_trace(ENVIRON["DRAWS"])
@@ -345,7 +420,7 @@ BEGIN {
 	}
 }'
 
-# Writes $tmp/plan, one "<index>\t<case>[\t<stage>\t<draws>\t<due>]" line per
+# Writes $tmp/plan, one "<index>\t<case>[\t<claim fields>]" line per
 # case in case order, the claim fields only when claimed, and prints the output
 # directory of each claim.
 dirs="$(printf '%s\n' "$names" | TMP="$tmp" awk -F '\t' '
@@ -359,7 +434,7 @@ FILENAME != "-" { claim[$1] = $0; next }
 	print line > (ENVIRON["TMP"] "/plan")
 }' "$tmp/claims" -)"
 
-# run_claim <index> <case> <stage> <draws> <due>: writes $tmp/<index>.detail,
+# run_claim <index> <case> <stage> <draws> <due> <group> <writes> <last>: writes $tmp/<index>.detail,
 # the detail lines, $tmp/<index>.err, the generator's stdout and stderr, and
 # $tmp/<index>.status, 1 when DIVERGENT, else 0.
 run_claim() {
@@ -379,7 +454,7 @@ run_claim() {
 	mode=stage
 	[ "$3" = all ] && mode=all
 	status=0
-	G="$golden" O="$out" MODE="$mode" DRAWS="$4" DUE="$5" awk "$CLAIM_AWK" >"$out.detail" 2>>"$out.err" || status=$?
+	G="$golden" O="$out" MODE="$mode" DRAWS="$4" DUE="$5" GROUP="$6" NWRITES="$7" LAST="$8" TAGS="$tmp/tags" awk "$CLAIM_AWK" >"$out.detail" 2>>"$out.err" || status=$?
 	echo "$status" >"$out.status"
 }
 
@@ -389,9 +464,9 @@ if [ ! -f "$gen" ] || [ ! -x "$gen" ]; then
 elif [ -n "$dirs" ]; then
 	mkdir $dirs
 	tab="$(printf '\t')"
-	while IFS="$tab" read -r index name stage draws due; do
+	while IFS="$tab" read -r index name stage draws due group nwrites last; do
 		if [ -n "$stage" ]; then
-			run_claim "$index" "$name" "$stage" "$draws" "$due" &
+			run_claim "$index" "$name" "$stage" "$draws" "$due" "$group" "$nwrites" "$last" &
 		fi
 	done <"$tmp/plan"
 	wait
@@ -424,7 +499,7 @@ BEGIN { RS = "\001" }
 			st = slurp(base ".status") != "0\n"
 		}
 		if (st) { print "DIVERGENT " F[2]; printf "%s", detail; divergent++ }
-		else { print "PASS " F[2] " (" F[3] ")"; pass++ }
+		else { print "PASS " F[2] " (" F[3] (F[6] != "-" ? " " F[6] : "") ")"; pass++ }
 	}
 }
 END {

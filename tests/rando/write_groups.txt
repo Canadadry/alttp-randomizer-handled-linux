@@ -1,0 +1,10 @@
+# VT's write groups in writeToRom's order, then the heart beep the oracle
+# writes after it: `group <name> <tag>...`, the tags being rom_writes.txt's
+# third field, or `group <name> *` for the one group owning every other tag.
+group items writeItem
+group settings *
+group credits writeCredits
+group text writeText
+group sram writeInitialSram
+group setTotalItemCount setTotalItemCount
+group heart_beep setHeartBeepSpeed

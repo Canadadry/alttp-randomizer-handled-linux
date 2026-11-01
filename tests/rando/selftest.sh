@@ -109,7 +109,7 @@ chmod +x "$g/gen"
 gate() {
 	printf '%s' "$2" >"$g/claims.txt"
 	status=0
-	out="$(RANDO_CASES="$g/cases" RANDO_CLAIMS="$g/claims.txt" RANDO_STAGES="${stages_override:-$g/stages.txt}" \
+	out="$(RANDO_CASES="$g/cases" RANDO_CLAIMS="$g/claims.txt" RANDO_STAGES="${stages_override:-$g/stages.txt}" RANDO_GROUPS="${groups_override:-$here/write_groups.txt}" \
 		RANDO_GEN="${gen_override:-$g/gen}" FAKE_OUT="$g/out" "$here/run_e2e.sh" ${named:-} 2>"$tmp/err")" || status=$?
 	expect "$1 status" "$status" "$3"
 	expect "$1 stdout" "$out" "$4"
@@ -190,7 +190,7 @@ gate "missing C spoiler" "two all$nl" 1 \
 
 c="$g/claims.txt"
 gate "malformed claim" "two$nl" 2 "" "run_e2e.sh: $c:1: malformed line"
-gate "malformed claim, extra field" "two beta x$nl" 2 "" "run_e2e.sh: $c:1: malformed line"
+gate "malformed claim, four fields" "two all items x$nl" 2 "" "run_e2e.sh: $c:1: malformed line"
 gate "claimed case unknown" "# x${nl}three all$nl" 2 "" "run_e2e.sh: $c:2: no such case: three"
 gate "duplicate claim" "two all${nl}two beta$nl" 2 "" "run_e2e.sh: $c:2: duplicate case: two"
 gate "unknown stage" "two delta$nl" 2 "" "run_e2e.sh: $c:1: unknown stage: delta"
@@ -504,5 +504,134 @@ fake stderr "two says$nl"
 gate "generator stderr reaches stderr, grouped in case order" "one all${nl}two all$nl" 1 \
 	"DIVERGENT one${nl}  C generator exited 4${nl}PASS two (all)${nl}e2e: 1 pass, 1 divergent, 0 pending" \
 	"one says${nl}two says"
+
+# Write-log claims, on a test table of three groups.
+rm -f "$g/out/one/stderr" "$g/out/one/status" "$g/out/two/stderr"
+named=two
+w="$g/write_groups.txt"
+printf '# test table\ngroup first a\ngroup middle *\ngroup last z\n' >"$w"
+groups_override="$w"
+cat >"$g/cases/two/rom_writes.txt" <<'EOF2'
+000001 01 a
+000002 02 a
+000010 0A m1
+000011 0B0C m2
+000020 FF z
+EOF2
+golden_writes() {
+	head -n "$1" "$g/cases/two/rom_writes.txt"
+}
+
+fake rom_writes.txt "$(cat "$g/cases/two/rom_writes.txt")$nl"
+gate "write claim pass" "two all middle$nl" 0 "PASS two (all middle)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+
+fake rom_writes.txt "$(golden_writes 2)${nl}000010 0A m1${nl}000011 0B0D m2${nl}000020 FF z$nl"
+gate "divergence in the claimed group" "two all middle$nl" 1 \
+	"DIVERGENT two${nl}  rom_writes.txt: middle: first differing write 4:${nl}    golden: 000011 0B0C m2${nl}    c: 000011 0B0D m2${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+fake rom_writes.txt "$(golden_writes 4)${nl}000020 FE z$nl"
+gate "divergence in a later, unclaimed group" "two all middle$nl" 0 \
+	"PASS two (all middle)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+
+gate "no write claim, log not compared" "two all$nl" 0 "PASS two (all)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+
+fake rom_writes.txt "000001 01 a${nl}000002 03 a${nl}000010 0A m1${nl}000011 0B0C m2$nl"
+gate "earlier group's divergence under a later claim" "two all middle$nl" 1 \
+	"DIVERGENT two${nl}  rom_writes.txt: first: first differing write 2:${nl}    golden: 000002 02 a${nl}    c: 000002 03 a${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+fake rom_writes.txt "$(golden_writes 3)$nl"
+gate "short C log" "two all middle$nl" 1 \
+	"DIVERGENT two${nl}  rom_writes.txt: c ends after 3 writes, claim needs 4${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+fake rom_writes.txt ""
+gate "empty C log" "two all first$nl" 1 \
+	"DIVERGENT two${nl}  rom_writes.txt: c ends after 0 writes, claim needs 2${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+rm "$g/out/two/rom_writes.txt"
+gate "missing C log" "two all first$nl" 1 \
+	"DIVERGENT two${nl}  c wrote no rom_writes.txt${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+fake rom_writes.txt "$(cat "$g/cases/two/rom_writes.txt")$nl"
+gate "last-group claim pass" "two all last$nl" 0 "PASS two (all last)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+
+fake rom_writes.txt "$(cat "$g/cases/two/rom_writes.txt")${nl}000030 01 m1$nl"
+gate "last-group claim, one extra C write" "two all last$nl" 1 \
+	"DIVERGENT two${nl}  rom_writes.txt: last: first differing write 6:${nl}    golden: <end>${nl}    c: 000030 01 m1${nl}e2e: 0 pass, 1 divergent, 0 pending"
+gate "extra C write ignored before the last group" "two all middle$nl" 0 \
+	"PASS two (all middle)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+
+fake rom_writes.txt "$(cat "$g/cases/two/rom_writes.txt")"
+gate "C log lacks its last newline" "two all last$nl" 1 \
+	"DIVERGENT two${nl}  rom_writes.txt: line endings differ${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+fake rom_writes.txt "$(golden_writes 2)"
+gate "C prefix lacks its last newline" "two all first$nl" 1 \
+	"DIVERGENT two${nl}  rom_writes.txt: line endings differ${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+fake rom_writes.txt "000001 FF a$nl"
+fake spoiler.json "{$nl}$nl"
+gate "seed-level failure reported alone" "two all middle$nl" 1 \
+	"DIVERGENT two${nl}  spoiler.json: first differing line 2:${nl}    golden:     \"Bosses\": {${nl}    c: }${nl}e2e: 0 pass, 1 divergent, 0 pending"
+cp "$g/cases/two/spoiler.json" "$g/out/two/"
+
+fake rom_writes.txt "$(cat "$g/cases/two/rom_writes.txt")$nl"
+gen_override="$g/gen-args"
+gate "write claim, generator arguments" "two all last$nl" 0 "PASS two (all last)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+expect "write claim passes no stage" "$(cat "$FAKE_ARGS")" "2 two "
+gen_override=
+
+gate "unknown write group" "two all fourth$nl" 2 "" "run_e2e.sh: $c:1: unknown write group: fourth"
+gate "write group on a stage claim" "two beta first$nl" 2 "" "run_e2e.sh: $c:1: write group first needs an all claim"
+cp "$g/cases/two/rom_writes.txt" "$g/keep/"
+printf '000001 01 a\n000020 FF z\n' >"$g/cases/two/rom_writes.txt"
+gate "group with no write in the golden" "two all middle$nl" 2 "" "run_e2e.sh: $c:1: middle makes no write in two"
+printf '000010 0A m1\n000001 01 a\n' >"$g/cases/two/rom_writes.txt"
+gate "golden write group out of table order" "two all middle$nl" 2 "" "run_e2e.sh: two: golden write group first out of table order"
+gate "golden out of order without a write claim" "two all$nl" 2 "" "run_e2e.sh: two: golden write group first out of table order"
+gate "golden out of order on a stage claim" "two beta$nl" 2 "" "run_e2e.sh: two: golden write group first out of table order"
+gate "golden out of order but unclaimed" "" 0 "PENDING two${nl}e2e: 0 pass, 0 divergent, 1 pending"
+rm "$g/cases/two/rom_writes.txt"
+gate "write claim on a golden with no log" "two all first$nl" 2 "" "run_e2e.sh: two: cannot read $g/cases/two/rom_writes.txt"
+gate "no golden log, no write claim" "two all$nl" 0 "PASS two (all)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+mv "$g/keep/rom_writes.txt" "$g/cases/two/"
+
+printf 'group first a\ngroup\n' >"$w"
+gate "malformed group line" "" 2 "" "run_e2e.sh: $w:2: malformed line"
+printf 'group first a\nstage middle *\n' >"$w"
+gate "unknown group-table line" "" 2 "" "run_e2e.sh: $w:2: malformed line"
+printf 'group first a\ngroup first *\n' >"$w"
+gate "duplicate group" "" 2 "" "run_e2e.sh: $w:2: duplicate group: first"
+printf 'group first a b\ngroup middle *\ngroup last b\n' >"$w"
+gate "tag in two groups" "" 2 "" "run_e2e.sh: $w:3: tag in two groups: b"
+printf 'group first a\ngroup middle * m\n' >"$w"
+gate "default beside another tag" "" 2 "" "run_e2e.sh: $w:2: * beside another tag"
+printf 'group first a\ngroup last z\n' >"$w"
+gate "no default group" "" 2 "" "run_e2e.sh: $w: no default group"
+gate "no default group, with a claim" "two all$nl" 2 "" "run_e2e.sh: $w: no default group"
+printf 'group first *\ngroup middle *\n' >"$w"
+gate "two default groups" "" 2 "" "run_e2e.sh: $w:2: second default group: middle"
+groups_override=
+
+# The committed write_groups.txt: one write per group, a settings claim.
+cat >"$g/cases/two/rom_writes.txt" <<'EOF2'
+00E9B0 17 writeItem
+180032 01 setGameState
+180033 02 setSwordlessMode
+181500 0102 writeCredits
+0E0000 FFFF writeText
+183000 00 writeInitialSram
+180070 05 setTotalItemCount
+180033 40 setHeartBeepSpeed
+EOF2
+sed 's/FFFF writeText/FFFE writeText/' "$g/cases/two/rom_writes.txt" >"$g/out/two/rom_writes.txt"
+gate "settings claim, real table, later group differs" "two all settings$nl" 0 \
+	"PASS two (all settings)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+sed 's/01 setGameState/00 setGameState/' "$g/cases/two/rom_writes.txt" >"$g/out/two/rom_writes.txt"
+gate "settings claim, real table, setter differs" "two all settings$nl" 1 \
+	"DIVERGENT two${nl}  rom_writes.txt: settings: first differing write 2:${nl}    golden: 180032 01 setGameState${nl}    c: 180032 00 setGameState${nl}e2e: 0 pass, 1 divergent, 0 pending"
+cp "$g/cases/two/rom_writes.txt" "$g/out/two/"
+gate "heart_beep claim, real table, pass" "two all heart_beep$nl" 0 \
+	"PASS two (all heart_beep)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+named=
 
 echo "selftest: gate passed"

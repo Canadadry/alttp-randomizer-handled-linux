@@ -31,7 +31,7 @@
     - [x] Chunk 9: measure against step 1.1
   - [ ] 1.5 rando_rom skeleton and claims by write group
     - [x] Chunk 1: rando_rom skeleton, buffer and log writers
-    - [ ] Chunk 2: write_groups.txt and write-log claims
+    - [x] Chunk 2: write_groups.txt and write-log claims
     - [ ] Chunk 3: check-e2e update, e2e-arm run
   - [ ] 1.6 Port the items and locations writes
   - [ ] 1.7 Port the settings and flags writes
