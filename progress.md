@@ -80,9 +80,9 @@
     - [x] Chunk 3: record reader and round-trip
     - [x] Chunk 4: save call
 - [ ] Phase 3 — Onion facts, then the app's UI core and text renderer, host only
-  - [ ] 3.1 Confirm the Onion specifics from Onion's sources
+  - [x] 3.1 Confirm the Onion specifics from Onion's sources
     - [x] Chunk 1: Onion facts in docs/onion.md
-    - [ ] Chunk 2: checked against the plan
+    - [x] Chunk 2: checked against the plan
   - [ ] 3.2 Screen model and text renderer
   - [ ] 3.3 String table (i18n)
   - [ ] 3.4 Generate tab state machine

@@ -502,6 +502,83 @@ Recorded only; Phase 3 step 6 decides what a delete touches.
 - The app's own files under `App/ALttPR/` and the ROMs under `Roms/` are not
   per profile.
 
+## 10. Checked against the plan
+
+Each path or layout of `docs/plan-1.md` §2, against sections 1–9. The two SD
+directories are spelled once in code, as `RANDO_SD_ROM_DIR` and
+`RANDO_SD_HISTORY_DIR` (`rando/host/rando_seed_save.h`, relative to the SD
+root; `git grep` finds no other spelling outside `docs/`). The ROM name is
+`<Mode>-<Goal>-<code>[-<n>].sfc` (`rando/src/name.c`): ASCII letters, digits
+and `-`, lower-case `.sfc`, at most 36 characters
+(`Inverted-Completionist-XXXXXX-99.sfc`) against `RANDO_NAME_ROM_MAX` 48.
+Every fact used below is the same at `07505ea5` and `2bab767e` (section
+*Pinned sources*), so no row differs between the branches.
+
+| §2 path or layout | §2 text | Code | Facts | Verdict |
+|---|---|---|---|---|
+| `App/ALttPR/` as an Onion app (`config.json`, `launch.sh`, icon) | "An Onion app (`App/ALttPR/`)" | none yet (Phase 4 step 2's zip) | A folder under `App/` with a `config.json` is an app, named by `label`, started by `launch`, run from its own folder; the app sorter moves it whole; icon packs rewrite only a matching icon; an icon inside the app folder is not shown in a shipped app, an absolute path is a shipped form ([§2](#2-app-folder)) | MATCH, with a consequence (C1, C2) |
+| `App/ALttPR/base.sfc` | "placed once at `App/ALttPR/base.sfc`" | none yet (Phase 3 step 5 reads it) | App data inside the folder moves with it and is not per profile; nothing outside `Roms/` is listed as a game ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH |
+| `App/ALttPR/history/` | "History records go to `App/ALttPR/history/<code>.json`" | `RANDO_SD_HISTORY_DIR` `"App/ALttPR/history"` | Same as `base.sfc`; not per profile ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH, with a consequence (C3) |
+| `Roms/SFC/ALttPR/` as a folder of the SNES list, played by the default core | "Generated ROMs go to `Roms/SFC/ALttPR/…`, a subfolder of Onion's SNES list"; played "from Onion's SNES list with Onion's own SNES core" | `RANDO_SD_ROM_DIR` `"Roms/SFC/ALttPR"` | `Emu/SFC` has `rompath` `../../Roms/SFC` and starts `mednafen_supafaust_libretro.so`; subfolders one level deep, no apostrophe, flattened with `miyoogamelist.xml`; the list is cached in `Roms/SFC/SFC_cache6.db` and a new ROM shows only after a refresh, which Onion's scripts force by deleting that file ([§6](#6-snes-list)) | MATCH, with a consequence (C3, C4) |
+| The ROM name as a content name | "`<Mode>-<Goal>-<code>.sfc` (e.g. `Open-FastGanon-4F2A9C.sfc`)" | `rando_name_make`, `RANDO_NAME_ROM_MAX` | `extlist` holds lower-case `sfc` and is case-sensitive; the card is FAT32; RetroArch's base name is the file name without its last extension, so `Open-Ganon-1CA10A.sfc` gives `Open-Ganon-1CA10A` unchanged ([§6](#6-snes-list), [§7](#7-saves-and-states)) | MATCH |
+| The `.srm` location | Delete "removes the ROM, its RetroArch `.srm` save" | none yet (Phase 3 step 6) | `Saves/CurrentProfile/saves/Supafaust/<base>.srm`: `savefile_directory`, sorted by the core's `library_name` `Supafaust`, not by content folder, not next to the content ([§7](#7-saves-and-states)); `CurrentProfile` is the active profile, the other one is `MainProfile` or `GuestProfile` ([§9](#9-profiles)) | MATCH, with a consequence (C5, C6, C7) |
+| The save-state location | Delete removes "its RetroArch save states" | none yet (Phase 3 step 6) | `Saves/CurrentProfile/states/Supafaust/`: `<base>.state`, `<base>.stateN` (0…10 by auto-index, any N by hand), `<base>.state.auto`, each with an optional `.png`; all start with `<base>.state`, which no `-<n>` sibling does; compression adds no extension ([§7](#7-saves-and-states)) | MATCH, with a consequence (C5, C6, C8) |
+
+No row is a `MISMATCH`.
+
+### Consequences
+
+- **C1 (Phase 4 step 2).** The zip's `App/ALttPR/config.json` needs `label`
+  and `launch` (`"launch.sh"`); give `icon` as the absolute
+  `/mnt/SDCARD/App/ALttPR/<file>.png`, the shipped absolute form, until
+  device check 6 confirms it. `launch.sh` does `cd $(dirname "$0")` like
+  Onion's apps. No `full_resolution` file, so the app gets 640×480.
+- **C2 (Phase 4 step 2, Phase 3 step 5).** The binary finds the SD root
+  from its folder (`../..` of `App/ALttPR/`, or `/mnt/SDCARD`) to join
+  `RANDO_SD_ROM_DIR` and `RANDO_SD_HISTORY_DIR`; `launch.sh` starts it in
+  `App/ALttPR/`.
+- **C3 (Phase 3 step 5 or Phase 4 step 2).** `rando_seed_save` creates no
+  directory: `App/ALttPR/history/` ships in the zip or is created at start,
+  and `Roms/SFC/ALttPR/` is created before the first save (it is not in the
+  zip, which holds only `App/ALttPR/`).
+- **C4 (Phase 3 steps 5 and 6).** After writing a ROM (step 5) and after
+  deleting one (step 6), the app deletes `Roms/SFC/SFC_cache6.db` (and
+  `SFC_cache2.db`), as `reset_list.sh` does, so the list is rebuilt; that a
+  subfolder's ROMs live in the parent's cache is device check 5.
+- **C5 (Phase 3 step 6).** Delete builds the paths from the ROM's base name
+  only: `Saves/CurrentProfile/saves/Supafaust/<base>.srm`, and every file of
+  `Saves/CurrentProfile/states/Supafaust/` whose name starts with
+  `<base>.state` (numbered slots of any number, `.auto`, `.png`). The folder
+  name `Supafaust` is device check 3; the card's own `retroarch.cfg` keeping
+  Onion's values is device check 4.
+- **C6 (Phase 3 step 6).** Saves are per profile and History is not: while
+  Guest Mode is on, the main profile's files are under `Saves/MainProfile/`,
+  and the other way round under `Saves/GuestProfile/`. Step 6 decides whether
+  delete also removes them there; if not, a later seed reusing the freed name
+  (the name check looks only at the ROM and the record) loads the other
+  profile's stale save or state when that profile comes back.
+- **C7 (Phase 3 step 6).** The content folder is ignored, so a ROM of the
+  same file name in another `Roms/SFC/` folder shares the `.srm` and
+  states; generated names make this unlikely, and step 6 records it.
+- **C8 (Phase 3 step 6).** Section 8's other per-ROM files (RetroArch
+  history entry, Recents, game-switcher screenshot, play activity,
+  `.game_config/<rom>.cfg`) are not part of §2's delete; step 6 decides.
+
+Not §2 paths, recorded for their steps: Phase 3 step 2 sizes its grid from
+640×480 ([§4](#4-screen)); Phase 3 step 4 follows the Tweaks and Package
+Manager keys and leaves keymon's combinations alone ([§5](#5-buttons));
+Phase 4 step 1 chooses between the device's SDL 1.2 and a bundled SDL2
+([§3](#3-sdl-and-video)); the app targets a Flip-aware Onion, `v4.5-dev`
+or later, which `main` is not ([§1](#1-device-and-onion-version), device
+check 1).
+
+### Device checks for the step note
+
+The six checks below. Checks 3, 4 and 5 bound rows of this table (the
+`.srm` and state folders, the SNES list's refresh) without changing a
+verdict: the sources settle each fact, the check confirms the card follows
+them.
+
 ## Device checks for the owner
 
 What the sources do not settle, with what the app assumes meanwhile:
