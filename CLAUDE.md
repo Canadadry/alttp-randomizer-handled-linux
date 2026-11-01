@@ -22,6 +22,9 @@ in `docs/`, then `README.md`.
   path, no SDL. `app/sd/` is the SD-card layer (`record.c`, `seed_save.c`).
   `app/core` uses the library; `app/sd` the library and `rando/host`; nothing
   in `rando/` includes `app/`. Its tests live in `tests/rando/unit/`.
+  `app/main/` holds the mains: first `ui_cli.c`, the host tool that plays a
+  key sequence into the app on a directory used as the SD card and prints
+  the text screen.
 - `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
@@ -52,8 +55,12 @@ in `docs/`, then `README.md`.
   or `app/sd/` after proving itself on a planted one; and
   `tests/rando/no_literals.py`, which fails on any string literal with a
   letter under `app/core/` outside the English table `ui_strings_en.c`, after
-  proving itself on planted sources) plus `test-template`
-  (the tooling under `.claude/`).
+  proving itself on planted sources; and `ui_cli`, built from `make test`'s
+  own objects, with its smoke test `unit/smoke_ui_cli.c`) plus
+  `test-template` (the tooling under `.claude/`).
+- `make ui-cli` builds `ui_cli` alone; look at the app with
+  `tests/rando/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
+  argument prints its usage).
 - `make check` = `test` plus `lint` (`rando/` and `app/` built with
   `-std=c99 -pedantic-errors`), `logic` (unit tests replaying the oracle fixtures),
   `selftest` (the e2e driver's own self-test), `e2e` (every case diffed

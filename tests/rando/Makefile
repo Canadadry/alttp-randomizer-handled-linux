@@ -33,6 +33,9 @@ PATCH_CLI := $(BUILD)/rando_patch
 GEN_DIR := $(BUILD)/o2
 GEN_OBJ := $(patsubst $(RANDO)/src/%.c,$(GEN_DIR)/obj/%.o,$(RANDO_SRC)) $(patsubst $(RANDO)/host/%.c,$(GEN_DIR)/host/%.o,$(HOST_SRC))
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
+APP_MAIN_SRC := $(wildcard $(APP)/main/*.c)
+UI_CLI := $(BUILD)/ui_cli
+SMOKE := $(BUILD)/smoke_ui_cli
 
 MEASURE := $(BUILD)/measure
 MEASURE_CFLAGS := -std=c99 -Wall -Wextra -Werror -O2 -fstack-usage -fno-stack-protector -U_FORTIFY_SOURCE
@@ -50,7 +53,7 @@ BPS ?= ../../data/base.bps
 LINT_DIR := $(BUILD)/lint
 LINT_OBJ := $(patsubst $(RANDO)/src/%.c,$(LINT_DIR)/%.o,$(RANDO_SRC))
 LINT_APP_DIR := $(BUILD)/lint-app
-LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC))
+LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC) $(APP_MAIN_SRC))
 
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
 # flags (docs/toolchain.md), run under qemu-arm by the same e2e driver.
@@ -62,17 +65,20 @@ ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
 ARM_UNIT_DIR := $(ARM_DIR)/unit
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
-.PHONY: test lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
+.PHONY: test ui-cli lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
 
-test: $(UNIT_BINS)
+test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
+	@./$(SMOKE) ./$(UI_CLI)
 	@./selftest.sh discovery
 	@./no_sdl.sh $(APP)/core $(APP)/sd
 	@python3 -I ./no_literals.py $(APP)/core
-	@echo "test: $(words $(UNIT_TESTS)) unit tests, the discovery self-test, the app SDL check and the UI-core literal check ran"
+	@echo "test: $(words $(UNIT_TESTS)) unit tests, the ui_cli smoke test, the discovery self-test, the app SDL check and the UI-core literal check ran"
 
 lint: $(LINT_OBJ) $(LINT_APP_OBJ)
-	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC)) app/ sources build with -pedantic-errors"
+	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC) $(APP_MAIN_SRC)) app/ sources build with -pedantic-errors"
+
+ui-cli: $(UI_CLI)
 
 logic: $(LOGIC_BINS)
 	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
@@ -160,6 +166,12 @@ $(BUILD)/synthetic_base.o: unit/synthetic_base.c unit/synthetic_base.h unit/supp
 $(BUILD)/test_%: unit/test_%.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
 
+$(UI_CLI): $(APP)/main/ui_cli.c $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
+
+$(SMOKE): unit/smoke_ui_cli.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
+
 $(LINT_DIR)/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors -I$(RANDO)/include -c -o $@ $<
@@ -169,6 +181,10 @@ $(LINT_APP_DIR)/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
 	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) -c -o $@ $<
 
 $(LINT_APP_DIR)/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -c -o $@ $<
+
+$(LINT_APP_DIR)/main/%.o: $(APP)/main/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -c -o $@ $<
 

@@ -1,10 +1,11 @@
-.PHONY: help install test test-rando test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm patch-header check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm patch-header check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
 	@echo "make test           the fast loop: unit tests, on the host, in seconds"
 	@echo "make test-rando     the randomizer's unit tests (tests/rando)"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
+	@echo "make ui-cli         builds tests/rando/build/ui_cli, the agent's text view of the app"
 	@echo "make lint           rando/ and app/ built as strict ISO C99 (-pedantic-errors)"
 	@echo "make logic          unit tests replaying the oracle fixtures (tests/rando/oracle)"
 	@echo "make selftest       the e2e driver's own self-test"
@@ -29,6 +30,9 @@ test-rando:
 test-template:
 	python3 -m unittest discover -s .claude/hooks/tests
 	python3 -m unittest discover -s .claude/skills/plan-pilot/tests
+
+ui-cli:
+	$(MAKE) -C tests/rando ui-cli
 
 lint:
 	$(MAKE) -C tests/rando lint

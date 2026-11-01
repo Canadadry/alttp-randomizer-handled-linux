@@ -112,7 +112,7 @@
   - [ ] 3.7 ui_cli
     - [x] Chunk 1: app state
     - [x] Chunk 2: SD wiring
-    - [ ] Chunk 3: ui_cli, build and smoke test
+    - [x] Chunk 3: ui_cli, build and smoke test
 - [ ] Phase 4 — Onion and PC builds
   - [ ] 4.1 SDL renderer and input
   - [ ] 4.2 Miyoo build and package
