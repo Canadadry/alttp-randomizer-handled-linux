@@ -18,11 +18,40 @@ static void assert_date(const RandoRecordDate *d)
 	(void)d;
 }
 
+static bool write_indent(FILE *out, int depth)
+{
+	int i;
+
+	for (i = 0; i < depth; i++)
+		if (fputs("    ", out) == EOF)
+			return false;
+	return true;
+}
+
+bool rando_record_settings_write(FILE *out, const RandoOptions *options, RandoHeartBeep heart_beep, int depth)
+{
+	bool ok = fputs("{\n", out) != EOF;
+	int rank;
+
+	assert(depth >= 0);
+	for (rank = 0; rank < RANDO_SETTING_COUNT; rank++) {
+		RandoSettingId id = rando_setting_sorted(rank);
+
+		if (!write_indent(out, depth + 1) ||
+		    fprintf(out, "\"%s\": \"%s\"%s\n", rando_setting_key(id),
+			    rando_setting_value_name(id, rando_setting_get(options, heart_beep, id)),
+			    rank + 1 < RANDO_SETTING_COUNT ? "," : "") < 0)
+			ok = false;
+	}
+	if (!write_indent(out, depth) || fputc('}', out) == EOF)
+		ok = false;
+	return ok && !ferror(out);
+}
+
 bool rando_record_write(FILE *out, const RandoRecord *record, const RandoWorld *world,
 			const RandoPlaythrough *playthrough)
 {
 	const RandoRecordDate *d = &record->date;
-	int rank;
 	bool ok = true;
 
 	assert_date(d);
@@ -34,26 +63,20 @@ bool rando_record_write(FILE *out, const RandoRecord *record, const RandoWorld *
 		    "    \"format\": %d,\n"
 		    "    \"rom\": \"%s\",\n"
 		    "    \"seed\": %lu,\n"
-		    "    \"settings\": {\n",
+		    "    \"settings\": ",
 		    record->name.code, d->year, d->month, d->day, d->hour, d->minute, d->second, RANDO_RECORD_FORMAT,
 		    record->name.rom, (unsigned long)record->seed) < 0)
 		ok = false;
-	for (rank = 0; rank < RANDO_SETTING_COUNT; rank++) {
-		RandoSettingId id = rando_setting_sorted(rank);
-
-		if (fprintf(out, "        \"%s\": \"%s\"%s\n", rando_setting_key(id),
-			    rando_setting_value_name(id, rando_setting_get(&record->options, record->heart_beep, id)),
-			    rank + 1 < RANDO_SETTING_COUNT ? "," : "") < 0)
-			ok = false;
-	}
+	if (!rando_record_settings_write(out, &record->options, record->heart_beep, 1))
+		ok = false;
 	if (record->has_spoiler) {
-		if (fputs("    },\n    \"spoiler\": ", out) == EOF)
+		if (fputs(",\n    \"spoiler\": ", out) == EOF)
 			ok = false;
 		if (!rando_spoiler_write_json(out, world, &record->options, playthrough))
 			ok = false;
 		if (fputs("}\n", out) == EOF)
 			ok = false;
-	} else if (fputs("    }\n}\n", out) == EOF)
+	} else if (fputs("\n}\n", out) == EOF)
 		ok = false;
 	return ok && !ferror(out);
 }
@@ -256,12 +279,12 @@ static bool parse_date(Parser *p, const char *s, RandoRecordDate *d)
 	return true;
 }
 
-static bool parse_settings(Parser *p, RandoRecord *out)
+static bool parse_settings(Parser *p, RandoOptions *options, RandoHeartBeep *heart_beep)
 {
 	bool seen[RANDO_SETTING_COUNT] = {false}, more = true;
 	int rank;
 
-	rando_options_init(&out->options);
+	rando_options_init(options);
 	if (!expect(p, '{', "settings"))
 		return false;
 	if (peek(p) == '}') {
@@ -286,13 +309,26 @@ static bool parse_settings(Parser *p, RandoRecord *out)
 		v = rando_setting_value_find(id, value);
 		if (v < 0)
 			return fail(p, "settings: %s: unknown value \"%s\"", key, value);
-		rando_setting_set(&out->options, &out->heart_beep, id, v);
+		rando_setting_set(options, heart_beep, id, v);
 		if (!next_member(p, "settings", &more))
 			return false;
 	}
 	for (rank = 0; rank < RANDO_SETTING_COUNT; rank++)
 		if (!seen[rando_setting_sorted(rank)])
 			return fail(p, "settings: missing key \"%s\"", rando_setting_key(rando_setting_sorted(rank)));
+	return true;
+}
+
+bool rando_record_settings_parse(const char *text, size_t len, RandoOptions *options, RandoHeartBeep *heart_beep,
+				 char error[RANDO_RECORD_ERROR_MAX])
+{
+	Parser parser = {text, len, 0, error};
+
+	if (!parse_settings(&parser, options, heart_beep))
+		return false;
+	skip_ws(&parser);
+	if (parser.pos != parser.len)
+		return fail(&parser, "settings: trailing text at byte %lu", (unsigned long)parser.pos);
 	return true;
 }
 
@@ -354,7 +390,7 @@ static bool parse_member(Parser *p, int key, RandoRecord *out, char rom[STRING_M
 			return fail(p, "seed: not a decimal uint32 on one line");
 		return true;
 	case KEY_SETTINGS:
-		return parse_settings(p, out);
+		return parse_settings(p, &out->options, &out->heart_beep);
 	default:
 		if (peek(p) != '{')
 			return fail(p, "spoiler: not an object");

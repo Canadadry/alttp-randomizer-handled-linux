@@ -10,6 +10,7 @@
 
 #define RANDO_SD_ROM_DIR "Roms/SFC/ALttPR"
 #define RANDO_SD_HISTORY_DIR "App/ALttPR/history"
+#define RANDO_SD_SETTINGS_FILE "App/ALttPR/settings.json"
 #define RANDO_SEED_PATH_MAX 1024
 /* rom_dir and history_dir are shorter: room for "/<rom>" and "/<code>.json". */
 #define RANDO_SEED_DIR_MAX (RANDO_SEED_PATH_MAX - RANDO_NAME_ROM_MAX - 2)

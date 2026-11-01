@@ -39,6 +39,17 @@ typedef struct RandoRecord {
 bool rando_record_write(FILE *out, const RandoRecord *record, const RandoWorld *world,
 			const RandoPlaythrough *playthrough);
 
+/* The record's settings object: "{", the thirteen settings in bytewise key order, each indented
+ * depth + 1 levels of four spaces, then "}" indented depth levels, with no newline after it. False on a
+ * stream error. */
+bool rando_record_settings_write(FILE *out, const RandoOptions *options, RandoHeartBeep heart_beep, int depth);
+
+/* The whole text is one settings object, whitespace around it allowed, under the record's rules: every
+ * setting once, known values, nothing else. On failure returns false with a reason in error; the outputs
+ * are then unspecified. */
+bool rando_record_settings_parse(const char *text, size_t len, RandoOptions *options, RandoHeartBeep *heart_beep,
+				 char error[RANDO_RECORD_ERROR_MAX]);
+
 /* Parses a whole record, strictly: keys in any order, each once, spoiler optional, rom equal to the name the
  * settings and code make. The spoiler span points into text, which the caller keeps. On failure returns
  * false and writes into error a reason naming the offending key or value; out is unspecified. */

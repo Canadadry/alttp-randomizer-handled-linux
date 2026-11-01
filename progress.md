@@ -93,7 +93,7 @@
     - [x] Chunk 2: literal check
   - [ ] 3.4 Generate tab state machine
     - [x] Chunk 1: settings table
-    - [ ] Chunk 2: settings file
+    - [x] Chunk 2: settings file
     - [ ] Chunk 3: input filter
     - [ ] Chunk 4: Generate tab
     - [ ] Chunk 5: greying and restore

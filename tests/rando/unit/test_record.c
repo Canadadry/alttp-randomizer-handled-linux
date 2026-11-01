@@ -492,6 +492,139 @@ static int check_golden_dir(const char *dir)
 	return n;
 }
 
+/* Every setting away from its default, as round_trip_record sets them. */
+static void non_default_settings(RandoOptions *options, RandoHeartBeep *heart_beep)
+{
+	RandoRecord record;
+
+	round_trip_record(&record, false);
+	*options = record.options;
+	*heart_beep = record.heart_beep;
+}
+
+static void write_settings(const RandoOptions *options, RandoHeartBeep heart_beep, int depth,
+			   char out[RANDO_RECORD_TEXT_MAX])
+{
+	FILE *f = tmpfile();
+
+	CHECK(f != NULL);
+	CHECK(rando_record_settings_write(f, options, heart_beep, depth));
+	rewind(f);
+	read_stream(f, "settings", out);
+	fclose(f);
+}
+
+static const char baseline_settings[] = "{\n"
+					"    \"accessibility\": \"items\",\n"
+					"    \"crystals_ganon\": \"7\",\n"
+					"    \"crystals_tower\": \"7\",\n"
+					"    \"dungeon_items\": \"standard\",\n"
+					"    \"glitches\": \"none\",\n"
+					"    \"goal\": \"ganon\",\n"
+					"    \"heart_beep\": \"half\",\n"
+					"    \"hints\": \"on\",\n"
+					"    \"item_functionality\": \"normal\",\n"
+					"    \"item_placement\": \"advanced\",\n"
+					"    \"item_pool\": \"normal\",\n"
+					"    \"state\": \"open\",\n"
+					"    \"weapons\": \"randomized\"\n"
+					"}";
+
+static const char non_default_text[] = "{\n"
+				       "    \"accessibility\": \"none\",\n"
+				       "    \"crystals_ganon\": \"random\",\n"
+				       "    \"crystals_tower\": \"5\",\n"
+				       "    \"dungeon_items\": \"mc\",\n"
+				       "    \"glitches\": \"overworld_glitches\",\n"
+				       "    \"goal\": \"fast_ganon\",\n"
+				       "    \"heart_beep\": \"quarter\",\n"
+				       "    \"hints\": \"off\",\n"
+				       "    \"item_functionality\": \"hard\",\n"
+				       "    \"item_placement\": \"basic\",\n"
+				       "    \"item_pool\": \"hard\",\n"
+				       "    \"state\": \"standard\",\n"
+				       "    \"weapons\": \"assured\"\n"
+				       "}";
+
+static void test_settings_writer(void)
+{
+	static char out[RANDO_RECORD_TEXT_MAX];
+	RandoOptions options;
+	RandoHeartBeep heart_beep;
+	const char *start = strstr(baseline_text, "\"settings\": ") + strlen("\"settings\": ");
+	const char *end = strstr(baseline_text, "    }\n}\n") + strlen("    }");
+
+	rando_options_init(&options);
+	write_settings(&options, RANDO_HEART_BEEP_HALF, 0, out);
+	if (strcmp(out, baseline_settings) != 0)
+		test_fail(TEST, "baseline settings at depth 0\n%s\nexpected\n%s", out, baseline_settings);
+	non_default_settings(&options, &heart_beep);
+	write_settings(&options, heart_beep, 0, out);
+	if (strcmp(out, non_default_text) != 0)
+		test_fail(TEST, "non-default settings at depth 0\n%s\nexpected\n%s", out, non_default_text);
+	rando_options_init(&options);
+	write_settings(&options, RANDO_HEART_BEEP_HALF, 1, out);
+	if (strlen(out) != (size_t)(end - start) || memcmp(out, start, (size_t)(end - start)) != 0)
+		test_fail(TEST, "baseline settings at depth 1\n%s\nare not the record's settings", out);
+}
+
+static void settings_refuse(const char *what, const char *t, const char *word)
+{
+	RandoOptions options;
+	RandoHeartBeep heart_beep;
+	char error[RANDO_RECORD_ERROR_MAX];
+
+	error[0] = '\0';
+	if (rando_record_settings_parse(t, strlen(t), &options, &heart_beep, error))
+		test_fail(TEST, "settings %s: accepted", what);
+	if (!strstr(error, word))
+		test_fail(TEST, "settings %s: message \"%s\" does not name \"%s\"", what, error, word);
+}
+
+static void test_settings_reader(void)
+{
+	static char scratch[RANDO_RECORD_TEXT_MAX];
+	RandoOptions expected, options;
+	RandoHeartBeep expected_beep, heart_beep;
+	char error[RANDO_RECORD_ERROR_MAX];
+
+	non_default_settings(&expected, &expected_beep);
+	rando_options_init(&options);
+	heart_beep = RANDO_HEART_BEEP_HALF;
+	if (!rando_record_settings_parse(non_default_text, strlen(non_default_text), &options, &heart_beep, error))
+		test_fail(TEST, "non-default settings refused: %s", error);
+	CHECK(memcmp(&options, &expected, sizeof options) == 0);
+	CHECK(heart_beep == expected_beep);
+	snprintf(scratch, sizeof scratch, " \n%s\n\n", baseline_settings);
+	if (!rando_record_settings_parse(scratch, strlen(scratch), &options, &heart_beep, error))
+		test_fail(TEST, "baseline settings with whitespace refused: %s", error);
+	rando_options_init(&expected);
+	CHECK(memcmp(&options, &expected, sizeof options) == 0);
+	CHECK(heart_beep == RANDO_HEART_BEEP_HALF);
+
+	settings_refuse("missing key", cut(baseline_settings, "    \"accessibility\"", "    \"crystals_ganon\""),
+			"accessibility");
+	settings_refuse("missing heart_beep", cut(baseline_settings, "    \"heart_beep\"", "    \"hints\""),
+			"heart_beep");
+	settings_refuse("duplicate key", edit(baseline_settings, "    \"goal\"", "    \"goal\": \"ganon\",\n    \"goal\""),
+			"goal");
+	settings_refuse("unknown key", edit(baseline_settings, "    \"goal\"", "    \"extra\": \"x\",\n    \"goal\""),
+			"extra");
+	settings_refuse("spoiler key", edit(baseline_settings, "    \"goal\"", "    \"spoiler\": \"on\",\n    \"goal\""),
+			"spoiler");
+	settings_refuse("unknown value", edit(baseline_settings, "\"state\": \"open\"", "\"state\": \"bogus\""),
+			"state");
+	strcpy(scratch, baseline_settings);
+	strcat(scratch, "\n{}");
+	settings_refuse("trailing data", scratch, "trailing");
+	strcpy(scratch, baseline_settings);
+	strcat(scratch, "x");
+	settings_refuse("trailing byte", scratch, "trailing");
+	settings_refuse("empty", "", "settings");
+	settings_refuse("not an object", "[]", "settings");
+	settings_refuse("a whole record", baseline_text, "code");
+}
+
 int main(int argc, char **argv)
 {
 	int fixtures = test_fixtures_mode(TEST, argc, argv);
@@ -501,6 +634,8 @@ int main(int argc, char **argv)
 	test_round_trip_without_spoiler();
 	test_round_trip_with_spoiler();
 	test_refusals();
+	test_settings_writer();
+	test_settings_reader();
 	printf(TEST ": hand-written cases passed\n");
 	if (!fixtures)
 		return 0;
