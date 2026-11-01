@@ -1,9 +1,11 @@
 #include "rando.h"
 #include "rando_filler.h"
+#include "rando_postfill.h"
 #include "rando_prepare.h"
 
 #include <assert.h>
 #include <stdbool.h>
+#include <string.h>
 
 static const char *const stage_names[RANDO_STAGE_COUNT] = {
 	"crystals",
@@ -70,6 +72,25 @@ static bool fault_fires(RandoGen *gen, RandoFault point)
 #else
 #define fault_fires(gen, point) false
 #endif
+
+/* The stages from..to (inclusive) that do not lie after last. */
+static void run_post_fill(RandoGen *gen, RandoStage from, RandoStage to)
+{
+	RandoStage s;
+
+	for (s = from; s <= to && s <= gen->last; s++) {
+		gen->stage = s;
+		switch (s) {
+		case RANDO_STAGE_SET_TEXTS:
+			rando_set_texts(&gen->world, &gen->prng, &gen->post);
+			break;
+		default:
+			/* Not ported yet: no draw. */
+			break;
+		}
+		gen->stage = RANDO_STAGE_NONE;
+	}
+}
 
 /* Returns false when the attempt failed and the loop must retry; otherwise stores the final status. */
 static bool run_attempt(RandoGen *gen, RandoStatus *status)
@@ -146,6 +167,8 @@ static bool run_attempt(RandoGen *gen, RandoStatus *status)
 		return true;
 	gen->stage = RANDO_STAGE_PREPARE_WORLD;
 	rando_prepare_pools(&gen->world, &gen->prng, &gen->pools);
+	gen->nadvancement = gen->pools.count[RANDO_POOL_ADVANCEMENT];
+	memcpy(gen->advancement, gen->pools.items[RANDO_POOL_ADVANCEMENT], gen->nadvancement);
 	if (end_stage(gen, status))
 		return true;
 
@@ -157,11 +180,12 @@ static bool run_attempt(RandoGen *gen, RandoStatus *status)
 		return false;
 	}
 	gen->stage = RANDO_STAGE_NONE;
+	assert(gen->last >= RANDO_STAGE_FILL);
+	rando_postfill_clear(&gen->post);
+	run_post_fill(gen, RANDO_STAGE_SET_TEXTS, RANDO_STAGE_APPLY_HINTS);
 	if (fault_fires(gen, RANDO_FAULT_IS_WINNABLE) || !rando_world_is_winnable(&gen->world))
 		return false;
-
-	/* The stages after the fill are not ported: they complete with no draws. */
-	assert(gen->last >= RANDO_STAGE_FILL);
+	run_post_fill(gen, RANDO_STAGE_WRITE_ITEM, RANDO_STAGE_WRITE_PRIZE_PACKS_TO_ROM);
 	*status = gen->last == RANDO_STAGE_NONE ? RANDO_COMPLETE : RANDO_INCOMPLETE;
 	return true;
 }

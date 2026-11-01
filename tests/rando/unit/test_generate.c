@@ -18,7 +18,7 @@
 			test_fail(TEST, "%s:%d: %s", __FILE__, __LINE__, #cond); \
 	} while (0)
 
-#define TRACE_MAX 65536
+#define TRACE_MAX (1 << 18)
 #define GOLDEN_TRACE_MAX (1 << 20)
 #define STAGE_TABLE "stages.txt"
 
@@ -99,20 +99,7 @@ static RandoStatus generate(const char *key, const char *value, uint32_t seed, T
 }
 
 /* The C draws must be the first lines of the case's golden trace; with next_stage, the golden's next
- * line must belong to that stage, AFTER_FILL meaning there is none or it belongs to a stage ranked
- * after fill. */
-static const char AFTER_FILL[] = "";
-
-static bool ranked_after_fill(const char *stage)
-{
-	int s;
-
-	for (s = RANDO_STAGE_FILL + 1; s < RANDO_STAGE_COUNT; s++)
-		if (strcmp(stage, rando_stage_name((RandoStage)s)) == 0)
-			return true;
-	return false;
-}
-
+ * line must belong to that stage. */
 static void check_golden_stop(const char *name, const Trace *trace, const char *next_stage)
 {
 	char path[256], golden[TRACE_MAX], next[128] = "", stage[64] = "";
@@ -135,11 +122,7 @@ static void check_golden_stop(const char *name, const Trace *trace, const char *
 	if (strcmp(trace->text, golden) != 0)
 		test_fail(TEST, "%s: C draws\n%s\ndiffer from the golden's first %d lines\n%s", name, trace->text,
 			  trace->lines, golden);
-	if (next_stage == AFTER_FILL) {
-		if (next[0] != '\0' && (sscanf(next, "%*s %*s %63s", stage) != 1 || !ranked_after_fill(stage)))
-			test_fail(TEST, "%s: the golden goes on with \"%s\" after the C draws, not a stage after fill",
-				  name, next);
-	} else if (next_stage && (sscanf(next, "%*s %*s %63s", stage) != 1 || strcmp(stage, next_stage) != 0))
+	if (next_stage && (sscanf(next, "%*s %*s %63s", stage) != 1 || strcmp(stage, next_stage) != 0))
 		test_fail(TEST, "%s: the golden goes on with \"%s\" after the C draws, not stage %s", name, next,
 			  next_stage);
 }
@@ -301,7 +284,7 @@ static void check_reseed(uint32_t seed)
 	CHECK(gen.draw == 232);
 }
 
-/* tests/rando/cases/baseline: the fill makes lines 233-805, the golden's last fill line. */
+/* tests/rando/cases/baseline: the fill makes lines 233-805, the golden's last fill line; setTexts 806-1060. */
 static void check_baseline_fill(void)
 {
 	RandoOptions options;
@@ -311,10 +294,14 @@ static void check_baseline_fill(void)
 	memset(&trace, 0, sizeof trace);
 	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &trace, RANDO_STAGE_FILL) == RANDO_INCOMPLETE);
 	CHECK(trace.lines == 805);
-	check_golden_stop("baseline", &trace, AFTER_FILL);
+	check_golden_stop("baseline", &trace, "setTexts");
+	memset(&trace, 0, sizeof trace);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &trace, RANDO_STAGE_SET_TEXTS) == RANDO_INCOMPLETE);
+	CHECK(trace.lines == 1060);
+	check_golden_stop("baseline", &trace, "randomizeCredits");
 }
 
-/* tests/rando/cases/baseline: attempts 0 and the golden trace through the fill. */
+/* tests/rando/cases/baseline: attempts 0 and the golden trace through setTexts, the last ported stage. */
 static void check_baseline_complete(void)
 {
 	RandoOptions options;
@@ -324,13 +311,14 @@ static void check_baseline_complete(void)
 	memset(&trace, 0, sizeof trace);
 	CHECK(rando_generate(&gen, &options, 1, 0, record, &trace) == RANDO_COMPLETE);
 	CHECK(gen.attempt == 0);
-	CHECK(trace.lines == 805);
-	check_golden_stop("baseline", &trace, AFTER_FILL);
+	CHECK(trace.lines == 1060);
+	check_golden_stop("baseline", &trace, "randomizeCredits");
 	check_complete_outputs("cases/baseline", "baseline", "0\n");
 }
 
 /* Attempt k of seed s is attempt 0 of seed s + k: seed 0 with attempt 0 failed at point must replay
- * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last fill line. */
+ * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last setTexts line. Attempt 0
+ * ends in the fill when it fails there, in setTexts when it fails at isWinnable. */
 static void check_retry_identity(RandoFault point)
 {
 	static char golden[GOLDEN_TRACE_MAX], expected[GOLDEN_TRACE_MAX];
@@ -351,7 +339,7 @@ static void check_retry_identity(RandoFault point)
 	golden[len] = '\0';
 	for (line = golden, len = 0; *line; line = strchr(line, '\n') + 1) {
 		CHECK(strchr(line, '\n') != NULL);
-		if (sscanf(line, "%*s %*s %63s", stage) == 1 && strcmp(stage, "fill") == 0)
+		if (sscanf(line, "%*s %*s %63s", stage) == 1 && strcmp(stage, "setTexts") == 0)
 			len = (size_t)(strchr(line, '\n') + 1 - golden);
 	}
 	CHECK(len > 0);
@@ -378,7 +366,8 @@ static void check_retry_identity(RandoFault point)
 	line = retry - 1;
 	while (line > trace.text && line[-1] != '\n')
 		line--;
-	CHECK(strstr(line, " fill ") != NULL && strstr(line, " fill ") < retry);
+	CHECK(strstr(line, point == RANDO_FAULT_MID_FILL ? " fill " : " setTexts ") != NULL);
+	CHECK(strstr(line, point == RANDO_FAULT_MID_FILL ? " fill " : " setTexts ") < retry);
 	check_complete_outputs("cases/baseline", point == RANDO_FAULT_MID_FILL ? "mid-fill retry" : "isWinnable retry",
 			       "1\n");
 }
@@ -443,6 +432,16 @@ static void check_stop_on_winning_attempt(void)
 	CHECK(gen.attempt == 2);
 	CHECK(gen.fault_fired == 2);
 	CHECK(strstr(trace.text, "\n2 1 getAdvancementItems ") != NULL);
+	CHECK(strstr(trace.text, " setTexts ") == NULL);
+
+	memset(&trace, 0, sizeof trace);
+	gen.fault_fired = 0;
+	CHECK(rando_generate_until(&gen, &options, 1, 0, record, &trace, RANDO_STAGE_SET_TEXTS) == RANDO_INCOMPLETE);
+	CHECK(gen.attempt == 2);
+	CHECK(gen.fault_fired == 2);
+	CHECK(strstr(trace.text, "\n1 1 getAdvancementItems ") != NULL);
+	CHECK(strstr(trace.text, "\n0 806 setTexts ") != NULL);
+	CHECK(strstr(strstr(trace.text, "\n1 1 "), "\n2 1 getAdvancementItems ") != NULL);
 
 	memset(&trace, 0, sizeof trace);
 	gen.fault_fired = 0;
@@ -453,21 +452,40 @@ static void check_stop_on_winning_attempt(void)
 	gen.fault = RANDO_FAULT_NONE;
 }
 
-/* The stages after the fill make no C draws yet: a stop at the last one is the fill stop. */
+/* setTexts makes 255 draws on baseline; the stages after it make no C draws yet: a stop at any of
+ * them is the setTexts stop. */
 static void check_stop_after_fill(void)
 {
-	static Trace fill, last;
+	static Trace texts, last;
+	RandoOptions options;
+	int s;
+
+	rando_options_init(&options);
+	memset(&texts, 0, sizeof texts);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &texts, RANDO_STAGE_SET_TEXTS) == RANDO_INCOMPLETE);
+	CHECK(texts.lines == 1060);
+	CHECK(strstr(texts.text, "\n0 806 setTexts 0 54 -> ") != NULL);
+	for (s = RANDO_STAGE_SET_TEXTS + 1; s < RANDO_STAGE_COUNT; s++) {
+		memset(&last, 0, sizeof last);
+		CHECK(rando_generate_until(&gen, &options, 1, 1, record, &last, (RandoStage)s) == RANDO_INCOMPLETE);
+		CHECK(gen.attempt == 0);
+		CHECK(strcmp(last.text, texts.text) == 0);
+	}
+}
+
+/* The advancement list as prepareWorld leaves it, whatever the fill takes from the pools. */
+static void check_advancement_snapshot(void)
+{
+	static RandoPools prepared;
 	RandoOptions options;
 
 	rando_options_init(&options);
-	memset(&fill, 0, sizeof fill);
-	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &fill, RANDO_STAGE_FILL) == RANDO_INCOMPLETE);
-	memset(&last, 0, sizeof last);
-	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &last, RANDO_STAGE_WRITE_RNG_BLOCK) ==
-	      RANDO_INCOMPLETE);
-	CHECK(gen.attempt == 0);
-	CHECK(last.lines == 805);
-	CHECK(strcmp(last.text, fill.text) == 0);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, NULL, NULL, RANDO_STAGE_PREPARE_WORLD) == RANDO_INCOMPLETE);
+	prepared = gen.pools;
+	CHECK(rando_generate_until(&gen, &options, 1, 1, NULL, NULL, RANDO_STAGE_FILL) == RANDO_INCOMPLETE);
+	CHECK(gen.nadvancement == prepared.count[RANDO_POOL_ADVANCEMENT]);
+	CHECK(gen.nadvancement > 0);
+	CHECK(memcmp(gen.advancement, prepared.items[RANDO_POOL_ADVANCEMENT], gen.nadvancement) == 0);
 }
 
 /* The gate labels claims with stages.txt's names: a renamed or reordered stage fails here. */
@@ -580,6 +598,7 @@ int main(int argc, char **argv)
 	check_stage_table();
 	check_stop_on_winning_attempt();
 	check_stop_after_fill();
+	check_advancement_snapshot();
 	printf(TEST ": hand-written cases passed\n");
 	if (!fixtures)
 		return 0;

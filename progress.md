@@ -19,6 +19,15 @@
     - [x] Chunk 4: fixes for divergent combinations
     - [x] Chunk 5: measure against step 1.1
   - [ ] 1.4 Port the post-fill draws
+    - [x] Chunk 1: new stage order, RandoPostFill and setTexts
+    - [ ] Chunk 2: randomizeCredits
+    - [ ] Chunk 3: hint_tables.txt oracle fixture
+    - [ ] Chunk 4: hints as an input, hint tables and getHint
+    - [ ] Chunk 5: applyHints
+    - [ ] Chunk 6: writeItem
+    - [ ] Chunk 7: setDiggingGameRng and writeRNGBlock
+    - [ ] Chunk 8: writePrizePacksToRom and every claim to all
+    - [ ] Chunk 9: measure against step 1.1
   - [ ] 1.5 rando_rom skeleton and claims by write group
   - [ ] 1.6 Port the items and locations writes
   - [ ] 1.7 Port the settings and flags writes

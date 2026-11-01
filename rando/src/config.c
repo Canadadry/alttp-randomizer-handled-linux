@@ -22,6 +22,7 @@ void rando_config_init(RandoConfig *config)
 	config->item_goal_required = RANDO_CONFIG_NULL;
 	config->item_require_lamp = 1;
 	config->item_overflow_count_shield = 3;
+	config->item_overflow_count_bow = 2;
 	config->item_overflow_replacement_shield = RANDO_ITEM_TwentyRupees2;
 	config->rom_bottle_fill_magic = 0x80;
 	config->region_boss_normal_location = true;

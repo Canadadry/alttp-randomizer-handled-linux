@@ -3,6 +3,7 @@
 
 #include "rando_options.h"
 #include "rando_pool.h"
+#include "rando_postfill.h"
 #include "rando_prng.h"
 #include "rando_world.h"
 
@@ -68,7 +69,12 @@ typedef struct RandoGen {
 	void *trace_ctx;
 	RandoPrng prng;
 	RandoPools pools;
+	/* The advancement list as prepareWorld leaves it: VT's HintService reads it, not what the fill leaves. */
+	uint8_t advancement[RANDO_POOL_CAPACITY];
+	uint16_t nadvancement;
 	RandoWorld world;
+	/* Cleared on every attempt that completes the fill. */
+	RandoPostFill post;
 #ifdef RANDO_FAULTS
 	/* Host tests only: every attempt below fault_attempts fails at fault; the generator never writes
 	 * either and counts each failure in fault_fired. */
@@ -85,9 +91,11 @@ RandoStatus rando_generate(RandoGen *gen, const RandoOptions *options, uint32_t 
 			   RandoTraceFn trace, void *trace_ctx);
 
 /* rando_generate, but RANDO_INCOMPLETE right after stage last completes. Before fill: on the first
- * attempt that reaches it. At fill or later: on the first attempt that completes the fill and is
- * winnable, losing attempts retrying, the unported stages after the fill making no draws.
- * RANDO_STAGE_NONE runs every ported stage. */
+ * attempt that reaches it. At fill or later: on the first winnable attempt, right after last. Every
+ * attempt that completes the fill runs setTexts, randomizeCredits and applyHints up to last, then the
+ * winnability check (VT's Randomizer::randomize, then isWinnable); the winning attempt then runs the
+ * writeToRom stages up to last, continuing its draw count. A stage not ported yet completes with no
+ * draw. RANDO_STAGE_NONE runs every stage and returns RANDO_COMPLETE. */
 RandoStatus rando_generate_until(RandoGen *gen, const RandoOptions *options, uint32_t seed, uint32_t max_attempts,
 				 RandoTraceFn trace, void *trace_ctx, RandoStage last);
 

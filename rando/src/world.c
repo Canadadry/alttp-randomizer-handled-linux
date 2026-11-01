@@ -43,19 +43,20 @@ static const ItemCount crowd_control_counts[] = {
 	{RANDO_ITEM_Cape, 0},           {RANDO_ITEM_TwentyRupees2, 4},
 };
 
-/* overflow_count_shield RANDO_CONFIG_NULL: the key keeps its value. */
+/* An overflow count RANDO_CONFIG_NULL: the key keeps its value. */
 typedef struct ItemPoolValues {
 	int overflow_count_shield;
+	int overflow_count_bow;
 	bool shops_hard_mode;
 	const ItemCount *counts;
 	int ncounts;
 } ItemPoolValues;
 
 static const ItemPoolValues item_pool_values[] = {
-	[RANDO_ITEM_POOL_NORMAL] = {RANDO_CONFIG_NULL, false, NULL, 0},
-	[RANDO_ITEM_POOL_HARD] = {2, true, NULL, 0},
-	[RANDO_ITEM_POOL_EXPERT] = {1, true, NULL, 0},
-	[RANDO_ITEM_POOL_CROWD_CONTROL] = {0, false, crowd_control_counts,
+	[RANDO_ITEM_POOL_NORMAL] = {RANDO_CONFIG_NULL, RANDO_CONFIG_NULL, false, NULL, 0},
+	[RANDO_ITEM_POOL_HARD] = {2, 1, true, NULL, 0},
+	[RANDO_ITEM_POOL_EXPERT] = {1, 1, true, NULL, 0},
+	[RANDO_ITEM_POOL_CROWD_CONTROL] = {0, 1, false, crowd_control_counts,
 					   (int)(sizeof crowd_control_counts / sizeof crowd_control_counts[0])},
 };
 
@@ -137,7 +138,7 @@ static void derive_config(RandoConfig *c, RandoVariant variant)
 	c->rom_vanilla_big_keys = c->rom_vanilla_big_keys || (!c->region_wild_big_keys && glitched);
 	c->rom_vanilla_compasses = c->rom_vanilla_compasses || (!c->region_wild_compasses && glitched);
 	c->rom_vanilla_maps = c->rom_vanilla_maps || (!c->region_wild_maps && glitched);
-	/* TODO: item.pool's overflow counts other than Shield. */
+	/* TODO: item.pool's overflow counts other than Shield and Bow. */
 	assert((size_t)c->item_pool < sizeof item_pool_values / sizeof item_pool_values[0]);
 	assert((size_t)c->item_functionality
 	       < sizeof functionality_bottle_fill_magic / sizeof functionality_bottle_fill_magic[0]);
@@ -145,6 +146,8 @@ static void derive_config(RandoConfig *c, RandoVariant variant)
 	pool = &item_pool_values[c->item_pool];
 	if (pool->overflow_count_shield != RANDO_CONFIG_NULL)
 		c->item_overflow_count_shield = pool->overflow_count_shield;
+	if (pool->overflow_count_bow != RANDO_CONFIG_NULL)
+		c->item_overflow_count_bow = pool->overflow_count_bow;
 	if (pool->shops_hard_mode)
 		c->shops_hard_mode = true;
 	for (i = 0; i < pool->ncounts; i++)
@@ -158,6 +161,8 @@ static void derive_config(RandoConfig *c, RandoVariant variant)
 	}
 	c->region_require_better_bow = c->item_placement == RANDO_PLACEMENT_BASIC
 		|| c->mode_weapons == RANDO_WEAPONS_SWORDLESS;
+	if (c->mode_weapons == RANDO_WEAPONS_SWORDLESS)
+		c->item_overflow_count_bow = 2;
 	c->region_require_better_sword = c->item_placement == RANDO_PLACEMENT_BASIC;
 	if (c->item_placement == RANDO_PLACEMENT_BASIC)
 		c->region_force_skull_woods_key = true;

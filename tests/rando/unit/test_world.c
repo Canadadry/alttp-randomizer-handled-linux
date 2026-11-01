@@ -318,6 +318,7 @@ static void check_derivations(void)
 	c = derived(RANDO_ITEM_POOL_NORMAL, RANDO_ITEM_FUNCTIONALITY_NORMAL, RANDO_GOAL_GANON);
 	CHECK(c.rom_catchable_fairies && c.rom_bottle_fill_magic == 0x80);
 	CHECK(c.item_overflow_count_shield == 3);
+	CHECK(c.item_overflow_count_bow == 2);
 	CHECK(!c.shops_hard_mode);
 	CHECK(c.item_overflow_replacement_shield == RANDO_ITEM_TwentyRupees2);
 	CHECK(overrides(&c) == 0);
@@ -330,13 +331,16 @@ static void check_derivations(void)
 
 	c = derived(RANDO_ITEM_POOL_HARD, RANDO_ITEM_FUNCTIONALITY_NORMAL, RANDO_GOAL_GANON);
 	CHECK(c.item_overflow_count_shield == 2 && overrides(&c) == 0);
+	CHECK(c.item_overflow_count_bow == 1);
 	CHECK(c.shops_hard_mode);
 	CHECK(c.rom_catchable_fairies);
 	c = derived(RANDO_ITEM_POOL_EXPERT, RANDO_ITEM_FUNCTIONALITY_NORMAL, RANDO_GOAL_GANON);
 	CHECK(c.item_overflow_count_shield == 1 && overrides(&c) == 0);
+	CHECK(c.item_overflow_count_bow == 1);
 	CHECK(c.shops_hard_mode);
 	c = derived(RANDO_ITEM_POOL_CROWD_CONTROL, RANDO_ITEM_FUNCTIONALITY_NORMAL, RANDO_GOAL_GANON);
 	CHECK(c.item_overflow_count_shield == 0);
+	CHECK(c.item_overflow_count_bow == 1);
 	CHECK(!c.shops_hard_mode);
 	CHECK(c.item_overflow_replacement_shield == RANDO_ITEM_TwentyRupees2);
 	CHECK(c.item_count[RANDO_ITEM_BugCatchingNet] == 0);
@@ -358,6 +362,12 @@ static void check_derivations(void)
 	input.item_count[RANDO_ITEM_TriforcePiece] = 0;
 	rando_world_init(&world, RANDO_VARIANT_OPEN, &input);
 	CHECK(world.config.item_count[RANDO_ITEM_TriforcePiece] == 0);
+
+	rando_config_init(&input);
+	input.item_pool = RANDO_ITEM_POOL_EXPERT;
+	input.mode_weapons = RANDO_WEAPONS_SWORDLESS;
+	rando_world_init(&world, RANDO_VARIANT_OPEN, &input);
+	CHECK(world.config.item_overflow_count_bow == 2);
 
 	rando_config_init(&input);
 	input.item_overflow_replacement_shield = RANDO_ITEM_FiftyRupees;
