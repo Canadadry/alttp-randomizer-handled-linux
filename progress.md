@@ -114,7 +114,7 @@
     - [x] Chunk 2: SD wiring
     - [x] Chunk 3: ui_cli, build and smoke test
 - [ ] Phase 4 — Onion and PC builds
-  - [ ] 4.1 SDL renderer and input
+  - [x] 4.1 SDL renderer and input
     - [x] Chunk 1: key map and sdl-pc skeleton
     - [x] Chunk 2: renderer and font
     - [x] Chunk 3: frame loop, SDL main and smoke
