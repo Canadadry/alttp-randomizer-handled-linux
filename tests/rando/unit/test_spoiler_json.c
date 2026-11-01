@@ -29,7 +29,7 @@ static void read_stream(FILE *f, const char *what, char text[TEXT_MAX])
 	text[n] = '\0';
 }
 
-/* The generator's world for <case_dir>, stopped after its last ported stage, written by the writer. */
+/* The generator's world for <case_dir>, stopped before the fill, written by the writer. */
 static void write_case(const char *case_dir)
 {
 	RandoCase c;
@@ -61,7 +61,7 @@ static void read_golden(const char *case_dir)
 	fclose(f);
 }
 
-/* run_e2e.sh's section_block: from `    "<name>": ` to the first line closing at four spaces, that
+/* run_e2e.sh's block(): from `    "<name>": ` to the first line closing at four spaces, that
  * line without its trailing comma. Empty when the section is missing. */
 static void section_block(const char *text, const char *name, char out[TEXT_MAX])
 {
@@ -111,7 +111,7 @@ static void check_shops(const char *case_dir)
 	check_section(case_dir, "Shops");
 }
 
-/* Each line cut after its key: the golden's values come from stages not ported yet. */
+/* Each line cut after its key: the golden's values come from the fill, which write_case stops before. */
 static void keys_only(char *block)
 {
 	char *line = block, *w = block;

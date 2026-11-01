@@ -1,8 +1,5 @@
 #!/bin/sh
 # Usage: run_e2e.sh [<case>...]
-# RANDO_CASES, RANDO_CLAIMS, RANDO_STAGES, RANDO_GROUPS and RANDO_GEN override
-# the cases directory, claims.txt, stages.txt, write_groups.txt and the
-# generator (build/rando_gen).
 # The generator is run as `<generator> <case_dir> <out_dir> [<stage>]`, with a
 # stage claim's stage and no third argument for an `all` claim.
 # Exit 0 when no case is DIVERGENT, 1 when one is, 2 on a usage, claims-file,

@@ -1,9 +1,6 @@
 #!/bin/sh
 # Usage: onion-toolchain.sh <command> [<arg>...]
-# Runs the command inside Onion's toolchain image (docs/toolchain.md), as root,
-# with this repository mounted at /root/workspace, in the directory matching
-# the caller's (the mount root when the caller is outside the repository),
-# and CROSS_COMPILE exported from the image's /root/.bashrc.
+# Runs the command in Onion's toolchain image, with CROSS_COMPILE exported by its /root/.bashrc.
 # Exit 1 with one `setup:` line when docker is missing or its daemon does not
 # answer; otherwise the command's exit status.
 set -eu

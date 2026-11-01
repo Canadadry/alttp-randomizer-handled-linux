@@ -1,11 +1,6 @@
 #!/bin/sh
 # Usage: measure.sh
-# Run by `make measure`, which first builds the host objects under MEASURE_DIR
-# (default build/measure): host-O2/ and host-Os/, without RANDO_FAULTS. CC names
-# the host compiler. The ARM builds are compiled here, each toolchain only when
-# found. MEASURE_REPS (default 5) runs are timed per case, MEASURE_SWEEP
-# (default 1024) seeds are swept, both through $MEASURE_DIR/rando_measure.
-# Prints the report on stdout and writes it to $MEASURE_DIR/report.txt.
+# Run by `make measure`, which first builds the host objects, without RANDO_FAULTS.
 # Exit 0 whatever the figures; 1 when a measurement cannot be taken.
 set -eu
 export LC_ALL=C
@@ -318,7 +313,7 @@ for c in $case_names; do
 		die "unreadable case: $c"
 done
 
-# Step 1.1 and 1.2 notes: baseline's golden draws.
+# The golden parser's self-check: baseline's golden draws, in total and per stage.
 awk -v stages="$(echo $stage_list)" '
 BEGIN {
 	want["getAdvancementItems"] = 4; want["setMedallions"] = 2; want["fillPrizes"] = 64; want["setFountains"] = 2

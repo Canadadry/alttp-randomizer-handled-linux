@@ -493,7 +493,7 @@ static void check_major_glitches_derivation(void)
 	      && world.config.rom_vanilla_compasses);
 }
 
-/* User story 14's irregular cases of VT's location class tree. */
+/* The irregular cases of VT's location class tree. */
 static void check_location_classes(void)
 {
 	CHECK(rando_location_is_a(RANDO_LOCATION_CLASS_BIG_CHEST, RANDO_LOCATION_CLASS_CHEST));

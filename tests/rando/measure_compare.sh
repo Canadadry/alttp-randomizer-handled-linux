@@ -1,15 +1,6 @@
 #!/bin/sh
 # Usage: measure_compare.sh [--guard]
-# Run by `make measure-compare`, which first creates or reuses REF_DIR (a
-# detached worktree of REF_COMMIT) and builds both drivers. --guard only checks
-# REF_DIR. Times, interleaved per case over the cases both trees have, the
-# reference driver (ref), the current one (full) and the current one stopped
-# after fill (fill): COMPARE_PASSES passes (default 6) of COMPARE_REPS reps
-# (default 21), each figure the minimum of its per-pass medians; a case outside
-# +-10% is re-measured once with COMPARE_RECHECK_REPS reps (default 51).
-# Test hooks: COMPARE_REF_DRIVER, COMPARE_CUR_DRIVER, COMPARE_REF_CASES,
-# COMPARE_CUR_CASES. Proves itself on fake drivers before every run.
-# Prints the report on stdout and writes it to $MEASURE_DIR/compare.txt.
+# Run by `make measure-compare`, which first creates or reuses REF_DIR and builds both drivers.
 # Exit 0 whatever the figures; 1 when a measurement cannot be taken; 2 on a usage error.
 set -eu
 export LC_ALL=C
