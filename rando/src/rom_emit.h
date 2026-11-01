@@ -34,4 +34,7 @@ void rando_rom_write_text(RomOut *out, const RandoGen *gen);
 /* VT's writeInitialSram: the InitialSram table the settings part of writeToRom builds, one write at 183000. */
 void rando_rom_write_initial_sram(RomOut *out, const RandoGen *gen);
 
+/* VT's setTotalItemCount(World::getTotalItemCount()): two little-endian bytes at 180196. */
+void rando_rom_write_total_item_count(RomOut *out, const RandoGen *gen);
+
 #endif
