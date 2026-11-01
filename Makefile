@@ -5,7 +5,7 @@ help:
 	@echo "make test           the fast loop: unit tests, on the host, in seconds"
 	@echo "make test-rando     the randomizer's unit tests (tests/rando)"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
-	@echo "make lint           rando/ built as strict ISO C99 (-pedantic-errors)"
+	@echo "make lint           rando/ and app/ built as strict ISO C99 (-pedantic-errors)"
 	@echo "make logic          unit tests replaying the oracle fixtures (tests/rando/oracle)"
 	@echo "make selftest       the e2e driver's own self-test"
 	@echo "make e2e            every case of tests/rando/cases diffed against its golden"

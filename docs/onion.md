@@ -506,7 +506,7 @@ Recorded only; Phase 3 step 6 decides what a delete touches.
 
 Each path or layout of `docs/plan-1.md` §2, against sections 1–9. The two SD
 directories are spelled once in code, as `RANDO_SD_ROM_DIR` and
-`RANDO_SD_HISTORY_DIR` (`rando/host/rando_seed_save.h`, relative to the SD
+`RANDO_SD_HISTORY_DIR` (`app/sd/rando_seed_save.h`, relative to the SD
 root; `git grep` finds no other spelling outside `docs/`). The ROM name is
 `<Mode>-<Goal>-<code>[-<n>].sfc` (`rando/src/name.c`): ASCII letters, digits
 and `-`, lower-case `.sfc`, at most 36 characters

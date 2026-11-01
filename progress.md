@@ -84,6 +84,10 @@
     - [x] Chunk 1: Onion facts in docs/onion.md
     - [x] Chunk 2: checked against the plan
   - [ ] 3.2 Screen model and text renderer
+    - [x] Chunk 1: app/ directory and the SD layer move
+    - [ ] Chunk 2: screen model
+    - [ ] Chunk 3: grid renderer, text form and snapshots
+    - [ ] Chunk 4: SDL-include check
   - [ ] 3.3 String table (i18n)
   - [ ] 3.4 Generate tab state machine
   - [ ] 3.5 Generation flow

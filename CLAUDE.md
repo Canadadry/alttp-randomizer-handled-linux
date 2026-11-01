@@ -17,6 +17,11 @@ in `docs/`, then `README.md`.
 - `rando/host/` is host-side code on top of the library: the case reader, the
   spoiler JSON, the playthrough, the output, and the generator's `main`
   (`host/main/rando_gen.c`).
+- `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
+  like the library, built with only `rando/include` and itself on the include
+  path, no SDL. `app/sd/` is the SD-card layer (`record.c`, `seed_save.c`).
+  `app/core` uses the library; `app/sd` the library and `rando/host`; nothing
+  in `rando/` includes `app/`. Its tests live in `tests/rando/unit/`.
 - `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
@@ -40,10 +45,11 @@ in `docs/`, then `README.md`.
 - Throwaway files go in `tmp/` (git-ignored).
 - Install: nothing (`make install` says so). The checks need only host `gcc`,
   `make` and `python3`.
-- `make test` = `make -C tests/rando test` (the randomizer's unit tests) plus
+- `make test` = `make -C tests/rando test` (the randomizer's and the app's
+  unit tests, linked with the app archive `librando_app.a`) plus
   `test-template` (the tooling under `.claude/`).
-- `make check` = `test` plus `lint` (`rando/` built with `-std=c99
-  -pedantic-errors`), `logic` (unit tests replaying the oracle fixtures),
+- `make check` = `test` plus `lint` (`rando/` and `app/` built with
+  `-std=c99 -pedantic-errors`), `logic` (unit tests replaying the oracle fixtures),
   `selftest` (the e2e driver's own self-test), `e2e` (every case diffed
   against its golden, one `DIVERGENT <case>` line per failure) and
   `e2e-combos` (every combination case diffed against its golden, kept out

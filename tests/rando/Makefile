@@ -1,6 +1,7 @@
 CC ?= gcc
 CFLAGS := -std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS
 RANDO := ../../rando
+APP := ../../app
 BUILD := build
 
 UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_name test_record test_seed_save
@@ -16,6 +17,15 @@ HOST_HDR := $(wildcard $(RANDO)/host/*.h)
 HOST_OBJ := $(patsubst $(RANDO)/host/%.c,$(BUILD)/host/%.o,$(HOST_SRC))
 HOST_LIB := $(BUILD)/librando_host.a
 INCLUDES := -I$(RANDO)/include -I$(RANDO)/host
+APP_CORE_SRC := $(wildcard $(APP)/core/*.c)
+APP_SD_SRC := $(wildcard $(APP)/sd/*.c)
+APP_SRC := $(APP_CORE_SRC) $(APP_SD_SRC)
+APP_HDR := $(wildcard $(APP)/core/*.h $(APP)/sd/*.h)
+APP_OBJ := $(patsubst $(APP)/%.c,$(BUILD)/app/%.o,$(APP_SRC))
+APP_LIB := $(BUILD)/librando_app.a
+# app/core sees only the library and itself, so an include of app/sd or rando/host fails to build.
+CORE_INCLUDES := -I$(RANDO)/include -I$(APP)/core
+TEST_INCLUDES := $(INCLUDES) -I$(APP)/core -I$(APP)/sd
 SUPPORT_OBJ := $(BUILD)/support.o $(BUILD)/synthetic_base.o
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 GEN := $(BUILD)/rando_gen
@@ -36,9 +46,11 @@ MEASURE_REPS ?= 5
 # patch-header: the base patch whose header test_patch_header --file checks.
 BPS ?= ../../data/base.bps
 
-# lint: the library alone, strict ISO C99, so no compiler extension slips in.
+# lint: the library and app/, strict ISO C99, so no compiler extension slips in.
 LINT_DIR := $(BUILD)/lint
 LINT_OBJ := $(patsubst $(RANDO)/src/%.c,$(LINT_DIR)/%.o,$(RANDO_SRC))
+LINT_APP_DIR := $(BUILD)/lint-app
+LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC))
 
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
 # flags (docs/toolchain.md), run under qemu-arm by the same e2e driver.
@@ -48,7 +60,7 @@ ARM_DIR := $(BUILD)/arm
 ARM_GEN := $(ARM_DIR)/rando_gen
 ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
 ARM_UNIT_DIR := $(ARM_DIR)/unit
-ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) unit/support.c unit/synthetic_base.c
+ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
 .PHONY: test lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
 
@@ -57,8 +69,8 @@ test: $(UNIT_BINS)
 	@./selftest.sh discovery
 	@echo "test: $(words $(UNIT_TESTS)) unit tests and the discovery self-test ran"
 
-lint: $(LINT_OBJ)
-	@echo "lint: $(words $(RANDO_SRC)) sources build with -pedantic-errors"
+lint: $(LINT_OBJ) $(LINT_APP_OBJ)
+	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC)) app/ sources build with -pedantic-errors"
 
 logic: $(LOGIC_BINS)
 	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
@@ -99,7 +111,7 @@ unit-arm:
 	@command -v qemu-arm >/dev/null 2>&1 || { echo "setup: qemu-arm not found on PATH (install qemu-user)" >&2; exit 1; }
 	@rm -rf $(ARM_UNIT_DIR) && mkdir -p $(ARM_UNIT_DIR)/obj
 	@echo "unit-arm: building $(words $(UNIT_TESTS)) unit tests in $(ARM_UNIT_DIR) with Onion's toolchain"
-	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 $(INCLUDES)"; \
+	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 $(TEST_INCLUDES)"; \
 		for s in $(ARM_UNIT_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f -c -o $(ARM_UNIT_DIR)/obj/\$$(basename {} .c).o {}"; \
 		for t in $(UNIT_TESTS); do "$$cc" $$f -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o; done'
 	@file $(ARM_UNIT_DIR)/test_prng | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_UNIT_DIR)/test_prng; echo "unit-arm: $(ARM_UNIT_DIR)/test_prng is not a 32-bit ARM EABI executable" >&2; exit 1; }
@@ -125,18 +137,38 @@ $(HOST_LIB): $(HOST_OBJ)
 	@rm -f $@
 	ar rcs $@ $^
 
+$(BUILD)/app/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(CORE_INCLUDES) -c -o $@ $<
+
+$(BUILD)/app/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -c -o $@ $<
+
+$(APP_LIB): $(APP_OBJ)
+	@rm -f $@
+	ar rcs $@ $^
+
 $(BUILD)/support.o: unit/support.c unit/support.h $(RANDO_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(RANDO)/include -c -o $@ $<
 
 $(BUILD)/synthetic_base.o: unit/synthetic_base.c unit/synthetic_base.h unit/support.h $(RANDO_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(RANDO)/include -c -o $@ $<
 
-$(BUILD)/test_%: unit/test_%.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) | $(BUILD)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(HOST_LIB) $(RANDO_LIB)
+$(BUILD)/test_%: unit/test_%.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
 
 $(LINT_DIR)/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors -I$(RANDO)/include -c -o $@ $<
+
+$(LINT_APP_DIR)/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) -c -o $@ $<
+
+$(LINT_APP_DIR)/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -c -o $@ $<
 
 $(GEN_DIR)/obj/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
