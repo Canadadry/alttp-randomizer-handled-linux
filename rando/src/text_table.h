@@ -7,7 +7,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Either text (encoded with pause) or raw[0..raw_count). */
 typedef struct TextDefault {
 	const char *text;
 	bool pause;

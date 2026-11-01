@@ -5,14 +5,8 @@
 
 #include <stddef.h>
 
-/* world is VT's $this->world/$this->locations, locations is the closure's $locations. VT's
- * $locations->itemInLocations, $locations["X"]->hasItem/getItem read locations;
- * $this->locations["X"]->hasItem, config and bosses read world. $this->locations["X"]->canAccess($items)
- * is rando_world_can_access(world, ...), $locations["X"]->canAccess($items) is
- * rando_world_can_access(locations, ...), and getRegion(X)->canEnter passes (world, locations). */
 typedef bool (*RandoRule)(const RandoWorld *world, const RandoWorld *locations, const RandoItems *items);
 typedef bool (*RandoAlwaysAllowRule)(const RandoWorld *world, RandoItemId item, const RandoItems *items);
-/* Non-const world: Link's Uncle's fill rule calls collect_items, which writes the memo. */
 typedef bool (*RandoFillRule)(RandoWorld *world, RandoItemId item, const RandoItems *items);
 
 typedef struct RandoLocationRules {
@@ -22,7 +16,6 @@ typedef struct RandoLocationRules {
 } RandoLocationRules;
 
 #ifdef RANDO_FAULTS
-/* Host tests only: the location id slot i of a rule table means, ids[i] or first + i. */
 typedef struct RandoRuleSlots {
 	const uint8_t *ids;
 	uint8_t first;
@@ -34,12 +27,9 @@ typedef struct RandoRuleSlots {
 #define RANDO_SLOT_RANGE(first, count)
 #define RANDO_SLOT_LIST(ids)
 #endif
-/* For a slot list: SLOTS(RANDO_SLOT_ENUM) numbers the slots, SLOTS(RANDO_SLOT_ID) gives their location ids. */
 #define RANDO_SLOT_ENUM(name) name,
 #define RANDO_SLOT_ID(name) RANDO_LOC_##name,
 
-/* Any rule may be NULL, as in VT. locations is indexed by the location's layout slot and shops from
- * the region's first_shop; either may be NULL when every entry would be. */
 typedef struct RandoRegionRules {
 	const char *vt_class;
 	RandoRule can_enter;
@@ -52,16 +42,12 @@ typedef struct RandoRegionRules {
 } RandoRegionRules;
 
 const RandoRegionRules *rando_region_rules(RandoVariant variant, RandoRegionId region);
-/* slot is the location's index in its region's list; region is RANDO_REGION_NONE, and slot 0, where
- * the variant's world lacks the location. */
 typedef struct RandoLayoutLocation {
 	uint8_t region;
 	uint8_t slot;
 } RandoLayoutLocation;
 
-/* Indexed by location id. */
 const RandoLayoutLocation *rando_layout_locations(RandoVariant variant);
-/* rando_layout_location_count(variant) location ids, in VT's getLocations() order. */
 const uint8_t *rando_layout_order(RandoVariant variant);
 
 extern const RandoRegionRules rando_rules_north_east_light_world;
@@ -89,8 +75,6 @@ extern const RandoRegionRules rando_rules_ice_palace;
 extern const RandoRegionRules rando_rules_misery_mire;
 extern const RandoRegionRules rando_rules_turtle_rock;
 extern const RandoRegionRules rando_rules_ganons_tower;
-/* An Inverted class calling VT's parent::initalize() is a second table in the classic region's file, reusing its
- * static rules; one rewriting every rule has its own inverted_*.c. */
 extern const RandoRegionRules rando_rules_inverted_north_east_light_world;
 extern const RandoRegionRules rando_rules_inverted_north_west_light_world;
 extern const RandoRegionRules rando_rules_inverted_south_light_world;
@@ -129,8 +113,6 @@ static inline bool has_n(const RandoItems *items, RandoItemId id, int at_least)
 bool rando_world_region_can_enter_with(const RandoWorld *world, const RandoWorld *locations, RandoRegionId region,
 				      const RandoItems *items);
 
-/* A region's own rules call it for VT's $this->canEnter, never their file's enter: Inverted reuses
- * those rules under another entry rule. */
 static inline bool can_enter(const RandoWorld *world, const RandoWorld *locations, RandoRegionId region,
 			     const RandoItems *items)
 {

@@ -13,8 +13,6 @@ static uint32_t read_u32(const uint8_t *p)
 	return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
 }
 
-/* VT's decodeBPS, reading patch[*pos..end). Returns 0 on a number unterminated before end, or
- * above SIZE_MAX, or overflowing 64 bits while decoded. */
 static int decode_number(const uint8_t *patch, size_t *pos, size_t end, size_t *out)
 {
 	uint64_t number = 0, shift = 1;
@@ -42,8 +40,6 @@ static int decode_number(const uint8_t *patch, size_t *pos, size_t end, size_t *
 	return 1;
 }
 
-/* Reads a relative-offset number and moves *offset by it. Returns 0 on a bad number, or when the
- * offset would go below 0 or past SIZE_MAX. */
 static int move_offset(const uint8_t *patch, size_t *pos, size_t end, size_t *offset)
 {
 	size_t d, delta;

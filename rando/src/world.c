@@ -43,7 +43,6 @@ static const ItemCount crowd_control_counts[] = {
 	{RANDO_ITEM_Cape, 0},           {RANDO_ITEM_TwentyRupees2, 4},
 };
 
-/* overrides_overflow false: every overflow count keeps its value. */
 typedef struct ItemPoolValues {
 	bool overrides_overflow;
 	int8_t overflow_count_sword;
@@ -65,8 +64,6 @@ static const ItemPoolValues item_pool_values[] = {
 					   (int)(sizeof crowd_control_counts / sizeof crowd_control_counts[0])},
 };
 
-/* applies false: normal functionality, nothing changes. Every applied case also sets
- * rom.CatchableFairies false and rom.CatchableBees true (the default, so not stored). */
 typedef struct FunctionalityValues {
 	bool applies;
 	uint8_t cape_magic_usage_normal, cape_magic_usage_half, cape_magic_usage_quarter;
@@ -84,7 +81,6 @@ static const FunctionalityValues functionality_values[] = {
 	[RANDO_ITEM_FUNCTIONALITY_EXPERT] = {true, 0x02, 0x04, 0x08, false, 0xD8, 0x20, 0x20, 0x00, true, true},
 };
 
-/* RANDO_CONFIG_NULL for the goals that are not hunts. */
 static const struct {
 	int8_t goal_required;
 	int8_t triforce_pieces;
@@ -98,7 +94,6 @@ static const struct {
 	[RANDO_GOAL_COMPLETIONIST] = {RANDO_CONFIG_NULL, RANDO_CONFIG_NULL},
 };
 
-/* World\Retro's counts; VT skips them under difficulty custom, which the C port does not have. */
 static void derive_retro_counts(RandoConfig *c)
 {
 	int16_t *twenty = &c->item_count[RANDO_ITEM_TwentyRupees2];
@@ -356,7 +351,6 @@ void rando_world_shop_add(RandoWorld *world, RandoShopId shop, int slot, RandoIt
 	world->shop_prices[shop][slot] = (uint16_t)price;
 }
 
-/* Asserts the world has the location. */
 static RandoLayoutLocation layout_location(const RandoWorld *world, RandoLocationId location)
 {
 	RandoLayoutLocation at;
@@ -392,7 +386,6 @@ bool rando_world_set_item(RandoWorld *world, RandoLocationId location, RandoItem
 	location_class = rando_location_info(location)->location_class;
 	if (!accepts(location_class, item))
 		return false;
-	/* Pedestal::setItem: a MasterSword placed on the pedestal is stored as L2Sword. */
 	if (location_class == RANDO_LOCATION_CLASS_PEDESTAL && item == RANDO_ITEM_MasterSword)
 		item = RANDO_ITEM_L2Sword;
 	world->location_items[location] = (uint8_t)item;
@@ -539,7 +532,6 @@ bool rando_world_can_access_shop(const RandoWorld *world, RandoShopId shop, cons
 	return rando_world_region_can_enter(world, region, items) && (!requirement || requirement(world, world, items));
 }
 
-/* found_total may be NULL. */
 static void search(RandoWorld *world, RandoItems *my_items, RandoItems *found_total)
 {
 	bool available[RANDO_LOCATION_COUNT];

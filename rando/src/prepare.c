@@ -292,7 +292,6 @@ static void prefill_bosses(RandoWorld *world)
 		place(world, boss_heart_locations[i], boss_item);
 }
 
-/* VT's setTarget(array_pop($swords)) on UncleSword, whose C alias target is fixed. */
 static RandoItemId pop_uncle_sword(SideList *swords)
 {
 	RandoItemId target = pop(swords);
@@ -303,13 +302,12 @@ static RandoItemId pop_uncle_sword(SideList *swords)
 	return RANDO_ITEM_UncleSword;
 }
 
-/* VT's only collectItems before the fill: it fixes the collectable shop cache, so it is neither hoisted
- * nor skipped. */
 static void swordless_silvers(RandoWorld *world, RandoPools *pools)
 {
 	RandoItems world_items, merged;
 	uint16_t i;
 
+	/* VT's only collectItems before the fill fixes the collectable shop cache: neither hoist nor skip it. */
 	rando_world_collect_items(world, NULL, &world_items);
 	merged = world_items;
 	for (i = 0; i < pools->count[RANDO_POOL_ADVANCEMENT]; i++)
@@ -376,7 +374,6 @@ static bool wild_key(const RandoConfig *c, uint8_t item)
 	       && (c->mode_state != RANDO_STATE_STANDARD || item != RANDO_ITEM_KeyH2 || c->logic == RANDO_LOGIC_NO_LOGIC);
 }
 
-/* Moves every dungeon item of the class (or, for KEY, every wild key) to the advancement list, in order. */
 static void release_dungeon_items(const RandoConfig *c, RandoPools *pools, RandoItemClass wanted)
 {
 	uint8_t *dungeon = pools->items[RANDO_POOL_DUNGEON];
@@ -565,8 +562,6 @@ static void clear_locations(RandoWorld *world, const RandoLocationId *locations,
 		rando_world_set_item(world, locations[i], RANDO_ITEM_NONE);
 }
 
-/* One phase of fillPrizes over its locations. False when a location stays empty or a win check fails;
- * the phase's locations that were empty on entry are then empty again. */
 static bool place_prize_phase(RandoWorld *world, RandoPrng *prng, const RandoLocationId *locations, int nlocations,
 			      RandoItemId *prizes, int *nprizes)
 {
@@ -583,8 +578,6 @@ static bool place_prize_phase(RandoWorld *world, RandoPrng *prng, const RandoLoc
 		int total = *nprizes;
 		bool accessible = false;
 
-		/* array_pop takes the candidate from the end; a refused one goes back at the front (array_unshift).
-		 * Every candidate makes its four bottle draws before the access check. */
 		for (i = 0; i < total; i++) {
 			prize = prizes[--*nprizes];
 			assume_items(world, prng, prizes, *nprizes, &assumed);
@@ -655,8 +648,6 @@ bool rando_fill_prizes(RandoWorld *world, RandoPrng *prng)
 		}
 		rando_fy_shuffle(prng, prizes, (size_t)nprizes, sizeof prizes[0]);
 
-		/* crossWorld: the pendant phase takes what the crystal phase left, so pendants land in crystal
-		 * locations and crystals in pendant ones. */
 		if (place_prize_phase(world, prng, crystals, ncrystals, prizes, &nprizes)
 		    && place_prize_phase(world, prng, pendants, npendants, prizes, &nprizes))
 			return true;

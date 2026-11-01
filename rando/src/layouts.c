@@ -10,8 +10,7 @@ typedef struct LayoutRegion {
 	uint8_t prize;
 } LayoutRegion;
 
-/* regions[r] spans order[first, first + count). Every location id the world lacks must be set to
- * {RANDO_REGION_NONE, 0}: an omitted entry reads as region 0. */
+/* Every location id the world lacks must be set to {RANDO_REGION_NONE, 0}: an omitted entry reads as region 0. */
 typedef struct Layout {
 	const uint8_t *order;
 	uint8_t nlocations;

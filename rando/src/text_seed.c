@@ -21,7 +21,6 @@ static void str_add(Str *s, const char *text)
 	s->n += n;
 }
 
-/* sprintf's %d. */
 static void str_int(Str *s, int value)
 {
 	char digits[12];
@@ -44,7 +43,6 @@ static const char *region_name(const RandoGen *gen, RandoLocationId location)
 	return rando_region_info(rando_layout_location_region(gen->world.variant, location))->spoiler_name;
 }
 
-/* getLocationsWithItem(item)->first()->getRegion()->getName(); VT fails on a missing item. */
 static const char *item_region(const RandoGen *gen, RandoItemId item)
 {
 	return region_name(gen, rando_first_with(&gen->world, item));
@@ -155,7 +153,6 @@ static const RandoTextId tile_texts[RANDO_TILE_COUNT] = {
 	[RANDO_TILE_SOUTH_EAST_DARKWORLD_CAVE] = RANDO_TEXT_telepathic_tile_south_east_darkworld_cave,
 };
 
-/* __('hint.<kind>.<name>'): the picked alternative, or the key itself when hint.php has none. */
 static void hint_name(Str *s, const RandoHintName *hint, const char *kind, const char *name, int index)
 {
 	if (hint->names == NULL) {
@@ -169,7 +166,6 @@ static void hint_name(Str *s, const RandoHintName *hint, const char *kind, const
 	str_add(s, hint->names[index]);
 }
 
-/* Location::getHint: ucfirst("$item_name $location_name"). */
 static void location_hint(const RandoLocationHint *hint, Str *s)
 {
 	assert(hint->item < RANDO_ITEM_COUNT && hint->location < RANDO_LOCATION_COUNT);
@@ -181,7 +177,6 @@ static void location_hint(const RandoLocationHint *hint, Str *s)
 		s->text[0] = (char)(s->text[0] - 'a' + 'A');
 }
 
-/* HintService::applyHints' tile text; hints off sets none. */
 static bool tile_hint(const RandoGen *gen, RandoTextId id, Str *s)
 {
 	const RandoHints *h = &gen->post.hints;
@@ -209,14 +204,12 @@ typedef struct ItemText {
 	const char *const *texts;
 } ItemText;
 
-/* The writeItem overrides that set a text. */
 static const ItemText item_texts[] = {
 	{RANDO_TEXT_tablet_ether_book, RANDO_LOCATION_CLASS_DROP_ETHER, rando_text_ether},
 	{RANDO_TEXT_tablet_bombos_book, RANDO_LOCATION_CLASS_DROP_BOMBOS, rando_text_bombos},
 	{RANDO_TEXT_mastersword_pedestal_translated, RANDO_LOCATION_CLASS_PEDESTAL, rando_text_pedestal},
 };
 
-/* The item of the one location of location_class, an empty one read as Nothing. */
 static RandoItemId class_item(const RandoWorld *world, RandoLocationClass location_class)
 {
 	int n = rando_layout_location_count(world->variant), i;
@@ -234,7 +227,6 @@ static RandoItemId class_item(const RandoWorld *world, RandoLocationClass locati
 	return RANDO_ITEM_Nothing;
 }
 
-/* The table holds every alias's target text, so only rom.genericKeys' KeyGK is substituted here. */
 static bool item_text(const RandoGen *gen, RandoTextId id, Str *s)
 {
 	size_t i;
@@ -259,7 +251,6 @@ typedef struct InvertedText {
 	bool pause;
 } InvertedText;
 
-/* Rom::setInvertedMode's setString calls. */
 static const InvertedText inverted_texts[] = {
 	{RANDO_TEXT_sign_path_to_death_mountain, "\xE2\x86\x92 Bumper Cave\nYou need Cape and Mirror, but not Hookshot", true},
 	{RANDO_TEXT_sign_bumper_cave, "Cave to lost, old man.\nGood luck.", true},
@@ -297,8 +288,6 @@ static bool inverted_text(const RandoGen *gen, RandoTextId id, Str *s, bool *pau
 	return false;
 }
 
-/* VT's World::$texts keeps a key's first position, and the four setters set disjoint ids, so each
- * id's final string depends on gen alone, never on call order. */
 static bool seed_string(const RandoGen *gen, RandoTextId id, Str *s, bool *pause)
 {
 	const RandoTexts *t = &gen->post.texts;

@@ -10,7 +10,6 @@ static bool is_empty(const RandoWorld *world, uint8_t location)
 	return !rando_world_has_item(world, (RandoLocationId)location, RANDO_ITEM_NONE);
 }
 
-/* getEmptyLocations on state's order, in place; returns the new count. */
 static int keep_empty(const RandoWorld *world, RandoFillState *state)
 {
 	int i, n = 0;
@@ -39,7 +38,6 @@ static void place(RandoWorld *world, uint8_t location, RandoItemId item)
 	(void)accepted;
 }
 
-/* Filler::fastFillItemsInLocations: items are popped from the end of items[0..n). */
 static void fast_fill(RandoWorld *world, const uint8_t *items, int n, const uint8_t *locations, int nlocations)
 {
 	int i;
@@ -62,7 +60,6 @@ static bool can_skip_access_checks(const RandoWorld *world, RandoItemId item, co
 		&& rando_world_win_condition(world, assumed);
 }
 
-/* RandomAssumed::fillItemsInLocations; base may be NULL (VT's empty $base_assumed_items). */
 static bool fill_items_in_locations(RandoWorld *world, RandoPrng *prng, const uint8_t *items, int nitems,
 				    const RandoFillState *locations, const RandoItems *base)
 {
@@ -110,7 +107,6 @@ static bool fill_items_in_locations(RandoWorld *world, RandoPrng *prng, const ui
 	return true;
 }
 
-/* World::getGanonsTowerJunkFillRange. */
 static void junk_fill_range(const RandoConfig *c, int *lower, int *upper)
 {
 	assert(c->crystals_tower >= 0 && "junk fill: crystals.tower must be resolved before the fill");
@@ -174,7 +170,6 @@ static void junk_fill(RandoWorld *world, RandoPrng *prng, RandoPools *pools)
 	nchosen = rando_random_collection(prng, empty, nempty, number, chosen);
 
 	shuffle_list(prng, pools, RANDO_POOL_ITEMS);
-	/* array_splice($extra, 0, n): the trash is the front of the shuffled pool, popped from its end. */
 	ntrash = nchosen < pools->count[RANDO_POOL_ITEMS] ? nchosen : pools->count[RANDO_POOL_ITEMS];
 	fast_fill(world, extra, ntrash, chosen, nchosen);
 	memmove(extra, extra + ntrash, (size_t)(pools->count[RANDO_POOL_ITEMS] - ntrash));

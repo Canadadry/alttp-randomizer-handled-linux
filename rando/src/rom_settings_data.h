@@ -7,10 +7,8 @@
 
 #define WISHING_WELL_ROOM_SIZE 205
 
-/* setWishingWellChests(true)'s room 276 remodel, VT's base64 decoded. */
 extern const uint8_t rando_wishing_well_room[WISHING_WELL_ROOM_SIZE];
 
-/* A shop's ROM bytes: extra_address is 0 when its writeExtraData writes nothing. */
 typedef struct RomShop {
 	uint8_t config;
 	uint8_t shopkeeper;
@@ -29,7 +27,6 @@ typedef struct RomRow {
 	uint8_t bytes[UNCLE_ROW_SIZE];
 } RomRow;
 
-/* removeUnclesSword's and removeUnclesShield's writes, in VT's order. */
 extern const RomRow rando_uncle_sword_rows[UNCLE_SWORD_ROWS];
 extern const RomRow rando_uncle_shield_rows[UNCLE_SHIELD_ROWS];
 
@@ -42,7 +39,6 @@ extern const RomShop rando_rom_shops[RANDO_SHOP_COUNT];
 #define INVERTED_WRITES 193
 #define INVERTED_BYTES 510
 
-/* A write of size bytes from rando_inverted_bytes[offset]. */
 typedef struct RomWrite {
 	uint32_t address;
 	uint16_t offset;

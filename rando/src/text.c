@@ -13,7 +13,7 @@ typedef struct CharBytes {
 	uint8_t bytes[3];
 } CharBytes;
 
-/* Dialog::$characters at 219fcafd, sorted by code point. */
+/* Sorted by code point: the lookup bisects it. */
 static const CharBytes characters[] = {
 	{0x0020, 1, {0xFF}},
 	{0x0021, 1, {0xC7}},
@@ -212,7 +212,6 @@ typedef struct Command {
 	uint8_t bytes[13];
 } Command;
 
-/* {NOTEXT} is not here: it returns at once, dropping what came before. */
 static const Command commands[] = {
 	{"{SPEED0}", 2, {0xFC, 0x00}},
 	{"{SPEED2}", 2, {0xFC, 0x02}},
@@ -317,7 +316,6 @@ static size_t span_chars(Span s)
 	return n;
 }
 
-/* PHP's default trim set. */
 static bool php_space(char c)
 {
 	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\0' || c == '\x0B';
@@ -340,14 +338,11 @@ static Span trim(Span s)
 	return s;
 }
 
-/* mb_wordwrap($line, 19, "\n"): a single-byte line takes PHP's wordwrap (no cut, no trim), a
- * multibyte one is rtrimmed and re-packed by character count. */
 typedef struct Wrap {
 	Span line;
 	bool multibyte;
 	bool done;
 	size_t cur, laststart, lastspace, seg;
-	/* mb_wordwrap's $actual is this span plus one trailing space, unless actual_empty. */
 	bool repack;
 	size_t word;
 	Span actual;
@@ -389,7 +384,6 @@ static bool wordwrap_next(Wrap *w, Span *out)
 			brk = (long)w->lastspace;
 			w->laststart = w->lastspace + 1;
 		}
-		/* A break at or before seg is one already made. */
 		if (brk >= 0 && (size_t)brk >= w->seg) {
 			out->at = p + w->seg;
 			out->len = (size_t)brk - w->seg;
@@ -581,7 +575,6 @@ size_t rando_text_encode(const char *utf8, bool pause, uint8_t out[RANDO_TEXT_EN
 				}
 			if (span_is(name, "{INTRO}"))
 				pad_out = true;
-			/* VT's line_count may go negative; 0 compares the same against i. */
 			if (line_count > 0)
 				line_count--;
 			assert(o.count <= RANDO_TEXT_ENTRY_MAX && "rando_text_encode: command overflowed byte length");

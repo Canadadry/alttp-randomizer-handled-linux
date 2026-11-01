@@ -9,7 +9,6 @@
 
 #include <stdint.h>
 
-/* tests/rando/stages.txt's `stage` lines, in order. */
 typedef enum RandoStage {
 	RANDO_STAGE_CRYSTALS,
 	RANDO_STAGE_GET_ADVANCEMENT_ITEMS,
@@ -32,19 +31,15 @@ typedef enum RandoStage {
 	RANDO_STAGE_NONE = RANDO_STAGE_COUNT,
 } RandoStage;
 
-/* Asserts stage < RANDO_STAGE_COUNT. */
 const char *rando_stage_name(RandoStage stage);
 
 typedef enum RandoStatus {
 	RANDO_COMPLETE,
-	/* Only from rando_generate_until: its last stage ran. */
 	RANDO_INCOMPLETE,
-	/* The options need a world variant that is not ported. */
 	RANDO_UNSUPPORTED,
 	RANDO_GAVE_UP,
 } RandoStatus;
 
-/* One call per draw; draw restarts at 1 on every attempt. */
 typedef void (*RandoTraceFn)(void *ctx, uint32_t attempt, uint32_t draw, const char *stage, int64_t min,
 			     int64_t max, int64_t r);
 
@@ -56,8 +51,6 @@ typedef enum RandoFault {
 } RandoFault;
 #endif
 
-/* Ids, never pointers, except the caller's trace hook and the PRNG observer rando_generate points
- * back at this struct. */
 typedef struct RandoGen {
 	RandoOptions options;
 	uint32_t seed;
@@ -69,33 +62,20 @@ typedef struct RandoGen {
 	void *trace_ctx;
 	RandoPrng prng;
 	RandoPools pools;
-	/* The advancement list as prepareWorld leaves it: VT's HintService reads it, not what the fill leaves. */
 	uint8_t advancement[RANDO_POOL_CAPACITY];
 	uint16_t nadvancement;
 	RandoWorld world;
-	/* Cleared on every attempt that completes the fill. */
 	RandoPostFill post;
 #ifdef RANDO_FAULTS
-	/* Host tests only: every attempt below fault_attempts fails at fault; the generator never writes
-	 * either and counts each failure in fault_fired. */
 	RandoFault fault;
 	uint32_t fault_attempts;
 	uint32_t fault_fired;
 #endif
 } RandoGen;
 
-/* The retry contract: attempt N reseeds with splitmix32(seed + N). max_attempts 0 is unbounded;
- * otherwise RANDO_GAVE_UP once max_attempts attempts have failed. trace may be NULL. gen->attempt
- * is the last attempt run. */
 RandoStatus rando_generate(RandoGen *gen, const RandoOptions *options, uint32_t seed, uint32_t max_attempts,
 			   RandoTraceFn trace, void *trace_ctx);
 
-/* rando_generate, but RANDO_INCOMPLETE right after stage last completes. Before fill: on the first
- * attempt that reaches it. At fill or later: on the first winnable attempt, right after last. Every
- * attempt that completes the fill runs setTexts, randomizeCredits and applyHints up to last, then the
- * winnability check (VT's Randomizer::randomize, then isWinnable); the winning attempt then runs the
- * writeToRom stages up to last, continuing its draw count. RANDO_STAGE_NONE runs every stage and returns
- * RANDO_COMPLETE. */
 RandoStatus rando_generate_until(RandoGen *gen, const RandoOptions *options, uint32_t seed, uint32_t max_attempts,
 				 RandoTraceFn trace, void *trace_ctx, RandoStage last);
 

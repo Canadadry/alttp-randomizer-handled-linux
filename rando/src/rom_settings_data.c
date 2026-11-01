@@ -21,7 +21,6 @@ const uint8_t rando_wishing_well_room[WISHING_WELL_ROOM_SIZE] = {
 	0xFF,
 };
 
-/* VT's shop constructors at 219fcafd (Region\Standard, which Inverted reuses), by RandoShopId. */
 const RomShop rando_rom_shops[RANDO_SHOP_COUNT] = {
 	[RANDO_SHOP_LONG_FAIRY_CAVE] = {0x83, 0xA0, 0x0112, 0x55, 0xDBBC7, 0x58},
 	[RANDO_SHOP_LAKE_HYLIA_FAIRY] = {0x83, 0xA0, 0x0112, 0x5E, 0xDBBD0, 0x58},
@@ -66,7 +65,6 @@ const RomShop rando_rom_shops[RANDO_SHOP_COUNT] = {
 	[RANDO_SHOP_DARK_DESERT_HINT] = {0x83, 0xC1, 0x0112, 0x62, 0xDBBD4, 0x58},
 };
 
-/* writePrizePacksToRom's setOverworldDigPrizes list under rom.rupeeBow. */
 const uint8_t rando_retro_dig_prizes[RETRO_DIG_PRIZES_SIZE] = {
 	0xB2, 0xD8, 0xD8, 0xD8,
 	0xD8, 0xD8, 0xD8, 0xD8, 0xD8,
@@ -106,7 +104,6 @@ const RomRow rando_uncle_shield_rows[UNCLE_SHIELD_ROWS] = {
 	{0x6D313, {0x00, 0x00, 0xE4, 0xFF, 0x08, 0x0E}},
 };
 
-/* setInvertedMode(true)'s writes after setOpenMode, setFixFakeWorld(true) in place; VT 219fcafd. */
 const RomWrite rando_inverted_writes[INVERTED_WRITES] = {
 	{0x18004A, 0, 1},
 	{0x0103E0, 1, 1},

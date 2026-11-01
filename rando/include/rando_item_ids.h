@@ -1,7 +1,6 @@
 #ifndef RANDO_ITEM_IDS_H
 #define RANDO_ITEM_IDS_H
 
-/* VT's Item::all order, the three aliases last. */
 typedef enum RandoItemId {
 	RANDO_ITEM_Nothing,
 	RANDO_ITEM_L1Sword,

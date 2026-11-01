@@ -7,7 +7,6 @@
 #define TEXT_MAX 32
 #define SCENE_RECORDS_MAX 3
 #define POINTERS (SCENE_COUNT + 1)
-/* Per scene at most 108 bytes of small, 36 of small_alt and 72 of large records. */
 #define DATA_MAX (SCENE_COUNT * (108 + 36 + 72))
 
 #define DATA_ADDRESS 0x181500u
@@ -42,7 +41,6 @@ typedef struct Record {
 	const char *text;
 } Record;
 
-/* Credits::$scenes at 219fcafd; RECORD_NONE ends a scene of fewer than three records. */
 static const Record scenes[SCENE_COUNT][SCENE_RECORDS_MAX] = {
 	{{RECORD_SMALL, 5, 19, "The return of the King"}, {RECORD_LARGE, 9, 23, "Hyrule Castle"}},
 	{{RECORD_SMALL, 8, 19, "The loyal priest"}, {RECORD_LARGE, 11, 23, "Sanctuary"}},
@@ -64,7 +62,6 @@ static const Record scenes[SCENE_COUNT][SCENE_RECORDS_MAX] = {
 	 {RECORD_LARGE, 12, 23, "Forever!"}},
 };
 
-/* Each scene's line 0 as setCredit left it: VT's default record, or a text and its centred x. */
 typedef struct Line {
 	char text[TEXT_MAX + 1];
 	unsigned x;
@@ -121,7 +118,6 @@ static bool is_letter(char c)
 	return c >= 'a' && c <= 'z';
 }
 
-/* Credits::charToCreditsHex, on a lower-cased byte. */
 static uint8_t small_byte(char c)
 {
 	if (is_letter(c))
@@ -189,7 +185,6 @@ static void push_converted(Buffer *buf, unsigned x, unsigned y, const char *text
 		push(buf, convert(lower(text[i])));
 }
 
-/* getSmallConverted's apostrophe and comma records: x is offset by strpos on the untrimmed mask. */
 static void push_mark(Buffer *buf, const Line *line, unsigned y, char mark, char shown)
 {
 	char mask[TEXT_MAX + 1];
@@ -242,7 +237,6 @@ static const char *pick(const char *const *alternatives, unsigned count, unsigne
 	return alternatives[index];
 }
 
-/* randomizeCredits' setCredit calls; World::writeToRom replays them before the item loop. */
 static void set_picks(Line lines[SCENE_COUNT], const RandoCredits *c)
 {
 	char homecoming[TEXT_MAX + 1 + sizeof "'s homecoming"];
@@ -269,7 +263,6 @@ typedef struct Override {
 	const RandoCreditsOverride *table;
 } Override;
 
-/* The six writeItem overrides, in no particular order: their scenes are not the picks'. */
 static const Override overrides[] = {
 	{SCENE_ZORA, RANDO_LOCATION_CLASS_NPC_ZORA, &rando_credits_zora},
 	{SCENE_WITCH, RANDO_LOCATION_CLASS_NPC_WITCH, &rando_credits_witch},
@@ -307,7 +300,6 @@ static const char *override_text(const RandoCreditsOverride *table, RandoItemId 
 	return table->items[item] ? table->items[item] : table->fallback;
 }
 
-/* World::writeToRom's item loop over the world's locations. */
 static void set_overrides(Line lines[SCENE_COUNT], const RandoWorld *world)
 {
 	int n = rando_layout_location_count(world->variant), i;

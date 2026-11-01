@@ -43,7 +43,6 @@ static char *append(char *at, const char *s)
 	return at + n;
 }
 
-/* "seed=4294967295\n" plus eleven "<key>=<value>\n", hints and heart beep: well under this. */
 #define CODE_TEXT_MAX 512
 
 static char *append_line(char *at, const char *end, const char *key, const char *value)

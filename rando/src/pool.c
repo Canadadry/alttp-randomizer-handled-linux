@@ -5,7 +5,6 @@
 
 typedef char pool_item_fits_uint8[RANDO_ITEM_NONE <= UINT8_MAX ? 1 : -1];
 
-/* config/item.php's BottleWithRandom is not an item: getBottle resolves it where it stands. */
 #define POOL_RANDOM_BOTTLE RANDO_ITEM_NONE
 #define POOL_ENTRY_CAP 216
 
@@ -14,7 +13,6 @@ typedef struct RandoPoolEntry {
 	uint8_t count;
 } RandoPoolEntry;
 
-/* config/item.php, in its order: every later shuffle and the fill depend on it. */
 static const RandoPoolEntry dungeon_table[] = {
 	{RANDO_ITEM_BigKeyA2, 1},
 	{RANDO_ITEM_BigKeyD1, 1},
@@ -191,7 +189,6 @@ static void assert_room(RandoPoolList list, int count)
 	(void)list;
 }
 
-/* Exactly one of list_items and collection is set. */
 typedef struct PoolSink {
 	uint8_t *list_items;
 	uint16_t *list_count;
@@ -227,7 +224,6 @@ static void walk_list(const RandoWorld *world, RandoPrng *prng, RandoPoolList li
 			RandoItemId item = (RandoItemId)table[e].item;
 
 			if (item == POOL_RANDOM_BOTTLE) {
-				/* VT would label this draw with a stage the stage table lacks. */
 				assert(list == RANDO_POOL_ADVANCEMENT && "random bottle outside the advancement list");
 				item = rando_get_bottle(world, prng, false);
 			}

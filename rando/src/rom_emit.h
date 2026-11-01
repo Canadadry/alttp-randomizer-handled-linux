@@ -13,28 +13,20 @@ typedef struct RomOut {
 	bool ok;
 } RomOut;
 
-/* Every group writes through here, so nothing is written after a refused write. count is never 0. */
 void rando_rom_emit(RomOut *out, uint32_t address, const uint8_t *bytes, size_t count, const char *method);
 
-/* VT's World::writeToRom item loop (writeItem). */
 void rando_rom_write_items(RomOut *out, const RandoGen *gen);
 
-/* The first byte VT's Item::getBytes() gives for item, an alias read as its target. */
 uint8_t rando_rom_item_byte(RandoItemId item);
 
-/* VT's World::writeToRom setters between the item loop and writeCredits. */
 void rando_rom_write_settings(RomOut *out, const RandoGen *gen);
 
-/* VT's writeCredits: the credits data, then its 17 scene pointers. */
 void rando_rom_write_credits(RomOut *out, const RandoGen *gen);
 
-/* VT's writeText: the whole text table, one write at 0E0000. */
 void rando_rom_write_text(RomOut *out, const RandoGen *gen);
 
-/* VT's writeInitialSram: the InitialSram table the settings part of writeToRom builds, one write at 183000. */
 void rando_rom_write_initial_sram(RomOut *out, const RandoGen *gen);
 
-/* VT's setTotalItemCount(World::getTotalItemCount()): two little-endian bytes at 180196. */
 void rando_rom_write_total_item_count(RomOut *out, const RandoGen *gen);
 
 #endif

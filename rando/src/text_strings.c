@@ -1,7 +1,5 @@
 #include "text_strings.h"
 
-/* strings/<file>.txt at 219fcafd, split as Randomizer::getTextArray splits them. */
-
 const char *const rando_strings_uncle[] = {
 	"We're out of\nWeetabix. To\nthe store!",
 	"This seed is\nbootless\nuntil boots.",

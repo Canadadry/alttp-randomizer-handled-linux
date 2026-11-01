@@ -422,7 +422,6 @@ const char *const rando_text_names[RANDO_TEXT_COUNT] = {
 	"terminator",
 };
 
-/* Text::en() after removeUnwanted(), which sets its ids to {NOTEXT} with pause false. */
 const TextDefault rando_text_defaults[RANDO_TEXT_COUNT] = {
 	{NULL, false, raw_set_cursor, sizeof raw_set_cursor},
 	{NULL, false, raw_set_cursor2, sizeof raw_set_cursor2},

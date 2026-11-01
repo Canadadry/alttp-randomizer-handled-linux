@@ -14,8 +14,6 @@
 #define AUTHOR_HI_ADDRESS 0x118002u
 #define AUTHOR_LO_ADDRESS 0x118020u
 
-/* setHeartColor red. VT reads the base-patched ROM's own version byte, and its old branch also
- * writes 0x65561. */
 static void write_heart_color(uint8_t *bytes)
 {
 	uint8_t version = bytes[VERSION_ADDRESS];
@@ -29,7 +27,6 @@ static void write_heart_color(uint8_t *bytes)
 	}
 }
 
-/* center-align 1.0.1 pads both sides to 28 cells: a left-only pad would leave ten cells unwritten. */
 static const uint8_t author_hi[AUTHOR_CELLS] = {
 	0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x6A, 0x65, 0x6A, 0x70,
 	0x61, 0x6A, 0x60, 0x6B, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F,
@@ -39,8 +36,6 @@ static const uint8_t author_lo[AUTHOR_CELLS] = {
 	0x87, 0x90, 0x86, 0x91, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F, 0x9F,
 };
 
-/* The default Link sprite is the JP ROM's own bytes, copied back over the base patch's. VT
- * writes the author only over the credits line headers it expects, never over an older build. */
 static void write_default_sprite(uint8_t *bytes, const uint8_t *source)
 {
 	if (bytes[0x118000] == 0x02 && bytes[0x118001] == 0x37 && bytes[0x11801E] == 0x02 &&
@@ -61,7 +56,6 @@ bool rando_rom_write_cosmetic_defaults(RandoRomBuffer *rom, const uint8_t *sourc
 		return false;
 	bytes = rom->bytes;
 	bytes[0x18004B] = 0x00;
-	/* setMusicVolume's flag is inverted: music on writes 0x00. */
 	bytes[0x18021A] = 0x00;
 	bytes[0x18017F] = 0x00;
 	bytes[0x180048] = 0x08;

@@ -5,7 +5,6 @@
 
 #include <stdbool.h>
 
-/* The test matrix's option keys and values; each enum lists the baseline first. */
 typedef enum RandoOptionKey {
 	RANDO_OPTION_GLITCHES,
 	RANDO_OPTION_ITEM_PLACEMENT,
@@ -57,7 +56,6 @@ typedef enum RandoOptionGoal {
 	RANDO_OPTION_GOAL_COMPLETIONIST,
 } RandoOptionGoal;
 
-/* A value below RANDO_CRYSTALS_RANDOM is the count itself. */
 typedef enum RandoCrystals {
 	RANDO_CRYSTALS_0,
 	RANDO_CRYSTALS_1,
@@ -96,35 +94,22 @@ typedef struct RandoOptions {
 	RandoOptionWeapons weapons;
 	RandoItemPool item_pool;
 	RandoItemFunctionality item_functionality;
-	/* Not a RandoOptionKey: rando_options_set never sets it. */
 	bool hints;
 } RandoOptions;
 
-/* The baseline: VT's default preset, hints on. */
 void rando_options_init(RandoOptions *options);
 
-/* VT's key and value strings, e.g. ("goal", "triforce-hunt"). Returns false and leaves options
- * unchanged on an unknown key or value. */
 bool rando_options_set(RandoOptions *options, const char *key, const char *value);
 
-/* The key's enum value, the inverse of rando_options_set. Asserts key < RANDO_OPTION_KEY_COUNT. */
 int rando_options_get(const RandoOptions *options, RandoOptionKey key);
 
-/* RANDO_OPTION_KEY_COUNT when the key is unknown. */
 RandoOptionKey rando_option_key_find(const char *key);
-/* Asserts key < RANDO_OPTION_KEY_COUNT. */
 const char *rando_option_key_name(RandoOptionKey key);
-/* The VT string of the key's enum value, e.g. (RANDO_OPTION_CRYSTALS_GANON, RANDO_CRYSTALS_RANDOM)
- * gives "random". Asserts both are in range. */
 const char *rando_option_value_name(RandoOptionKey key, int value);
 
-/* "on" or "off", the case format's hints values. */
 const char *rando_hints_name(bool hints);
-/* Returns false and leaves *out unchanged unless name is exactly "on" or "off". */
 bool rando_hints_find(const char *name, bool *out);
 
-/* The oracle wrapper's World::factory arguments on top of rando_config_init: no World constructor
- * derivation. crystals_ganon and crystals_tower are the resolved counts, asserted in 0..7. */
 void rando_config_from_options(const RandoOptions *options, int crystals_ganon, int crystals_tower,
 			       RandoConfig *config);
 

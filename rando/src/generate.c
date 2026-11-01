@@ -50,7 +50,6 @@ static int resolve_crystals(RandoGen *gen, RandoCrystals crystals)
 	return (int)crystals;
 }
 
-/* Closes the running stage; true when the caller must stop there with RANDO_INCOMPLETE. */
 static bool end_stage(RandoGen *gen, RandoStatus *status)
 {
 	bool stop = gen->stage == gen->last;
@@ -73,7 +72,6 @@ static bool fault_fires(RandoGen *gen, RandoFault point)
 #define fault_fires(gen, point) false
 #endif
 
-/* The stages from..to (inclusive) that do not lie after last. */
 static void run_post_fill(RandoGen *gen, RandoStage from, RandoStage to)
 {
 	RandoStage s;
@@ -109,7 +107,6 @@ static void run_post_fill(RandoGen *gen, RandoStage from, RandoStage to)
 	}
 }
 
-/* Returns false when the attempt failed and the loop must retry; otherwise stores the final status. */
 static bool run_attempt(RandoGen *gen, RandoStatus *status)
 {
 	RandoConfig config;

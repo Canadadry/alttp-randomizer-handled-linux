@@ -1,7 +1,5 @@
 #include "text_strings.h"
 
-/* Drop\Ether::getItemText, Drop\Bombos::getItemText and Pedestal::getItemPedestalText at 219fcafd, evaluated
- * on each Item::all item; an item they give the default text is left out. */
 const char *const rando_text_ether[RANDO_ITEM_COUNT] = {
 	[RANDO_ITEM_L1Sword] = "A pathetic\nsword rests\nhere!",
 	[RANDO_ITEM_L1SwordAndShield] = "A pathetic\nsword rests\nhere!",

@@ -20,7 +20,6 @@ int rando_hint_location_alternatives(RandoLocationId location)
 	return rando_hint_locations[location].names == NULL ? RANDO_HINT_MISSING : rando_hint_locations[location].count;
 }
 
-/* An alternative index, or 0 with no draw for a plain string or a missing key. */
 static uint8_t pick_name(RandoPrng *prng, int alternatives)
 {
 	return alternatives > 0 ? rando_pick_first(prng, alternatives) : 0;
@@ -67,7 +66,6 @@ RandoCollectionHint rando_collection_hint(const RandoWorld *world, const RandoLo
 	return RANDO_COLLECTION_HINT_MANY;
 }
 
-/* HintService's $locations; RANDO_LOCATION_NONE marks a pair pick. */
 static const RandoLocationId hint_picks[] = {
 	RANDO_LOC_SAHASRAHLA,
 	RANDO_LOC_MIMIC_CAVE,
@@ -116,7 +114,6 @@ static void tile_location(RandoHints *hints, uint8_t tile, const RandoLocationHi
 	hints->tiles[tile].location = *hint;
 }
 
-/* Pops a tile for location's hint, as VT does only when the hint is not null. */
 static void pop_tile_hint(const RandoWorld *world, RandoLocationId location, RandoPrng *prng, RandoHints *hints,
 			  uint8_t *tiles, int *ntiles)
 {
@@ -128,8 +125,6 @@ static void pop_tile_hint(const RandoWorld *world, RandoLocationId location, Ran
 	tile_location(hints, tiles[--*ntiles], &hint);
 }
 
-/* The item's location for a hint, drawn by random() among those VT keeps; RANDO_LOCATION_NONE, no draw,
- * when none is left. */
 static RandoLocationId hint_item_location(const RandoWorld *world, RandoItemId item, RandoLocationId alternate_bow,
 					  RandoPrng *prng)
 {
@@ -178,7 +173,6 @@ void rando_apply_hints(const RandoWorld *world, RandoPrng *prng, const uint8_t *
 		picks[i] = (uint8_t)i;
 	for (i = 0; i < HINT_PICK_ROUNDS; i++) {
 		rando_fy_shuffle(prng, picks, (size_t)npicks, 1);
-		/* A pair pick matches nothing: VT filters getName(), which has a ":<world id>" suffix. */
 		pop_tile_hint(world, hint_picks[picks_order[picks[--npicks]]], prng, hints, tiles, &ntiles);
 	}
 
@@ -205,7 +199,6 @@ void rando_apply_hints(const RandoWorld *world, RandoPrng *prng, const uint8_t *
 	free_tiles = ntiles - nhinted;
 	nchosen = rando_random_collection(prng, ids, nids,
 					  (int)rando_random_int(prng, free_tiles / 2 - 1, free_tiles - 1), chosen);
-	/* LocationCollection keys by name: a hinted location already drawn keeps its first position. */
 	for (i = 0; i < nhinted; i++) {
 		for (j = 0; j < nchosen && chosen[j] != hinted[i]; j++)
 			;

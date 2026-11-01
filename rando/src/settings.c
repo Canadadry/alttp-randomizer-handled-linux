@@ -201,8 +201,7 @@ bool rando_parse_uint32(const char *text, size_t len, uint32_t *out)
 	return true;
 }
 
-/* The final row is a sentinel, not a pair: C99 has no empty array. A pair is added with the case that
- * returns RANDO_UNSUPPORTED as its evidence. */
+/* The final row is a sentinel, not a pair: C99 has no empty array. */
 static const RandoSettingPair unsupported[] = {
 	{RANDO_SETTING_COUNT, 0, RANDO_SETTING_COUNT, 0},
 };

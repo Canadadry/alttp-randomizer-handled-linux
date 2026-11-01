@@ -8,7 +8,6 @@
 void rando_postfill_clear(RandoPostFill *post)
 {
 	memset(post, 0, sizeof *post);
-	/* ALTERNATE, the zero value, would need two bow locations. */
 	post->texts.bow_hint = RANDO_BOW_HINT_FAKE;
 	post->texts.bow_locations[0] = RANDO_LOCATION_NONE;
 	post->texts.bow_locations[1] = RANDO_LOCATION_NONE;
@@ -63,7 +62,6 @@ void rando_set_texts(const RandoWorld *world, RandoPrng *prng, RandoPostFill *po
 	silvers = rando_first_with(world, RANDO_ITEM_SilverArrowUpgrade);
 	if (silvers == RANDO_LOCATION_NONE)
 		silvers = rando_first_with(world, RANDO_ITEM_BowAndSilverArrows);
-	/* Drawn before the overflow-count branch, whatever it decides. */
 	nbows = rando_locations_with(world, RANDO_ITEM_ProgressiveBow, bows);
 	npicked = rando_random_collection(prng, bows, nbows, 2, picked);
 
@@ -179,7 +177,6 @@ typedef struct DropCount {
 	uint8_t count;
 } DropCount;
 
-/* config/item.php's drop table, BeeGood and Bee at 0 left out. */
 static const DropCount drop_pool[] = {
 	{RANDO_DROP_HEART, 13},		 {RANDO_DROP_RUPEE_GREEN, 9},	     {RANDO_DROP_RUPEE_BLUE, 7},
 	{RANDO_DROP_RUPEE_RED, 6},	 {RANDO_DROP_BOMB_REFILL_1, 7},	     {RANDO_DROP_BOMB_REFILL_4, 1},

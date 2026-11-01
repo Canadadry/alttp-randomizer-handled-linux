@@ -126,4 +126,11 @@
     - [x] Chunk 3: the run and its record
 - [ ] Phase 5 — Cleanup
   - [ ] 5.1 skill: rework-comments
+    - [x] rando/include and rando/src
+    - [ ] regions and rando/host
+    - [ ] app/core
+    - [ ] app/sd, app/sdl, app/main
+    - [ ] unit tests a-r and support
+    - [ ] other tests, scripts, Makefiles
+    - [ ] record.c assert and orphaned assert messages
   - [ ] 5.2 README

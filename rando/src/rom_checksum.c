@@ -14,7 +14,6 @@ bool rando_rom_update_checksum(RandoRomBuffer *rom)
 	assert(rom != NULL && rom->bytes != NULL);
 	if (rom->size != RANDO_ROM_SIZE)
 		return false;
-	/* The four header bytes never feed the sum: 0x1FE stands for them once written. */
 	sum = 0x1FEu;
 	for (i = 0; i < RANDO_ROM_SIZE; i++) {
 		if (i >= HEADER_ADDRESS && i < HEADER_ADDRESS + HEADER_SIZE)

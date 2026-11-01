@@ -1,7 +1,6 @@
 #ifndef RANDO_TEXT_IDS_H
 #define RANDO_TEXT_IDS_H
 
-/* VT's Text::en() table order. */
 typedef enum RandoTextId {
 	RANDO_TEXT_set_cursor,
 	RANDO_TEXT_set_cursor2,

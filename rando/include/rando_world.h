@@ -16,7 +16,6 @@ typedef enum RandoVariant {
 	RANDO_VARIANT_COUNT,
 } RandoVariant;
 
-/* VT's World order. */
 typedef enum RandoRegionId {
 	RANDO_REGION_NORTH_EAST_LIGHT_WORLD,
 	RANDO_REGION_NORTH_WEST_LIGHT_WORLD,
@@ -48,7 +47,6 @@ typedef enum RandoRegionId {
 	RANDO_REGION_NONE = RANDO_REGION_COUNT,
 } RandoRegionId;
 
-/* Standard's World::getLocations() order, then the locations only Inverted has. */
 typedef enum RandoLocationId {
 	RANDO_LOC_SAHASRAHLAS_HUT_LEFT,
 	RANDO_LOC_SAHASRAHLAS_HUT_MIDDLE,
@@ -291,7 +289,6 @@ typedef enum RandoLocationId {
 	RANDO_LOCATION_NONE = RANDO_LOCATION_COUNT,
 } RandoLocationId;
 
-/* VT's World::getShops() order. */
 typedef enum RandoShopId {
 	RANDO_SHOP_LONG_FAIRY_CAVE,
 	RANDO_SHOP_LAKE_HYLIA_FAIRY,
@@ -338,7 +335,6 @@ typedef enum RandoShopId {
 	RANDO_SHOP_NONE = RANDO_SHOP_COUNT,
 } RandoShopId;
 
-/* One value per concrete VT location class, plus the bases Location (shop slots) and Prize. */
 typedef enum RandoLocationClass {
 	RANDO_LOCATION_CLASS_LOCATION,
 	RANDO_LOCATION_CLASS_CHEST,
@@ -377,7 +373,6 @@ typedef enum RandoBossSlot {
 
 #define RANDO_SHOP_SLOTS 3
 
-/* VT's Sprite table order: a drop's ROM sprite byte is 0xD7 + its id. */
 typedef enum RandoDrop {
 	RANDO_DROP_NONE,
 	RANDO_DROP_HEART,
@@ -395,7 +390,6 @@ typedef enum RandoDrop {
 	RANDO_DROP_COUNT,
 } RandoDrop;
 
-/* VT's World::getPrizePacks() order. */
 typedef enum RandoPrizePack {
 	RANDO_PRIZE_PACK_0,
 	RANDO_PRIZE_PACK_1,
@@ -447,8 +441,6 @@ typedef struct RandoShopInfo {
 	uint16_t default_prices[RANDO_SHOP_SLOTS];
 } RandoShopInfo;
 
-/* Ids, never pointers: reinitialized by value with rando_world_init. Item and boss ids are stored
- * as uint8_t. */
 typedef struct RandoWorld {
 	RandoConfig config;
 	RandoVariant variant;
@@ -463,24 +455,16 @@ typedef struct RandoWorld {
 	uint8_t npre_collected;
 	bool collected[RANDO_LOCATION_COUNT];
 	bool shop_collected[RANDO_SHOP_COUNT][RANDO_SHOP_SLOTS];
-	/* VT computes the collectable set once and never again, even after reset_collected. */
 	bool collectable_computed;
 	bool collectable[RANDO_LOCATION_COUNT];
 	uint8_t collectable_shop_items[RANDO_SHOP_COUNT][RANDO_SHOP_SLOTS];
 } RandoWorld;
 
-/* Each asserts its id is below the count. */
 const RandoLocationInfo *rando_location_info(RandoLocationId id);
 const RandoRegionInfo *rando_region_info(RandoRegionId id);
 const RandoShopInfo *rando_shop_info(RandoShopId id);
-/* The VT region class the variant uses in that slot, e.g. "Region\Open\HyruleCastleEscape". */
 const char *rando_region_vt_class(RandoVariant variant, RandoRegionId id);
 
-/* The variant's world layout: its locations in VT's World::getLocations() order, and per region its
- * locations in VT order and its prize location (RANDO_LOCATION_NONE when it has none). A location's
- * region is RANDO_REGION_NONE when the variant's world does not have it. A prize location may lie in
- * another region: Inverted North East Dark World keeps VT's removed Ganon. Each asserts its arguments
- * are in range. */
 int rando_layout_location_count(RandoVariant variant);
 RandoLocationId rando_layout_location(RandoVariant variant, int i);
 RandoRegionId rando_layout_location_region(RandoVariant variant, RandoLocationId location);
@@ -488,96 +472,63 @@ int rando_layout_region_location_count(RandoVariant variant, RandoRegionId regio
 RandoLocationId rando_layout_region_location(RandoVariant variant, RandoRegionId region, int i);
 RandoLocationId rando_layout_region_prize(RandoVariant variant, RandoRegionId region);
 #ifdef RANDO_FAULTS
-/* The location's index in its region's list; 0 where the variant's world lacks it. */
 int rando_layout_location_slot(RandoVariant variant, RandoLocationId location);
-/* The slots the region's rule table declares, -1 when it has none; the location id it means by slot. */
 int rando_region_rule_slot_count(RandoVariant variant, RandoRegionId region);
 RandoLocationId rando_region_rule_slot_location(RandoVariant variant, RandoRegionId region, int slot);
 #endif
 
-/* Each returns its NONE sentinel when the name is unknown; regions are found by world key. */
 RandoLocationId rando_location_find(const char *name);
 RandoRegionId rando_region_find(const char *key);
 RandoShopId rando_shop_find(const char *name);
 
-/* Asserts the pack is below the count. */
 int rando_prize_pack_slots(RandoPrizePack pack);
 
-/* VT's instanceof between location classes. */
 bool rando_location_is_a(RandoLocationClass location_class, RandoLocationClass base);
 
-/* World::factory(variant, config) with an empty pre-collected collection. */
 void rando_world_init(RandoWorld *world, RandoVariant variant, const RandoConfig *config);
 
-/* World::copy: everything by value, with no collected state and the collectable cache reset. */
 void rando_world_copy(RandoWorld *dst, const RandoWorld *src);
 
-/* World::addPreCollectedItem: appends to the multiset and to the insertion order. */
 void rando_world_add_pre_collected(RandoWorld *world, RandoItemId item);
 int rando_world_pre_collected_count(const RandoWorld *world);
-/* Asserts i is below the count. */
 RandoItemId rando_world_pre_collected_item(const RandoWorld *world, int i);
 
 RandoItemId rando_world_item(const RandoWorld *world, RandoLocationId location);
 RandoBossId rando_world_boss(const RandoWorld *world, RandoRegionId region, RandoBossSlot slot);
-/* Ignores nboss_slots, which describes the constructor defaults only. */
 void rando_world_set_boss(RandoWorld *world, RandoRegionId region, RandoBossSlot slot, RandoBossId boss);
 RandoItemId rando_world_shop_item(const RandoWorld *world, RandoShopId shop, int slot);
 bool rando_world_shop_active(const RandoWorld *world, RandoShopId shop);
 void rando_world_shop_set_active(RandoWorld *world, RandoShopId shop, bool active);
-/* Asserts the slot holds an item. */
 int rando_world_shop_price(const RandoWorld *world, RandoShopId shop, int slot);
 void rando_world_shop_clear(RandoWorld *world, RandoShopId shop);
-/* Replaces what the slot held; the item may not be RANDO_ITEM_NONE. */
 void rando_world_shop_add(RandoWorld *world, RandoShopId shop, int slot, RandoItemId item, int price);
-/* Both assert the slot is below the pack's slot count. */
 RandoDrop rando_world_drop(const RandoWorld *world, RandoPrizePack pack, int slot);
-/* The drop may not be RANDO_DROP_NONE. */
 void rando_world_set_drop(RandoWorld *world, RandoPrizePack pack, int slot, RandoDrop drop);
 
-/* False where VT's setItem throws (a refused item class); the location is then unchanged, and the
- * caller fails the attempt as VT's retry loop does. RANDO_ITEM_NONE empties the location. */
 bool rando_world_set_item(RandoWorld *world, RandoLocationId location, RandoItemId item);
-/* RANDO_ITEM_NONE asks whether the location holds anything. */
 bool rando_world_has_item(const RandoWorld *world, RandoLocationId location, RandoItemId item);
 
 bool rando_world_can_access(const RandoWorld *world, RandoLocationId location, const RandoItems *items);
-/* VT's canAccess($items, $locations): the location belongs to world, and its rules read the items
- * VT reads from $locations in locations. */
 bool rando_world_can_access_with(const RandoWorld *world, const RandoWorld *locations, RandoLocationId location,
 				 const RandoItems *items);
-/* Any slot of the shop: its region's canEnter and the shop's own requirement. */
 bool rando_world_can_access_shop(const RandoWorld *world, RandoShopId shop, const RandoItems *items);
-/* Asserts the location's class accepts the item; the location's item is unchanged on return. */
 bool rando_world_can_fill(RandoWorld *world, RandoLocationId location, RandoItemId item,
 			  const RandoItems *items, bool check_access);
-/* Keeps the item only when can_fill succeeds. */
 bool rando_world_fill(RandoWorld *world, RandoLocationId location, RandoItemId item, const RandoItems *items);
 
 bool rando_world_region_can_enter(const RandoWorld *world, RandoRegionId region, const RandoItems *items);
 bool rando_world_region_can_complete(const RandoWorld *world, RandoRegionId region, const RandoItems *items);
 bool rando_world_region_can_fill(const RandoWorld *world, RandoRegionId region, RandoItemId item);
 
-/* World::collectItems: start may be NULL; out may not alias start. */
 void rando_world_collect_items(RandoWorld *world, const RandoItems *start, RandoItems *out);
-/* World's win_condition closure on items as given, with no collection. */
 bool rando_world_win_condition(const RandoWorld *world, const RandoItems *items);
-/* World::collectOtherItems: found (which may not alias collected) gets only the items found; the
- * pre-collected items are not merged. The fill and is_winnable must use this one: collect_items
- * would count the pre-collected items, already in their assumed items, twice. */
 void rando_world_collect_other_items(RandoWorld *world, const RandoItems *collected, RandoItems *found);
-/* World::checkWinCondition: collects from collected (may be NULL) without resetting the locations
- * already collected, so a location collected before adds nothing. */
 bool rando_world_check_win_condition(RandoWorld *world, const RandoItems *collected);
 void rando_world_reset_collected(RandoWorld *world);
 bool rando_world_collected(const RandoWorld *world, RandoLocationId location);
 bool rando_world_shop_collected(const RandoWorld *world, RandoShopId shop, int slot);
-/* getCollectedLocationsCount: collected locations plus collected shop slots. */
 int rando_world_collected_count(const RandoWorld *world);
-/* Resets the collected state, then merges collectOtherItems into items until the collected count
- * stops changing; items grows in place. */
 void rando_world_collect_until_stable(RandoWorld *world, RandoItems *items);
-/* WorldCollection::isWinnable for this world alone; changes the collected state only. */
 bool rando_world_is_winnable(RandoWorld *world);
 
 #endif

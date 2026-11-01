@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <string.h>
 
-/* The values every alttpr.com path leaves at VT's config() default. */
 #define OVERFLOW_COUNT_BOTTLE 4
 #define OVERFLOW_REPLACEMENT RANDO_ITEM_TwentyRupees2
 #define BOMB_UPGRADE_FILL 50
@@ -79,7 +78,6 @@ static void write_escape_refills(RomOut *out, uint8_t flags, const uint8_t refil
 	emit(out, 0x18018B, refills[2], 3, method);
 }
 
-/* World::setEscapeFills, with rom.EscapeRefills.* and rom.EscapeAssist at their defaults. */
 static void write_escape_fills(RomOut *out, const RandoWorld *world)
 {
 	static const uint8_t sword[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
@@ -400,7 +398,6 @@ static void write_uncle(RomOut *out, const RandoWorld *world)
 		for (i = 0; i < UNCLE_SWORD_ROWS; i++)
 			emit(out, rando_uncle_sword_rows[i].address, rando_uncle_sword_rows[i].bytes, UNCLE_ROW_SIZE,
 			     "removeUnclesSword");
-	/* VT's condition, !instanceof Shield || !hasItem(L1SwordAndShield), holds for every item. */
 	for (i = 0; i < UNCLE_SHIELD_ROWS; i++)
 		emit(out, rando_uncle_shield_rows[i].address, rando_uncle_shield_rows[i].bytes, UNCLE_ROW_SIZE,
 		     "removeUnclesShield");

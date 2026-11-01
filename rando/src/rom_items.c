@@ -2,7 +2,6 @@
 
 #include <assert.h>
 
-/* VT's address and item-byte array keys: 0 to 6, then t0 to t2 and m0 to m2. */
 typedef enum Slot {
 	SLOT_0,
 	SLOT_1,
@@ -20,7 +19,6 @@ typedef enum Slot {
 	SLOT_COUNT,
 } Slot;
 
-/* VT's null and a missing key are both a clear bit in present. */
 typedef struct ItemBytes {
 	uint16_t present;
 	uint8_t bytes[SLOT_COUNT];
@@ -28,7 +26,6 @@ typedef struct ItemBytes {
 
 #define ADDRESSES_MAX 6
 
-/* VT's non-null addresses, in its insertion order, which is the write order. */
 typedef struct LocationAddresses {
 	uint8_t count;
 	struct {
@@ -37,7 +34,6 @@ typedef struct LocationAddresses {
 	} at[ADDRESSES_MAX];
 } LocationAddresses;
 
-/* Aliases have no entry: they write their target's bytes. */
 static const ItemBytes item_bytes[RANDO_ITEM_COUNT] = {
 	[RANDO_ITEM_Nothing] = {0x0001, {0x5A}},
 	[RANDO_ITEM_L1Sword] = {0x0001, {0x49}},
@@ -464,7 +460,6 @@ typedef struct MusicAddresses {
 	uint32_t address[MUSIC_MAX];
 } MusicAddresses;
 
-/* Region::$music_addresses, which Prize::writeItem writes; no inverted region overrides them. */
 static const MusicAddresses music_addresses[RANDO_REGION_COUNT] = {
 	[RANDO_REGION_EASTERN_PALACE] = {1, {0x1559A}},
 	[RANDO_REGION_DESERT_PALACE] = {4, {0x1559B, 0x1559C, 0x1559D, 0x1559E}},
@@ -481,7 +476,6 @@ static const MusicAddresses music_addresses[RANDO_REGION_COUNT] = {
 
 #define HERA_BASEMENT_KEY_FANFARE 0x4E3BB
 
-/* Blacksmith's address in VT is chosen by region.swordsInPool when the region is built. */
 #define BLACKSMITH_SWORDS_OUT_OF_POOL 0x3355C
 
 static const char METHOD[] = "writeItem";
@@ -511,7 +505,6 @@ static bool escape_exception(RandoLocationId location, RandoItemId item, RandoIt
 	return (location == RANDO_LOC_SECRET_PASSAGE || location == RANDO_LOC_LINKS_UNCLE) && item == h2;
 }
 
-/* Location::writeItem's rom.vanilla* and rom.genericKeys substitutions, in VT's order. */
 static RandoItemId substituted(const RandoConfig *config, RandoRegionId region, RandoLocationId location,
 			       RandoItemId item)
 {
@@ -532,7 +525,6 @@ static RandoItemId substituted(const RandoConfig *config, RandoRegionId region, 
 	return item;
 }
 
-/* Under rom.mapOnPickup, the music drawn for the location; asserts it has one. */
 static uint8_t drawn_music(const RandoPrizeMusic *prize_music, RandoLocationId location)
 {
 	int i;

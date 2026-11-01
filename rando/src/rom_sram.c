@@ -4,14 +4,11 @@
 #include <assert.h>
 #include <string.h>
 
-/* VT's InitialSram::SRAM_SIZE. */
 #define SRAM_SIZE 0x500
 #define SRAM_ADDRESS 0x183000u
 #define TOTAL_ITEM_COUNT_ADDRESS 0x180196u
-/* VT's rom.timerStart, never set on the generation path. */
 #define TIMER_START_SECONDS 0u
 
-/* InitialSram::setValue: ORs, never assigns. */
 static void set_value(uint8_t *sram, int idx, int val)
 {
 	assert(idx >= 0 && idx < SRAM_SIZE);
@@ -38,7 +35,6 @@ static bool is_open_state(RandoState state)
 	return state == RANDO_STATE_OPEN || state == RANDO_STATE_RETRO || state == RANDO_STATE_INVERTED;
 }
 
-/* ItemCollection::heartCount(0) < 1, in quarters: a PieceOfHeart counts 1, any other Health item 4. */
 static bool below_one_heart(const RandoWorld *world)
 {
 	int quarters = 0, i;
@@ -52,7 +48,6 @@ static bool below_one_heart(const RandoWorld *world)
 	return quarters < 4;
 }
 
-/* InitialSram::setStartingEquipment for the items this generator can pre-collect. */
 static void set_starting_equipment(uint8_t *sram, const RandoWorld *world, RandoWeapons weapons)
 {
 	int rupees = 0, bomb_capacity = 0, arrow_capacity = 0, i;
@@ -88,7 +83,6 @@ static void set_starting_equipment(uint8_t *sram, const RandoWorld *world, Rando
 			sram[0x359] = (uint8_t)min_int(sram[0x359] + 1, 4);
 			break;
 		default:
-			/* VT's switch has ~110 more labels; no generation path pre-collects their items. */
 			assert(rando_item_info(item)->item_class == RANDO_ITEM_CLASS_EVENT &&
 			       "port its setStartingEquipment label");
 			break;
@@ -109,7 +103,6 @@ static void set_starting_equipment(uint8_t *sram, const RandoWorld *world, Rando
 	}
 }
 
-/* InitialSram::setStartingTimer: assigns, little-endian. */
 static void set_starting_timer(uint8_t *sram, uint32_t seconds)
 {
 	uint32_t frames = seconds * 60;
@@ -145,7 +138,6 @@ void rando_rom_write_initial_sram(RomOut *out, const RandoGen *gen)
 	}
 	set_starting_equipment(sram, &gen->world, config->mode_weapons);
 	set_starting_timer(sram, TIMER_START_SECONDS);
-	/* VT tests `crystals.tower === 0`: the menu's '0' is a string, so only a drawn 0 matches. */
 	if (gen->options.crystals_tower == RANDO_CRYSTALS_RANDOM && config->crystals_tower == 0)
 		set_value(sram, 0x2C3, 0x20);
 	rando_rom_emit(out, SRAM_ADDRESS, sram, sizeof sram, "writeInitialSram");

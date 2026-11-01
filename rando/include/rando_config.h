@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* UNSET is VT's absent key (null): `=== 'basic'` and `=== 'advanced'` are then both false. */
 typedef enum RandoItemPlacement {
 	RANDO_PLACEMENT_UNSET,
 	RANDO_PLACEMENT_BASIC,
@@ -81,13 +80,8 @@ typedef enum RandoItemFunctionality {
 	RANDO_ITEM_FUNCTIONALITY_EXPERT,
 } RandoItemFunctionality;
 
-/* VT's null for an integer key read without a default. */
 #define RANDO_CONFIG_NULL (-1)
 
-/* One field per VT world config key the ported code reads, holding VT's value or, when the key
- * is absent, the default the reading code passes to config(). rando_world_init applies the
- * World constructor's derived keys (dungeon_items, logic, item_placement, mode_weapons, item_pool,
- * item_functionality, goal) to its copy; rom_free_item_text and rom_free_item_menu are OR-ed into. */
 typedef struct RandoConfig {
 	RandoState mode_state;
 	RandoWeapons mode_weapons;
@@ -119,7 +113,6 @@ typedef struct RandoConfig {
 	int rom_stun_items;
 	int rom_free_item_text;
 	int rom_free_item_menu;
-	/* item.count.<raw name>; RANDO_CONFIG_NULL is absent, and 0 is an override (VT's `?? default`). */
 	int16_t item_count[RANDO_ITEM_COUNT];
 	bool ignore_can_kill_escape_things;
 	bool shops_hard_mode;
@@ -135,14 +128,12 @@ typedef struct RandoConfig {
 	bool region_swords_in_pool;
 	bool region_pyramid_bow_upgrade;
 	bool region_boss_hearts_in_pool;
-	/* RANDO_ITEM_NONE is VT's false. */
 	RandoItemId region_bosses_have_item;
 	bool region_take_anys;
 	bool rom_catchable_fairies;
 	bool rom_cane_of_byrna_invulnerability;
 	bool rom_silvers_only_at_ganon;
 	bool rom_no_farie_drops;
-	/* rom.dungeonCount === 'pickup'; 'off' otherwise, the only other value any path sets. */
 	bool rom_dungeon_count_pickup;
 	bool rom_rupee_bow;
 	bool rom_generic_keys;
@@ -166,11 +157,9 @@ typedef struct RandoConfig {
 	bool can_bunny_surf;
 	bool can_bunny_revive;
 	bool custom_prize_packs;
-	/* spoil.Hints === 'on'. */
 	bool spoil_hints;
 } RandoConfig;
 
-/* Every key absent, as in a World built with no config. */
 void rando_config_init(RandoConfig *config);
 
 #endif

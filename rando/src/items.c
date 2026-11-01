@@ -444,8 +444,7 @@ bool rando_items_has_health(const RandoItems *items, int minimum_hearts)
 
 int rando_items_heart_count(const RandoItems *items, int initial_quarters)
 {
-	/* VT compares getName(), "PieceOfHeart:<world id>", with 'PieceOfHeart': a Piece of Heart counts
-	 * a full heart here, unlike in hasHealth. */
+	/* A Piece of Heart counts a full heart here, unlike in has_health: VT compares getName(), suffixed. */
 	return initial_quarters + 4 * values_of_class(items, RANDO_ITEM_CLASS_HEALTH);
 }
 

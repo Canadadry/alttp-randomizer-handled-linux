@@ -4,7 +4,6 @@
 #define HINT_ALTS(...) \
 	{(const char *const[]){__VA_ARGS__}, (int)(sizeof(const char *const[]){__VA_ARGS__} / sizeof(const char *))}
 
-/* resources/lang/en/hint.php at 219fcafd, in file order; the boss names no item has are left out. */
 const RandoHintName rando_hint_items[RANDO_ITEM_COUNT] = {
 	[RANDO_ITEM_Nothing] = HINT_PLAIN("Who knows"),
 	[RANDO_ITEM_UncleSword] = HINT_PLAIN("Something Sharp"),
