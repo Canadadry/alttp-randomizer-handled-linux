@@ -88,7 +88,7 @@
     - [x] Chunk 2: screen model
     - [x] Chunk 3: grid renderer, text form and snapshots
     - [x] Chunk 4: SDL-include check
-  - [ ] 3.3 String table (i18n)
+  - [x] 3.3 String table (i18n)
     - [x] Chunk 1: string table module
     - [x] Chunk 2: literal check
   - [ ] 3.4 Generate tab state machine
