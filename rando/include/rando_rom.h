@@ -41,4 +41,8 @@ typedef struct RandoRomBuffer {
  * otherwise refuses the write and copies nothing. */
 bool rando_rom_buffer_write(void *ctx, uint32_t address, const uint8_t *bytes, size_t count, const char *method);
 
+/* VT's Rom::updateChecksum: writes the inverse then the checksum, little-endian, at 0x7FDC. Returns
+ * false and writes nothing unless rom->size is 0x200000 (VT's Rom::SIZE). */
+bool rando_rom_update_checksum(RandoRomBuffer *rom);
+
 #endif

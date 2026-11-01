@@ -61,7 +61,7 @@
     - [x] Chunk 3: replay, claims to all setTotalItemCount
   - [ ] 1.11 Checksum and heart beep
     - [x] Chunk 1: heart beep and whole-log claims
-    - [ ] Chunk 2: checksum
+    - [x] Chunk 2: checksum
     - [ ] Chunk 3: browser defaults
   - [ ] 1.12 skill: check-e2e — whole case list, then e2e-combos
 - [ ] Phase 2 — Full ROM assembly, host only
