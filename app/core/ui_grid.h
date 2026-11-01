@@ -26,7 +26,8 @@ typedef enum UiLineStyle {
 	UI_LINE_TEXT,
 	UI_LINE_INFO,
 	UI_LINE_ERROR,
-	UI_LINE_FOOTER
+	UI_LINE_FOOTER,
+	UI_LINE_STYLE_COUNT
 } UiLineStyle;
 
 typedef struct UiGrid {

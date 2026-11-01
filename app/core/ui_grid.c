@@ -57,6 +57,7 @@ static char style_tag(UiLineStyle style)
 	case UI_LINE_BLANK:
 	case UI_LINE_ROW:
 	case UI_LINE_TEXT:
+	case UI_LINE_STYLE_COUNT:
 		break;
 	}
 	return ' ';

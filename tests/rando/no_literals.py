@@ -1,8 +1,9 @@
-"""Usage: python3 -I no_literals.py DIR
+"""Usage: python3 -I no_literals.py [--no-table] DIR
 
 Fails, naming file and line, when a .c or .h file under DIR holds a string literal with an ASCII
 letter once its escapes are decoded and its printf conversions removed: text shown to the user must
-come from the string table. Proves itself first on planted sources.
+come from the string table. --no-table is for a directory without the table (app/sdl): nothing is
+exempt there. Proves itself first on planted sources.
 """
 
 import os
@@ -223,16 +224,20 @@ def self_proof():
 
 
 def main(argv):
-    if len(argv) != 2:
-        sys.exit("usage: no_literals.py DIR")
+    args = argv[1:]
+    exempt = EXEMPT
+    if args[:1] == ["--no-table"]:
+        args, exempt = args[1:], ()
+    if len(args) != 1:
+        sys.exit("usage: no_literals.py [--no-table] DIR")
     self_proof()
     try:
-        findings = scan(argv[1], EXEMPT)
+        findings = scan(args[0], exempt)
     except ScanError as e:
         sys.exit("literal check: %s" % e)
     if findings:
         print("\n".join(findings), file=sys.stderr)
-        sys.exit("literal check: UI-core text must come from the string table (%s)" % EXEMPT[0])
+        sys.exit("literal check: text shown to the user must come from the string table (%s)" % EXEMPT[0])
 
 
 if __name__ == "__main__":

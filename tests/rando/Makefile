@@ -33,7 +33,9 @@ PATCH_CLI := $(BUILD)/rando_patch
 GEN_DIR := $(BUILD)/o2
 GEN_OBJ := $(patsubst $(RANDO)/src/%.c,$(GEN_DIR)/obj/%.o,$(RANDO_SRC)) $(patsubst $(RANDO)/host/%.c,$(GEN_DIR)/host/%.o,$(HOST_SRC))
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
-APP_MAIN_SRC := $(wildcard $(APP)/main/*.c)
+# The SDL main: built by sdl-pc, never by lint or test (they need no SDL).
+SDL_MAIN := $(APP)/main/sdl_main.c
+APP_MAIN_SRC := $(filter-out $(SDL_MAIN),$(wildcard $(APP)/main/*.c))
 UI_CLI := $(BUILD)/ui_cli
 SMOKE := $(BUILD)/smoke_ui_cli
 
@@ -55,6 +57,17 @@ LINT_OBJ := $(patsubst $(RANDO)/src/%.c,$(LINT_DIR)/%.o,$(RANDO_SRC))
 LINT_APP_DIR := $(BUILD)/lint-app
 LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC) $(APP_MAIN_SRC))
 
+# sdl-pc: the SDL layer, built and tested on the host's SDL 1.2 and SDL_ttf 2.0.
+# The SDL flags are expanded by sdl-pc's rules only, so test never calls pkg-config.
+SDL_TESTS := test_sdl_keys
+SDL_SRC := $(wildcard $(APP)/sdl/*.c)
+SDL_HDR := $(wildcard $(APP)/sdl/*.h)
+SDL_DIR := $(BUILD)/sdl
+SDL_OBJ := $(patsubst $(APP)/sdl/%.c,$(SDL_DIR)/obj/%.o,$(SDL_SRC))
+SDL_BINS := $(addprefix $(SDL_DIR)/,$(SDL_TESTS))
+SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf)
+SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf)
+
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
 # flags (docs/toolchain.md), run under qemu-arm by the same e2e driver.
 TOOLCHAIN := ../../onion-toolchain.sh
@@ -65,20 +78,29 @@ ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
 ARM_UNIT_DIR := $(ARM_DIR)/unit
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
-.PHONY: test ui-cli lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
+.PHONY: test ui-cli sdl-pc sdl-pc-build lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
 
 test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@./$(SMOKE) ./$(UI_CLI)
 	@./selftest.sh discovery
-	@./no_sdl.sh $(APP)/core $(APP)/sd
+	@./no_sdl.sh --exempt $(SDL_MAIN) $(APP)/core $(APP)/sd $(APP)/main
 	@python3 -I ./no_literals.py $(APP)/core
-	@echo "test: $(words $(UNIT_TESTS)) unit tests, the ui_cli smoke test, the discovery self-test, the app SDL check and the UI-core literal check ran"
+	@python3 -I ./no_literals.py --no-table $(APP)/sdl
+	@echo "test: $(words $(UNIT_TESTS)) unit tests, the ui_cli smoke test, the discovery self-test, the app SDL check and the UI-core and SDL-layer literal checks ran"
 
 lint: $(LINT_OBJ) $(LINT_APP_OBJ)
 	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC) $(APP_MAIN_SRC)) app/ sources build with -pedantic-errors"
 
 ui-cli: $(UI_CLI)
+
+sdl-pc:
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf || { echo "setup: SDL 1.2 and SDL_ttf 2.0 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev)" >&2; exit 1; }
+	@$(MAKE) --no-print-directory sdl-pc-build
+
+sdl-pc-build: $(SDL_OBJ) $(SDL_BINS)
+	@set -e; for t in $(SDL_BINS); do SDL_VIDEODRIVER=dummy ./$$t; done
+	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests ran under the dummy video driver"
 
 logic: $(LOGIC_BINS)
 	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
@@ -171,6 +193,14 @@ $(UI_CLI): $(APP)/main/ui_cli.c $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR)
 
 $(SMOKE): unit/smoke_ui_cli.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
+
+$(SDL_DIR)/obj/%.o: $(APP)/sdl/%.c $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) $(SDL_CFLAGS) -c -o $@ $<
+
+$(SDL_DIR)/test_%: sdl/test_%.c unit/support.h $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -I$(APP)/sdl -Iunit $(SDL_CFLAGS) -o $@ $< $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_LIBS)
 
 $(LINT_DIR)/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
