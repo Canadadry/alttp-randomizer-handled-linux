@@ -49,6 +49,12 @@
     - [x] Chunk 3: the six override tables
     - [x] Chunk 4: claims to all credits
   - [ ] 1.9 Port the text, dialog and hints writes
+    - [x] Chunk 1: the encoder
+    - [ ] Chunk 2: the default table and the text group
+    - [ ] Chunk 3: text_tables.txt oracle fixture
+    - [ ] Chunk 4: setTexts strings, hints-off sign, inverted texts
+    - [ ] Chunk 5: hint texts, tablets and pedestal
+    - [ ] Chunk 6: claims to all text
   - [ ] 1.10 Port the initial SRAM writes
   - [ ] 1.11 Checksum and heart beep
   - [ ] 1.12 skill: check-e2e — whole case list, then e2e-combos
