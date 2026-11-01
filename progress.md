@@ -97,7 +97,7 @@
     - [x] Chunk 3: input filter
     - [x] Chunk 4: Generate tab
     - [x] Chunk 5: greying and restore
-  - [ ] 3.5 Generation flow
+  - [x] 3.5 Generation flow
     - [x] Chunk 1: status enum counts and BPS names
     - [x] Chunk 2: shared file helpers
     - [x] Chunk 3: flow state machine
