@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando test-template lint logic selftest e2e e2e-arm check
+.PHONY: help install test test-rando test-template lint logic selftest e2e e2e-combos e2e-arm check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -9,6 +9,7 @@ help:
 	@echo "make logic          unit tests replaying the oracle fixtures (tests/rando/oracle)"
 	@echo "make selftest       the e2e driver's own self-test"
 	@echo "make e2e            every case of tests/rando/cases diffed against its golden"
+	@echo "make e2e-combos     every case of tests/rando/combos diffed against its golden, kept out of e2e"
 	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make check          the net: everything that must be green before a push"
 
@@ -39,9 +40,12 @@ selftest:
 e2e:
 	$(MAKE) -C tests/rando e2e
 
+e2e-combos:
+	$(MAKE) -C tests/rando e2e-combos
+
 # Outside the net: needs docker and qemu-user.
 e2e-arm:
 	$(MAKE) -C tests/rando e2e-arm
 
 # The net. A change that keeps it green is correct; one that breaks it is a bug.
-check: test lint logic selftest e2e
+check: test lint logic selftest e2e e2e-combos

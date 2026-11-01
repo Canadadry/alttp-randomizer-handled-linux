@@ -44,8 +44,10 @@ in `docs/`, then `README.md`.
   `test-template` (the tooling under `.claude/`).
 - `make check` = `test` plus `lint` (`rando/` built with `-std=c99
   -pedantic-errors`), `logic` (unit tests replaying the oracle fixtures),
-  `selftest` (the e2e driver's own self-test) and `e2e` (every case diffed
-  against its golden, one `DIVERGENT <case>` line per failure). Run
+  `selftest` (the e2e driver's own self-test), `e2e` (every case diffed
+  against its golden, one `DIVERGENT <case>` line per failure) and
+  `e2e-combos` (every combination case diffed against its golden, kept out
+  of `e2e`). Run
   `make -k check` to see every failure at once.
 - `make -C tests/rando measure`, outside the net, gives the per-case times
   every later budget is measured against.

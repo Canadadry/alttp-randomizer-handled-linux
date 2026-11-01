@@ -1,9 +1,10 @@
 #!/bin/sh
 # Usage: gen_golden.sh [--fresh] [--out <dir>] [<case>...]
-# Without --out, each case's golden is written back into tests/rando/cases/<case>/, and the logic fixtures
+# A <case> names a directory of tests/rando/cases/ or of tests/rando/combos/; with none, every case of both.
+# Without --out, each case's golden is written back into its own directory, and the logic fixtures
 # (extract_logic.php), the default text table text_default.txt (text_default.php) and the pool fixtures
-# pool_lists.txt and prepared_pools.txt (dump_pools.php, always over every case) into tests/rando/oracle/;
-# with --out, all go under <dir>.
+# pool_lists.txt and prepared_pools.txt (dump_pools.php, always over every case of cases/ only) into
+# tests/rando/oracle/; with --out, all go under <dir>, a combination at <dir>/combos/<case>.
 # Never called by `make test` or `make e2e`: regenerating goldens is a deliberate act (CLAUDE.md).
 set -eu
 export LC_ALL=C
@@ -16,6 +17,7 @@ oracle_dir="$(cd "$(dirname "$0")" && pwd)"
 rando_tests_dir="$(dirname "$oracle_dir")"
 . "$rando_tests_dir/cases.sh"
 cases_dir="$rando_tests_dir/cases"
+combos_dir="$rando_tests_dir/combos"
 vt_dir="${VT_DIR:-$oracle_dir/vt}"
 
 usage() {
@@ -39,7 +41,7 @@ while [ "$#" -gt 0 ]; do
 	shift
 done
 
-names="$(discover_cases "$cases_dir" gen_golden "$@")"
+names="$(locate_cases "$cases_dir" "$combos_dir" gen_golden "$@")"
 if [ -z "$names" ]; then
 	echo "gen_golden: no cases" >&2
 	exit 2
@@ -83,8 +85,11 @@ php "$oracle_dir/prng_check.php" "$vt_dir"
 php "$oracle_dir/extract_logic.php" "$vt_dir" "${out:-$oracle_dir}"
 php "$oracle_dir/text_default.php" "$vt_dir" "${out:-$oracle_dir}"
 
-for name in "$@"; do
-	php "$oracle_dir/gen_case.php" "$vt_dir" "$cases_dir/$name" "${out:-$cases_dir}/$name"
+for dir in "$@"; do
+	name="${dir##*/}"
+	dest="${out:-$cases_dir}/$name"
+	if [ "$dir" = "$combos_dir/$name" ]; then dest="${out:-$rando_tests_dir}/combos/$name"; fi
+	php "$oracle_dir/gen_case.php" "$vt_dir" "$dir" "$dest"
 done
 
 # After the cases: the dump checks its draws against each golden trace, so it must read the ones just written.
@@ -93,7 +98,7 @@ dump_dirs=
 for name in $all_cases; do
 	dir="$cases_dir/$name"
 	for named in "$@"; do
-		if [ "$named" = "$name" ]; then dir="${out:-$cases_dir}/$name"; fi
+		if [ "$named" = "$cases_dir/$name" ]; then dir="${out:-$cases_dir}/$name"; fi
 	done
 	dump_dirs="$dump_dirs $dir"
 done

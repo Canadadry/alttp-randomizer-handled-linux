@@ -47,6 +47,34 @@ out="$(discover_cases "$tmp/missing" prog)" || status=$?
 expect "missing dir status" "$status" 0
 expect "missing dir stdout" "$out" ""
 
+mkdir -p "$tmp/combos/c-0" "$tmp/combos/a-0"
+for c in c-0 a-0; do : >"$tmp/combos/$c/config.json"; done
+
+expect "two-dir listing" "$(locate_cases "$tmp/cases" "$tmp/empty" prog)" \
+	"$tmp/cases/B-2${nl}$tmp/cases/a-0${nl}$tmp/cases/b-1"
+
+expect "two-dir named" "$(locate_cases "$tmp/cases" "$tmp/combos" prog c-0 b-1)" \
+	"$tmp/combos/c-0${nl}$tmp/cases/b-1"
+
+status=0
+out="$(locate_cases "$tmp/cases" "$tmp/combos" prog b-1 a-0 2>"$tmp/err")" || status=$?
+expect "case in both status" "$status" 2
+expect "case in both stdout" "$out" ""
+expect "case in both stderr" "$(cat "$tmp/err")" "prog: case in both cases/ and combos/: a-0"
+
+status=0
+out="$(locate_cases "$tmp/cases" "$tmp/combos" prog c-0 no-config 2>"$tmp/err")" || status=$?
+expect "two-dir unknown status" "$status" 2
+expect "two-dir unknown stdout" "$out" ""
+expect "two-dir unknown stderr" "$(cat "$tmp/err")" "prog: no such case: no-config"
+
+rm -r "$tmp/combos/a-0"
+expect "two-dir full listing" "$(locate_cases "$tmp/cases" "$tmp/combos" prog)" \
+	"$tmp/cases/B-2${nl}$tmp/cases/a-0${nl}$tmp/cases/b-1${nl}$tmp/combos/c-0"
+
+expect "two-dir missing combos" "$(locate_cases "$tmp/cases" "$tmp/missing" prog)" \
+	"$tmp/cases/B-2${nl}$tmp/cases/a-0${nl}$tmp/cases/b-1"
+
 echo "selftest: discovery passed"
 if [ "${1:-}" = discovery ]; then exit 0; fi
 

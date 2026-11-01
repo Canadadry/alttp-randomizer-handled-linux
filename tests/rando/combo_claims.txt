@@ -1,0 +1,4 @@
+# One claim per line: `<case> <stage>` (the C trace matches the golden up to
+# that stage's last attempt-0 draw) or `<case> all` (trace, attempts and
+# spoiler.json match). <stage> is a stage of stages.txt with a draw in the
+# case's attempt 0. An unclaimed case is PENDING.

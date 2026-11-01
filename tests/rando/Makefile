@@ -44,7 +44,7 @@ ARM_DIR := $(BUILD)/arm
 ARM_GEN := $(ARM_DIR)/rando_gen
 ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
 
-.PHONY: test lint logic selftest e2e e2e-arm measure clean
+.PHONY: test lint logic selftest e2e e2e-combos e2e-arm measure clean
 
 test: $(UNIT_BINS)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -63,6 +63,10 @@ selftest:
 
 e2e: $(GEN)
 	@./run_e2e.sh
+
+e2e-combos: $(GEN)
+	@echo "e2e-combos: the combination cases"
+	@RANDO_CASES="$(CURDIR)/combos" RANDO_CLAIMS="$(CURDIR)/combo_claims.txt" ./run_e2e.sh
 
 # -static: qemu-arm then needs no copy of the image's sysroot (-L).
 # The wrapper exists because run_e2e.sh runs RANDO_GEN as one word.
