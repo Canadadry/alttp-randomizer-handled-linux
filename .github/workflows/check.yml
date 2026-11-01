@@ -1,0 +1,12 @@
+name: check
+
+# Manual only for now; add `push:` and `pull_request:` to turn it on.
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -k check

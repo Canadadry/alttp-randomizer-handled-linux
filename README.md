@@ -1,45 +1,33 @@
-# Template
+# ALttPR on Miyoo
 
-A project template for working with Claude Code: a set of skills that take a
-change from a conversation to a pushed, verified branch — planning, PRDs,
-test-driven implementation, bug fixing with proven causes, and commits.
+An on-device *A Link to the Past Randomizer* seed generator for the **Miyoo
+Mini Flip running OnionOS**: an Onion app, driven by the d-pad, that reads
+your Japanese 1.0 ROM, generates a seed with every alttpr.com setting, and
+writes a patched `.sfc` you play with Onion's own SNES core. One seed is one
+ROM, so each seed keeps its own save. A History tab lists the seeds and
+deletes a seed's ROM, save and save states. A PC build (SDL) shows the same
+app on Linux and macOS.
 
-## Quickstart
+The generator is a C port of VT (`sporchia/alttp_vt_randomizer`, frozen at
+`219fcafd`), checked against VT itself. No Nintendo ROM is ever in this
+repository.
 
-1. Create a repository from this template and clone it.
-2. Open Claude Code at its root and run:
+Status: being built; see the plan in `docs/`.
 
-   ```
-   /setup
-   ```
+## Development
 
-   It asks a few questions, one at a time (the project, its stack and
-   tools), then scaffolds a minimal skeleton with one passing test, wires
-   `make test` and `make check`, fills `CLAUDE.md`, trims what you don't
-   need, proves both targets green, commits, and removes itself.
-3. Start your first piece of work, in a new session:
+Needs only `gcc`, `make` and `python3`; nothing to install.
 
-   ```
-   /grill-me <what you want to build>
-   ```
+```bash
+make test
+```
 
-## Conventions the skills rely on
+```bash
+make check
+```
 
-| What | Where |
-|------|-------|
-| `make test` — the fast loop: unit tests, on the host, in seconds | `Makefile`, `CLAUDE.md` § Checks |
-| `make check` — the net: everything that must be green before a push | `Makefile`, `CLAUDE.md` § Checks |
-| Project rules every change must respect | `CLAUDE.md` § Ground rules |
-| Plans, PRDs | `docs/plan-<N>.md`, `docs/prd/triage/` |
-| A running plan's checklist | `progress.md` at the root, guarded by a hook `plan-pilot` installs |
-| Branch names: `<type>/<short-topic>` or `plan-<N>-<topic>`, never `claude/*` | `CLAUDE.md` § Branches, enforced by `.claude/hooks/no_claude_branch.sh` |
-| The template's own tooling and its tests (`make test-template`) | `.claude/` only: the project's tree stays the project's |
-| Throwaway files | `tmp/` (git-ignored) |
-
-`.claude/settings.json` denies merging pull requests (merging is the
-owner's job) and `AskUserQuestion` (unattended runs must never block on a
-question: a `guideline` agent answers instead), and installs the pre-push
-hook at the start of every session.
+`make test` is the fast loop (unit tests); `make check` is everything that
+must be green before a push.
 
 ## Working with Claude
 
@@ -47,7 +35,6 @@ hook at the start of every session.
 
 | Skill | Use it to |
 |-------|-----------|
-| `/setup` | Bootstrap a new, empty project made from this template (once) |
 | `/grill-me` | Get interviewed about a plan or design until every decision is made |
 | `/plan-write` | Turn that conversation into `docs/plan-<N>.md` |
 | `/plan-converge <plan>` | Sharpen the plan with review rounds until they come back empty |
