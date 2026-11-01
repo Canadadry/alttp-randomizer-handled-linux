@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+>| Glitches            < Major Glitches > |
+ | Item Placement                 Basic   |
+ | Dungeon Items              Keysanity   |
+ | Accessibility         100% Locations   |
+ | Goal                   Completionist   |
+ | Tower Crystals                     0   |
+ | Ganon Crystals                Random   |
+ | World State                 Inverted   |
+ | Swords                     Swordless   |
+ | Item Pool              Crowd Control   |
+ | Item Functionality            Expert  v|
+ |                                        |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

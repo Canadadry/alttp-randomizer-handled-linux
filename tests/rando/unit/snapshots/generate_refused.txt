@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+x| Goal           Master Sword Pedestal  ^|
+ | Tower Crystals                     7   |
+ | Ganon Crystals                     7   |
+x| World State                    Retro   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal   |
+ | Hints                             On   |
+ | Heart Beep                Half Speed   |
+ | Spoiler in History               Off   |
+X| Generate Seed                          |
+E| Not supported with Goal                |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

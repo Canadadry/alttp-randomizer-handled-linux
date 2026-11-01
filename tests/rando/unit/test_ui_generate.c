@@ -1,3 +1,6 @@
+#define _POSIX_C_SOURCE 200809L
+
+#include "rando_last_settings.h"
 #include "rando_settings.h"
 #include "support.h"
 #include "ui_generate.h"
@@ -6,7 +9,9 @@
 #include "ui_strings.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define TEST "test_ui_generate"
 
@@ -255,6 +260,144 @@ static void test_snapshots(void)
 	test_snapshot(TEST, SNAPSHOTS "generate_spoiler_on.txt", render());
 }
 
+/* state retro with goal pedestal, injected: the library's list is empty. */
+static const RandoSettingPair retro_pedestal[] = {
+	{RANDO_SETTING_STATE, RANDO_OPTION_STATE_RETRO, RANDO_SETTING_GOAL, RANDO_OPTION_GOAL_PEDESTAL},
+};
+
+static void init_with_pair(bool goal_pedestal)
+{
+	UiGenerateInit init;
+
+	ui_generate_init_defaults(&init, ui_str_english(), UI_GRID_DEFAULT_LINES - 4);
+	init.options.state = RANDO_OPTION_STATE_RETRO;
+	if (goal_pedestal)
+		init.options.goal = RANDO_OPTION_GOAL_PEDESTAL;
+	init.unsupported = retro_pedestal;
+	init.unsupported_count = 1;
+	ui_generate_init(&gen, &init);
+}
+
+static void test_library_list_by_default(void)
+{
+	UiGenerateInit init;
+
+	ui_generate_init_defaults(&init, NULL, 11);
+	CHECK(init.unsupported_count == rando_setting_unsupported_count());
+	CHECK(!init.settings_unreadable);
+}
+
+static void test_greying(void)
+{
+	RandoOptions options;
+	RandoHeartBeep heart_beep;
+	bool spoiler;
+
+	init_with_pair(true);
+	keys(UI_BUTTON_DOWN, RANDO_SETTING_GOAL);
+	test_snapshot(TEST, SNAPSHOTS "generate_greyed_goal.txt", render());
+	keys(UI_BUTTON_DOWN, RANDO_SETTING_STATE - RANDO_SETTING_GOAL);
+	test_snapshot(TEST, SNAPSHOTS "generate_greyed_state.txt", render());
+	init_with_pair(true);
+	keys(UI_BUTTON_UP, 1);
+	test_snapshot(TEST, SNAPSHOTS "generate_greyed_action.txt", render());
+	CHECK(key(UI_BUTTON_START) == UI_GENERATE_NONE);
+	test_snapshot(TEST, SNAPSHOTS "generate_refused.txt", render());
+	CHECK(key(UI_BUTTON_A) == UI_GENERATE_NONE);
+	test_snapshot(TEST, SNAPSHOTS "generate_refused.txt", render());
+	keys(UI_BUTTON_X, 1);
+	test_snapshot(TEST, SNAPSHOTS "generate_greyed_action.txt", render());
+
+	/* A greyed row still changes, and leaving the pair un-greys everything. */
+	init_with_pair(true);
+	keys(UI_BUTTON_DOWN, RANDO_SETTING_GOAL);
+	keys(UI_BUTTON_RIGHT, 1);
+	ui_generate_settings(&gen, &options, &heart_beep, &spoiler);
+	CHECK(options.goal == RANDO_OPTION_GOAL_TRIFORCE_HUNT);
+	CHECK(key(UI_BUTTON_START) == UI_GENERATE_GENERATE);
+
+	init_with_pair(false);
+	keys(UI_BUTTON_DOWN, RANDO_SETTING_STATE);
+	test_snapshot(TEST, SNAPSHOTS "generate_pair_not_holding.txt", render());
+	CHECK(key(UI_BUTTON_START) == UI_GENERATE_GENERATE);
+}
+
+static char dir[64], path[128];
+
+static void make_dir(void)
+{
+	strcpy(dir, "/tmp/test_ui_generate_XXXXXX");
+	if (mkdtemp(dir) == NULL)
+		test_fail(TEST, "mkdtemp failed");
+	snprintf(path, sizeof path, "%s/settings.json", dir);
+}
+
+static void remove_dir(void)
+{
+	remove(path);
+	rmdir(dir);
+}
+
+/* Loads path as the app's start does and opens the tab on it. */
+static void init_from_file(RandoLastSettingsStatus expected)
+{
+	UiGenerateInit init;
+	RandoLastSettingsStatus status;
+
+	ui_generate_init_defaults(&init, ui_str_english(), UI_GRID_DEFAULT_LINES - 4);
+	init.options.goal = RANDO_OPTION_GOAL_DUNGEONS;
+	status = rando_last_settings_load(path, &init.options, &init.heart_beep);
+	CHECK(status == expected);
+	init.settings_unreadable = status == RANDO_LAST_SETTINGS_INVALID;
+	ui_generate_init(&gen, &init);
+}
+
+static void test_restore(void)
+{
+	RandoOptions o, options;
+	RandoHeartBeep heart_beep;
+	bool spoiler;
+	FILE *f;
+
+	rando_options_init(&o);
+	o.glitches = RANDO_GLITCHES_MAJOR_GLITCHES;
+	o.item_placement = RANDO_OPTION_PLACEMENT_BASIC;
+	o.dungeon_items = RANDO_OPTION_DUNGEON_ITEMS_FULL;
+	o.accessibility = RANDO_OPTION_ACCESSIBILITY_LOCATIONS;
+	o.goal = RANDO_OPTION_GOAL_COMPLETIONIST;
+	o.crystals_tower = RANDO_CRYSTALS_0;
+	o.crystals_ganon = RANDO_CRYSTALS_RANDOM;
+	o.state = RANDO_OPTION_STATE_INVERTED;
+	o.weapons = RANDO_OPTION_WEAPONS_SWORDLESS;
+	o.item_pool = RANDO_ITEM_POOL_CROWD_CONTROL;
+	o.item_functionality = RANDO_ITEM_FUNCTIONALITY_EXPERT;
+	o.hints = false;
+	make_dir();
+	CHECK(rando_last_settings_save(path, &o, RANDO_HEART_BEEP_NORMAL));
+	init_from_file(RANDO_LAST_SETTINGS_LOADED);
+	test_snapshot(TEST, SNAPSHOTS "generate_restored.txt", render());
+	keys(UI_BUTTON_UP, 1);
+	test_snapshot(TEST, SNAPSHOTS "generate_restored_end.txt", render());
+	ui_generate_settings(&gen, &options, &heart_beep, &spoiler);
+	CHECK(memcmp(&options, &o, sizeof o) == 0);
+	CHECK(heart_beep == RANDO_HEART_BEEP_NORMAL && !spoiler);
+	remove_dir();
+
+	make_dir();
+	init_from_file(RANDO_LAST_SETTINGS_MISSING);
+	test_snapshot(TEST, SNAPSHOTS "generate_initial.txt", render());
+	f = fopen(path, "wb");
+	CHECK(f != NULL);
+	fputs("{\"goal\": \"pedestal\"}\n", f);
+	fclose(f);
+	init_from_file(RANDO_LAST_SETTINGS_INVALID);
+	test_snapshot(TEST, SNAPSHOTS "generate_notice.txt", render());
+	keys(UI_BUTTON_DOWN, 1);
+	keys(UI_BUTTON_UP, 1);
+	test_snapshot(TEST, SNAPSHOTS "generate_initial.txt", render());
+	remove_dir();
+}
+
 int main(int argc, char **argv)
 {
 	test_fixtures_mode(TEST, argc, argv);
@@ -264,6 +407,9 @@ int main(int argc, char **argv)
 	test_init_from_settings();
 	test_every_row_and_value();
 	test_snapshots();
+	test_library_list_by_default();
+	test_greying();
+	test_restore();
 	printf("%s: passed\n", TEST);
 	return 0;
 }

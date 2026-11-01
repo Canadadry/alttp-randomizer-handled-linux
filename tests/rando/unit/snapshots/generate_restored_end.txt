@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+ | Goal                   Completionist  ^|
+ | Tower Crystals                     0   |
+ | Ganon Crystals                Random   |
+ | World State                 Inverted   |
+ | Swords                     Swordless   |
+ | Item Pool              Crowd Control   |
+ | Item Functionality            Expert   |
+ | Hints                            Off   |
+ | Heart Beep              Normal Speed   |
+ | Spoiler in History               Off   |
+>| Generate Seed                          |
+ |                                        |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

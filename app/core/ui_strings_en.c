@@ -85,6 +85,8 @@ static const UiStrTable english = { {
 	[UI_STR_GENERATE_TITLE] = "Seed Settings",
 	[UI_STR_GENERATE_ACTION] = "Generate Seed",
 	[UI_STR_GENERATE_FOOTER] = "</> Change  Y Default  START Generate",
+	[UI_STR_GENERATE_UNSUPPORTED] = "Not supported with {}",
+	[UI_STR_GENERATE_SETTINGS_UNREADABLE] = "Saved settings unreadable: defaults",
 } };
 
 const UiStrTable *ui_str_english(void)
