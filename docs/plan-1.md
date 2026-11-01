@@ -182,3 +182,19 @@ CI is manual-only (`workflow_dispatch`) until the owner turns it on: each step's
 2. Whether the app's UI core and host tools live under `rando/host/` or a new top-level `app/` directory: decide when the repository exists.
 
 ## 6. Step notes
+
+### Step 0.1
+
+Outcome (b): no archived copy of the `edc01f3d…` BPS was found. `https://alttpr.com/bps/edc01f3db798ae4dfe21101311598d44.bps` still returns 404; the Wayback Machine's availability API reports no snapshot of that URL (with or without scheme, any timestamp); its CDX index and `web.archive.org` itself are blocked by this session's egress policy; a GitHub code search for the hash finds only VT's `app/Rom.php`. `data/base.bps` is not committed; Phase 4 step 2's gate waits on it.
+
+The user builds it (asar and flips on a PC, with their JP 1.0 ROM `jp.sfc`, headerless, MD5 `03a63945398191337e896e5771f77173`):
+
+```
+git clone https://github.com/KatDevsGames/z3randomizer && git -C z3randomizer checkout dcb0a2b42d14445f7994a0e9e4d63cbecf4b98d3
+cp jp.sfc work.sfc && truncate -s 2097152 work.sfc     # zero-padded, as VT's resizeUint8
+(cd z3randomizer && asar --fix-checksum=off LTTP_RND_GeneralBugfixes.asm ../work.sfc)
+md5sum work.sfc                                         # must print edc01f3db798ae4dfe21101311598d44
+flips --create --bps jp.sfc work.sfc base.bps           # source: the unresized 1 MiB jp.sfc
+```
+
+The BPS source is the unresized 1 MiB ROM because VT's browser applies it to `originalData`, the file as loaded before `resize` (`resources/js/rom.js` `parseBaseBPS`), and `resources/js/bps.ts` `applyPatch` rejects any source whose CRC32 differs from the patch's. The user then commits `base.bps` as `data/base.bps` and confirms here that `work.sfc`'s MD5 is `edc01f3d…`. Phase 1 does not need it.

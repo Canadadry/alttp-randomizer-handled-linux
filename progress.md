@@ -1,5 +1,5 @@
-- [ ] Phase 0 — The one input the agent cannot make
-  - [ ] 0.1 Obtain the base patch for build edc01f3d
+- [x] Phase 0 — The one input the agent cannot make
+  - [x] 0.1 Obtain the base patch for build edc01f3d
 - [ ] Phase 1 — The ROM writer matches VT, host only
   - [ ] 1.1 Take over the randomizer from alttp-ds
   - [ ] 1.2 The oracle runs the post-fill code and records the write log
