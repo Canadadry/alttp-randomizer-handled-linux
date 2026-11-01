@@ -48,7 +48,7 @@
     - [x] Chunk 2: encoder, scenes and picks
     - [x] Chunk 3: the six override tables
     - [x] Chunk 4: claims to all credits
-  - [ ] 1.9 Port the text, dialog and hints writes
+  - [x] 1.9 Port the text, dialog and hints writes
     - [x] Chunk 1: the encoder
     - [x] Chunk 2: the default table and the text group
     - [x] Chunk 3: text_tables.txt oracle fixture
