@@ -37,7 +37,7 @@
     - [x] Chunk 1: item tables and the plain walk
     - [x] Chunk 2: setting-dependent rules, Hera byte, alternate bow
     - [x] Chunk 3: claims to all items
-  - [ ] 1.7 Port the settings and flags writes
+  - [x] 1.7 Port the settings and flags writes
     - [x] Chunk 1: config keys
     - [x] Chunk 2: settings source and config-only rows
     - [x] Chunk 3: world-dependent rows
