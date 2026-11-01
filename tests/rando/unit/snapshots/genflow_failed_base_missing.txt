@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Generation Failed                      |
+ | Needs App/ALttPR/base.sfc (JP 1.0)     |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+E| Base ROM not found                     |
+_| A Back                                 |
+ +----------------------------------------+

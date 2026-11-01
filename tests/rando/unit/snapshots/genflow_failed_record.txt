@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Generation Failed                      |
+ | Check that the SD card is writable     |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+E| History record write failed            |
+_| A Back                                 |
+ +----------------------------------------+

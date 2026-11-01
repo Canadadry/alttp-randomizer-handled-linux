@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Generation Failed                      |
+ | Check that the SD card is writable     |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+E| Could not create the ROM folders       |
+_| A Back                                 |
+ +----------------------------------------+

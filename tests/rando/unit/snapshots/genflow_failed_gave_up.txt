@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Generation Failed                      |
+ | Press A and generate again             |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+E| Generator gave up on this seed         |
+_| A Back                                 |
+ +----------------------------------------+
