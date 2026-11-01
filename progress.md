@@ -33,7 +33,7 @@
     - [x] Chunk 1: rando_rom skeleton, buffer and log writers
     - [x] Chunk 2: write_groups.txt and write-log claims
     - [x] Chunk 3: check-e2e update, e2e-arm run
-  - [ ] 1.6 Port the items and locations writes
+  - [x] 1.6 Port the items and locations writes
     - [x] Chunk 1: item tables and the plain walk
     - [x] Chunk 2: setting-dependent rules, Hera byte, alternate bow
     - [x] Chunk 3: claims to all items
