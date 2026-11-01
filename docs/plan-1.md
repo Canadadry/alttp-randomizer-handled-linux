@@ -296,3 +296,9 @@ Took over `rando/` and `tests/rando/` verbatim from `Canadadry/alttp-ds` `8d7725
 ### Step 1.12
 
 `skill: check-e2e` over the whole case list: `make -C tests/rando e2e` 50 pass, `make -C tests/rando e2e-combos` 23 pass, every claim `all heart_beep` (trace, `attempts`, `spoiler.json` and the whole write log): E2E-GREEN on the first run, no `fix:` commit. `make e2e-arm` (Onion toolchain, static ARM EABI5, qemu-arm 8.2.2): 50 pass, write logs included.
+
+### Step 2.1
+
+- **Modules** (`rando_crc32.h`/`crc32.c`, `rando_bps.h`/`bps.c`, no allocation, no state): zlib's CRC32 over a constant table; `rando_bps_read_header` (magic, VT's `decodeBPS` numbers with overflow and footer bounds, metadata skipped, three footer CRC32s, patch CRC32) and `rando_bps_apply` (source size then CRC32, capacity, VT's four actions with separate SourceCopy/TargetCopy offsets, exactly the declared target size, target CRC32). Deliberate departures from VT, all rejections that a flips patch never hits: source size must equal the header's, the declared target size is authoritative, any out-of-range access or runaway number is MALFORMED.
+- **Target is its own buffer** (plan review): the source is only read; a test has a SourceCopy back below the output offset after a TargetRead overwrote it, and the output holds the source's bytes. The overlap ban is a stated contract, not checked at run time.
+- **Tests:** `test_crc32` (`""`, `"a"`, `"123456789"`, 0..255 → `29058C73`, from Python's `zlib`), `test_bps` (header sizes incl. `00 7F BE`/`00 7F FE` → 1,048,576/2,097,152, one patch per action and per fault, order tests, a 31-byte literal patch whose CRC32s were computed with `zlib.crc32`); six mutations of the applier each caught. Hypotheses about steps 1.11–1.12 held (no CRC/MD5/BPS code existed; registration unchanged).
