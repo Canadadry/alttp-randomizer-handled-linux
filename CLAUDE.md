@@ -78,6 +78,11 @@ in `docs/`, then `README.md`.
   every later budget is measured against, the whole pipeline's time
   (`rando_assemble` on the synthetic base) and its Cortex-A7 projection
   against the ~10 s line.
+- `make -C tests/rando measure-compare`, outside the net, times the current
+  generator against a throwaway worktree of `40314c3`
+  (`tmp/measure-ref-40314c3`), interleaved per case, full and stopped after
+  `fill`, with ±10% verdicts; a reference that does not build is a `setup:`
+  line.
 - `make e2e-arm`, outside the net, builds the generator with Onion's pinned
   toolchain (`onion-toolchain.sh`, `docs/toolchain.md`) and runs the e2e
   cases on it under `qemu-arm`. `make unit-arm`, outside the net too, builds

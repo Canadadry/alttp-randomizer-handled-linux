@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-arm patch-header check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-arm patch-header measure-compare check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -17,6 +17,7 @@ help:
 	@echo "make sdl-pc         the SDL PC build, its SDL tests and headless smoke test (needs libsdl1.2-dev, libsdl-ttf2.0-dev)"
 	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
 	@echo "make patch-header   the base patch's declared sizes checked (BPS=<file>, default data/base.bps), kept out of check"
+	@echo "make measure-compare the generator timed against a worktree of 40314c3, interleaved, +-10% verdicts, kept out of check"
 	@echo "make check          the net: everything that must be green before a push"
 
 install:
@@ -73,6 +74,10 @@ sdl-arm:
 # Outside the net until data/base.bps exists. BPS is relative to this directory.
 patch-header:
 	$(MAKE) -C tests/rando patch-header $(if $(BPS),BPS=$(abspath $(BPS)))
+
+# Outside the net: creates or reuses tmp/measure-ref-40314c3.
+measure-compare:
+	$(MAKE) -C tests/rando measure-compare
 
 # The net. A change that keeps it green is correct; one that breaks it is a bug.
 check: test lint logic selftest e2e e2e-combos

@@ -48,6 +48,8 @@ MEASURE_SYNTH_OBJ := $(MEASURE)/host-O2/unit/support.o $(MEASURE)/host-O2/unit/s
 MEASURE_BIN := $(MEASURE)/rando_measure
 MEASURE_SWEEP ?= 1024
 MEASURE_REPS ?= 5
+REF_COMMIT ?= 40314c3
+REF_DIR ?= $(abspath ../../tmp/measure-ref-$(REF_COMMIT))
 
 # patch-header: the base patch whose header test_patch_header --file checks.
 BPS ?= ../../data/base.bps
@@ -82,7 +84,7 @@ ARM_SDL_DIR := $(ARM_DIR)/sdl
 ARM_SDL_APP := $(ARM_SDL_DIR)/alttpr
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
-.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-arm lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
+.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-arm lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
 
 test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -260,6 +262,18 @@ $(PATCH_CLI): $(RANDO)/host/main/rando_patch.c $(GEN_OBJ) $(RANDO_HDR) $(HOST_HD
 
 measure: $(MEASURE_OBJ) $(MEASURE_OS_OBJ) $(MEASURE_PROBE) $(MEASURE_BIN)
 	@CC='$(CC)' MEASURE_DIR='$(MEASURE)' MEASURE_SWEEP='$(MEASURE_SWEEP)' MEASURE_REPS='$(MEASURE_REPS)' ./measure.sh
+
+# The reference's own measure.sh fails on a clang host: only its driver is built.
+measure-compare: $(MEASURE_BIN)
+	@mkdir -p $(MEASURE)
+	@if [ ! -e '$(REF_DIR)' ]; then \
+		git -C ../.. worktree add --detach '$(REF_DIR)' '$(REF_COMMIT)' >$(MEASURE)/ref-setup.log 2>&1 || \
+		{ echo "setup: cannot build the reference driver at $(REF_COMMIT) ($$(tail -n 1 $(MEASURE)/ref-setup.log))"; exit 1; }; \
+	fi
+	@REF_DIR='$(REF_DIR)' REF_COMMIT='$(REF_COMMIT)' ./measure_compare.sh --guard
+	@$(MAKE) --no-print-directory -C '$(REF_DIR)/tests/rando' CC='$(CC)' build/measure/rando_measure >$(MEASURE)/ref-build.log 2>&1 || \
+		{ echo "setup: cannot build the reference driver at $(REF_COMMIT) ($$(tail -n 1 $(MEASURE)/ref-build.log))"; exit 1; }
+	@CC='$(CC)' MEASURE_DIR='$(MEASURE)' REF_DIR='$(REF_DIR)' REF_COMMIT='$(REF_COMMIT)' ./measure_compare.sh
 
 $(MEASURE)/host-O2/obj/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
