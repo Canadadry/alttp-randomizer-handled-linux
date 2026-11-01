@@ -372,3 +372,11 @@ Took over `rando/` and `tests/rando/` verbatim from `Canadadry/alttp-ds` `8d7725
 - **SD** (`app/sd/rando_history.h`): scan, spoiler read, delete; the delete status table sized by its enum's count.
 - **Tests:** `test_record` outline cases and `--fixtures` on all 73, `test_ui_history` (fakes, 12 snapshots), `test_history` (temporary trees: every file removed and every look-alike kept, each failure and retry, end to end with 4 snapshots, the hand-removed ROM). Fix found by `unit-arm`: Onion's gcc refused a path `snprintf` under `-Werror=format-truncation`. `make unit-arm`: 44 unit tests + 12 fixture replays. Clean `make test`: ~12 s.
 - H-3.5 hypotheses held (H-3.5-3: the inline cache removal became the shared function; H-3.5-9: there is no shell yet — step 3.7 adds the app state that rescans after a generation).
+
+### Step 3.7
+
+- **App state** (`app/core/ui_app.h`): owns the input filter, the Generate tab, the generation flow and the History tab; L1/R1 switch tabs keeping each view; a pending/run pair so the shell draws Generating before the blocking run; an ok run rescans History while staying on Generate; quit latches. Not in the plan's text, added because nothing composed the tabs and the device main needs the same thing.
+- **SD wiring** (`app/sd/rando_app_shell.h`): one root for the runner and the History store, last settings loaded (notice on a bad file), creates nothing; the runner's defaults are the device's.
+- **`ui_cli`** (`app/main/ui_cli.c`, `make ui-cli`): `ui_cli --sd <root> [--every] [--cols] [--lines] [--seed] [--date] [--source-md5] [--base-md5] <key>...`, 15 key names, `name*N`, `-` for stdin; usage errors exit 2, an unusable root 1. Links `$(APP_LIB) $(HOST_LIB) $(RANDO_LIB)` only; a clean `make test` builds no `-O2` object. `app/main` is linted, kept out of `unit-arm` and `no_sdl.sh` (the SDL main will live there).
+- **Tests:** `test_ui_app` (fakes, two snapshots), `test_app_shell` (temporary trees; a generation's seed tops History in the same session), `smoke_ui_cli` in `make test` (generate and find, find at next start, delete, every key, early quit, usage errors, long root). Clean `make test`: 12.1 s median before, 11.9 s after.
+- H-3.6 hypotheses held.

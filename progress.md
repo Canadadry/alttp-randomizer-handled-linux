@@ -79,7 +79,7 @@
     - [x] Chunk 2: record writer
     - [x] Chunk 3: record reader and round-trip
     - [x] Chunk 4: save call
-- [ ] Phase 3 — Onion facts, then the app's UI core and text renderer, host only
+- [x] Phase 3 — Onion facts, then the app's UI core and text renderer, host only
   - [x] 3.1 Confirm the Onion specifics from Onion's sources
     - [x] Chunk 1: Onion facts in docs/onion.md
     - [x] Chunk 2: checked against the plan
@@ -109,7 +109,7 @@
     - [x] Chunk 3: SD scan and spoiler reading
     - [x] Chunk 4: delete and its file set
     - [x] Chunk 5: end to end
-  - [ ] 3.7 ui_cli
+  - [x] 3.7 ui_cli
     - [x] Chunk 1: app state
     - [x] Chunk 2: SD wiring
     - [x] Chunk 3: ui_cli, build and smoke test
