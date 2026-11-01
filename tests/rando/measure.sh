@@ -289,6 +289,10 @@ sweep="${MEASURE_SWEEP:-1024}"
 stack_budget=8192
 time_budget_us=13000
 ds_factor=150
+a7_factor_lo=20
+a7_factor_hi=50
+sd_allowance_ms=1500
+device_line_ms=10000
 [ -x "$driver" ] || die "missing driver: $driver (run make measure)"
 stage_list="$(awk '$1 == "stage" { print $2 }' "$stages_file")"
 [ -n "$stage_list" ] || die "no stage in $stages_file"
@@ -338,6 +342,25 @@ for c in $case_names; do
 done
 "$driver" cases "$reps" $case_dirs >"$dir/cases.out" 2>"$dir/driver.err" ||
 	die "stack self-check or case run failed: $(cat "$dir/driver.err")"
+
+"$driver" cases-until fill 1 "$cases_dir/baseline" >"$dir/until.out" 2>"$dir/driver.err" ||
+	die "stop-after-fill run failed: $(cat "$dir/driver.err")"
+awk -v stages="$(echo $stage_list)" '
+FILENAME == ARGV[1] && $2 == "baseline" {
+	n = split(stages, s, " "); split($6, v, "/")
+	for (i = 1; i <= n; i++) { want += v[i]; if (s[i] == "fill") { found = 1; break } }
+	next
+}
+FILENAME == ARGV[1] { next }
+$1 == "case" && $2 == "baseline" { st = $3; att = $4; draws = $5; seen = 1 }
+END {
+	if (!found) { print "no fill stage in the baseline golden"; exit 1 }
+	if (!seen || st != "incomplete" || att != 0 || draws != want) {
+		printf "baseline cases-until fill is %s at attempt %s with %s draws, expected incomplete at attempt 0 with %d draws\n", st, att, draws, want
+		exit 1
+	}
+}' "$dir/golden" "$dir/until.out" >"$dir/until-check" ||
+	die "stop-after-fill self-check failed: $(cat "$dir/until-check")"
 
 ratio_build=
 for b in arm-dkp arm-clang; do
@@ -426,9 +449,12 @@ END {
 	printf "host-O2.cases.differs %d cases%s\n", nd, dl
 	printf "host-O2.cases.time.max %d us budget %d%s\n", tmax, budget, (tmax > budget ? " over" : "")
 	printf "host-O2.cases.time.max-case %s\n", tat
-	if (c_st["baseline"] != "complete" || c_att["baseline"] != 0 || c_draws["baseline"] != 805)
-		printf "WARNING: baseline C run is %s at attempt %d with %d draws, expected complete at attempt 0 with 805 draws\n", c_st["baseline"], c_att["baseline"], c_draws["baseline"]
+	if (c_st["baseline"] != "complete" || c_att["baseline"] != 0 || c_draws["baseline"] != g_draws["baseline"])
+		printf "WARNING: baseline C run is %s at attempt %d with %d draws, expected complete at attempt 0 with %d draws\n", c_st["baseline"], c_att["baseline"], c_draws["baseline"], g_draws["baseline"]
 }' "$dir/golden" "$dir/cases.out"
+max_case="$(awk '$1 == "host-O2.cases.time.max-case" { print $2 }' "$report")"
+max_us="$(awk '$1 == "host-O2.cases.time.max" { print $2 }' "$report")"
+[ -n "$max_case" ] && [ -n "$max_us" ] || die "no slowest case in section 6"
 
 echo
 echo "== 7. Seed sweep =="
@@ -463,4 +489,36 @@ END {
 	printf "host-O2.sweep.time.max-seed %d\n", tat
 	printf "ds.time.projected.median %d ms (host x %d, A-3)\n", int(med * factor / 1000 + 0.5), factor
 	printf "ds.time.projected.max %d ms budget 2000%s (host x %d, A-3)\n", int(mx * factor / 1000 + 0.5), (mx * factor / 1000 > 2000 ? " over" : ""), factor
+}'
+
+echo
+echo "== 8. Pipeline =="
+pipeline_cases=baseline
+[ "$max_case" = baseline ] || pipeline_cases="baseline $max_case"
+pipeline_dirs=
+for c in $pipeline_cases; do
+	pipeline_dirs="$pipeline_dirs $cases_dir/$c"
+done
+"$driver" assemble "$reps" $pipeline_dirs >"$dir/assemble.out" 2>"$dir/driver.err" ||
+	die "pipeline run failed: $(cat "$dir/driver.err")"
+for c in $pipeline_cases; do
+	awk -v c="$c" '$1 == "assemble" && $2 == c && $3 == "ok" && $4 == 2097152 { found = 1 } END { exit !found }' "$dir/assemble.out" ||
+		die "pipeline self-check failed: $c is not ok with one 2097152-byte image: $(cat "$dir/assemble.out")"
+done
+awk '$1 == "assemble" { printf "host-O2.assemble.%s.time %d us median\n", $2, int($5 / 1000 + 0.5) }' "$dir/assemble.out"
+echo "host-O2.assemble.note synthetic base patch: its apply time is a lower bound"
+pipe_us="$(awk -v c="$max_case" '$1 == "assemble" && $2 == c { print int($5 / 1000 + 0.5) }' "$dir/assemble.out")"
+
+echo
+echo "== 9. Device projection =="
+awk -v gen="$max_us" -v pipe="$pipe_us" -v c="$max_case" -v lo="$a7_factor_lo" -v hi="$a7_factor_hi" \
+	-v sd="$sd_allowance_ms" -v line="$device_line_ms" '
+function ms(us, f) { return int(us * f / 1000 + 0.5) }
+BEGIN {
+	printf "miyoo.case %s (section 6 max-case)\n", c
+	printf "miyoo.note Cortex-A7 factor %d..%d and SD allowance %d ms are assumptions (H-4.3-1, H-4.3-2): a device timing replaces them\n", lo, hi, sd
+	printf "miyoo.time.projected.generate %d %d ms (host x %d..%d)\n", ms(gen, lo), ms(gen, hi), lo, hi
+	printf "miyoo.time.projected.pipeline %d %d ms (host x %d..%d)\n", ms(pipe, lo), ms(pipe, hi), lo, hi
+	wait = ms(pipe, hi) + sd
+	printf "miyoo.time.projected.wait %d ms budget %d%s\n", wait, line, (wait > line ? " over" : "")
 }'

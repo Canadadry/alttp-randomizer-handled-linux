@@ -1,7 +1,10 @@
 #include "rando.h"
+#include "rando_assemble.h"
 #include "rando_case.h"
+#include "synthetic_base.h"
 
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +35,9 @@ typedef struct Job {
 } Job;
 
 static RandoGen gen;
+static RandoAssembleWork work;
 static Counts counts;
+static RandoStage until = RANDO_STAGE_NONE;
 static const char *stage_names[RANDO_STAGE_COUNT];
 static unsigned char stack[STACK_SIZE] __attribute__((aligned(4096)));
 static size_t overhead;
@@ -68,7 +73,9 @@ static void count_draw(void *ctx, uint32_t attempt, uint32_t draw, const char *s
 static RandoStatus generate(const RandoCase *c, uint32_t seed, uint32_t cap)
 {
 	memset(&counts, 0, sizeof counts);
-	return rando_generate(&gen, &c->options, seed, cap, count_draw, &counts);
+	if (until == RANDO_STAGE_NONE)
+		return rando_generate(&gen, &c->options, seed, cap, count_draw, &counts);
+	return rando_generate_until(&gen, &c->options, seed, cap, count_draw, &counts, until);
 }
 
 static void *thread_main(void *arg)
@@ -173,6 +180,16 @@ static void read_case(const char *dir, RandoCase *c)
 	}
 }
 
+static const char *case_name(const char *dir)
+{
+	return strrchr(dir, '/') ? strrchr(dir, '/') + 1 : dir;
+}
+
+static uint32_t case_cap(const RandoCase *c)
+{
+	return !c->has_attempts ? WATCHDOG : c->attempts == UINT32_MAX ? 0 : c->attempts + 1;
+}
+
 static void selfcheck(void)
 {
 	Job job = { empty_job, NULL, 0, RANDO_COMPLETE, 0 };
@@ -198,7 +215,7 @@ static void measure_case(const char *dir, int reps)
 	RandoCase c;
 	Job job;
 	int64_t t[MAX_REPS], t0;
-	const char *name = strrchr(dir, '/') ? strrchr(dir, '/') + 1 : dir;
+	const char *name = case_name(dir);
 	size_t peak;
 	uint32_t a;
 	int i, s;
@@ -206,7 +223,7 @@ static void measure_case(const char *dir, int reps)
 	read_case(dir, &c);
 	job.fn = generate_job;
 	job.c = &c;
-	job.cap = !c.has_attempts ? WATCHDOG : c.attempts == UINT32_MAX ? 0 : c.attempts + 1;
+	job.cap = case_cap(&c);
 	peak = painted_run(&job);
 	printf("case %s %s %u %u ", name, status_name(job.status), (unsigned)gen.attempt, (unsigned)counts.total);
 	for (a = 0; a < counts.attempts_seen; a++)
@@ -247,11 +264,83 @@ static void sweep(const char *dir, uint32_t n)
 	}
 }
 
+typedef struct Output {
+	uint32_t calls;
+	size_t bytes;
+} Output;
+
+static bool count_output(void *ctx, const uint8_t *rom, size_t size)
+{
+	Output *out = ctx;
+
+	(void)rom;
+	out->calls++;
+	out->bytes += size;
+	return true;
+}
+
+static void assemble_once(RandoAssembleRequest *request, Output *out, const char *name)
+{
+	RandoAssembleStatus status;
+
+	memset(out, 0, sizeof *out);
+	request->output_ctx = out;
+	status = rando_assemble(request, &work, NULL);
+	if (status != RANDO_ASSEMBLE_OK || out->calls != 1 || out->bytes != RANDO_ROM_SIZE) {
+		fprintf(stderr, "rando_measure: assemble %s: status %d, %u outputs, %zu bytes, expected ok and one %u-byte image\n",
+			name, (int)status, (unsigned)out->calls, out->bytes, (unsigned)RANDO_ROM_SIZE);
+		exit(1);
+	}
+}
+
+/* One line per case: assemble <name> <status> <bytes out> <median ns>, on the synthetic base. */
+static void assemble_case(const char *dir, int reps)
+{
+	RandoCase c;
+	RandoAssembleRequest request;
+	Output out;
+	int64_t t[MAX_REPS], t0;
+	const char *name = case_name(dir);
+	int i;
+
+	read_case(dir, &c);
+	rando_assemble_request_init(&request);
+	request.source = synth_source;
+	request.source_size = SYNTH_SOURCE_SIZE;
+	request.patch = synth_good_patch.bytes;
+	request.patch_size = synth_good_patch.size;
+	memcpy(request.source_md5, synth_source_md5, RANDO_MD5_SIZE);
+	memcpy(request.base_md5, synth_base_md5, RANDO_MD5_SIZE);
+	request.options = c.options;
+	request.heart_beep = c.heart_beep;
+	request.seed = c.seed;
+	request.max_attempts = case_cap(&c);
+	request.output = count_output;
+
+	assemble_once(&request, &out, name);
+	for (i = 0; i < reps; i++) {
+		t0 = now_ns();
+		assemble_once(&request, &out, name);
+		t[i] = now_ns() - t0;
+	}
+	qsort(t, (size_t)reps, sizeof t[0], cmp_i64);
+	printf("assemble %s ok %zu %lld\n", name, out.bytes, (long long)t[reps / 2]);
+}
+
 static int usage(void)
 {
 	fprintf(stderr, "usage: rando_measure cases <reps> <case_dir>...\n"
+			"       rando_measure cases-until <stage> <reps> <case_dir>...\n"
+			"       rando_measure assemble <reps> <case_dir>...\n"
 			"       rando_measure sweep <case_dir> <seeds>\n");
 	return 2;
+}
+
+static int parse_reps(const char *arg)
+{
+	int reps = atoi(arg);
+
+	return reps < 1 || reps > MAX_REPS ? 0 : reps;
 }
 
 int main(int argc, char **argv)
@@ -262,12 +351,29 @@ int main(int argc, char **argv)
 	for (s = 0; s < RANDO_STAGE_COUNT; s++)
 		stage_names[s] = rando_stage_name((RandoStage)s);
 	if (argc >= 4 && strcmp(argv[1], "cases") == 0) {
-		reps = atoi(argv[2]);
-		if (reps < 1 || reps > MAX_REPS)
+		reps = parse_reps(argv[2]);
+		if (!reps)
 			return usage();
 		selfcheck();
 		for (i = 3; i < argc; i++)
 			measure_case(argv[i], reps);
+	} else if (argc >= 5 && strcmp(argv[1], "cases-until") == 0) {
+		for (s = 0; s < RANDO_STAGE_COUNT && strcmp(argv[2], stage_names[s]) != 0; s++)
+			;
+		reps = parse_reps(argv[3]);
+		if (s == RANDO_STAGE_COUNT || !reps)
+			return usage();
+		until = (RandoStage)s;
+		selfcheck();
+		for (i = 4; i < argc; i++)
+			measure_case(argv[i], reps);
+	} else if (argc >= 4 && strcmp(argv[1], "assemble") == 0) {
+		reps = parse_reps(argv[2]);
+		if (!reps)
+			return usage();
+		synth_build();
+		for (i = 3; i < argc; i++)
+			assemble_case(argv[i], reps);
 	} else if (argc == 4 && strcmp(argv[1], "sweep") == 0) {
 		n = atol(argv[3]);
 		if (n < 1)

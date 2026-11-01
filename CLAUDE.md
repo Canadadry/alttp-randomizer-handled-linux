@@ -75,7 +75,9 @@ in `docs/`, then `README.md`.
   of `e2e`). Run
   `make -k check` to see every failure at once.
 - `make -C tests/rando measure`, outside the net, gives the per-case times
-  every later budget is measured against.
+  every later budget is measured against, the whole pipeline's time
+  (`rando_assemble` on the synthetic base) and its Cortex-A7 projection
+  against the ~10 s line.
 - `make e2e-arm`, outside the net, builds the generator with Onion's pinned
   toolchain (`onion-toolchain.sh`, `docs/toolchain.md`) and runs the e2e
   cases on it under `qemu-arm`. `make unit-arm`, outside the net too, builds

@@ -44,6 +44,7 @@ MEASURE_CFLAGS := -std=c99 -Wall -Wextra -Werror -O2 -fstack-usage -fno-stack-pr
 MEASURE_OBJ := $(patsubst $(RANDO)/src/%.c,$(MEASURE)/host-O2/obj/%.o,$(RANDO_SRC)) $(MEASURE)/host-O2/host/case_reader.o
 MEASURE_OS_OBJ := $(patsubst $(RANDO)/src/%.c,$(MEASURE)/host-Os/obj/%.o,$(RANDO_SRC))
 MEASURE_PROBE := $(MEASURE)/host-O2/size_probe.o
+MEASURE_SYNTH_OBJ := $(MEASURE)/host-O2/unit/support.o $(MEASURE)/host-O2/unit/synthetic_base.o
 MEASURE_BIN := $(MEASURE)/rando_measure
 MEASURE_SWEEP ?= 1024
 MEASURE_REPS ?= 5
@@ -276,9 +277,13 @@ $(MEASURE_PROBE): measure/size_probe.c $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(MEASURE_CFLAGS) -fno-common -I$(RANDO)/include -c -o $@ $<
 
-$(MEASURE_BIN): measure/rando_measure.c $(MEASURE_OBJ) $(RANDO_HDR) $(HOST_HDR)
+$(MEASURE)/host-O2/unit/%.o: unit/%.c unit/support.h unit/synthetic_base.h $(RANDO_HDR)
 	@mkdir -p $(@D)
-	$(CC) $(MEASURE_CFLAGS) -D_POSIX_C_SOURCE=200809L $(INCLUDES) -pthread -o $@ $< $(MEASURE_OBJ)
+	$(CC) $(MEASURE_CFLAGS) -I$(RANDO)/include -c -o $@ $<
+
+$(MEASURE_BIN): measure/rando_measure.c $(MEASURE_OBJ) $(MEASURE_SYNTH_OBJ) $(RANDO_HDR) $(HOST_HDR) unit/synthetic_base.h
+	@mkdir -p $(@D)
+	$(CC) $(MEASURE_CFLAGS) -D_POSIX_C_SOURCE=200809L $(INCLUDES) -Iunit -pthread -o $@ $< $(MEASURE_OBJ) $(MEASURE_SYNTH_OBJ)
 
 $(BUILD):
 	mkdir -p $@
