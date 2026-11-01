@@ -55,7 +55,7 @@
     - [x] Chunk 4: setTexts strings, hints-off sign, inverted texts
     - [x] Chunk 5: hint texts, tablets and pedestal
     - [x] Chunk 6: claims to all text
-  - [ ] 1.10 Port the initial SRAM writes
+  - [x] 1.10 Port the initial SRAM writes
     - [x] Chunk 1: the SRAM group
     - [x] Chunk 2: total item count
     - [x] Chunk 3: replay, claims to all setTotalItemCount
