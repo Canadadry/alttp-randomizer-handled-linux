@@ -20,6 +20,7 @@ typedef struct Recorder {
 	int items;
 	int settings;
 	int credits;
+	int text;
 	bool in_order;
 	bool all_inside;
 	const char *last_settings;
@@ -32,14 +33,20 @@ static bool record(void *ctx, uint32_t address, const uint8_t *bytes, size_t cou
 	(void)bytes;
 	if (strcmp(method, "writeItem") == 0) {
 		r->items++;
-		if (r->settings > 0 || r->credits > 0)
+		if (r->settings > 0 || r->credits > 0 || r->text > 0)
 			r->in_order = false;
 	} else if (strcmp(method, "writeCredits") == 0) {
 		r->credits++;
+		if (r->text > 0)
+			r->in_order = false;
+	} else if (strcmp(method, "writeText") == 0) {
+		r->text++;
+		if (r->credits != 2)
+			r->in_order = false;
 	} else {
 		r->settings++;
 		r->last_settings = method;
-		if (r->credits > 0)
+		if (r->credits > 0 || r->text > 0)
 			r->in_order = false;
 	}
 	if (address > ROM_SIZE || count > ROM_SIZE - address)
@@ -50,11 +57,11 @@ static bool record(void *ctx, uint32_t address, const uint8_t *bytes, size_t cou
 static RandoGen gen, before;
 static uint8_t rom_bytes[ROM_SIZE];
 
-/* Only the items, settings and credits groups write so far: step 9 rewrites this expectation when text writes. */
+/* Only the items, settings, credits and text groups write so far: step 10 rewrites this expectation when initial SRAM writes. */
 static void check_baseline_writes(void)
 {
 	RandoOptions options;
-	Recorder rec = {0, 0, 0, true, true, NULL};
+	Recorder rec = {0, 0, 0, 0, true, true, NULL};
 	RandoRomWriter writer = {record, &rec};
 	RandoRomBuffer rom = {rom_bytes, sizeof rom_bytes};
 	RandoRomWriter buffer = {rando_rom_buffer_write, &rom};
@@ -63,7 +70,7 @@ static void check_baseline_writes(void)
 	CHECK(rando_generate(&gen, &options, 1, 0, NULL, NULL) == RANDO_COMPLETE);
 	memcpy(&before, &gen, sizeof gen);
 	CHECK(rando_rom_write(&gen, RANDO_HEART_BEEP_HALF, &writer));
-	CHECK(rec.items > 0 && rec.settings > 0 && rec.credits == 2);
+	CHECK(rec.items > 0 && rec.settings > 0 && rec.credits == 2 && rec.text == 1);
 	CHECK(rec.in_order);
 	CHECK(rec.last_settings != NULL && strcmp(rec.last_settings, "enableFastRom") == 0);
 	CHECK(rec.all_inside);

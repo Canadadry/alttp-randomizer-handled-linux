@@ -28,4 +28,7 @@ void rando_rom_write_settings(RomOut *out, const RandoGen *gen);
 /* VT's writeCredits: the credits data, then its 17 scene pointers. */
 void rando_rom_write_credits(RomOut *out, const RandoGen *gen);
 
+/* VT's writeText: the whole text table, one write at 0E0000. */
+void rando_rom_write_text(RomOut *out, const RandoGen *gen);
+
 #endif

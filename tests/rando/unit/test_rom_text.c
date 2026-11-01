@@ -1,3 +1,5 @@
+#include "rando.h"
+#include "rando_rom.h"
 #include "rando_text.h"
 #include "support.h"
 
@@ -5,6 +7,15 @@
 #include <string.h>
 
 #define TEST "test_rom_text"
+#define FIXTURE_TEXT_DEFAULT "oracle/text_default.txt"
+#define TEXT_ADDRESS 0x0E0000u
+#define ROM_SIZE (2u * 1024 * 1024)
+
+#define CHECK(cond) \
+	do { \
+		if (!(cond)) \
+			test_fail(TEST, "%s:%d: %s", __FILE__, __LINE__, #cond); \
+	} while (0)
 
 /* Expected bytes come from VT's Dialog at 219fcafd run under PHP 8.3, never from the C encoder. */
 static void expect(const char *what, const char *utf8, bool pause, const char *hex)
@@ -190,13 +201,196 @@ static void test_cut(void)
 		test_fail(TEST, "cut: got %.80s...%s", hex, hex + 2 * n - strlen(tail));
 }
 
-int main(void)
+static void test_ids(void)
 {
+	int id;
+
+	CHECK(RANDO_TEXT_COUNT == 408);
+	for (id = 0; id < RANDO_TEXT_COUNT; id++)
+		CHECK(rando_text_find(rando_text_name((RandoTextId)id)) == (RandoTextId)id);
+	CHECK(strcmp(rando_text_name(RANDO_TEXT_set_cursor), "set_cursor") == 0);
+	CHECK(strcmp(rando_text_name(RANDO_TEXT_terminator), "terminator") == 0);
+	CHECK(rando_text_find("no_such_text") == RANDO_TEXT_NONE);
+	CHECK(rando_text_find("") == RANDO_TEXT_NONE);
+}
+
+/* Two of VT's raw entries, an id removeUnwanted() blanks, and an en() string through the encoder. */
+static void test_defaults(void)
+{
+	static const uint8_t terminator[] = {0xFF, 0xFF};
+	static const uint8_t choice_1_2[] = {0xFB, 0xFC, 0x00, 0xF7, 0x99, 0xF8, 0xFF, 0xFE, 0x72};
+	static const uint8_t notext[] = {0xFB, 0xFE, 0x6E, 0x00, 0xFE, 0x6B, 0x04};
+	uint8_t got[RANDO_TEXT_ENTRY_MAX], want[RANDO_TEXT_ENTRY_MAX];
+	size_t n;
+
+	n = rando_text_default(RANDO_TEXT_terminator, got);
+	CHECK(n == sizeof terminator && memcmp(got, terminator, n) == 0);
+	n = rando_text_default(RANDO_TEXT_choice_1_2, got);
+	CHECK(n == sizeof choice_1_2 && memcmp(got, choice_1_2, n) == 0);
+	/* removeUnwanted() blanks it. */
+	n = rando_text_default(RANDO_TEXT_item_get_lamp, got);
+	CHECK(n == sizeof notext && memcmp(got, notext, n) == 0);
+	n = rando_text_default(RANDO_TEXT_uncle_leaving_text, got);
+	CHECK(n == rando_text_encode("I'm just going out for a pack of smokes.", true, want) &&
+	      memcmp(got, want, n) == 0);
+}
+
+typedef struct Recorder {
+	int calls;
+	int text_calls;
+	int credits_calls;
+	int text_at;
+	bool text_after_credits;
+	uint32_t address;
+	size_t count;
+	uint8_t bytes[RANDO_TEXT_TABLE_MAX];
+	bool refuse_text;
+	int calls_after_refusal;
+	bool refused;
+} Recorder;
+
+static bool record(void *ctx, uint32_t address, const uint8_t *bytes, size_t count, const char *method)
+{
+	Recorder *r = ctx;
+
+	if (r->refused) {
+		r->calls_after_refusal++;
+		return true;
+	}
+	r->calls++;
+	if (strcmp(method, "writeCredits") == 0) {
+		r->credits_calls++;
+		if (r->text_calls > 0)
+			r->text_after_credits = false;
+	}
+	if (strcmp(method, "writeText") != 0)
+		return true;
+	r->text_calls++;
+	r->text_at = r->calls;
+	r->text_after_credits = r->credits_calls == 2;
+	r->address = address;
+	r->count = count;
+	if (count <= sizeof r->bytes)
+		memcpy(r->bytes, bytes, count);
+	if (r->refuse_text) {
+		r->refused = true;
+		return false;
+	}
+	return true;
+}
+
+static RandoGen gen, before;
+static Recorder rec;
+
+static void test_group_shape(void)
+{
+	static uint8_t table[RANDO_TEXT_TABLE_MAX];
+	RandoRomWriter writer = {record, &rec};
+	uint8_t entry[RANDO_TEXT_ENTRY_MAX];
+	size_t total = 0, n;
+	int id;
+
+	memset(&rec, 0, sizeof rec);
+	CHECK(rando_rom_write(&gen, RANDO_HEART_BEEP_NORMAL, &writer));
+	CHECK(rec.text_calls == 1);
+	CHECK(rec.text_after_credits);
+	CHECK(rec.address == TEXT_ADDRESS);
+	CHECK(rec.address <= ROM_SIZE && rec.count <= ROM_SIZE - rec.address);
+	for (id = 0; id < RANDO_TEXT_COUNT; id++) {
+		n = rando_text_default((RandoTextId)id, entry);
+		CHECK(total + n <= sizeof table);
+		memcpy(table + total, entry, n);
+		total += n;
+	}
+	CHECK(rec.count == total && memcmp(rec.bytes, table, total) == 0);
+}
+
+static void test_refusal(void)
+{
+	RandoRomWriter writer = {record, &rec};
+
+	memset(&rec, 0, sizeof rec);
+	rec.refuse_text = true;
+	CHECK(!rando_rom_write(&gen, RANDO_HEART_BEEP_NORMAL, &writer));
+	CHECK(rec.text_calls == 1 && rec.calls_after_refusal == 0);
+}
+
+static void test_const(void)
+{
+	RandoRomWriter writer = {record, &rec};
+
+	memcpy(&before, &gen, sizeof gen);
+	memset(&rec, 0, sizeof rec);
+	CHECK(rando_rom_write(&gen, RANDO_HEART_BEEP_NORMAL, &writer));
+	CHECK(memcmp(&before, &gen, sizeof gen) == 0);
+}
+
+static int hex_value(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	return -1;
+}
+
+static void check_text_default_fixture(void)
+{
+	Fixture fx;
+	uint8_t got[RANDO_TEXT_ENTRY_MAX];
+	int id = 0;
+
+	fixture_open(&fx, FIXTURE_TEXT_DEFAULT);
+	while (fixture_next(&fx)) {
+		char *hex;
+		size_t n, i;
+
+		hex = fx.nfields == 1 ? strchr(fx.field[0], ' ') : NULL;
+		if (hex == NULL || strchr(hex + 1, ' ') != NULL)
+			fixture_fail(&fx, "malformed default");
+		*hex++ = '\0';
+		if (id >= RANDO_TEXT_COUNT)
+			fixture_fail(&fx, "more ids than RANDO_TEXT_COUNT");
+		if (strcmp(fx.field[0], rando_text_name((RandoTextId)id)) != 0)
+			fixture_fail(&fx, "id out of table order");
+		n = rando_text_default((RandoTextId)id, got);
+		if (strlen(hex) != 2 * n)
+			fixture_fail(&fx, "default length differs");
+		for (i = 0; i < n; i++) {
+			int hi = hex_value(hex[2 * i]), lo = hex_value(hex[2 * i + 1]);
+
+			if (hi < 0 || lo < 0)
+				fixture_fail(&fx, "malformed hex");
+			if (got[i] != (uint8_t)(hi << 4 | lo))
+				fixture_fail(&fx, "default bytes differ");
+		}
+		id++;
+	}
+	fixture_close(&fx);
+	if (id != RANDO_TEXT_COUNT)
+		test_fail(TEST, "%d text_default records, expected %d", id, RANDO_TEXT_COUNT);
+	printf(TEST ": %d text_default records matched\n", id);
+}
+
+int main(int argc, char **argv)
+{
+	RandoOptions options;
+	int fixtures = test_fixtures_mode(TEST, argc, argv);
+
 	test_layout();
 	test_commands();
 	test_wrapping();
 	test_characters();
 	test_cut();
+	test_ids();
+	test_defaults();
+	rando_options_init(&options);
+	CHECK(rando_generate(&gen, &options, 1, 0, NULL, NULL) == RANDO_COMPLETE);
+	test_group_shape();
+	test_refusal();
+	test_const();
 	printf(TEST ": passed\n");
+	if (fixtures)
+		check_text_default_fixture();
 	return 0;
 }

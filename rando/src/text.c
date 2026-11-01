@@ -1,4 +1,5 @@
 #include "rando_text.h"
+#include "text_table.h"
 
 #include <assert.h>
 #include <string.h>
@@ -610,4 +611,33 @@ size_t rando_text_encode(const char *utf8, bool pause, uint8_t out[RANDO_TEXT_EN
 			put1(&o, 0xFA);
 	}
 	return o.count < RANDO_TEXT_ENTRY_MAX ? o.count : RANDO_TEXT_ENTRY_MAX;
+}
+
+const char *rando_text_name(RandoTextId id)
+{
+	assert(id < RANDO_TEXT_COUNT);
+	return rando_text_names[id];
+}
+
+RandoTextId rando_text_find(const char *name)
+{
+	int id;
+
+	for (id = 0; id < RANDO_TEXT_COUNT; id++)
+		if (strcmp(rando_text_names[id], name) == 0)
+			return (RandoTextId)id;
+	return RANDO_TEXT_NONE;
+}
+
+size_t rando_text_default(RandoTextId id, uint8_t out[RANDO_TEXT_ENTRY_MAX])
+{
+	const TextDefault *d;
+
+	assert(id < RANDO_TEXT_COUNT);
+	d = &rando_text_defaults[id];
+	if (d->text != NULL)
+		return rando_text_encode(d->text, d->pause, out);
+	assert(d->raw_count > 0 && d->raw_count <= RANDO_TEXT_ENTRY_MAX);
+	memcpy(out, d->raw, d->raw_count);
+	return d->raw_count;
 }
