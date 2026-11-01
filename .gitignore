@@ -1,0 +1,13 @@
+# Throwaway files of agents and sessions
+/tmp/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editors / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
