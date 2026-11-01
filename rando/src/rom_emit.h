@@ -31,4 +31,7 @@ void rando_rom_write_credits(RomOut *out, const RandoGen *gen);
 /* VT's writeText: the whole text table, one write at 0E0000. */
 void rando_rom_write_text(RomOut *out, const RandoGen *gen);
 
+/* VT's writeInitialSram: the InitialSram table the settings part of writeToRom builds, one write at 183000. */
+void rando_rom_write_initial_sram(RomOut *out, const RandoGen *gen);
+
 #endif
