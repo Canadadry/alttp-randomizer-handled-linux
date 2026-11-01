@@ -90,7 +90,7 @@
     - [x] Chunk 4: SDL-include check
   - [ ] 3.3 String table (i18n)
     - [x] Chunk 1: string table module
-    - [ ] Chunk 2: literal check
+    - [x] Chunk 2: literal check
   - [ ] 3.4 Generate tab state machine
   - [ ] 3.5 Generation flow
   - [ ] 3.6 History tab

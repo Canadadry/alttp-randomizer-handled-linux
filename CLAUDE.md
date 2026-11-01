@@ -49,7 +49,10 @@ in `docs/`, then `README.md`.
   unit tests, linked with the app archive `librando_app.a`; the UI snapshots
   in `tests/rando/unit/snapshots/`, edited by hand only; and
   `tests/rando/no_sdl.sh`, which fails on any SDL include under `app/core/`
-  or `app/sd/` after proving itself on a planted one) plus `test-template`
+  or `app/sd/` after proving itself on a planted one; and
+  `tests/rando/no_literals.py`, which fails on any string literal with a
+  letter under `app/core/` outside the English table `ui_strings_en.c`, after
+  proving itself on planted sources) plus `test-template`
   (the tooling under `.claude/`).
 - `make check` = `test` plus `lint` (`rando/` and `app/` built with
   `-std=c99 -pedantic-errors`), `logic` (unit tests replaying the oracle fixtures),

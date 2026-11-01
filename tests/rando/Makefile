@@ -68,7 +68,8 @@ test: $(UNIT_BINS)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@./selftest.sh discovery
 	@./no_sdl.sh $(APP)/core $(APP)/sd
-	@echo "test: $(words $(UNIT_TESTS)) unit tests, the discovery self-test and the app SDL check ran"
+	@python3 -I ./no_literals.py $(APP)/core
+	@echo "test: $(words $(UNIT_TESTS)) unit tests, the discovery self-test, the app SDL check and the UI-core literal check ran"
 
 lint: $(LINT_OBJ) $(LINT_APP_OBJ)
 	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC)) app/ sources build with -pedantic-errors"
