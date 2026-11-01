@@ -1,6 +1,7 @@
 #include "rando_patch.h"
 
 #include "rando_case.h"
+#include "rando_out.h"
 
 #include <errno.h>
 #include <stdarg.h>
@@ -182,21 +183,6 @@ static uint32_t draw_seed(void)
 	return seed;
 }
 
-static bool write_rom(void *ctx, const uint8_t *rom, size_t size)
-{
-	const char *path = ctx;
-	FILE *f = fopen(path, "wb");
-	bool ok;
-	if (f == NULL)
-		return false;
-	ok = fwrite(rom, 1, size, f) == size;
-	if (fclose(f) != 0)
-		ok = false;
-	if (!ok)
-		remove(path);
-	return ok;
-}
-
 static void source_size_message(FILE *err, const char *path, long size)
 {
 	if (size < 0)
@@ -232,7 +218,7 @@ int rando_patch_run(const RandoPatchArgs *args, FILE *out, FILE *err)
 	request.patch = patch;
 	request.patch_size = patch_size;
 	request.seed = args->has_seed ? args->seed : draw_seed();
-	request.output = write_rom;
+	request.output = rando_out_write_file;
 	request.output_ctx = (void *)args->out_path;
 
 	switch (rando_assemble(&request, &work, &bps)) {

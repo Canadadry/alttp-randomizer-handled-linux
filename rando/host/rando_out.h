@@ -44,4 +44,8 @@ bool rando_rom_log_close(RandoRomLog *log, char error[RANDO_OUT_ERROR_MAX]);
 /* Writes "<attempt>\n" into <out_dir>/attempts, as the oracle does on success. */
 bool rando_attempts_write(const char *out_dir, uint32_t attempt, char error[RANDO_OUT_ERROR_MAX]);
 
+/* A RandoAssembleOutputFn; ctx is the path (const char *). Writes the file with "wb" and removes it on any
+ * failure after it was created. */
+bool rando_out_write_file(void *ctx, const uint8_t *bytes, size_t size);
+
 #endif

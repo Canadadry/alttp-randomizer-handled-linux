@@ -3,9 +3,9 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS
 RANDO := ../../rando
 BUILD := build
 
-UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_name test_record
+UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_name test_record test_seed_save
 # No fixture mode: test_prng already replays its vectors in `test`, the others have no fixture.
-LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_name,$(UNIT_TESTS))
+LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_name test_seed_save,$(UNIT_TESTS))
 
 RANDO_SRC := $(wildcard $(RANDO)/src/*.c $(RANDO)/src/*/*.c)
 RANDO_HDR := $(wildcard $(RANDO)/include/*.h $(RANDO)/src/*.h)
@@ -16,7 +16,7 @@ HOST_HDR := $(wildcard $(RANDO)/host/*.h)
 HOST_OBJ := $(patsubst $(RANDO)/host/%.c,$(BUILD)/host/%.o,$(HOST_SRC))
 HOST_LIB := $(BUILD)/librando_host.a
 INCLUDES := -I$(RANDO)/include -I$(RANDO)/host
-SUPPORT_OBJ := $(BUILD)/support.o
+SUPPORT_OBJ := $(BUILD)/support.o $(BUILD)/synthetic_base.o
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 GEN := $(BUILD)/rando_gen
 PATCH_CLI := $(BUILD)/rando_patch
@@ -106,10 +106,13 @@ $(HOST_LIB): $(HOST_OBJ)
 	@rm -f $@
 	ar rcs $@ $^
 
-$(SUPPORT_OBJ): unit/support.c unit/support.h $(RANDO_HDR) | $(BUILD)
+$(BUILD)/support.o: unit/support.c unit/support.h $(RANDO_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(RANDO)/include -c -o $@ $<
 
-$(BUILD)/test_%: unit/test_%.c unit/support.h $(SUPPORT_OBJ) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) | $(BUILD)
+$(BUILD)/synthetic_base.o: unit/synthetic_base.c unit/synthetic_base.h unit/support.h $(RANDO_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(RANDO)/include -c -o $@ $<
+
+$(BUILD)/test_%: unit/test_%.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(HOST_LIB) $(RANDO_LIB)
 
 $(LINT_DIR)/%.o: $(RANDO)/src/%.c $(RANDO_HDR)

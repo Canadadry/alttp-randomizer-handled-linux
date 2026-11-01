@@ -78,7 +78,7 @@
     - [x] Chunk 1: getter and naming
     - [x] Chunk 2: record writer
     - [x] Chunk 3: record reader and round-trip
-    - [ ] Chunk 4: save call
+    - [x] Chunk 4: save call
 - [ ] Phase 3 — Onion facts, then the app's UI core and text renderer, host only
   - [ ] 3.1 Confirm the Onion specifics from Onion's sources
   - [ ] 3.2 Screen model and text renderer

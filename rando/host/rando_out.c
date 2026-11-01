@@ -127,3 +127,18 @@ bool rando_attempts_write(const char *out_dir, uint32_t attempt, char error[RAND
 		return io_fail(error, path, errno);
 	return true;
 }
+
+bool rando_out_write_file(void *ctx, const uint8_t *bytes, size_t size)
+{
+	const char *path = ctx;
+	FILE *f = fopen(path, "wb");
+	bool ok;
+	if (f == NULL)
+		return false;
+	ok = fwrite(bytes, 1, size, f) == size;
+	if (fclose(f) != 0)
+		ok = false;
+	if (!ok)
+		remove(path);
+	return ok;
+}
