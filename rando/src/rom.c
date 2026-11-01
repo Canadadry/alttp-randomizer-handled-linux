@@ -11,13 +11,6 @@ void rando_rom_emit(RomOut *out, uint32_t address, const uint8_t *bytes, size_t 
 		out->ok = out->writer->write(out->writer->ctx, address, bytes, count, method);
 }
 
-/* TODO step 7: the Rom setters between the item loop and writeCredits. */
-static void write_settings(RomOut *out, const RandoGen *gen)
-{
-	(void)out;
-	(void)gen;
-}
-
 /* TODO step 8. */
 static void write_credits(RomOut *out, const RandoGen *gen)
 {
@@ -61,7 +54,7 @@ bool rando_rom_write(const RandoGen *gen, RandoHeartBeep heart_beep, const Rando
 	out.writer = writer;
 	out.ok = true;
 	rando_rom_write_items(&out, gen);
-	write_settings(&out, gen);
+	rando_rom_write_settings(&out, gen);
 	write_credits(&out, gen);
 	write_text(&out, gen);
 	write_initial_sram(&out, gen);

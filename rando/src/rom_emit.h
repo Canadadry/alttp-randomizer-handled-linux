@@ -19,4 +19,10 @@ void rando_rom_emit(RomOut *out, uint32_t address, const uint8_t *bytes, size_t 
 /* VT's World::writeToRom item loop (writeItem). */
 void rando_rom_write_items(RomOut *out, const RandoGen *gen);
 
+/* The first byte VT's Item::getBytes() gives for item, an alias read as its target. */
+uint8_t rando_rom_item_byte(RandoItemId item);
+
+/* VT's World::writeToRom setters between the item loop and writeCredits. */
+void rando_rom_write_settings(RomOut *out, const RandoGen *gen);
+
 #endif

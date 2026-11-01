@@ -597,6 +597,15 @@ static void write_location(RomOut *out, const RandoGen *gen, RandoRegionId regio
 	}
 }
 
+uint8_t rando_rom_item_byte(RandoItemId item)
+{
+	assert(item < RANDO_ITEM_COUNT);
+	if (rando_item_info(item)->item_class == RANDO_ITEM_CLASS_ALIAS)
+		item = rando_item_info(item)->alias_target;
+	assert(item_bytes[item].present & (1u << SLOT_0));
+	return item_bytes[item].bytes[SLOT_0];
+}
+
 void rando_rom_write_items(RomOut *out, const RandoGen *gen)
 {
 	const RandoWorld *world = &gen->world;

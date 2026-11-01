@@ -22,8 +22,11 @@ typedef struct Write {
 	const char *method;
 } Write;
 
+/* Only the writes before the first one not tagged writeItem, the items group's: the later groups' writes
+ * are accepted unrecorded. */
 typedef struct Recorder {
 	Write writes[WRITES_MAX];
+	bool past_items;
 	int n;
 	/* The call that returns false, counted from 1; 0 accepts every call. */
 	int refuse_at;
@@ -34,6 +37,10 @@ static bool record(void *ctx, uint32_t address, const uint8_t *bytes, size_t cou
 {
 	Recorder *r = ctx;
 
+	if (r->past_items || strcmp(method, "writeItem") != 0) {
+		r->past_items = true;
+		return true;
+	}
 	r->calls++;
 	if (r->n < WRITES_MAX) {
 		r->writes[r->n].address = address;
