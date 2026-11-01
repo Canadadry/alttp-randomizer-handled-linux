@@ -187,6 +187,8 @@ printf 'stage alpha\ncheck alpha lines x\n' >"$s"
 gate "unknown check kind" "" 2 "" "run_e2e.sh: $s:2: unknown check kind: lines"
 printf 'stage alpha\ncheck alpha section\n' >"$s"
 gate "section without name" "" 2 "" "run_e2e.sh: $s:2: malformed line"
+printf 'stage alpha\ncheck alpha attempts x\n' >"$s"
+gate "attempts with an argument" "" 2 "" "run_e2e.sh: $s:2: malformed line"
 
 
 cat >"$g/cases/two/spoiler.json" <<'EOF2'
@@ -377,6 +379,34 @@ partial '    "Light World": {
 fake pool.txt "Sword:1${nl}Arrow:1${nl}Bow:1${nl}Arrow:1${nl}PendantOfCourage:1$nl"
 gate "a pre-fill on a due keys glob is left to that check" "two gamma$nl" 1 \
 	"DIVERGENT two${nl}  gamma: keys Zora:1:${nl}    golden: <end>${nl}    c: [Light World] \"Zora:1\": \"Arrow:1\"${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+printf 'stage alpha\nstage beta\ncheck beta attempts\nstage gamma\n' >"$s"
+fake trace.txt "$(golden_lines 3)$nl"
+cp "$g/cases/two/attempts" "$g/out/two/"
+gate "attempts pass" "two beta$nl" 0 "PASS two (beta)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+
+fake attempts "0$nl"
+gate "attempts differ" "two beta$nl" 1 \
+	"DIVERGENT two${nl}  beta: attempts:${nl}    golden: 1${nl}    c: 0${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+rm "$g/out/two/attempts"
+gate "C wrote no attempts" "two beta$nl" 1 \
+	"DIVERGENT two${nl}  beta: attempts:${nl}    c wrote no attempts${nl}e2e: 0 pass, 1 divergent, 0 pending"
+
+fake trace.txt "$(golden_lines 4)$nl"
+gate "a later claim still owes attempts" "two gamma$nl" 1 \
+	"DIVERGENT two${nl}  beta: attempts:${nl}    c wrote no attempts${nl}e2e: 0 pass, 1 divergent, 0 pending"
+cp "$g/cases/two/attempts" "$g/out/two/"
+
+printf 'stage alpha\ncheck alpha pool\nstage beta\nstage gamma\n' >"$s"
+partial "$bosses" "$prize" "$medallion"
+fake pool.txt "Bomb:1$nl"
+fake trace.txt "$(golden_lines 3)$nl"
+gate "pool not due to a later claim" "two beta$nl" 0 "PASS two (beta)${nl}e2e: 1 pass, 0 divergent, 0 pending"
+
+fake trace.txt "$(golden_lines 2)$nl"
+gate "pool still due at its own stage" "two alpha$nl" 1 \
+	"DIVERGENT two${nl}  alpha: pool:${nl}    golden: Arrow:1 x2${nl}    c: Arrow:1 x0${nl}e2e: 0 pass, 1 divergent, 0 pending"
 named=
 
 mkdir -p "$g/cases/one" "$g/out/one"

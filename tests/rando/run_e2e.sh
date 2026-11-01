@@ -30,7 +30,8 @@ done
 
 # Writes $tmp/claims, one "<case>\t<stage>\t<draws>\t<due file or ->" line per
 # claim, and $tmp/due.<rank>, the "<stage>\t<kind>\t<arg>" checks a claim at the
-# stage of that rank owes, in table order.
+# stage of that rank owes, in table order: those of its stage and earlier ones,
+# except an earlier stage's pool, which the fill no longer leaves unplaced.
 CASES="$cases_dir" TMP="$tmp" awk '
 function bad(msg) { printf "%s:%d: %s\n", FILENAME, FNR, msg; err = 1; exit }
 function die(msg) { print msg; exit 2 }
@@ -52,14 +53,15 @@ FILENAME == ARGV[1] {
 		next
 	}
 	if ($1 == "check" && NF >= 3) {
-		if ($3 == "section" && NF != 4 || $3 == "keys" && NF < 4 || $3 == "pool" && NF != 3) bad("malformed line")
-		if ($3 != "section" && $3 != "keys" && $3 != "pool") bad("unknown check kind: " $3)
+		if ($3 == "section" && NF != 4 || $3 == "keys" && NF < 4 || ($3 == "pool" || $3 == "attempts") && NF != 3) bad("malformed line")
+		if ($3 != "section" && $3 != "keys" && $3 != "pool" && $3 != "attempts") bad("unknown check kind: " $3)
 		arg = $0
 		sub(/^[ \t]*check[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]*/, "", arg)
 		sub(/[ \t]+$/, "", arg)
 		ncheck++
 		check_line[ncheck] = FNR
 		check_stage[ncheck] = $2
+		check_kind[ncheck] = $3
 		check_text[ncheck] = $2 "\t" $3 "\t" arg
 		next
 	}
@@ -103,7 +105,8 @@ END {
 				written[rank] = ""
 				for (rr = 1; rr <= rank; rr++)
 					for (c = 1; c <= ncheck; c++)
-						if (seen[check_stage[c]] == rr) written[rank] = written[rank] check_text[c] "\n"
+						if (seen[check_stage[c]] == rr && (rr == rank || check_kind[c] != "pool"))
+							written[rank] = written[rank] check_text[c] "\n"
 			}
 			if (written[rank] != "") {
 				due = ENVIRON["TMP"] "/due." rank
@@ -305,6 +308,16 @@ function check_pool(   np, k, v, g, c, all, x, first, at, pre, bad, y) {
 	out = sprintf("    golden: %s x%d\n    c: %s x%d\n", first, g[first], first, c[first])
 	return 0
 }
+function check_attempts(   ng, nc) {
+	nc = slurp(ENVIRON["O"] "/attempts", CA)
+	if (nc < 0) { out = "    c wrote no attempts\n"; return 0 }
+	ng = slurp(ENVIRON["G"] "/attempts", GA)
+	if (ng < 0) ng = 0
+	if (same(GA, ng, CA, nc)) return 1
+	first_diff(GA, ng, CA, nc)
+	out = "    golden: " fd_g "\n    c: " fd_c "\n"
+	return 0
+}
 BEGIN {
 	RS = "\001"
 	mode = ENVIRON["MODE"]
@@ -326,6 +339,7 @@ BEGIN {
 	for (d = 1; d <= ndue; d++) {
 		if (DK[d] == "section") ok = check_section(DA[d])
 		else if (DK[d] == "keys") ok = check_keys(DA[d])
+		else if (DK[d] == "attempts") ok = check_attempts()
 		else ok = check_pool()
 		if (!ok) fail("  " DS[d] ": " DK[d] (DA[d] != "" ? " " DA[d] : "") ":\n" out)
 	}
