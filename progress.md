@@ -18,7 +18,7 @@
     - [x] Chunk 3: fill claims and the coverage guard
     - [x] Chunk 4: fixes for divergent combinations
     - [x] Chunk 5: measure against step 1.1
-  - [ ] 1.4 Port the post-fill draws
+  - [x] 1.4 Port the post-fill draws
     - [x] Chunk 1: new stage order, RandoPostFill and setTexts
     - [x] Chunk 2: randomizeCredits
     - [x] Chunk 3: hint_tables.txt oracle fixture
@@ -28,7 +28,7 @@
     - [x] Chunk 7: setDiggingGameRng and writeRNGBlock
     - [x] Chunk 8: writePrizePacksToRom and every claim to all
     - [x] Chunk 8b: every claim back to all
-    - [ ] Chunk 9: measure against step 1.1
+    - [x] Chunk 9: measure against step 1.1
   - [ ] 1.5 rando_rom skeleton and claims by write group
   - [ ] 1.6 Port the items and locations writes
   - [ ] 1.7 Port the settings and flags writes
