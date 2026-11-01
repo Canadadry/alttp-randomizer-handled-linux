@@ -28,7 +28,6 @@ int ui_str_arity(UiStrId id)
 	return in_range(id) ? arities[id] : 0;
 }
 
-/* Appends the bytes of src (NULL = none) to buf at *len, keeping room for the NUL; false when cut. */
 static bool put(char *buf, size_t cap, size_t *len, const char *src, size_t n)
 {
 	size_t i;

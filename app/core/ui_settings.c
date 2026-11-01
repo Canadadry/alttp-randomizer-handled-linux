@@ -18,7 +18,7 @@ static const UiStrId labels[RANDO_SETTING_COUNT] = {
 	[RANDO_SETTING_HEART_BEEP] = UI_STR_SETTING_HEART_BEEP,
 };
 
-/* Rows in the library's value order; an entry left UI_STR_NONE fails test_ui_generate. */
+/* Rows in the library's value order. */
 static const UiStrId values[RANDO_SETTING_COUNT][UI_SETTING_VALUES_MAX] = {
 	[RANDO_SETTING_GLITCHES] = {UI_STR_GLITCHES_NONE, UI_STR_GLITCHES_OVERWORLD, UI_STR_GLITCHES_HYBRID_MAJOR,
 				    UI_STR_GLITCHES_MAJOR, UI_STR_GLITCHES_NO_LOGIC},

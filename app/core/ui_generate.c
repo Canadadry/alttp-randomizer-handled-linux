@@ -25,7 +25,6 @@ static bool pair_holds(const UiGenerate *state, const RandoSettingPair *pair)
 	       rando_setting_get(&state->options, state->heart_beep, pair->b) == pair->value_b;
 }
 
-/* The first holding pair naming row (any row for the action), or NULL. */
 static const RandoSettingPair *holding_pair(const UiGenerate *state, int row)
 {
 	int i;
@@ -40,7 +39,6 @@ static const RandoSettingPair *holding_pair(const UiGenerate *state, int row)
 	return NULL;
 }
 
-/* "Not supported with <the pair's other setting>"; "" when no pair holds for row. */
 static void fill_reason(const UiGenerate *state, int row, char buf[UI_GENERATE_REASON_MAX])
 {
 	const RandoSettingPair *pair = row == UI_GENERATE_ROW_SPOILER ? NULL : holding_pair(state, row);

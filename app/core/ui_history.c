@@ -4,12 +4,9 @@
 #include <assert.h>
 #include <string.h>
 
-/* The detail's rows before the spoiler part: date, seed, the settings, the spoiler option, a blank. */
 #define DETAIL_HEAD (RANDO_SETTING_COUNT + 4)
-/* A continuation row keeps at least this many characters after its indentation. */
 #define WRAP_MIN 8
 
-/* Writes value as n digits, zero-padded. */
 static char *put_digits(char *out, long value, int n)
 {
 	int i;
@@ -21,7 +18,6 @@ static char *put_digits(char *out, long value, int n)
 	return out + n;
 }
 
-/* NUL-terminated decimal; buf holds at least 11 bytes. */
 static void put_decimal(char *buf, unsigned long value)
 {
 	char digits[16];
@@ -36,7 +32,6 @@ static void put_decimal(char *buf, unsigned long value)
 	*buf = '\0';
 }
 
-/* "YYYY-MM-DD HH:MM". */
 static void put_date(char buf[17], const UiHistoryDate *d)
 {
 	char *out = buf;
@@ -114,14 +109,11 @@ static bool add_line(UiHistory *state, size_t offset, size_t len, int indent)
 	return true;
 }
 
-/* At most width - WRAP_MIN, so every row keeps WRAP_MIN characters. */
 static int row_indent(const UiHistory *state, int indent)
 {
 	return indent < state->width - WRAP_MIN ? indent : state->width - WRAP_MIN;
 }
 
-/* One outline line, text[start, end): rows of at most width characters, broken at the last space that
- * fits, continuations indented two more. False when the line index is full. */
 static bool wrap_line(UiHistory *state, size_t start, size_t end)
 {
 	const char *text = state->spoiler.text;
@@ -410,7 +402,6 @@ static void list_screen(UiHistory *state, UiScreen *out)
 	}
 }
 
-/* Row index of the detail's virtual list, as rendered into out. */
 static void detail_row(UiHistory *state, int index, UiScreen *out)
 {
 	const UiStrTable *t = state->strings;

@@ -11,7 +11,6 @@
 #define UI_GRID_LINES_MIN 5
 #define UI_GRID_LINES_MAX 40
 
-/* 640x480 surface (docs/onion.md), 16x32 px cells. */
 #define UI_GRID_DEFAULT_COLS 40
 #define UI_GRID_DEFAULT_LINES 15
 
@@ -36,21 +35,14 @@ typedef struct UiGrid {
 	UiLineStyle styles[UI_GRID_LINES_MAX];
 } UiGrid;
 
-/* All blank; false, leaving grid untouched, outside the bounds above. */
 bool ui_grid_init(UiGrid *grid, int cols, int lines);
 
-/* The number of list lines: lines - 4. */
 int ui_grid_page(const UiGrid *grid);
 
-/* Lays screen out on grid (already initialised, its size kept); false, leaving grid all blank, when
- * ui_screen_valid refuses screen. Texts are read during the call only. */
 bool ui_grid_render(UiGrid *grid, const UiScreen *screen);
 
-/* The text form of the largest grid, plus the terminating NUL. */
 #define UI_GRID_TEXT_MAX ((UI_GRID_LINES_MAX + 2) * (UI_GRID_COLS_MAX + 4) + 1)
 
-/* Writes the text form (a frame, a style tag per line) NUL-terminated into buf; returns its length, or 0
- * when size cannot hold it and the NUL (buf contents then unspecified). */
 size_t ui_grid_text(const UiGrid *grid, char *buf, size_t size);
 
 #endif

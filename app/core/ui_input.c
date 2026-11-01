@@ -13,7 +13,6 @@ void ui_input_init(UiInput *input)
 	memset(input, 0, sizeof *input);
 }
 
-/* Marks every held starter as used; true when one was held. */
 static bool use_held_starters(UiInput *input, UiButton except)
 {
 	bool any = false;

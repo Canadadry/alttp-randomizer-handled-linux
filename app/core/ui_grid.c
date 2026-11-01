@@ -98,7 +98,6 @@ size_t ui_grid_text(const UiGrid *grid, char *buf, size_t size)
 	return len;
 }
 
-/* Writes into one line's columns [col, end); text past end is cut and the last column becomes CUT_MARK. */
 typedef struct Pen {
 	char *cells;
 	int col, end;
@@ -144,7 +143,6 @@ static int text_len(const char *text)
 	return text ? (int)strlen(text) : 0;
 }
 
-/* From column 1 to the last column before the scroll column. */
 static void put_field(UiGrid *grid, int line, const char *text)
 {
 	Pen pen = pen_at(grid, line, 1, grid->cols - 1);
@@ -173,7 +171,6 @@ static void put_tabs(UiGrid *grid, const UiScreen *screen)
 	grid->styles[0] = UI_LINE_TABS;
 }
 
-/* The value right-aligned as "< value >" (selected) or "  value  ", the label in what is left. */
 static void put_setting(UiGrid *grid, int line, const UiRow *row, bool arrows)
 {
 	int field = grid->cols - 2;

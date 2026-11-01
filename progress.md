@@ -128,7 +128,7 @@
   - [ ] 5.1 skill: rework-comments
     - [x] rando/include and rando/src
     - [x] regions and rando/host
-    - [ ] app/core
+    - [x] app/core
     - [ ] app/sd, app/sdl, app/main
     - [ ] unit tests a-r and support
     - [ ] other tests, scripts, Makefiles
