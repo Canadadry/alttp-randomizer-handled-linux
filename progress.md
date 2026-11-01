@@ -40,7 +40,7 @@
   - [ ] 1.7 Port the settings and flags writes
     - [x] Chunk 1: config keys
     - [x] Chunk 2: settings source and config-only rows
-    - [ ] Chunk 3: world-dependent rows
+    - [x] Chunk 3: world-dependent rows
     - [ ] Chunk 4: inverted
     - [ ] Chunk 5: claims to all settings
   - [ ] 1.8 Port the credits writes

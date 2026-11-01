@@ -69,7 +69,8 @@ static const RandoLocationId crystal_prizes[7] = {
 };
 
 /* An Open world with only its prizes placed (VT's writeItem refuses an empty prize): pendants on the
- * light world dungeons, crystals on the dark world ones, in order. */
+ * light world dungeons, crystals on the dark world ones, in order. The later groups need setShops'
+ * default shops active and every drop set. */
 static void build(RandoGen *g, void (*tweak)(RandoConfig *))
 {
 	RandoConfig config;
@@ -85,6 +86,15 @@ static void build(RandoGen *g, void (*tweak)(RandoConfig *))
 		CHECK(rando_world_set_item(&g->world, pendant_prizes[i], pendants[i]));
 	for (i = 0; i < 7; i++)
 		CHECK(rando_world_set_item(&g->world, crystal_prizes[i], crystals[i]));
+	for (i = 0; i < RANDO_SHOP_COUNT; i++)
+		if (rando_shop_info((RandoShopId)i)->kind != RANDO_SHOP_KIND_TAKE_ANY)
+			rando_world_shop_set_active(&g->world, (RandoShopId)i, true);
+	for (i = 0; i < RANDO_PRIZE_PACK_COUNT; i++) {
+		int j;
+
+		for (j = 0; j < rando_prize_pack_slots((RandoPrizePack)i); j++)
+			rando_world_set_drop(&g->world, (RandoPrizePack)i, j, RANDO_DROP_HEART);
+	}
 }
 
 static void run(void)

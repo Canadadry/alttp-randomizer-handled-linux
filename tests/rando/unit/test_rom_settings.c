@@ -81,8 +81,9 @@ static const RandoLocationId crystal_prizes[7] = {
 	RANDO_LOC_TURTLE_ROCK_PRIZE,
 };
 
-/* A world of the variant with only its prizes placed (VT's writeItem refuses an empty prize), and the
- * prize music drawn, which the items group reads under rom.mapOnPickup. */
+/* A world of the variant with only its prizes placed (VT's writeItem refuses an empty prize), the prize
+ * music drawn, which the items group reads under rom.mapOnPickup, setShops' default shops active and
+ * every drop a Heart. */
 static void build_variant(RandoGen *g, RandoVariant variant, void (*tweak)(RandoConfig *))
 {
 	RandoPrizeMusic *music = &g->post.prize_music;
@@ -107,6 +108,15 @@ static void build_variant(RandoGen *g, RandoVariant variant, void (*tweak)(Rando
 	}
 	music->locations[music->count] = RANDO_LOC_AGAHNIM_2;
 	music->music[music->count++] = 0x16;
+	for (i = 0; i < RANDO_SHOP_COUNT; i++)
+		if (rando_shop_info((RandoShopId)i)->kind != RANDO_SHOP_KIND_TAKE_ANY)
+			rando_world_shop_set_active(&g->world, (RandoShopId)i, true);
+	for (i = 0; i < RANDO_PRIZE_PACK_COUNT; i++) {
+		int j;
+
+		for (j = 0; j < rando_prize_pack_slots((RandoPrizePack)i); j++)
+			rando_world_set_drop(&g->world, (RandoPrizePack)i, j, RANDO_DROP_HEART);
+	}
 }
 
 static void build(RandoGen *g, void (*tweak)(RandoConfig *))
@@ -160,7 +170,6 @@ typedef struct Expected {
 	const char *method;
 } Expected;
 
-/* TODO step 7, chunk 3: setupCustomShops, writePrizePacksToRom and removeUncles* go in their places. */
 static const Expected open_order[] = {
 	{0x180167, 2, "setGoalRequiredCount"},
 	{0x180165, 2, "setGoalIcon"},
@@ -182,6 +191,8 @@ static const Expected open_order[] = {
 	{0x18019A, 1, "setTowerCrystalRequirement"},
 	{0x1801A6, 1, "setGanonCrystalRequirement"},
 	{0x180172, 1, "setGenericKeys"},
+	{0x184800, 80, "setupCustomShops"},
+	{0x184900, 240, "setupCustomShops"},
 	{0x030052, 1, "setRupeeArrow"},
 	{0x0301FC, 1, "setRupeeArrow"},
 	{0x0ECB4E, 4, "setRupeeArrow"},
@@ -213,6 +224,12 @@ static const Expected open_order[] = {
 	{0x180020, 1, "setDiggingGameRng"},
 	{0x0EFD95, 1, "setDiggingGameRng"},
 	{0x178000, 1024, "writeRNGBlock"},
+	{0x037A78, 56, "writePrizePacksToRom"},
+	{0x0EFBD4, 3, "writePrizePacksToRom"},
+	{0x0329C8, 1, "writePrizePacksToRom"},
+	{0x0329C4, 1, "writePrizePacksToRom"},
+	{0x037993, 1, "writePrizePacksToRom"},
+	{0x0E82CC, 1, "writePrizePacksToRom"},
 	{0x01FC16, 6, "setPyramidFairyChests"},
 	{0x180029, 1, "setSmithyQuickItemGive"},
 	{0x180174, 1, "setGameState"},
@@ -222,6 +239,23 @@ static const Expected open_order[] = {
 	{0x180044, 1, "setSwordlessMode"},
 	{0x18005D, 1, "setSwordlessMode"},
 	{0x180169, 1, "setLockAgahnimDoorInEscape"},
+	{0x06D263, 6, "removeUnclesSword"},
+	{0x06D26B, 6, "removeUnclesSword"},
+	{0x06D293, 6, "removeUnclesSword"},
+	{0x06D29B, 6, "removeUnclesSword"},
+	{0x06D2B3, 6, "removeUnclesSword"},
+	{0x06D2BB, 6, "removeUnclesSword"},
+	{0x06D2E3, 6, "removeUnclesSword"},
+	{0x06D2EB, 6, "removeUnclesSword"},
+	{0x06D31B, 6, "removeUnclesSword"},
+	{0x06D323, 6, "removeUnclesSword"},
+	{0x06D253, 6, "removeUnclesShield"},
+	{0x06D25B, 6, "removeUnclesShield"},
+	{0x06D283, 6, "removeUnclesShield"},
+	{0x06D28B, 6, "removeUnclesShield"},
+	{0x06D2CB, 6, "removeUnclesShield"},
+	{0x06D2FB, 6, "removeUnclesShield"},
+	{0x06D313, 6, "removeUnclesShield"},
 	{0x186FFF, 1, "setBallNChainDungeon"},
 	{0x180080, 4, "setCapacityUpgradeFills"},
 	{0x180190, 3, "setClockMode"},
@@ -592,6 +626,350 @@ static void check_game_state(void)
 	check_byte(0x180169, 0x01, "setLockAgahnimDoorInEscape");
 }
 
+/* A shop as VT's region constructor and setShops leave it: its ROM bytes, then its records' item byte and
+ * price. */
+typedef struct VtShop {
+	uint8_t config, keeper;
+	uint16_t room;
+	uint8_t door;
+	int n;
+	uint8_t items[3];
+	uint16_t prices[3];
+	uint8_t max;
+} VtShop;
+
+/* VT's Shops, in getShops order: Kakariko, LW Lake Hylia, Capacity Upgrade, LW Death Mountain, DW Death
+ * Mountain, DW Potion, DW Forest, DW Lumberjack, DW Outcasts, DW Lake Hylia. */
+static const VtShop open_shops[10] = {
+	{0x03, 0xA0, 0x011F, 0x46, 3, {0x2E, 0x42, 0x31}, {150, 10, 50}, 0},
+	{0x03, 0xA0, 0x0112, 0x58, 3, {0x2E, 0x42, 0x31}, {150, 10, 50}, 0},
+	{0x12, 0x04, 0x0115, 0x5D, 2, {0x51, 0x53, 0}, {100, 100, 0}, 7},
+	{0x43, 0xA0, 0x00FF, 0x00, 3, {0x2E, 0x42, 0x31}, {150, 10, 50}, 0},
+	{0x03, 0xC1, 0x0112, 0x6E, 3, {0x2E, 0x42, 0x31}, {150, 10, 50}, 0},
+	{0x03, 0xC1, 0x010F, 0x6F, 3, {0x2E, 0x04, 0x31}, {150, 50, 50}, 0},
+	{0x03, 0xC1, 0x0110, 0x75, 3, {0x05, 0x0E, 0x44}, {500, 10, 30}, 0},
+	{0x03, 0xC1, 0x010F, 0x57, 3, {0x2E, 0x04, 0x31}, {150, 50, 50}, 0},
+	{0x03, 0xC1, 0x010F, 0x60, 3, {0x2E, 0x04, 0x31}, {150, 50, 50}, 0},
+	{0x03, 0xC1, 0x010F, 0x74, 3, {0x2E, 0x04, 0x31}, {150, 50, 50}, 0},
+};
+
+/* setupCustomShops' two writes for shops: ids from 0 up, the last 0xFF, the SRAM offset growing by the
+ * inventory size (1 for a take-any), then 8 0xFF after the records. */
+static void check_shops(const VtShop *shops, const bool *take_any, int n)
+{
+	uint8_t shop_bytes[8 * 41], item_bytes[8 * 41 * 3 + 8];
+	size_t ns = 0, ni = 0;
+	int i, j, sram = 0;
+
+	for (i = 0; i < n; i++) {
+		uint8_t id = (uint8_t)(i == n - 1 ? 0xFF : i);
+
+		shop_bytes[ns++] = id;
+		shop_bytes[ns++] = (uint8_t)(shops[i].room & 0xFF);
+		shop_bytes[ns++] = (uint8_t)(shops[i].room >> 8);
+		shop_bytes[ns++] = shops[i].door;
+		shop_bytes[ns++] = 0x00;
+		shop_bytes[ns++] = (uint8_t)((shops[i].config & 0xFC) + shops[i].n);
+		shop_bytes[ns++] = shops[i].keeper;
+		shop_bytes[ns++] = (uint8_t)sram;
+		sram += take_any != NULL && take_any[i] ? 1 : shops[i].n;
+		for (j = 0; j < shops[i].n; j++) {
+			item_bytes[ni++] = id;
+			item_bytes[ni++] = shops[i].items[j];
+			item_bytes[ni++] = (uint8_t)(shops[i].prices[j] & 0xFF);
+			item_bytes[ni++] = (uint8_t)(shops[i].prices[j] >> 8);
+			item_bytes[ni++] = shops[i].max;
+			item_bytes[ni++] = 0xFF;
+			item_bytes[ni++] = 0x00;
+			item_bytes[ni++] = 0x00;
+		}
+	}
+	memset(item_bytes + ni, 0xFF, 8);
+	ni += 8;
+	check_write(0x184800, shop_bytes, ns, "setupCustomShops");
+	check_write(0x184900, item_bytes, ni, "setupCustomShops");
+	CHECK(find(0x184900) == find(0x184800) + 1);
+}
+
+static void check_open_shops(void)
+{
+	build(&gen, NULL);
+	run();
+	check_shops(open_shops, NULL, 10);
+	CHECK(find(0x184800) == find(0x180172) + 1);
+}
+
+/* Retro's take-anys: each one's extra write first, in getShops order, then shopkeeper 0xE2 and one SRAM
+ * slot each; ShopArrow and ShopKey written as Arrow's and KeyGK's bytes. */
+static void check_take_any_shops(void)
+{
+	static VtShop shops[12];
+	static bool take_any[12];
+	static const uint8_t fairy[1] = {0x58};
+	int n = 0, i;
+
+	build_variant(&gen, RANDO_VARIANT_RETRO, NULL);
+	rando_world_shop_set_active(&gen.world, RANDO_SHOP_LONG_FAIRY_CAVE, true);
+	rando_world_shop_add(&gen.world, RANDO_SHOP_LONG_FAIRY_CAVE, 0, RANDO_ITEM_ProgressiveSword, 0);
+	rando_world_shop_set_active(&gen.world, RANDO_SHOP_LAKE_HYLIA_FAIRY, true);
+	rando_world_shop_add(&gen.world, RANDO_SHOP_LAKE_HYLIA_FAIRY, 0, RANDO_ITEM_BluePotion, 0);
+	rando_world_shop_add(&gen.world, RANDO_SHOP_LAKE_HYLIA_FAIRY, 1, RANDO_ITEM_BossHeartContainer, 0);
+	rando_world_shop_add(&gen.world, RANDO_SHOP_LIGHT_WORLD_KAKARIKO_SHOP, 0, RANDO_ITEM_ShopArrow, 80);
+	rando_world_shop_add(&gen.world, RANDO_SHOP_LIGHT_WORLD_KAKARIKO_SHOP, 1, RANDO_ITEM_ShopKey, 100);
+	run();
+
+	shops[n] = (VtShop){0x83, 0xE2, 0x0112, 0x55, 1, {0x5E, 0, 0}, {0, 0, 0}, 0};
+	take_any[n++] = true;
+	shops[n] = (VtShop){0x83, 0xE2, 0x0112, 0x5E, 2, {0x30, 0x3E, 0}, {0, 0, 0}, 0};
+	take_any[n++] = true;
+	shops[n] = (VtShop){0x03, 0xA0, 0x011F, 0x46, 3, {0x43, 0xAF, 0x31}, {80, 100, 50}, 0};
+	take_any[n++] = false;
+	for (i = 1; i < 10; i++) {
+		shops[n] = open_shops[i];
+		take_any[n++] = false;
+	}
+	check_shops(shops, take_any, n);
+	check_byte(0xDBBC7, 0x58, "setupCustomShops");
+	check_write(0xDBBD0, fairy, 1, "setupCustomShops");
+	CHECK(find(0xDBBD0) == find(0xDBBC7) + 1);
+	CHECK(find(0x184800) == find(0xDBBD0) + 1);
+}
+
+/* Hard and expert pools clear the Capacity Upgrade, which stays active with nothing to sell. */
+static void check_cleared_upgrade_shop(void)
+{
+	VtShop shops[10];
+
+	build(&gen, NULL);
+	rando_world_shop_clear(&gen.world, RANDO_SHOP_CAPACITY_UPGRADE);
+	run();
+	memcpy(shops, open_shops, sizeof shops);
+	shops[2].n = 0;
+	check_shops(shops, NULL, 10);
+}
+
+static void no_farie_drops(RandoConfig *config)
+{
+	config->rom_no_farie_drops = true;
+}
+
+/* The drop bytes in getAllDrops order (0xD7 + drop id), every drop id in turn, then replaced as VT's
+ * str_replace does. */
+static void set_drops(RandoGen *g, uint8_t *bytes, bool no_farie, bool rupee_bow)
+{
+	int pack, slot, n = 0;
+
+	for (pack = 0; pack < RANDO_PRIZE_PACK_COUNT; pack++)
+		for (slot = 0; slot < rando_prize_pack_slots((RandoPrizePack)pack); slot++) {
+			RandoDrop drop = (RandoDrop)(1 + n % (RANDO_DROP_COUNT - 1));
+			uint8_t byte = (uint8_t)(0xD7 + drop);
+
+			rando_world_set_drop(&g->world, (RandoPrizePack)pack, slot, drop);
+			if (no_farie && byte == 0xE0)
+				byte = 0xDF;
+			if (no_farie && byte == 0xE3)
+				byte = 0xD8;
+			if (rupee_bow && byte == 0xE1)
+				byte = 0xDA;
+			if (rupee_bow && byte == 0xE2)
+				byte = 0xDB;
+			bytes[n++] = byte;
+		}
+	CHECK(n == 63);
+}
+
+static void check_drop_writes(const uint8_t *bytes)
+{
+	check_write(0x37A78, bytes, 56, "writePrizePacksToRom");
+	check_write(0xEFBD4, bytes + 56, 3, "writePrizePacksToRom");
+	check_byte(0x329C8, bytes[59], "writePrizePacksToRom");
+	check_byte(0x329C4, bytes[60], "writePrizePacksToRom");
+	check_byte(0x37993, bytes[61], "writePrizePacksToRom");
+	check_byte(0xE82CC, bytes[62], "writePrizePacksToRom");
+	CHECK(find(0x37A78) == find(0x178000) + 1 || find(0x180100) == find(0x178000) + 1);
+	CHECK(find(0xE82CC) == find(0x37A78) + 5);
+	CHECK(find(0x1FC16) == find(0xE82CC) + 1);
+}
+
+/* writePrizePacksToRom: plain, under rom.NoFarieDrops, and under rom.rupeeBow with its dig prizes first. */
+static void check_prize_packs(void)
+{
+	static const uint8_t dig[64] = {
+		0xB2, 0xD8, 0xD8, 0xD8, 0xD8, 0xD8, 0xD8, 0xD8, 0xD8, 0xD9, 0xD9, 0xD9, 0xD9, 0xD9, 0xDA, 0xDA,
+		0xDA, 0xDA, 0xDA, 0xDB, 0xDB, 0xDB, 0xDB, 0xDB, 0xDC, 0xDC, 0xDC, 0xDC, 0xDC, 0xDD, 0xDD, 0xDD,
+		0xDD, 0xDD, 0xDE, 0xDE, 0xDE, 0xDE, 0xDE, 0xDF, 0xDF, 0xDF, 0xDF, 0xDF, 0xE0, 0xE0, 0xE0, 0xE0,
+		0xE0, 0xDA, 0xDA, 0xDA, 0xDA, 0xDA, 0xDB, 0xDB, 0xDB, 0xDB, 0xDB, 0xE3, 0xE3, 0xE3, 0xE3, 0xE3,
+	};
+	uint8_t bytes[63];
+
+	build(&gen, NULL);
+	set_drops(&gen, bytes, false, false);
+	run();
+	check_drop_writes(bytes);
+	CHECK(find(0x180100) < 0);
+
+	build(&gen, no_farie_drops);
+	set_drops(&gen, bytes, true, false);
+	run();
+	check_drop_writes(bytes);
+
+	build_variant(&gen, RANDO_VARIANT_RETRO, NULL);
+	set_drops(&gen, bytes, false, true);
+	run();
+	check_drop_writes(bytes);
+	check_write(0x180100, dig, sizeof dig, "writePrizePacksToRom");
+	CHECK(find(0x37A78) == find(0x180100) + 1);
+}
+
+static const uint32_t uncle_sword_rows[10] = {0x6D263, 0x6D26B, 0x6D293, 0x6D29B, 0x6D2B3,
+					      0x6D2BB, 0x6D2E3, 0x6D2EB, 0x6D31B, 0x6D323};
+static const uint8_t uncle_sword_bytes[10][6] = {
+	{0x00, 0x00, 0xF6, 0xFF, 0x00, 0x0E}, {0x00, 0x00, 0xF6, 0xFF, 0x00, 0x0E}, {0x00, 0x00, 0xF6, 0xFF, 0x00, 0x0E},
+	{0x00, 0x00, 0xF7, 0xFF, 0x00, 0x0E}, {0x00, 0x00, 0xF6, 0xFF, 0x02, 0x0E}, {0x00, 0x00, 0xF6, 0xFF, 0x02, 0x0E},
+	{0x00, 0x00, 0xF7, 0xFF, 0x02, 0x0E}, {0x00, 0x00, 0xF7, 0xFF, 0x02, 0x0E}, {0x00, 0x00, 0xE4, 0xFF, 0x08, 0x0E},
+	{0x00, 0x00, 0xE4, 0xFF, 0x08, 0x0E},
+};
+static const uint32_t uncle_shield_rows[7] = {0x6D253, 0x6D25B, 0x6D283, 0x6D28B, 0x6D2CB, 0x6D2FB, 0x6D313};
+static const uint8_t uncle_shield_bytes[7][6] = {
+	{0x00, 0x00, 0xF6, 0xFF, 0x00, 0x0E}, {0x00, 0x00, 0xF6, 0xFF, 0x00, 0x0E}, {0x00, 0x00, 0xF6, 0xFF, 0x00, 0x0E},
+	{0x00, 0x00, 0xF7, 0xFF, 0x00, 0x0E}, {0x00, 0x00, 0xF6, 0xFF, 0x02, 0x0E}, {0x00, 0x00, 0xF7, 0xFF, 0x02, 0x0E},
+	{0x00, 0x00, 0xE4, 0xFF, 0x08, 0x0E},
+};
+
+/* removeUnclesSword unless the uncle holds an Item\Sword (UncleSword is an alias); removeUnclesShield
+ * always, right after it, before setBallNChainDungeon. */
+static void check_uncle(void)
+{
+	static const RandoItemId items[4] = {RANDO_ITEM_ProgressiveSword, RANDO_ITEM_UncleSword, RANDO_ITEM_FiveRupees,
+					     RANDO_ITEM_NONE};
+	int i, j;
+
+	for (i = 0; i < 4; i++) {
+		bool sword = items[i] == RANDO_ITEM_ProgressiveSword;
+
+		build(&gen, NULL);
+		CHECK(rando_world_set_item(&gen.world, RANDO_LOC_LINKS_UNCLE, items[i]));
+		run();
+		for (j = 0; j < 10; j++) {
+			if (sword) {
+				CHECK(find(uncle_sword_rows[j]) < 0);
+				continue;
+			}
+			check_write(uncle_sword_rows[j], uncle_sword_bytes[j], 6, "removeUnclesSword");
+			CHECK(find(uncle_sword_rows[j]) == find(0x180169) + 1 + j);
+		}
+		for (j = 0; j < 7; j++) {
+			check_write(uncle_shield_rows[j], uncle_shield_bytes[j], 6, "removeUnclesShield");
+			CHECK(find(uncle_shield_rows[j]) == find(0x180169) + (sword ? 1 : 11) + j);
+		}
+		CHECK(find(0x186FFF) == find(0x6D313) + 1);
+	}
+}
+
+static void map_on_pickup(RandoConfig *config)
+{
+	config->rom_map_on_pickup = true;
+}
+
+/* Region::$map_reveal of the regions holding PendantOfCourage, and Crystal5 OR Crystal6: Swamp 0x0400,
+ * Eastern 0x2000, Ice 0x0040. Before setMapMode, only under rom.mapOnPickup. */
+static void check_map_reveal(void)
+{
+	static const uint8_t sahasrahla[2] = {0x00, 0x04}, bomb_shop[2] = {0x40, 0x20};
+
+	build(&gen, map_on_pickup);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_SWAMP_PALACE_PRIZE, RANDO_ITEM_PendantOfCourage));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_EASTERN_PALACE_PRIZE, RANDO_ITEM_Crystal5));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_ICE_PALACE_PRIZE, RANDO_ITEM_Crystal6));
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_MISERY_MIRE_PRIZE, RANDO_ITEM_Crystal2));
+	run();
+	check_write(0x18017A, sahasrahla, 2, "setMapRevealSahasrahla");
+	check_write(0x18017C, bomb_shop, 2, "setMapRevealBombShop");
+	CHECK(find(0x18017A) == find(0x1801A8) + 1);
+	CHECK(find(0x18003B) == find(0x18017C) + 1);
+
+	build(&gen, NULL);
+	run();
+	CHECK(find(0x18017A) < 0);
+	CHECK(find(0x18017C) < 0);
+}
+
+static RandoLogic escape_logic;
+static bool escape_ignore;
+static RandoEnemyHealth escape_health;
+
+static void set_escape_config(RandoConfig *config)
+{
+	config->logic = escape_logic;
+	config->ignore_can_kill_escape_things = escape_ignore;
+	config->enemizer_enemy_health = escape_health;
+}
+
+/* setEscapeFills' five outcomes: 0 sword or hammer, 1 magic, 2 arrows, 3 bombs, 4 nothing. */
+static void check_escape_outcome(RandoItemId uncle, RandoItemId pre_collected, RandoLogic l, bool ignore,
+				 int outcome)
+{
+	static const uint8_t flags[4] = {0x00, 0x04, 0x01, 0x02};
+	static const uint8_t refills[4][3][3] = {
+		{{0x00, 0x00, 0x00}, {0x00, 0x00, 0x00}, {0x00, 0x00, 0x00}},
+		{{0x80, 0x00, 0x00}, {0x20, 0x00, 0x00}, {0x20, 0x00, 0x00}},
+		{{0x00, 0x00, 0x46}, {0x00, 0x00, 0x0A}, {0x00, 0x00, 0x0A}},
+		{{0x00, 0x32, 0x00}, {0x00, 0x03, 0x00}, {0x00, 0x03, 0x00}},
+	};
+	static const uint8_t rupees[2] = {0x2C, 0x01};
+
+	escape_logic = l;
+	escape_ignore = ignore;
+	build_variant(&gen, RANDO_VARIANT_STANDARD, set_escape_config);
+	CHECK(rando_world_set_item(&gen.world, RANDO_LOC_LINKS_UNCLE, uncle));
+	if (pre_collected != RANDO_ITEM_NONE)
+		rando_world_add_pre_collected(&gen.world, pre_collected);
+	run();
+	if (outcome == 4) {
+		CHECK(find(0x18004E) < 0 && find(0x180183) < 0 && find(0x180185) < 0);
+		CHECK(rec.writes[0].address == 0x180167);
+		return;
+	}
+	check_byte(0x18004E, flags[outcome], "setEscapeFills");
+	check_write(0x180183, rupees, 2, "setEscapeFills");
+	check_write(0x180185, refills[outcome][0], 3, "setEscapeFills");
+	check_write(0x180188, refills[outcome][1], 3, "setEscapeFills");
+	check_write(0x18018B, refills[outcome][2], 3, "setEscapeFills");
+	CHECK(find(0x18004E) == 0 && find(0x18018B) == 4 && rec.writes[5].address == 0x180167);
+	CHECK(find(0x18004D) < 0);
+}
+
+static void check_escape_fills(void)
+{
+	const RandoLogic ng = RANDO_LOGIC_NO_GLITCHES, nl = RANDO_LOGIC_NO_LOGIC;
+
+	check_escape_outcome(RANDO_ITEM_ProgressiveSword, RANDO_ITEM_NONE, ng, false, 0);
+	check_escape_outcome(RANDO_ITEM_Hammer, RANDO_ITEM_NONE, ng, false, 0);
+	check_escape_outcome(RANDO_ITEM_FireRod, RANDO_ITEM_NONE, ng, false, 1);
+	check_escape_outcome(RANDO_ITEM_CaneOfSomaria, RANDO_ITEM_NONE, ng, false, 1);
+	check_escape_outcome(RANDO_ITEM_CaneOfByrna, RANDO_ITEM_NONE, ng, false, 1);
+	check_escape_outcome(RANDO_ITEM_ProgressiveBow, RANDO_ITEM_NONE, ng, false, 2);
+	check_escape_outcome(RANDO_ITEM_TenBombs, RANDO_ITEM_NONE, nl, false, 3);
+	check_escape_outcome(RANDO_ITEM_NONE, RANDO_ITEM_NONE, ng, false, 3);
+	check_escape_outcome(RANDO_ITEM_NONE, RANDO_ITEM_NONE, nl, false, 4);
+	check_escape_outcome(RANDO_ITEM_FiveRupees, RANDO_ITEM_NONE, nl, false, 4);
+	/* No killing item: the pre-collected items count, even under ignoreCanKillEscapeThings. */
+	check_escape_outcome(RANDO_ITEM_FiveRupees, RANDO_ITEM_ProgressiveSword, ng, false, 0);
+	check_escape_outcome(RANDO_ITEM_FiveRupees, RANDO_ITEM_ProgressiveSword, ng, true, 0);
+	/* A killing item: the pre-collected sword is not merged in. */
+	check_escape_outcome(RANDO_ITEM_FireRod, RANDO_ITEM_ProgressiveSword, ng, false, 1);
+	/* CaneOfByrna counts only at default enemy health. */
+	escape_health = RANDO_ENEMY_HEALTH_HARD;
+	check_escape_outcome(RANDO_ITEM_CaneOfByrna, RANDO_ITEM_NONE, ng, false, 3);
+	check_escape_outcome(RANDO_ITEM_CaneOfByrna, RANDO_ITEM_NONE, nl, false, 4);
+	escape_health = RANDO_ENEMY_HEALTH_DEFAULT;
+
+	build(&gen, NULL);
+	run();
+	CHECK(find(0x18004E) < 0);
+	CHECK(rec.writes[0].address == 0x180167);
+}
+
 /* A refused settings write is the last call the writer gets. */
 static void check_refusal(void)
 {
@@ -644,6 +1022,13 @@ int main(int argc, char **argv)
 	check_swordless();
 	check_swords_in_pool();
 	check_game_state();
+	check_open_shops();
+	check_take_any_shops();
+	check_cleared_upgrade_shop();
+	check_prize_packs();
+	check_uncle();
+	check_map_reveal();
+	check_escape_fills();
 	check_refusal();
 	check_post();
 	check_gen_unchanged();

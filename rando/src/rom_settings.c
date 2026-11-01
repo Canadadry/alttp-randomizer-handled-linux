@@ -2,6 +2,7 @@
 #include "rom_settings_data.h"
 
 #include <assert.h>
+#include <string.h>
 
 /* The values every alttpr.com path leaves at VT's config() default. */
 #define OVERFLOW_COUNT_BOTTLE 4
@@ -19,12 +20,17 @@ static void emit_byte(RomOut *out, uint32_t address, uint8_t byte, const char *m
 	rando_rom_emit(out, address, &byte, 1, method);
 }
 
+static void put_u16(uint8_t *bytes, unsigned value)
+{
+	bytes[0] = (uint8_t)(value & 0xFF);
+	bytes[1] = (uint8_t)((value >> 8) & 0xFF);
+}
+
 static void emit_u16(RomOut *out, uint32_t address, unsigned value, const char *method)
 {
 	uint8_t bytes[2];
 
-	bytes[0] = (uint8_t)(value & 0xFF);
-	bytes[1] = (uint8_t)((value >> 8) & 0xFF);
+	put_u16(bytes, value);
 	rando_rom_emit(out, address, bytes, 2, method);
 }
 
@@ -58,6 +64,110 @@ static void write_functionality(RomOut *out, const RandoConfig *c)
 	emit_byte(out, 0xF5F10, 0xF0, "setCatchableBees");
 	emit_byte(out, 0x180180, (uint8_t)c->rom_stun_items, "setStunItems");
 	emit_byte(out, 0x180181, c->rom_silvers_only_at_ganon ? 0x01 : 0x00, "setSilversOnlyAtGanon");
+}
+
+#define ESCAPE_RUPEES 300
+
+static void write_escape_refills(RomOut *out, uint8_t flags, const uint8_t refills[3][3])
+{
+	static const char method[] = "setEscapeFills";
+
+	emit_byte(out, 0x18004E, flags, method);
+	emit_u16(out, 0x180183, ESCAPE_RUPEES, method);
+	emit(out, 0x180185, refills[0], 3, method);
+	emit(out, 0x180188, refills[1], 3, method);
+	emit(out, 0x18018B, refills[2], 3, method);
+}
+
+/* World::setEscapeFills, with rom.EscapeRefills.* and rom.EscapeAssist at their defaults. */
+static void write_escape_fills(RomOut *out, const RandoWorld *world)
+{
+	static const uint8_t sword[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	static const uint8_t magic[3][3] = {{0x80, 0, 0}, {0x20, 0, 0}, {0x20, 0, 0}};
+	static const uint8_t arrows[3][3] = {{0, 0, 70}, {0, 0, 10}, {0, 0, 10}};
+	static const uint8_t bombs[3][3] = {{0, 50, 0}, {0, 3, 0}, {0, 3, 0}};
+	RandoConfig check = world->config;
+	RandoItems items;
+	RandoItemId uncle = rando_world_item(world, RANDO_LOC_LINKS_UNCLE);
+
+	rando_items_clear(&items);
+	rando_items_add(&items, uncle == RANDO_ITEM_NONE ? RANDO_ITEM_Nothing : uncle);
+	check.ignore_can_kill_escape_things = false;
+	if (!rando_items_can_kill_escape_things(&items, &check))
+		rando_items_merge(&items, &items, &world->pre_collected);
+	if (rando_items_has_sword(&items, 1) || rando_items_has(&items, RANDO_ITEM_Hammer))
+		write_escape_refills(out, 0x00, sword);
+	else if (rando_items_has(&items, RANDO_ITEM_FireRod) || rando_items_has(&items, RANDO_ITEM_CaneOfSomaria)
+		 || (rando_items_has(&items, RANDO_ITEM_CaneOfByrna)
+		     && world->config.enemizer_enemy_health == RANDO_ENEMY_HEALTH_DEFAULT))
+		write_escape_refills(out, 0x04, magic);
+	else if (rando_items_can_shoot_arrows(&items, &world->config, 1))
+		write_escape_refills(out, 0x01, arrows);
+	else if (rando_items_has(&items, RANDO_ITEM_TenBombs) || world->config.logic != RANDO_LOGIC_NO_LOGIC)
+		write_escape_refills(out, 0x02, bombs);
+}
+
+#define SHOP_BYTES 8
+#define SHOP_SRAM_MAX 36
+#define TAKE_ANY_SHOPKEEPER 0xE2
+#define UPGRADE_MAX 7
+
+static void write_shops(RomOut *out, const RandoWorld *world)
+{
+	uint8_t shop_bytes[SHOP_BYTES * RANDO_SHOP_COUNT];
+	uint8_t item_bytes[SHOP_BYTES * RANDO_SHOP_COUNT * RANDO_SHOP_SLOTS + SHOP_BYTES];
+	size_t ns = 0, ni = 0;
+	int active = 0, s, slot;
+	unsigned id = 0, sram = 0;
+
+	for (s = 0; s < RANDO_SHOP_COUNT; s++)
+		if (rando_world_shop_active(world, (RandoShopId)s))
+			active++;
+	assert(active > 0);
+	for (s = 0; s < RANDO_SHOP_COUNT; s++) {
+		const RomShop *rom = &rando_rom_shops[s];
+		RandoShopKind kind = rando_shop_info((RandoShopId)s)->kind;
+		uint8_t shop_id;
+		int n = 0;
+
+		if (!rando_world_shop_active(world, (RandoShopId)s))
+			continue;
+		shop_id = (uint8_t)(id == (unsigned)active - 1 ? 0xFF : id);
+		if (rom->extra_address != 0)
+			emit_byte(out, rom->extra_address, rom->extra_byte, "setupCustomShops");
+		for (slot = 0; slot < RANDO_SHOP_SLOTS; slot++)
+			if (rando_world_shop_item(world, (RandoShopId)s, slot) != RANDO_ITEM_NONE)
+				n++;
+		shop_bytes[ns++] = shop_id;
+		put_u16(shop_bytes + ns, rom->room_id);
+		ns += 2;
+		shop_bytes[ns++] = rom->door_id;
+		shop_bytes[ns++] = 0x00;
+		shop_bytes[ns++] = (uint8_t)((rom->config & 0xFC) + n);
+		shop_bytes[ns++] = kind == RANDO_SHOP_KIND_TAKE_ANY ? TAKE_ANY_SHOPKEEPER : rom->shopkeeper;
+		shop_bytes[ns++] = (uint8_t)sram;
+		sram += kind == RANDO_SHOP_KIND_TAKE_ANY ? 1u : (unsigned)n;
+		assert(sram <= SHOP_SRAM_MAX);
+		for (slot = 0; slot < RANDO_SHOP_SLOTS; slot++) {
+			RandoItemId item = rando_world_shop_item(world, (RandoShopId)s, slot);
+
+			if (item == RANDO_ITEM_NONE)
+				continue;
+			item_bytes[ni++] = shop_id;
+			item_bytes[ni++] = rando_rom_item_byte(item);
+			put_u16(item_bytes + ni, (unsigned)rando_world_shop_price(world, (RandoShopId)s, slot));
+			ni += 2;
+			item_bytes[ni++] = kind == RANDO_SHOP_KIND_UPGRADE ? UPGRADE_MAX : 0;
+			item_bytes[ni++] = 0xFF;
+			put_u16(item_bytes + ni, 0);
+			ni += 2;
+		}
+		id++;
+	}
+	memset(item_bytes + ni, 0xFF, SHOP_BYTES);
+	ni += SHOP_BYTES;
+	emit(out, 0x184800, shop_bytes, ns, "setupCustomShops");
+	emit(out, 0x184900, item_bytes, ni, "setupCustomShops");
 }
 
 static void write_rupee_arrow(RomOut *out, bool on)
@@ -139,6 +249,39 @@ static void write_goal(RomOut *out, RandoGoal goal)
 	emit_byte(out, 0x1801A8, invincible[goal], "setGanonInvincible");
 }
 
+static unsigned map_reveal_of(const RandoWorld *world, RandoItemId item)
+{
+	static const uint16_t reveal[RANDO_REGION_COUNT] = {
+		[RANDO_REGION_EASTERN_PALACE] = 0x2000,	    [RANDO_REGION_DESERT_PALACE] = 0x1000,
+		[RANDO_REGION_TOWER_OF_HERA] = 0x0020,	    [RANDO_REGION_PALACE_OF_DARKNESS] = 0x0200,
+		[RANDO_REGION_SWAMP_PALACE] = 0x0400,	    [RANDO_REGION_SKULL_WOODS] = 0x0080,
+		[RANDO_REGION_THIEVES_TOWN] = 0x0010,	    [RANDO_REGION_ICE_PALACE] = 0x0040,
+		[RANDO_REGION_MISERY_MIRE] = 0x0100,	    [RANDO_REGION_TURTLE_ROCK] = 0x0008,
+	};
+	int i, n = rando_layout_location_count(world->variant);
+
+	for (i = 0; i < n; i++) {
+		RandoLocationId location = rando_layout_location(world->variant, i);
+
+		if (rando_world_item(world, location) == item) {
+			RandoRegionId region = rando_layout_location_region(world->variant, location);
+
+			assert(region < RANDO_REGION_COUNT);
+			return reveal[region];
+		}
+	}
+	assert(!"rom.mapOnPickup with the item placed nowhere");
+	return 0;
+}
+
+static void write_map_reveals(RomOut *out, const RandoWorld *world)
+{
+	emit_u16(out, 0x18017A, map_reveal_of(world, RANDO_ITEM_PendantOfCourage), "setMapRevealSahasrahla");
+	emit_u16(out, 0x18017C,
+		 map_reveal_of(world, RANDO_ITEM_Crystal5) | map_reveal_of(world, RANDO_ITEM_Crystal6),
+		 "setMapRevealBombShop");
+}
+
 static void write_dungeon_modes(RomOut *out, const RandoGen *gen)
 {
 	static const uint8_t compass_totals[16] = {0x08, 0x08, 0x06, 0x06, 0x02, 0x0A, 0x0E, 0x08,
@@ -157,6 +300,46 @@ static void write_post(RomOut *out, const RandoPostFill *post)
 	emit_byte(out, 0x180020, post->digging_game, "setDiggingGameRng");
 	emit_byte(out, 0xEFD95, post->digging_game, "setDiggingGameRng");
 	emit(out, 0x178000, post->rng_block, RANDO_RNG_BLOCK_SIZE, "writeRNGBlock");
+}
+
+#define DROP_BYTES 63
+
+static uint8_t drop_byte(RandoDrop drop, const RandoConfig *c)
+{
+	uint8_t byte = (uint8_t)(0xD7 + drop);
+
+	assert(drop != RANDO_DROP_NONE);
+	if (c->rom_no_farie_drops && byte == 0xE0)
+		byte = 0xDF;
+	else if (c->rom_no_farie_drops && byte == 0xE3)
+		byte = 0xD8;
+	if (c->rom_rupee_bow && byte == 0xE1)
+		byte = 0xDA;
+	else if (c->rom_rupee_bow && byte == 0xE2)
+		byte = 0xDB;
+	return byte;
+}
+
+static void write_prize_packs(RomOut *out, const RandoWorld *world)
+{
+	static const char method[] = "writePrizePacksToRom";
+	uint8_t bytes[DROP_BYTES];
+	int pack, slot, n = 0;
+
+	for (pack = 0; pack < RANDO_PRIZE_PACK_COUNT; pack++)
+		for (slot = 0; slot < rando_prize_pack_slots((RandoPrizePack)pack); slot++) {
+			assert(n < DROP_BYTES);
+			bytes[n++] = drop_byte(rando_world_drop(world, (RandoPrizePack)pack, slot), &world->config);
+		}
+	assert(n == DROP_BYTES);
+	if (world->config.rom_rupee_bow)
+		emit(out, 0x180100, rando_retro_dig_prizes, RETRO_DIG_PRIZES_SIZE, method);
+	emit(out, 0x37A78, bytes, 56, method);
+	emit(out, 0xEFBD4, bytes + 56, 3, method);
+	emit_byte(out, 0x329C8, bytes[59], method);
+	emit_byte(out, 0x329C4, bytes[60], method);
+	emit_byte(out, 0x37993, bytes[61], method);
+	emit_byte(out, 0xE82CC, bytes[62], method);
 }
 
 static void write_swords_in_pool(RomOut *out, bool in_pool)
@@ -199,6 +382,21 @@ static void write_swordless(RomOut *out, bool swordless)
 	emit_byte(out, 0x180041, byte, method);
 	emit_byte(out, 0x180044, byte, method);
 	emit_byte(out, 0x18005D, 0x00, method);
+}
+
+static void write_uncle(RomOut *out, const RandoWorld *world)
+{
+	RandoItemId item = rando_world_item(world, RANDO_LOC_LINKS_UNCLE);
+	int i;
+
+	if (item == RANDO_ITEM_NONE || rando_item_info(item)->item_class != RANDO_ITEM_CLASS_SWORD)
+		for (i = 0; i < UNCLE_SWORD_ROWS; i++)
+			emit(out, rando_uncle_sword_rows[i].address, rando_uncle_sword_rows[i].bytes, UNCLE_ROW_SIZE,
+			     "removeUnclesSword");
+	/* VT's condition, !instanceof Shield || !hasItem(L1SwordAndShield), holds for every item. */
+	for (i = 0; i < UNCLE_SHIELD_ROWS; i++)
+		emit(out, rando_uncle_shield_rows[i].address, rando_uncle_shield_rows[i].bytes, UNCLE_ROW_SIZE,
+		     "removeUnclesShield");
 }
 
 static void write_clocks(RomOut *out)
@@ -262,7 +460,8 @@ void rando_rom_write_settings(RomOut *out, const RandoGen *gen)
 	const RandoConfig *c = &gen->world.config;
 	static const uint8_t triforce_icon[2] = {0x0E, 0x28};
 
-	/* TODO step 7, chunk 3: setEscapeFills under mode.state standard. */
+	if (c->mode_state == RANDO_STATE_STANDARD)
+		write_escape_fills(out, &gen->world);
 	emit_u16(out, 0x180167, c->item_goal_required == RANDO_CONFIG_NULL ? 0u : (unsigned)c->item_goal_required,
 		 "setGoalRequiredCount");
 	emit(out, 0x180165, triforce_icon, 2, "setGoalIcon");
@@ -272,23 +471,24 @@ void rando_rom_write_settings(RomOut *out, const RandoGen *gen)
 	emit_byte(out, 0x18019A, clamp_crystals(c->crystals_tower), "setTowerCrystalRequirement");
 	emit_byte(out, 0x1801A6, clamp_crystals(c->crystals_ganon), "setGanonCrystalRequirement");
 	emit_byte(out, 0x180172, c->rom_generic_keys ? 0x01 : 0x00, "setGenericKeys");
-	/* TODO step 7, chunk 3: setupCustomShops. */
+	write_shops(out, &gen->world);
 	write_rupee_arrow(out, c->rom_rupee_bow);
 	write_fixed_features(out);
 	write_limits(out, c);
 	emit_byte(out, 0x180182, 0x01, "setSilversEquip");
 	write_substitutions(out, c);
 	write_goal(out, c->goal);
-	/* TODO step 7, chunk 3: the map reveals under rom.mapOnPickup. */
+	if (c->rom_map_on_pickup)
+		write_map_reveals(out, &gen->world);
 	write_dungeon_modes(out, gen);
 	write_post(out, &gen->post);
-	/* TODO step 7, chunk 3: writePrizePacksToRom. */
+	write_prize_packs(out, &gen->world);
 	write_swords_in_pool(out, c->region_swords_in_pool);
 	write_game_state(out, c->mode_state);
 	write_swordless(out, c->mode_weapons == RANDO_WEAPONS_SWORDLESS);
 	if (c->mode_state != RANDO_STATE_INVERTED)
 		emit_byte(out, 0x180169, c->logic == RANDO_LOGIC_NO_GLITCHES ? 0x01 : 0x00, "setLockAgahnimDoorInEscape");
-	/* TODO step 7, chunk 3: removeUnclesSword and removeUnclesShield. */
+	write_uncle(out, &gen->world);
 	write_clocks(out);
 	write_logic(out, c->logic);
 	emit_byte(out, 0x180039, hud_item_counter(c) ? 0x01 : 0x00, "enableHudItemCounter");
