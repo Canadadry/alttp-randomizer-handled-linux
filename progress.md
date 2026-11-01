@@ -3,7 +3,7 @@
 - [ ] Phase 1 — The ROM writer matches VT, host only
   - [ ] 1.1 Take over the randomizer from alttp-ds
     - [x] Chunk 1: take over the code and the checks
-    - [ ] Chunk 2: skills and oracle reproduction
+    - [x] Chunk 2: skills and oracle reproduction
     - [ ] Chunk 3: Onion toolchain and the cross target
   - [ ] 1.2 The oracle runs the post-fill code and records the write log
   - [ ] 1.3 Golden cases for the new settings and for combinations
