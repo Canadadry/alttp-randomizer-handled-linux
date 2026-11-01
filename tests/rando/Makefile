@@ -67,7 +67,8 @@ ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/syntheti
 test: $(UNIT_BINS)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@./selftest.sh discovery
-	@echo "test: $(words $(UNIT_TESTS)) unit tests and the discovery self-test ran"
+	@./no_sdl.sh $(APP)/core $(APP)/sd
+	@echo "test: $(words $(UNIT_TESTS)) unit tests, the discovery self-test and the app SDL check ran"
 
 lint: $(LINT_OBJ) $(LINT_APP_OBJ)
 	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC)) app/ sources build with -pedantic-errors"
