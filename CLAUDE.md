@@ -58,6 +58,8 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL PC build (`libsdl2-dev`)
   and the qemu-arm run of the cross build are CI jobs, not `check`.
+  `make patch-header` (the base patch's declared sizes, `BPS=<file>`) is
+  outside it until `data/base.bps` exists.
 - CI: `.github/workflows/check.yml` runs `make -k check`, manually only
   (`workflow_dispatch`) until the owner turns on its push and pull-request
   triggers.

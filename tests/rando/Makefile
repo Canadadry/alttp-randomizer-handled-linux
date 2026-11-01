@@ -3,9 +3,9 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS
 RANDO := ../../rando
 BUILD := build
 
-UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5
+UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header
 # No fixture mode: test_prng already replays its vectors in `test`, the others have no fixture.
-LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5,$(UNIT_TESTS))
+LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header,$(UNIT_TESTS))
 
 RANDO_SRC := $(wildcard $(RANDO)/src/*.c $(RANDO)/src/*/*.c)
 RANDO_HDR := $(wildcard $(RANDO)/include/*.h $(RANDO)/src/*.h)
@@ -32,6 +32,9 @@ MEASURE_BIN := $(MEASURE)/rando_measure
 MEASURE_SWEEP ?= 1024
 MEASURE_REPS ?= 5
 
+# patch-header: the base patch whose header test_patch_header --file checks.
+BPS ?= ../../data/base.bps
+
 # lint: the library alone, strict ISO C99, so no compiler extension slips in.
 LINT_DIR := $(BUILD)/lint
 LINT_OBJ := $(patsubst $(RANDO)/src/%.c,$(LINT_DIR)/%.o,$(RANDO_SRC))
@@ -44,7 +47,7 @@ ARM_DIR := $(BUILD)/arm
 ARM_GEN := $(ARM_DIR)/rando_gen
 ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
 
-.PHONY: test lint logic selftest e2e e2e-combos e2e-arm measure clean
+.PHONY: test lint logic selftest e2e e2e-combos e2e-arm measure patch-header clean
 
 test: $(UNIT_BINS)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -60,6 +63,9 @@ logic: $(LOGIC_BINS)
 
 selftest:
 	@./selftest.sh
+
+patch-header: $(BUILD)/test_patch_header
+	@./$(BUILD)/test_patch_header --file $(BPS)
 
 e2e: $(GEN)
 	@./run_e2e.sh
