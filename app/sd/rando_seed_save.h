@@ -11,6 +11,11 @@
 #define RANDO_SD_ROM_DIR "Roms/SFC/ALttPR"
 #define RANDO_SD_HISTORY_DIR "App/ALttPR/history"
 #define RANDO_SD_SETTINGS_FILE "App/ALttPR/settings.json"
+#define RANDO_SD_BASE_ROM_FILE "App/ALttPR/base.sfc"
+#define RANDO_SD_BASE_PATCH_FILE "App/ALttPR/base.bps"
+/* Onion's SNES list caches, removed after a new ROM so the list shows it. */
+#define RANDO_SD_LIST_CACHE6 "Roms/SFC/SFC_cache6.db"
+#define RANDO_SD_LIST_CACHE2 "Roms/SFC/SFC_cache2.db"
 #define RANDO_SEED_PATH_MAX 1024
 /* rom_dir and history_dir are shorter: room for "/<rom>" and "/<code>.json". */
 #define RANDO_SEED_DIR_MAX (RANDO_SEED_PATH_MAX - RANDO_NAME_ROM_MAX - 2)

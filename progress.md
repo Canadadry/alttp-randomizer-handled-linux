@@ -101,7 +101,7 @@
     - [x] Chunk 1: status enum counts and BPS names
     - [x] Chunk 2: shared file helpers
     - [x] Chunk 3: flow state machine
-    - [ ] Chunk 4: SD runner and status tables
+    - [x] Chunk 4: SD runner and status tables
     - [ ] Chunk 5: end to end
   - [ ] 3.6 History tab
   - [ ] 3.7 ui_cli
