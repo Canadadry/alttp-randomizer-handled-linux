@@ -20,7 +20,7 @@
     - [x] Chunk 5: measure against step 1.1
   - [ ] 1.4 Port the post-fill draws
     - [x] Chunk 1: new stage order, RandoPostFill and setTexts
-    - [ ] Chunk 2: randomizeCredits
+    - [x] Chunk 2: randomizeCredits
     - [ ] Chunk 3: hint_tables.txt oracle fixture
     - [ ] Chunk 4: hints as an input, hint tables and getHint
     - [ ] Chunk 5: applyHints

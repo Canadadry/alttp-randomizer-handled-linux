@@ -85,3 +85,17 @@ void rando_set_texts(const RandoWorld *world, RandoPrng *prng, RandoPostFill *po
 
 	t->triforce = pick_text(prng, RANDO_STRINGS_TRIFORCE);
 }
+
+void rando_randomize_credits(RandoPrng *prng, RandoPostFill *post)
+{
+	RandoCredits *c = &post->credits;
+
+	c->castle = pick_text(prng, RANDO_CREDITS_CASTLE);
+	c->sanctuary = pick_text(prng, RANDO_CREDITS_SANCTUARY);
+	c->kakariko = pick_text(prng, RANDO_CREDITS_KAKARIKO);
+	c->lumberjacks = pick_text(prng, RANDO_CREDITS_LUMBERJACKS);
+	c->smithy_breadsmiths = rando_random_int(prng, 0, 1) == 1;
+	c->bridge = pick_text(prng, RANDO_CREDITS_BRIDGE);
+	c->woods = pick_text(prng, RANDO_CREDITS_WOODS);
+	c->well = pick_text(prng, RANDO_CREDITS_WELL);
+}

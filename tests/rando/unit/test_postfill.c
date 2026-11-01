@@ -165,12 +165,40 @@ static void check_texts_silvers(void)
 	CHECK(post.texts.silvers_location == nth(5));
 }
 
+/* Seven Arr::first(fy_shuffle(...)) picks and the smithy coin, between lumberjacks and bridge: 78 draws. */
+static void check_credits(void)
+{
+	RandoPrng prng, replay;
+	RandoPostFill post;
+	Draws draws;
+	uint32_t seed;
+
+	for (seed = 1; seed <= 8; seed++) {
+		rando_postfill_clear(&post);
+		seeded(&prng, seed, &draws);
+		rando_randomize_credits(&prng, &post);
+		CHECK(draws.n == 78);
+		CHECK(draws.max[62] == 0 && draws.max[63] == 1);
+
+		seeded(&replay, seed, NULL);
+		CHECK(post.credits.castle == first_of_shuffle(&replay, RANDO_CREDITS_CASTLE));
+		CHECK(post.credits.sanctuary == first_of_shuffle(&replay, RANDO_CREDITS_SANCTUARY));
+		CHECK(post.credits.kakariko == first_of_shuffle(&replay, RANDO_CREDITS_KAKARIKO));
+		CHECK(post.credits.lumberjacks == first_of_shuffle(&replay, RANDO_CREDITS_LUMBERJACKS));
+		CHECK(post.credits.smithy_breadsmiths == (rando_random_int(&replay, 0, 1) == 1));
+		CHECK(post.credits.bridge == first_of_shuffle(&replay, RANDO_CREDITS_BRIDGE));
+		CHECK(post.credits.woods == first_of_shuffle(&replay, RANDO_CREDITS_WOODS));
+		CHECK(post.credits.well == first_of_shuffle(&replay, RANDO_CREDITS_WELL));
+	}
+}
+
 int main(int argc, char **argv)
 {
 	test_fixtures_mode(TEST, argc, argv);
 	check_texts_alternate();
 	check_texts_fake();
 	check_texts_silvers();
+	check_credits();
 	printf(TEST ": hand-written cases passed\n");
 	return 0;
 }
