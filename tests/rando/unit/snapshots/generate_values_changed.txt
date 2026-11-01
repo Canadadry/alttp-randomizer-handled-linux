@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+ | Glitches          Overworld Glitches   |
+ | Item Placement              Advanced   |
+ | Dungeon Items               Standard   |
+ | Accessibility         100% Inventory   |
+>| Goal                 < Completionist > |
+ | Tower Crystals                     7   |
+ | Ganon Crystals                     7   |
+ | World State                     Open   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal  v|
+ |                                        |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
