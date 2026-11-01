@@ -1,8 +1,22 @@
 # Notes for Claude sessions
 
-<One paragraph: what this project is, and where to start reading.>
+*ALttPR on Miyoo*: an on-device *A Link to the Past Randomizer* seed
+generator for the Miyoo Mini Flip running OnionOS. An Onion app, driven by the
+d-pad, reads a Japanese 1.0 ROM, generates a seed with every alttpr.com
+setting (a C port of VT, frozen at `sporchia/alttp_vt_randomizer`
+`219fcafd029dab597b8db400efafd8f56f8b4edb`), and writes a patched `.sfc` that
+Onion's SNES core plays; a History tab lists and deletes seeds. It also builds
+for PC (SDL) so the owner can check the rendering. Start with the current plan
+in `docs/`, then `README.md`.
 
-(Template not set up yet: run `/setup`.)
+## Layout
+
+- `rando/` is the randomizer library: `include/` its public headers, `src/`
+  its sources. The generator, the oracle and their tests are taken over from
+  `Canadadry/alttp-ds` (`rando/`, `tests/rando/`).
+- `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
+  module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
+  `unit/support.h`'s `test_fail`.
 
 ## Checks
 
@@ -18,12 +32,47 @@
   expected value, no lowered threshold, unless that is the deliberate change,
   stated with its reason.
 - Throwaway files go in `tmp/` (git-ignored).
+- Install: nothing (`make install` says so). The checks need only host `gcc`,
+  `make` and `python3`.
+- `make test` = `make -C tests/rando test` (the randomizer's unit tests) plus
+  `test-template` (the tooling under `.claude/`).
+- `make check` = `test` plus `lint` (`rando/` built with `-std=c99
+  -pedantic-errors`). Run `make -k check` to see every failure at once.
+- Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
+  oracle) runs only to regenerate goldens. The SDL PC build (`libsdl2-dev`)
+  and the qemu-arm run of the cross build are CI jobs, not `check`.
+- CI: `.github/workflows/check.yml` runs `make -k check`, manually only
+  (`workflow_dispatch`) until the owner turns on its push and pull-request
+  triggers.
 
 ## Ground rules
 
-<Project-specific rules every change must respect, one bullet each, with the
-goal each one serves. `warn-review` flags every violation; `guideline` decides
-by them. Delete this section if there are none.>
+- **The rando goldens are the source of truth.** Never regenerate a golden to
+  get green: `gen_golden.sh` runs only when VT, its patch or the case list
+  changes on purpose, in its own commit. *Goal: an agent cannot play the game;
+  matching VT byte for byte is the proof that the ROM is right.*
+- **`rando/` stays pure C99**: no `malloc`, no platform library, built by host
+  gcc and by any cross compiler. *Goal: the same code runs on the host, on the
+  Miyoo and under qemu.*
+- **No Nintendo ROM in the repository or in CI**; only the base patch
+  (`data/base.bps`) is committed. Tests use synthetic ROMs and write logs.
+  *Goal: a legal repository, verifiable without the ROM.*
+- **VT is frozen** at `219fcafd`, with no tracking of later alttpr.com
+  updates. *Goal: a stable oracle.*
+- **The UI core is a pure C state machine, with no SDL**: a key in, a screen
+  description out, drawn by an SDL and a text renderer; every string shown to
+  the user goes through the translation table. *Goal: the agent sees the UI
+  through the text renderer, and translations stay possible.*
+- **Controller-first**: every screen is driven by the d-pad and buttons, in
+  the style of Onion's menus, never a PC-style panel. *Goal: the reason
+  zelda3randomizer was rejected.*
+- **Never launch the game or an emulator.** *Goal: verification is the host
+  tests; playing and checking the SDL rendering is the owner's job.*
+- **Comments**: a comment stays only if it carries a trap someone would
+  reintroduce (40 words at most) or a C contract the name doesn't state
+  (who frees the memory, what is returned when a field is missing). `TODO` is
+  allowed. In a `Makefile`, only help for reading a command. Everything else
+  goes in the commit message. *Goal: comments that stay true.*
 
 ## Language
 

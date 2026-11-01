@@ -11,3 +11,12 @@ __pycache__/
 *.swp
 .idea/
 .vscode/
+
+# C build output
+build/
+*.o
+*.a
+
+# Nintendo ROMs never enter the repository
+*.sfc
+*.smc
