@@ -60,3 +60,13 @@ same miyoomini flags (`src/common/config.mk` and `.github/workflows/` identical)
   kernel, ext4 hands the 32-bit guest 64-bit directory cookies, and a 32-bit
   `readdir` fails with `EOVERFLOW` (the tests that list `cases/` see an empty
   directory). A 32-bit kernel, as on the device, returns 32-bit cookies.
+- `make sdl-arm` compiles the SDL layer (`app/sdl/`) and the SDL main with
+  the host flags, `-pedantic-errors`, `-O2` and Onion's flags, compiles the
+  library, `rando/host` and the app archive's sources with the same flags,
+  and links them dynamically with `-lSDL -lSDL_ttf` against the image's
+  sysroot (SDL 1.2.15, SDL_ttf 2.0.11, the copies Onion ships in
+  `/mnt/SDCARD/miyoo/lib/`). It never calls `sdl-config` or `pkg-config`:
+  the image's are the x86 host's (`-L/usr/lib/x86_64-linux-gnu`), and the
+  sysroot resolves `<SDL/SDL.h>` with no `-I`. Linking proves every SDL
+  symbol the code uses exists in the device's libraries; `file` checks a
+  dynamically linked 32-bit ARM EABI executable, and nothing is run.

@@ -77,9 +77,11 @@ ARM_DIR := $(BUILD)/arm
 ARM_GEN := $(ARM_DIR)/rando_gen
 ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
 ARM_UNIT_DIR := $(ARM_DIR)/unit
+ARM_SDL_DIR := $(ARM_DIR)/sdl
+ARM_SDL_APP := $(ARM_SDL_DIR)/alttpr
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
-.PHONY: test ui-cli sdl-pc sdl-pc-build lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
+.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-arm lint logic selftest e2e e2e-combos e2e-arm unit-arm measure patch-header clean
 
 test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -134,6 +136,23 @@ e2e-arm:
 	@printf '#!/bin/sh\nexec qemu-arm "%s" "$$@"\n' "$(abspath $(ARM_GEN))" > $(ARM_WRAPPER)
 	@chmod +x $(ARM_WRAPPER)
 	@RANDO_GEN="$(abspath $(ARM_WRAPPER))" ./run_e2e.sh
+
+sdl: sdl-pc sdl-arm
+
+# sdl-arm: the SDL layer and main compiled and linked, dynamically, against the
+# image's sysroot SDL 1.2 / SDL_ttf 2.0; run nowhere. The image's sdl-config and
+# pkg-config are the x86 host's, so no SDL flag is asked of them.
+sdl-arm:
+	@rm -rf $(ARM_SDL_DIR) && mkdir -p $(ARM_SDL_DIR)/obj
+	@echo "sdl-arm: building $(ARM_SDL_APP) with Onion's toolchain"
+	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS)"; o=$(ARM_SDL_DIR)/obj; \
+		for s in $(SDL_SRC); do "$$cc" $$f -pedantic-errors $(CORE_INCLUDES) -c -o $$o/sdl_$$(basename $$s .c).o $$s; done; \
+		"$$cc" $$f -pedantic-errors $(TEST_INCLUDES) -I$(APP)/sdl -c -o $$o/main.o $(SDL_MAIN); \
+		for s in $(APP_SRC) $(HOST_SRC) $(RANDO_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f $(TEST_INCLUDES) -c -o $$o/\$$(basename {} .c).o {}"; \
+		"$$cc" $$f -o $(ARM_SDL_APP) $$o/*.o -lSDL -lSDL_ttf'
+	@file $(ARM_SDL_APP) | grep 'ELF 32-bit LSB executable, ARM, EABI5' | grep -q 'dynamically linked' || { file $(ARM_SDL_APP); echo "sdl-arm: $(ARM_SDL_APP) is not a dynamically linked 32-bit ARM EABI executable" >&2; exit 1; }
+	@file $(ARM_SDL_APP)
+	@echo "sdl-arm: the SDL layer and main compiled with -pedantic-errors and linked against the toolchain's SDL 1.2 and SDL_ttf"
 
 # unit-arm: every unit test built like e2e-arm's generator, run under qemu-arm
 # from here (fixture paths are relative), LOGIC_TESTS with --fixtures too.

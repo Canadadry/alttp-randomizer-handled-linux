@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm patch-header check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-arm patch-header check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -13,6 +13,9 @@ help:
 	@echo "make e2e-combos     every case of tests/rando/combos diffed against its golden, kept out of e2e"
 	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make unit-arm       every unit test on the Onion cross build under qemu-arm (needs docker, qemu-user)"
+	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
+	@echo "make sdl-pc         the SDL PC build, its SDL tests and headless smoke test (needs libsdl1.2-dev, libsdl-ttf2.0-dev)"
+	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
 	@echo "make patch-header   the base patch's declared sizes checked (BPS=<file>, default data/base.bps), kept out of check"
 	@echo "make check          the net: everything that must be green before a push"
 
@@ -56,6 +59,16 @@ e2e-arm:
 # Outside the net: needs docker and qemu-user.
 unit-arm:
 	$(MAKE) -C tests/rando unit-arm
+
+# Outside the net: sdl-pc needs the SDL 1.2 and SDL_ttf 2.0 packages, sdl-arm docker.
+sdl:
+	$(MAKE) -C tests/rando sdl
+
+sdl-pc:
+	$(MAKE) -C tests/rando sdl-pc
+
+sdl-arm:
+	$(MAKE) -C tests/rando sdl-arm
 
 # Outside the net until data/base.bps exists. BPS is relative to this directory.
 patch-header:
