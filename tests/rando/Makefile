@@ -3,9 +3,9 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS
 RANDO := ../../rando
 BUILD := build
 
-UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble
+UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli
 # No fixture mode: test_prng already replays its vectors in `test`, the others have no fixture.
-LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header,$(UNIT_TESTS))
+LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli,$(UNIT_TESTS))
 
 RANDO_SRC := $(wildcard $(RANDO)/src/*.c $(RANDO)/src/*/*.c)
 RANDO_HDR := $(wildcard $(RANDO)/include/*.h $(RANDO)/src/*.h)
@@ -19,6 +19,7 @@ INCLUDES := -I$(RANDO)/include -I$(RANDO)/host
 SUPPORT_OBJ := $(BUILD)/support.o
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 GEN := $(BUILD)/rando_gen
+PATCH_CLI := $(BUILD)/rando_patch
 GEN_DIR := $(BUILD)/o2
 GEN_OBJ := $(patsubst $(RANDO)/src/%.c,$(GEN_DIR)/obj/%.o,$(RANDO_SRC)) $(patsubst $(RANDO)/host/%.c,$(GEN_DIR)/host/%.o,$(HOST_SRC))
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
@@ -49,7 +50,7 @@ ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
 
 .PHONY: test lint logic selftest e2e e2e-combos e2e-arm measure patch-header clean
 
-test: $(UNIT_BINS)
+test: $(UNIT_BINS) $(PATCH_CLI)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@./selftest.sh discovery
 	@echo "test: $(words $(UNIT_TESTS)) unit tests and the discovery self-test ran"
@@ -124,6 +125,9 @@ $(GEN_DIR)/host/%.o: $(RANDO)/host/%.c $(HOST_HDR) $(RANDO_HDR)
 	$(CC) $(CFLAGS) -O2 $(INCLUDES) -c -o $@ $<
 
 $(GEN): $(RANDO)/host/main/rando_gen.c $(GEN_OBJ) $(RANDO_HDR) $(HOST_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -O2 $(INCLUDES) -o $@ $< $(GEN_OBJ)
+
+$(PATCH_CLI): $(RANDO)/host/main/rando_patch.c $(GEN_OBJ) $(RANDO_HDR) $(HOST_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -O2 $(INCLUDES) -o $@ $< $(GEN_OBJ)
 
 measure: $(MEASURE_OBJ) $(MEASURE_OS_OBJ) $(MEASURE_PROBE) $(MEASURE_BIN)
