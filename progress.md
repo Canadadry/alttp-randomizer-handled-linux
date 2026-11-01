@@ -117,7 +117,7 @@
   - [ ] 4.1 SDL renderer and input
     - [x] Chunk 1: key map and sdl-pc skeleton
     - [x] Chunk 2: renderer and font
-    - [ ] Chunk 3: frame loop, SDL main and smoke
+    - [x] Chunk 3: frame loop, SDL main and smoke
     - [ ] Chunk 4: sdl-arm, CI job and docs
   - [ ] 4.2 Miyoo build and package
   - [ ] 4.3 Performance budget

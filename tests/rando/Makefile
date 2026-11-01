@@ -59,12 +59,13 @@ LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC) $(APP_MAIN_
 
 # sdl-pc: the SDL layer, built and tested on the host's SDL 1.2 and SDL_ttf 2.0.
 # The SDL flags are expanded by sdl-pc's rules only, so test never calls pkg-config.
-SDL_TESTS := test_sdl_keys test_sdl_view
+SDL_TESTS := test_sdl_keys test_sdl_view test_sdl_loop
 SDL_SRC := $(wildcard $(APP)/sdl/*.c)
 SDL_HDR := $(wildcard $(APP)/sdl/*.h)
 SDL_DIR := $(BUILD)/sdl
 SDL_OBJ := $(patsubst $(APP)/sdl/%.c,$(SDL_DIR)/obj/%.o,$(SDL_SRC))
 SDL_BINS := $(addprefix $(SDL_DIR)/,$(SDL_TESTS))
+SDL_APP := $(SDL_DIR)/alttpr
 SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf)
 SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf)
 
@@ -98,9 +99,10 @@ sdl-pc:
 	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf || { echo "setup: SDL 1.2 and SDL_ttf 2.0 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev)" >&2; exit 1; }
 	@$(MAKE) --no-print-directory sdl-pc-build
 
-sdl-pc-build: $(SDL_OBJ) $(SDL_BINS)
+sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP)
 	@set -e; for t in $(SDL_BINS); do SDL_VIDEODRIVER=dummy ./$$t; done
-	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests ran under the dummy video driver"
+	@./sdl/smoke_sdl.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf
+	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests and the smoke test ran under the dummy video driver"
 
 logic: $(LOGIC_BINS)
 	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
@@ -201,6 +203,10 @@ $(SDL_DIR)/obj/%.o: $(APP)/sdl/%.c $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 $(SDL_DIR)/test_%: sdl/test_%.c unit/support.h $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(TEST_INCLUDES) -I$(APP)/sdl -Iunit $(SDL_CFLAGS) -o $@ $< $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_LIBS)
+
+$(SDL_APP): $(SDL_MAIN) $(SDL_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_HDR) $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -I$(APP)/sdl $(SDL_CFLAGS) -o $@ $< $(SDL_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_LIBS)
 
 $(LINT_DIR)/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
