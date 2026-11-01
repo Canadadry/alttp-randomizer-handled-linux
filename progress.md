@@ -1,6 +1,6 @@
 - [x] Phase 0 — The one input the agent cannot make
   - [x] 0.1 Obtain the base patch for build edc01f3d
-- [ ] Phase 1 — The ROM writer matches VT, host only
+- [x] Phase 1 — The ROM writer matches VT, host only
   - [x] 1.1 Take over the randomizer from alttp-ds
     - [x] Chunk 1: take over the code and the checks
     - [x] Chunk 2: skills and oracle reproduction
@@ -63,7 +63,7 @@
     - [x] Chunk 1: heart beep and whole-log claims
     - [x] Chunk 2: checksum
     - [x] Chunk 3: browser defaults
-  - [ ] 1.12 skill: check-e2e — whole case list, then e2e-combos
+  - [x] 1.12 skill: check-e2e — whole case list, then e2e-combos
 - [ ] Phase 2 — Full ROM assembly, host only
   - [ ] 2.1 BPS applier in C
   - [ ] 2.2 ROM assembly pipeline
