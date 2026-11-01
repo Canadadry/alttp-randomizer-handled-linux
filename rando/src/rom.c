@@ -1,26 +1,14 @@
 #include "rando_rom.h"
+#include "rom_emit.h"
 
 #include <assert.h>
 #include <string.h>
 
-typedef struct RomOut {
-	const RandoRomWriter *writer;
-	bool ok;
-} RomOut;
-
-/* Every group writes through here, so nothing is written after a refused write. */
-static void emit(RomOut *out, uint32_t address, const uint8_t *bytes, size_t count, const char *method)
+void rando_rom_emit(RomOut *out, uint32_t address, const uint8_t *bytes, size_t count, const char *method)
 {
 	assert(count > 0);
 	if (out->ok)
 		out->ok = out->writer->write(out->writer->ctx, address, bytes, count, method);
-}
-
-/* TODO step 6: VT's item loop (writeItem). */
-static void write_items(RomOut *out, const RandoGen *gen)
-{
-	(void)out;
-	(void)gen;
 }
 
 /* TODO step 7: the Rom setters between the item loop and writeCredits. */
@@ -72,8 +60,7 @@ bool rando_rom_write(const RandoGen *gen, RandoHeartBeep heart_beep, const Rando
 	assert(gen != NULL && writer != NULL && writer->write != NULL);
 	out.writer = writer;
 	out.ok = true;
-	(void)emit;
-	write_items(&out, gen);
+	rando_rom_write_items(&out, gen);
 	write_settings(&out, gen);
 	write_credits(&out, gen);
 	write_text(&out, gen);

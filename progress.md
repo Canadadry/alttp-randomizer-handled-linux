@@ -34,6 +34,9 @@
     - [x] Chunk 2: write_groups.txt and write-log claims
     - [x] Chunk 3: check-e2e update, e2e-arm run
   - [ ] 1.6 Port the items and locations writes
+    - [x] Chunk 1: item tables and the plain walk
+    - [ ] Chunk 2: setting-dependent rules, Hera byte, alternate bow
+    - [ ] Chunk 3: claims to all items
   - [ ] 1.7 Port the settings and flags writes
   - [ ] 1.8 Port the credits writes
   - [ ] 1.9 Port the text, dialog and hints writes

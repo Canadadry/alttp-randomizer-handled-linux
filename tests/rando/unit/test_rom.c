@@ -14,36 +14,47 @@
 			test_fail(TEST, "%s:%d: %s", __FILE__, __LINE__, #cond); \
 	} while (0)
 
+#define ROM_SIZE (2u * 1024 * 1024)
+
 typedef struct Recorder {
 	int calls;
+	bool all_items;
+	bool all_inside;
 } Recorder;
 
 static bool record(void *ctx, uint32_t address, const uint8_t *bytes, size_t count, const char *method)
 {
 	Recorder *r = ctx;
 
-	(void)address;
 	(void)bytes;
-	(void)count;
-	(void)method;
 	r->calls++;
+	if (strcmp(method, "writeItem") != 0)
+		r->all_items = false;
+	if (address > ROM_SIZE || count > ROM_SIZE - address)
+		r->all_inside = false;
 	return true;
 }
 
 static RandoGen gen, before;
+static uint8_t rom_bytes[ROM_SIZE];
 
-/* The skeleton writes nothing: step 6 replaces this expectation with the items group's writes. */
-static void check_skeleton_writes_nothing(void)
+/* Only the items group writes so far: step 7 rewrites this expectation when settings write. */
+static void check_baseline_writes_items(void)
 {
 	RandoOptions options;
-	Recorder rec = {0};
+	Recorder rec = {0, true, true};
 	RandoRomWriter writer = {record, &rec};
+	RandoRomBuffer rom = {rom_bytes, sizeof rom_bytes};
+	RandoRomWriter buffer = {rando_rom_buffer_write, &rom};
 
 	rando_options_init(&options);
 	CHECK(rando_generate(&gen, &options, 1, 0, NULL, NULL) == RANDO_COMPLETE);
 	memcpy(&before, &gen, sizeof gen);
 	CHECK(rando_rom_write(&gen, RANDO_HEART_BEEP_HALF, &writer));
-	CHECK(rec.calls == 0);
+	CHECK(rec.calls > 0);
+	CHECK(rec.all_items);
+	CHECK(rec.all_inside);
+	CHECK(rando_rom_write(&gen, RANDO_HEART_BEEP_HALF, &buffer));
 	CHECK(memcmp(&before, &gen, sizeof gen) == 0);
 }
 
@@ -112,7 +123,7 @@ static void check_log_writer(void)
 int main(int argc, char **argv)
 {
 	test_fixtures_mode(TEST, argc, argv);
-	check_skeleton_writes_nothing();
+	check_baseline_writes_items();
 	check_buffer_writer();
 	check_log_writer();
 	printf(TEST ": passed\n");
