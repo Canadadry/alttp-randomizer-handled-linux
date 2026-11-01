@@ -54,8 +54,10 @@ static void fixed_date(RandoRecordDate *out)
 static const char *at(const char *rel)
 {
 	static char path[512];
+	int len = snprintf(path, sizeof path, "%s/%s", root, rel);
 
-	snprintf(path, sizeof path, "%s/%s", root, rel);
+	if (len < 0 || (size_t)len >= sizeof path)
+		test_fail(TEST, "path too long: %s/%s", root, rel);
 	return path;
 }
 
