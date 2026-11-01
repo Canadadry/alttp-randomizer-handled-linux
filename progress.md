@@ -42,7 +42,7 @@
     - [x] Chunk 2: settings source and config-only rows
     - [x] Chunk 3: world-dependent rows
     - [x] Chunk 4: inverted
-    - [ ] Chunk 5: claims to all settings
+    - [x] Chunk 5: claims to all settings
   - [ ] 1.8 Port the credits writes
   - [ ] 1.9 Port the text, dialog and hints writes
   - [ ] 1.10 Port the initial SRAM writes
