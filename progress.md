@@ -43,7 +43,7 @@
     - [x] Chunk 3: world-dependent rows
     - [x] Chunk 4: inverted
     - [x] Chunk 5: claims to all settings
-  - [ ] 1.8 Port the credits writes
+  - [x] 1.8 Port the credits writes
     - [x] Chunk 1: credit_tables.txt oracle fixture
     - [x] Chunk 2: encoder, scenes and picks
     - [x] Chunk 3: the six override tables
