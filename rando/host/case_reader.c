@@ -39,7 +39,6 @@ static bool at(const Parser *ps, char c)
 	return ps->p < ps->end && *ps->p == c;
 }
 
-/* Returns NULL on success, else why the string is refused. */
 static const char *parse_string(Parser *ps, char out[CASE_STRING_MAX])
 {
 	size_t n = 0;
@@ -144,7 +143,6 @@ typedef enum ReadResult {
 	READ_FAILED,
 } ReadResult;
 
-/* READ_FAILED has written error; READ_ABSENT has not. */
 static ReadResult read_file(const char *path, char buf[CASE_FILE_MAX], size_t *len, char error[RANDO_CASE_ERROR_MAX])
 {
 	FILE *f = fopen(path, "rb");

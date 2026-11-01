@@ -1,8 +1,5 @@
 #include "../world_rules.h"
 
-/* Region\Open\HyruleCastleEscape::initalize does not call its parent's: Sanctuary, the Map Chest
- * and Zelda have no requirement, and the region no completion rule. */
-
 #define FIRST RANDO_LOC_SANCTUARY
 #define NLOCATIONS (RANDO_LOC_ZELDA - FIRST + 1)
 

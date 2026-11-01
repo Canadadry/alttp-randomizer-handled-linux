@@ -27,7 +27,6 @@ static void indent(FILE *out, int level)
 	fprintf(out, "%*s", 4 * level, "");
 }
 
-/* json_encode with JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE; suffix is appended inside the quotes. */
 static void string(FILE *out, const char *s, const char *suffix)
 {
 	fputc('"', out);
@@ -54,7 +53,6 @@ static bool spoiler_skips(RandoLocationClass location_class)
 	       rando_location_is_a(location_class, RANDO_LOCATION_CLASS_TRADE);
 }
 
-/* VT's getTarget()->getName(). */
 static const char *target_name(RandoItemId item)
 {
 	const RandoItemInfo *info = rando_item_info(item);
@@ -62,8 +60,6 @@ static const char *target_name(RandoItemId item)
 	return info->item_class == RANDO_ITEM_CLASS_ALIAS ? rando_item_info(info->alias_target)->name : info->name;
 }
 
-/* How a region section names a placed item, suffix included: under rom.genericKeys an Item\Key is
- * `Key` with no suffix (an alias such as ShopKey is not an Item\Key). Writes into buf, returns it. */
 static const char *placed_name(const RandoWorld *world, RandoItemId item, char *buf, size_t size)
 {
 	int len;
@@ -76,7 +72,6 @@ static const char *placed_name(const RandoWorld *world, RandoItemId item, char *
 	return buf;
 }
 
-/* Every region named spoiler_name merges into one object. */
 static void write_region_section(FILE *out, const RandoWorld *world, const char *spoiler_name)
 {
 	static Entry entries[RANDO_LOCATION_COUNT];
@@ -128,8 +123,6 @@ static bool any_shop_active(const RandoWorld *world)
 	return false;
 }
 
-/* Keys item_<slot>, location, type are already in strcmp order. Shop items are written with
- * getName(), not getTarget(), as VT's shop loop does. */
 static void write_shops(FILE *out, const RandoWorld *world)
 {
 	bool first = true;
@@ -185,8 +178,6 @@ typedef struct BossKey {
 	const char *literal;
 } BossKey;
 
-/* VT's getSpoiler Bosses keys, already in strcmp order. Hyrule Castle, Ganons Tower and Ganon are
- * literals in VT, not world reads. */
 static const BossKey boss_keys[] = {
 	{"Desert Palace", RANDO_REGION_DESERT_PALACE, RANDO_BOSS_SLOT_BOSS, NULL},
 	{"Eastern Palace", RANDO_REGION_EASTERN_PALACE, RANDO_BOSS_SLOT_BOSS, NULL},
@@ -231,7 +222,7 @@ static void write_bosses(FILE *out, const RandoWorld *world)
 	fputc('}', out);
 }
 
-/* The playthrough's slot 0 also skips Upgrade\Health (rando_playthrough). */
+/* Unlike the playthrough's slot 0, Upgrade\Health is not skipped. */
 static bool equipped_skips(RandoItemId item)
 {
 	RandoItemClass c = rando_item_info(item)->item_class;
@@ -292,7 +283,6 @@ static void entry_key(const RandoPlaythroughEntry *e, char key[KEY_MAX])
 	assert(len > 0 && len < KEY_MAX && "spoiler: raise KEY_MAX for this location name");
 }
 
-/* entries[first, end) are one round. */
 static void write_round(FILE *out, const RandoPlaythrough *playthrough, int first, int end)
 {
 	const char *regions[RANDO_REGION_COUNT];
@@ -345,7 +335,6 @@ static int playthrough_key_cmp(const void *a, const void *b)
 	return strcmp(((const PlaythroughKey *)a)->key, ((const PlaythroughKey *)b)->key);
 }
 
-/* Keys: "0" (slot 0's Equipped), one per round with an entry, longest_item_chain, regions_visited. */
 static void write_playthrough(FILE *out, const RandoPlaythrough *playthrough)
 {
 	static PlaythroughKey keys[RANDO_PLAYTHROUGH_ENTRY_MAX + 3];
@@ -440,7 +429,6 @@ static const char *const weapons_names[] = {
 	[RANDO_WEAPONS_RANDOMIZED] = "randomized", [RANDO_WEAPONS_ASSURED] = "assured",
 	[RANDO_WEAPONS_VANILLA] = "vanilla", [RANDO_WEAPONS_SWORDLESS] = "swordless"};
 
-/* NULL for an UNSET value: VT's absent key, written as null. */
 static const char *named(const char *const *names, size_t n, int value)
 {
 	assert(value >= 0 && (size_t)value < n);
@@ -449,7 +437,6 @@ static const char *named(const char *const *names, size_t n, int value)
 
 #define NAMED(names, value) named(names, sizeof names / sizeof names[0], (int)(value))
 
-/* A drawn count is the integer VT resolved; a fixed one stays the config's string. */
 static Meta crystals_meta(const char *k, RandoOptionKey option, RandoCrystals value, int resolved)
 {
 	Meta m = {k, META_STRING, NULL, 0};

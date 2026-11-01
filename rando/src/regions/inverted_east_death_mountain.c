@@ -1,7 +1,5 @@
 #include "../world_rules.h"
 
-/* Slots in Region\Inverted\LightWorld\DeathMountain\East's location order: Ether Tablet and
- * Spectacle Rock came last, from West Death Mountain. */
 #define SLOTS(X) X(SPIRAL_CAVE) X(MIMIC_CAVE) X(PARADOX_CAVE_LOWER_FAR_LEFT) X(PARADOX_CAVE_LOWER_LEFT) \
 	X(PARADOX_CAVE_LOWER_RIGHT) X(PARADOX_CAVE_LOWER_FAR_RIGHT) X(PARADOX_CAVE_LOWER_MIDDLE) \
 	X(PARADOX_CAVE_UPPER_LEFT) X(PARADOX_CAVE_UPPER_RIGHT) X(FLOATING_ISLAND) X(ETHER_TABLET) X(SPECTACLE_ROCK)

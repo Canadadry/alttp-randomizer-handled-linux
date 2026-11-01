@@ -124,7 +124,6 @@ const char *rando_patch_bps_name(RandoBpsResult result)
 	return (size_t)result < RANDO_BPS_RESULT_COUNT ? names[result] : "unknown";
 }
 
-/* Prints the CLI's message for a failed read; false unless status is OK or TOO_LARGE. */
 static bool read_input(const char *path, uint8_t *buf, size_t max, size_t *size, long *total, FILE *err)
 {
 	switch (rando_out_read_capped(path, buf, max, size, total)) {

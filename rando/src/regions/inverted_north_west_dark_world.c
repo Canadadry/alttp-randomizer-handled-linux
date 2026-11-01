@@ -85,7 +85,6 @@ static const RandoRule shops[NSHOPS] = {
 	[RANDO_SHOP_DARK_WORLD_OUTCASTS_SHOP - FIRST_SHOP] = hammer,
 };
 
-/* No entry rule: Region\Inverted\DarkWorld\NorthWest sets none. */
 const RandoRegionRules rando_rules_inverted_north_west_dark_world = {
 	"Region\\Inverted\\DarkWorld\\NorthWest", NULL, NULL, locations, shops,
 	RANDO_SLOT_RANGE(FIRST, NLOCATIONS)

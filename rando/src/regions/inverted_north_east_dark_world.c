@@ -1,6 +1,5 @@
 #include "../world_rules.h"
 
-/* Slots in Region\Inverted\DarkWorld\NorthEast's location order: Ganon left it. */
 #define SLOTS(X) X(CATFISH) X(PYRAMID) X(PYRAMID_FAIRY_SWORD) X(PYRAMID_FAIRY_BOW) X(PYRAMID_FAIRY_LEFT) \
 	X(PYRAMID_FAIRY_RIGHT)
 enum { SLOTS(RANDO_SLOT_ENUM) NLOCATIONS };
@@ -61,7 +60,6 @@ static bool pyramid_fairy_bow(const RandoWorld *world, const RandoWorld *locatio
 	return rando_items_can_shoot_arrows(items, &world->config, 1) && big_bomb_and_mirror(items);
 }
 
-/* VT sets this requirement in initalize only when region.swordsInPool holds then. */
 static bool pyramid_fairy_left_right(const RandoWorld *world, const RandoWorld *locations, const RandoItems *items)
 {
 	(void)locations;

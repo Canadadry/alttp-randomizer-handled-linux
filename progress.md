@@ -127,7 +127,7 @@
 - [ ] Phase 5 — Cleanup
   - [ ] 5.1 skill: rework-comments
     - [x] rando/include and rando/src
-    - [ ] regions and rando/host
+    - [x] regions and rando/host
     - [ ] app/core
     - [ ] app/sd, app/sdl, app/main
     - [ ] unit tests a-r and support

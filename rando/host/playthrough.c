@@ -3,9 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
-/* A pseudo-location is a world location id, or RANDO_LOCATION_COUNT + shop * RANDO_SHOP_SLOTS + slot.
- * VT's equipment slots only ever add the pre-collected items, so they get no id. Arrays are indexed
- * by it; walks go through pseudo_at, which skips the locations the world does not have. */
+/* Walk through pseudo_at, never 0..PSEUDO_COUNT: that range holds locations the world does not have. */
 #define PSEUDO_COUNT RANDO_PLAYTHROUGH_ENTRY_MAX
 
 typedef struct Playthrough {
@@ -63,8 +61,6 @@ static int pseudo_count(const Playthrough *pt)
 	return rando_layout_location_count(pt->world->variant) + RANDO_SHOP_COUNT * RANDO_SHOP_SLOTS;
 }
 
-/* The k-th pseudo-location in VT's walk: the world's locations in getLocations() order, then the
- * shop slots. */
 static int pseudo_at(const Playthrough *pt, int k)
 {
 	int n = rando_layout_location_count(pt->world->variant);
@@ -85,7 +81,6 @@ static void set_shadow_item(Playthrough *pt, int p, RandoItemId item)
 		pt->shadow.location_items[p] = (uint8_t)item;
 }
 
-/* $world->getCollectableLocations()[name]->getItem(): a shop slot reads the real world's cached slot. */
 static RandoItemId real_item(const Playthrough *pt, int p)
 {
 	const RandoWorld *world = pt->world;
@@ -96,8 +91,6 @@ static RandoItemId real_item(const Playthrough *pt, int p)
 							 : world->shop_items[shop_of(p)][slot_of(p)]);
 }
 
-/* A shadow location checked against locations. A shop slot's region is the real world's, so its
- * access always reads the real world. */
 static bool can_access(const Playthrough *pt, const RandoWorld *locations, int p, const RandoItems *items)
 {
 	if (is_shop(p))
@@ -105,7 +98,6 @@ static bool can_access(const Playthrough *pt, const RandoWorld *locations, int p
 	return rando_world_can_access_with(&pt->shadow, locations, (RandoLocationId)p, items);
 }
 
-/* The shadow's getCollectableLocations(); its collected state is always empty. */
 static bool is_collectable(int p)
 {
 	RandoLocationClass c;
@@ -116,7 +108,6 @@ static bool is_collectable(int p)
 	return c != RANDO_LOCATION_CLASS_MEDALLION && c != RANDO_LOCATION_CLASS_FOUNTAIN;
 }
 
-/* The equipment slots, then every sphere. */
 static void collectable_items(const Playthrough *pt, RandoItems *items)
 {
 	int i;
@@ -129,7 +120,6 @@ static void collectable_items(const Playthrough *pt, RandoItems *items)
 			rando_items_add(items, shadow_item(pt, pt->sphere_locations[i]));
 }
 
-/* World::getLocationSpheres on the shadow; sphere 0 holds only the equipment slots. */
 static void build_spheres(Playthrough *pt)
 {
 	RandoItems my_items = pt->shadow.pre_collected, found;
@@ -172,8 +162,7 @@ static void add_required(Playthrough *pt, int p, int sphere)
 		pt->required_keys[pt->nrequired_keys++] = (uint16_t)sphere;
 }
 
-/* VT's `break 2` leaves only the two inner loops: "put all higher items back" still runs for that
- * check sphere, and the later check spheres are skipped because p is now required. Keep it so. */
+/* As VT's `break 2`: the items are still put back for this check sphere, later ones skip on required[p]. */
 static void bubble(Playthrough *pt, int p, int sphere)
 {
 	RandoItems items;
@@ -276,8 +265,6 @@ const char *rando_playthrough_entry_region(const RandoPlaythroughEntry *e)
 	return rando_region_info(e->region)->spoiler_name;
 }
 
-/* VT counts the rounds, then takes one off for each round left with no entry once Trade locations
- * are filtered: that is the number of rounds holding an entry. */
 static void count_rounds_and_regions(RandoPlaythrough *out)
 {
 	int i, j;

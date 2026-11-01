@@ -22,7 +22,6 @@ enum {
 
 static RandoGen gen;
 static RandoPlaythrough playthrough;
-/* A complete run, or a stop at fill or later: the winning attempt is known. */
 static bool won;
 
 typedef bool (*Writer)(FILE *out);
@@ -76,7 +75,6 @@ static bool rom_writes_txt(const char *out_dir, RandoHeartBeep heart_beep)
 	return ok;
 }
 
-/* RANDO_STAGE_COUNT when name is no stage. */
 static RandoStage stage_named(const char *name)
 {
 	RandoStage stage;
@@ -106,7 +104,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "rando_gen: %s\n", case_error);
 		return EXIT_INPUT;
 	}
-	/* The golden's attempts file holds the 0-based index of its winning attempt. */
 	cap = !c.has_attempts ? ORACLE_WATCHDOG : c.attempts == UINT32_MAX ? 0 : c.attempts + 1;
 	if (!rando_trace_open(&trace, argv[2], out_error)) {
 		fprintf(stderr, "rando_gen: %s\n", out_error);

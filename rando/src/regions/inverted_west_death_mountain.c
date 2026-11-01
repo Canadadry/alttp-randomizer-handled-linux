@@ -1,7 +1,5 @@
 #include "../world_rules.h"
 
-/* Slots in Region\Inverted\LightWorld\DeathMountain\West's location order: Ether Tablet and
- * Spectacle Rock moved to East Death Mountain. */
 #define SLOTS(X) X(OLD_MAN) X(SPECTACLE_ROCK_CAVE)
 enum { SLOTS(RANDO_SLOT_ENUM) NLOCATIONS };
 #ifdef RANDO_FAULTS

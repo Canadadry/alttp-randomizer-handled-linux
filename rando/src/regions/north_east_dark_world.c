@@ -60,7 +60,6 @@ static bool pyramid_fairy_bow(const RandoWorld *world, const RandoWorld *locatio
 	return rando_items_can_shoot_arrows(items, &world->config, 1) && pyramid_fairy(world, locations, items);
 }
 
-/* VT sets this requirement in initalize only when region.swordsInPool holds then. */
 static bool pyramid_fairy_left_right(const RandoWorld *world, const RandoWorld *locations, const RandoItems *items)
 {
 	return !world->config.region_swords_in_pool || pyramid_fairy(world, locations, items);

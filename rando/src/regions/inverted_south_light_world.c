@@ -1,6 +1,5 @@
 #include "../world_rules.h"
 
-/* Slots in Region\Inverted\LightWorld\South's location order: Link's House left it, the Bomb Merchant came last. */
 #define SLOTS(X) X(FLOODGATE_CHEST) X(AGINAHS_CAVE) X(MINI_MOLDORM_CAVE_FAR_LEFT) X(MINI_MOLDORM_CAVE_LEFT) \
 	X(MINI_MOLDORM_CAVE_RIGHT) X(MINI_MOLDORM_CAVE_FAR_RIGHT) X(ICE_ROD_CAVE) X(HOBO) X(BOMBOS_TABLET) \
 	X(CAVE_45) X(CHECKERBOARD_CAVE) X(MINI_MOLDORM_CAVE_NPC) X(LIBRARY) X(MAZE_RACE) X(DESERT_LEDGE) \
