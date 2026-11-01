@@ -153,12 +153,19 @@ typedef struct RandoPrizeMusic {
 	uint8_t music[RANDO_PRIZE_MUSIC_MAX];
 } RandoPrizeMusic;
 
+/* Rom::writeRNGBlock's bytes at 0x178000. */
+#define RANDO_RNG_BLOCK_SIZE 1024
+
 /* Caller-owned, no pointers: every post-fill choice, as ids and indices, for the ROM writer. */
 typedef struct RandoPostFill {
 	RandoTexts texts;
 	RandoCredits credits;
 	RandoHints hints;
 	RandoPrizeMusic prize_music;
+	/* setDiggingGameRng's prize count, 1 to 30. */
+	uint8_t digging_game;
+	/* Each byte is pack('C') of a draw in 0..256: a drawn 256 is stored as 0. */
+	uint8_t rng_block[RANDO_RNG_BLOCK_SIZE];
 } RandoPostFill;
 
 void rando_postfill_clear(RandoPostFill *post);
@@ -179,5 +186,11 @@ void rando_apply_hints(const RandoWorld *world, RandoPrng *prng, const uint8_t *
 /* Prize::writeItem over World::writeToRom's walk: under rom.mapOnPickup, 2 draws per prize location of a
  * region with music addresses, Agahnim 2's event included, empty or not; no draw otherwise. */
 void rando_prize_music(const RandoWorld *world, RandoPrng *prng, RandoPostFill *post);
+
+/* World::writeToRom's setDiggingGameRng(get_random_int(1, 30)): 1 draw. */
+void rando_digging_game(RandoPrng *prng, RandoPostFill *post);
+
+/* World::writeToRom's writeRNGBlock over get_random_int(0, 0x100): 1024 draws. */
+void rando_rng_block(RandoPrng *prng, RandoPostFill *post);
 
 #endif

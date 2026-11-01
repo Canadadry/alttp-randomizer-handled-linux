@@ -158,3 +158,16 @@ void rando_prize_music(const RandoWorld *world, RandoPrng *prng, RandoPostFill *
 		}
 	}
 }
+
+void rando_digging_game(RandoPrng *prng, RandoPostFill *post)
+{
+	post->digging_game = (uint8_t)rando_random_int(prng, 1, 30);
+}
+
+void rando_rng_block(RandoPrng *prng, RandoPostFill *post)
+{
+	int i;
+
+	for (i = 0; i < RANDO_RNG_BLOCK_SIZE; i++)
+		post->rng_block[i] = (uint8_t)(rando_random_int(prng, 0, 0x100) & 0xFF);
+}

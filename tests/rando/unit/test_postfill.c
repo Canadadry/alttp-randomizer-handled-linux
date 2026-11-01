@@ -500,6 +500,37 @@ static void check_prize_music(RandoVariant variant)
 	}
 }
 
+/* setDiggingGameRng draws get_random_int(1, 30) once; writeRNGBlock draws get_random_int(0, 0x100) 1024 times
+ * and keeps pack('C')'s low byte, so a drawn 256 is stored as 0. */
+static void check_digging_and_rng_block(void)
+{
+	RandoPrng prng;
+	RandoPostFill post;
+	Draws draws;
+	int i, wrapped = 0;
+
+	rando_postfill_clear(&post);
+	seeded(&prng, 7, &draws);
+	rando_digging_game(&prng, &post);
+	CHECK(draws.n == 1);
+	CHECK(draws.max[0] == 30);
+	CHECK(post.digging_game == draws.r[0]);
+	CHECK(post.digging_game >= 1 && post.digging_game <= 30);
+
+	seeded(&prng, 7, &draws);
+	rando_rng_block(&prng, &post);
+	CHECK(draws.n == RANDO_RNG_BLOCK_SIZE);
+	for (i = 0; i < RANDO_RNG_BLOCK_SIZE; i++) {
+		CHECK(draws.max[i] == 0x100);
+		CHECK(post.rng_block[i] == (uint8_t)(draws.r[i] & 0xFF));
+		if (draws.r[i] == 0x100) {
+			CHECK(post.rng_block[i] == 0);
+			wrapped++;
+		}
+	}
+	CHECK(wrapped > 0);
+}
+
 static const char *const unknown_items[] = {
 	/* Boss names: getHint looks up an item's raw name, never a boss's. */
 	"Armos Knights", "Lanmolas", "Moldorm", "Helmasaur King", "Arrghus", "Mothula", "Blind",
@@ -627,6 +658,7 @@ int main(int argc, char **argv)
 	check_hints_alternate_bow();
 	check_prize_music(RANDO_VARIANT_OPEN);
 	check_prize_music(RANDO_VARIANT_INVERTED);
+	check_digging_and_rng_block();
 	printf(TEST ": hand-written cases passed\n");
 	if (fixtures)
 		check_hint_tables_fixture();

@@ -93,6 +93,12 @@ static void run_post_fill(RandoGen *gen, RandoStage from, RandoStage to)
 		case RANDO_STAGE_WRITE_ITEM:
 			rando_prize_music(&gen->world, &gen->prng, &gen->post);
 			break;
+		case RANDO_STAGE_SET_DIGGING_GAME_RNG:
+			rando_digging_game(&gen->prng, &gen->post);
+			break;
+		case RANDO_STAGE_WRITE_RNG_BLOCK:
+			rando_rng_block(&gen->prng, &gen->post);
+			break;
 		default:
 			/* Not ported yet: no draw. */
 			break;

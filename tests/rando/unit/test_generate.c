@@ -344,7 +344,32 @@ static void check_hints_off_skip(void)
 	CHECK(strstr(trace.text, " randomizeCredits ") != NULL);
 }
 
-/* tests/rando/cases/baseline: attempts 0 and the golden trace through applyHints, the last ported stage. */
+/* The golden's rom_writes.txt line "<address> <hex> <stage>" for address: the bytes it holds. */
+static void check_golden_write(const char *name, const char *address, const uint8_t *bytes, int n)
+{
+	static char line[8192];
+	char path[256], hex[2 * RANDO_RNG_BLOCK_SIZE + 1];
+	size_t prefix = strlen(address);
+	int i;
+	FILE *f;
+
+	CHECK(n <= RANDO_RNG_BLOCK_SIZE);
+	snprintf(path, sizeof path, "cases/%s/rom_writes.txt", name);
+	f = fopen(path, "r");
+	if (!f)
+		test_fail(TEST, "%s: cannot open", path);
+	while (fgets(line, sizeof line, f) && !(strncmp(line, address, prefix) == 0 && line[prefix] == ' '))
+		;
+	fclose(f);
+	if (strncmp(line, address, prefix) != 0)
+		test_fail(TEST, "%s: no write at %s", path, address);
+	for (i = 0; i < n; i++)
+		snprintf(hex + 2 * i, 3, "%02X", bytes[i]);
+	if (strncmp(line + prefix + 1, hex, (size_t)(2 * n)) != 0 || line[prefix + 1 + 2 * n] != ' ')
+		test_fail(TEST, "%s: the write at %s is not the C bytes %s", path, address, hex);
+}
+
+/* tests/rando/cases/baseline: attempts 0 and the golden trace through writeRNGBlock, the last ported stage. */
 static void check_baseline_complete(void)
 {
 	RandoOptions options;
@@ -354,13 +379,15 @@ static void check_baseline_complete(void)
 	memset(&trace, 0, sizeof trace);
 	CHECK(rando_generate(&gen, &options, 1, 0, record, &trace) == RANDO_COMPLETE);
 	CHECK(gen.attempt == 0);
-	CHECK(trace.lines == 1417);
-	check_golden_stop("baseline", &trace, "setDiggingGameRng");
+	CHECK(trace.lines == 2442);
+	check_golden_stop("baseline", &trace, "writePrizePacksToRom");
+	check_golden_write("baseline", "180020", &gen.post.digging_game, 1);
+	check_golden_write("baseline", "178000", gen.post.rng_block, RANDO_RNG_BLOCK_SIZE);
 	check_complete_outputs("cases/baseline", "baseline", "0\n");
 }
 
 /* Attempt k of seed s is attempt 0 of seed s + k: seed 0 with attempt 0 failed at point must replay
- * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last applyHints line.
+ * tests/rando/cases/baseline (seed 1) at attempt 1, up to the golden's last writeRNGBlock line.
  * Attempt 0 ends in the fill when it fails there, in applyHints when it fails at isWinnable. */
 static void check_retry_identity(RandoFault point)
 {
@@ -382,7 +409,7 @@ static void check_retry_identity(RandoFault point)
 	golden[len] = '\0';
 	for (line = golden, len = 0; *line; line = strchr(line, '\n') + 1) {
 		CHECK(strchr(line, '\n') != NULL);
-		if (sscanf(line, "%*s %*s %63s", stage) == 1 && strcmp(stage, "applyHints") == 0)
+		if (sscanf(line, "%*s %*s %63s", stage) == 1 && strcmp(stage, "writeRNGBlock") == 0)
 			len = (size_t)(strchr(line, '\n') + 1 - golden);
 	}
 	CHECK(len > 0);
@@ -495,11 +522,11 @@ static void check_stop_on_winning_attempt(void)
 	gen.fault = RANDO_FAULT_NONE;
 }
 
-/* On baseline, setTexts makes 255 draws, randomizeCredits 78 and applyHints 279; the stages after it make
- * no C draws yet: a stop at any of them is the applyHints stop. */
+/* On baseline, setTexts makes 255 draws, randomizeCredits 78 and applyHints 279; writeItem none (no
+ * map-on-pickup), setDiggingGameRng 1 and writeRNGBlock 1024; writePrizePacksToRom makes no C draw yet. */
 static void check_stop_after_fill(void)
 {
-	static Trace texts, credits, hints, last;
+	static Trace texts, credits, hints, digging, block, last;
 	RandoOptions options;
 	int s;
 
@@ -519,11 +546,27 @@ static void check_stop_after_fill(void)
 	CHECK(hints.lines == 1417);
 	CHECK(strncmp(hints.text, credits.text, strlen(credits.text)) == 0);
 	CHECK(strstr(hints.text, "\n0 1139 applyHints 0 14 -> ") != NULL);
-	for (s = RANDO_STAGE_APPLY_HINTS + 1; s < RANDO_STAGE_COUNT; s++) {
+	memset(&last, 0, sizeof last);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &last, RANDO_STAGE_WRITE_ITEM) == RANDO_INCOMPLETE);
+	CHECK(strcmp(last.text, hints.text) == 0);
+	memset(&digging, 0, sizeof digging);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &digging, RANDO_STAGE_SET_DIGGING_GAME_RNG) ==
+	      RANDO_INCOMPLETE);
+	CHECK(digging.lines == 1418);
+	CHECK(strncmp(digging.text, hints.text, strlen(hints.text)) == 0);
+	CHECK(strstr(digging.text, "\n0 1418 setDiggingGameRng 1 30 -> ") != NULL);
+	CHECK(gen.post.digging_game >= 1 && gen.post.digging_game <= 30);
+	memset(&block, 0, sizeof block);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &block, RANDO_STAGE_WRITE_RNG_BLOCK) ==
+	      RANDO_INCOMPLETE);
+	CHECK(block.lines == 2442);
+	CHECK(strncmp(block.text, digging.text, strlen(digging.text)) == 0);
+	check_golden_stop("baseline", &block, "writePrizePacksToRom");
+	for (s = RANDO_STAGE_WRITE_RNG_BLOCK + 1; s < RANDO_STAGE_COUNT; s++) {
 		memset(&last, 0, sizeof last);
 		CHECK(rando_generate_until(&gen, &options, 1, 1, record, &last, (RandoStage)s) == RANDO_INCOMPLETE);
 		CHECK(gen.attempt == 0);
-		CHECK(strcmp(last.text, hints.text) == 0);
+		CHECK(strcmp(last.text, block.text) == 0);
 	}
 }
 
