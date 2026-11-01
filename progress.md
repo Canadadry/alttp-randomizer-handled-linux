@@ -125,7 +125,7 @@
     - [x] Chunk 2: measure-compare
     - [x] Chunk 3: the run and its record
 - [ ] Phase 5 — Cleanup
-  - [ ] 5.1 skill: rework-comments
+  - [x] 5.1 skill: rework-comments
     - [x] rando/include and rando/src
     - [x] regions and rando/host
     - [x] app/core
