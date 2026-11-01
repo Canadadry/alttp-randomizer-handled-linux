@@ -18,9 +18,9 @@ weapons-swordless applyHints
 item_placement-basic applyHints
 weapons-assured applyHints
 weapons-vanilla applyHints
-dungeon_items-mc applyHints
-dungeon_items-mcs applyHints
-dungeon_items-full applyHints
+dungeon_items-mc writeItem
+dungeon_items-mcs writeItem
+dungeon_items-full writeItem
 accessibility-locations applyHints
 accessibility-none applyHints
 crystals_ganon-0 applyHints

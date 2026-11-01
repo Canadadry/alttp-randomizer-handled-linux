@@ -141,11 +141,24 @@ typedef struct RandoHints {
 	RandoTileHint tiles[RANDO_TILE_COUNT];
 } RandoHints;
 
+/* The prize locations of the regions whose VT class has music_addresses: ten dungeons and Agahnim 2. */
+#define RANDO_PRIZE_MUSIC_MAX 11
+
+/* writeItem's prize music under rom.mapOnPickup, in getRegions() order; count 0 without it, where the
+ * music follows the prize with no draw. */
+typedef struct RandoPrizeMusic {
+	uint8_t count;
+	RandoLocationId locations[RANDO_PRIZE_MUSIC_MAX];
+	/* 0x11 or 0x16, for every music address of the location's region. */
+	uint8_t music[RANDO_PRIZE_MUSIC_MAX];
+} RandoPrizeMusic;
+
 /* Caller-owned, no pointers: every post-fill choice, as ids and indices, for the ROM writer. */
 typedef struct RandoPostFill {
 	RandoTexts texts;
 	RandoCredits credits;
 	RandoHints hints;
+	RandoPrizeMusic prize_music;
 } RandoPostFill;
 
 void rando_postfill_clear(RandoPostFill *post);
@@ -162,5 +175,9 @@ void rando_randomize_credits(RandoPrng *prng, RandoPostFill *post);
  * never hints (VT's getName() suffix); random() over no location draws nothing. */
 void rando_apply_hints(const RandoWorld *world, RandoPrng *prng, const uint8_t *advancement, int n,
 		       RandoPostFill *post);
+
+/* Prize::writeItem over World::writeToRom's walk: under rom.mapOnPickup, 2 draws per prize location of a
+ * region with music addresses, Agahnim 2's event included, empty or not; no draw otherwise. */
+void rando_prize_music(const RandoWorld *world, RandoPrng *prng, RandoPostFill *post);
 
 #endif

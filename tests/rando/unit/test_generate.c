@@ -312,6 +312,22 @@ static void check_baseline_fill(void)
 	CHECK(gen.post.hints.on);
 }
 
+/* tests/rando/cases/dungeon_items-full: rom.mapOnPickup draws writeItem's prize music, lines 1550-1571, two
+ * per prize location; a stop there carries the winning attempt's number. */
+static void check_write_item_stop(void)
+{
+	RandoOptions options;
+	Trace trace;
+
+	rando_options_init(&options);
+	CHECK(rando_options_set(&options, "dungeon_items", "full"));
+	memset(&trace, 0, sizeof trace);
+	CHECK(rando_generate_until(&gen, &options, 1, 1, record, &trace, RANDO_STAGE_WRITE_ITEM) == RANDO_INCOMPLETE);
+	CHECK(trace.lines == 1571);
+	check_golden_stop("dungeon_items-full", &trace, "setDiggingGameRng");
+	CHECK(gen.post.prize_music.count == 11);
+}
+
 /* hints-off: applyHints draws nothing, so its stop is the randomizeCredits stop. */
 static void check_hints_off_skip(void)
 {
@@ -642,6 +658,7 @@ int main(int argc, char **argv)
 		return 0;
 	check_baseline_fill();
 	check_hints_off_skip();
+	check_write_item_stop();
 	check_baseline_complete();
 	printf(TEST ": baseline generated to completion\n");
 	check_retry_identity(RANDO_FAULT_MID_FILL);

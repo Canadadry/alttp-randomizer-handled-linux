@@ -2,13 +2,13 @@
 # that stage's last attempt-0 draw) or `<case> all` (trace, attempts and
 # spoiler.json match). <stage> is a stage of stages.txt with a draw in the
 # case's attempt 0. An unclaimed case is PENDING.
-dungeon_items-full+state-inverted applyHints
-dungeon_items-full+state-retro applyHints
-dungeon_items-full+state-standard applyHints
+dungeon_items-full+state-inverted writeItem
+dungeon_items-full+state-retro writeItem
+dungeon_items-full+state-standard writeItem
 glitches-hybrid_major_glitches+state-inverted applyHints
 glitches-hybrid_major_glitches+state-retro applyHints
 glitches-hybrid_major_glitches+state-standard applyHints
-glitches-major_glitches+dungeon_items-full applyHints
+glitches-major_glitches+dungeon_items-full writeItem
 glitches-major_glitches+state-inverted applyHints
 glitches-major_glitches+state-retro applyHints
 glitches-major_glitches+state-standard applyHints

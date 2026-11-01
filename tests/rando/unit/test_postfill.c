@@ -456,6 +456,50 @@ static void check_hints_alternate_bow(void)
 }
 
 /* Fixture names no C table holds, each with its reason. */
+static const RandoLocationId music_prizes[] = {
+	RANDO_LOC_EASTERN_PALACE_PRIZE, RANDO_LOC_DESERT_PALACE_PRIZE, RANDO_LOC_TOWER_OF_HERA_PRIZE,
+	RANDO_LOC_PALACE_OF_DARKNESS_PRIZE, RANDO_LOC_SWAMP_PALACE_PRIZE, RANDO_LOC_SKULL_WOODS_PRIZE,
+	RANDO_LOC_THIEVES_TOWN_PRIZE, RANDO_LOC_ICE_PALACE_PRIZE, RANDO_LOC_MISERY_MIRE_PRIZE,
+	RANDO_LOC_TURTLE_ROCK_PRIZE, RANDO_LOC_AGAHNIM_2,
+};
+
+/* Without rom.mapOnPickup the music follows the prize: no draw. With it, each prize location of a region
+ * with music addresses draws Arr::first(fy_shuffle([0x11, 0x16])), Agahnim 2 included, Agahnim not. */
+static void check_prize_music(RandoVariant variant)
+{
+	RandoConfig config;
+	RandoWorld world;
+	RandoPrng prng, replay;
+	RandoPostFill post;
+	Draws draws;
+	size_t i;
+
+	rando_config_init(&config);
+	rando_world_init(&world, variant, &config);
+	rando_postfill_clear(&post);
+	seeded(&prng, 5, &draws);
+	rando_prize_music(&world, &prng, &post);
+	CHECK(draws.n == 0);
+	CHECK(post.prize_music.count == 0);
+
+	config.rom_map_on_pickup = true;
+	rando_world_init(&world, variant, &config);
+	CHECK(rando_world_set_item(&world, RANDO_LOC_EASTERN_PALACE_PRIZE, RANDO_ITEM_Crystal6));
+	seeded(&prng, 5, &draws);
+	rando_prize_music(&world, &prng, &post);
+	CHECK(draws.n == 22);
+	CHECK(post.prize_music.count == sizeof music_prizes / sizeof music_prizes[0]);
+	seeded(&replay, 5, NULL);
+	for (i = 0; i < sizeof music_prizes / sizeof music_prizes[0]; i++) {
+		uint8_t music[2] = {0x11, 0x16};
+
+		CHECK(draws.max[2 * i] == 1 && draws.max[2 * i + 1] == 0);
+		CHECK(post.prize_music.locations[i] == music_prizes[i]);
+		rando_fy_shuffle(&replay, music, 2, 1);
+		CHECK(post.prize_music.music[i] == music[0]);
+	}
+}
+
 static const char *const unknown_items[] = {
 	/* Boss names: getHint looks up an item's raw name, never a boss's. */
 	"Armos Knights", "Lanmolas", "Moldorm", "Helmasaur King", "Arrghus", "Mothula", "Blind",
@@ -581,6 +625,8 @@ int main(int argc, char **argv)
 	check_hints_boots();
 	check_hints_picks();
 	check_hints_alternate_bow();
+	check_prize_music(RANDO_VARIANT_OPEN);
+	check_prize_music(RANDO_VARIANT_INVERTED);
 	printf(TEST ": hand-written cases passed\n");
 	if (fixtures)
 		check_hint_tables_fixture();

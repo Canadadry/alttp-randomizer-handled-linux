@@ -24,7 +24,7 @@
     - [x] Chunk 3: hint_tables.txt oracle fixture
     - [x] Chunk 4: hints as an input, hint tables and getHint
     - [x] Chunk 5: applyHints
-    - [ ] Chunk 6: writeItem
+    - [x] Chunk 6: writeItem
     - [ ] Chunk 7: setDiggingGameRng and writeRNGBlock
     - [ ] Chunk 8: writePrizePacksToRom and every claim to all
     - [ ] Chunk 9: measure against step 1.1

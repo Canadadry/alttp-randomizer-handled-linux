@@ -99,3 +99,62 @@ void rando_randomize_credits(RandoPrng *prng, RandoPostFill *post)
 	c->woods = rando_pick_first(prng, RANDO_CREDITS_WOODS);
 	c->well = rando_pick_first(prng, RANDO_CREDITS_WELL);
 }
+
+static bool has_music(RandoRegionId region)
+{
+	switch (region) {
+	case RANDO_REGION_EASTERN_PALACE:
+	case RANDO_REGION_DESERT_PALACE:
+	case RANDO_REGION_TOWER_OF_HERA:
+	case RANDO_REGION_PALACE_OF_DARKNESS:
+	case RANDO_REGION_SWAMP_PALACE:
+	case RANDO_REGION_SKULL_WOODS:
+	case RANDO_REGION_THIEVES_TOWN:
+	case RANDO_REGION_ICE_PALACE:
+	case RANDO_REGION_MISERY_MIRE:
+	case RANDO_REGION_TURTLE_ROCK:
+	case RANDO_REGION_GANONS_TOWER:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool is_prize(RandoLocationId location)
+{
+	switch (rando_location_info(location)->location_class) {
+	case RANDO_LOCATION_CLASS_PRIZE:
+	case RANDO_LOCATION_CLASS_PRIZE_CRYSTAL:
+	case RANDO_LOCATION_CLASS_PRIZE_EVENT:
+	case RANDO_LOCATION_CLASS_PRIZE_PENDANT:
+		return true;
+	default:
+		return false;
+	}
+}
+
+void rando_prize_music(const RandoWorld *world, RandoPrng *prng, RandoPostFill *post)
+{
+	RandoPrizeMusic *m = &post->prize_music;
+	int r, i;
+
+	m->count = 0;
+	if (!world->config.rom_map_on_pickup)
+		return;
+	for (r = 0; r < RANDO_REGION_COUNT; r++) {
+		if (!has_music((RandoRegionId)r))
+			continue;
+		for (i = 0; i < rando_layout_region_location_count(world->variant, (RandoRegionId)r); i++) {
+			RandoLocationId location = rando_layout_region_location(world->variant, (RandoRegionId)r, i);
+			uint8_t music[2] = {0x11, 0x16};
+
+			if (!is_prize(location))
+				continue;
+			assert(m->count < RANDO_PRIZE_MUSIC_MAX);
+			rando_fy_shuffle(prng, music, 2, 1);
+			m->locations[m->count] = location;
+			m->music[m->count] = music[0];
+			m->count++;
+		}
+	}
+}
