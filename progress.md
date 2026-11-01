@@ -94,7 +94,7 @@
   - [ ] 3.4 Generate tab state machine
     - [x] Chunk 1: settings table
     - [x] Chunk 2: settings file
-    - [ ] Chunk 3: input filter
+    - [x] Chunk 3: input filter
     - [ ] Chunk 4: Generate tab
     - [ ] Chunk 5: greying and restore
   - [ ] 3.5 Generation flow
