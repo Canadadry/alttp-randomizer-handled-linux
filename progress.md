@@ -54,7 +54,7 @@
     - [x] Chunk 3: text_tables.txt oracle fixture
     - [x] Chunk 4: setTexts strings, hints-off sign, inverted texts
     - [x] Chunk 5: hint texts, tablets and pedestal
-    - [ ] Chunk 6: claims to all text
+    - [x] Chunk 6: claims to all text
   - [ ] 1.10 Port the initial SRAM writes
   - [ ] 1.11 Checksum and heart beep
   - [ ] 1.12 skill: check-e2e — whole case list, then e2e-combos
