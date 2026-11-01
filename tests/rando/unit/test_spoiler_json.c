@@ -42,7 +42,7 @@ static void write_case(const char *case_dir)
 	      RANDO_INCOMPLETE);
 	f = tmpfile();
 	CHECK(f != NULL);
-	CHECK(rando_spoiler_write_json(f, &gen.world, &gen.options, NULL));
+	CHECK(rando_spoiler_write_json(f, &gen.world, &gen.options, c.hints, NULL));
 	rewind(f);
 	read_stream(f, case_dir, spoiler);
 	fclose(f);
@@ -221,7 +221,7 @@ static void write_world(const RandoWorld *world)
 
 	rando_options_init(&options);
 	CHECK(f != NULL);
-	CHECK(rando_spoiler_write_json(f, world, &options, NULL));
+	CHECK(rando_spoiler_write_json(f, world, &options, true, NULL));
 	rewind(f);
 	read_stream(f, "world", spoiler);
 	fclose(f);
@@ -275,6 +275,29 @@ static void check_equipped_and_meta(const char *case_dir)
 	check_section(case_dir, "Equipped");
 	check_section(case_dir, "meta");
 	CHECK(strstr(spoiler, "\"playthrough\"") == NULL);
+}
+
+/* meta.hints is the case's hints key, nothing else of the world. */
+static void check_hints_meta(void)
+{
+	static RandoWorld world;
+	RandoConfig config;
+	RandoOptions options;
+	FILE *f;
+	int hints;
+
+	rando_config_init(&config);
+	rando_world_init(&world, RANDO_VARIANT_OPEN, &config);
+	rando_options_init(&options);
+	for (hints = 0; hints < 2; hints++) {
+		f = tmpfile();
+		CHECK(f != NULL);
+		CHECK(rando_spoiler_write_json(f, &world, &options, hints != 0, NULL));
+		rewind(f);
+		read_stream(f, "hints", spoiler);
+		fclose(f);
+		CHECK(strstr(spoiler, hints ? "        \"hints\": \"on\",\n" : "        \"hints\": \"off\",\n") != NULL);
+	}
 }
 
 /* VT's getSpoiler skips Upgrade\Arrow, Upgrade\Bomb and Event, numbers the rest from 1 in insertion
@@ -391,6 +414,8 @@ int main(void)
 	check_equipped_and_meta("cases/item_pool-crowd_control");
 	check_equipped_and_meta("cases/weapons-assured");
 	check_equipped_and_meta("cases/goal-completionist");
+	check_equipped_and_meta("cases/hints-off");
+	check_hints_meta();
 	check_equipped_order();
 	printf(TEST ": hand-written cases passed\n");
 	return 0;

@@ -73,7 +73,7 @@ static void check_complete_outputs(const char *case_dir, const char *what, const
 
 	CHECK(f != NULL);
 	rando_playthrough(&gen.world, &playthrough);
-	CHECK(rando_spoiler_write_json(f, &gen.world, &gen.options, &playthrough));
+	CHECK(rando_spoiler_write_json(f, &gen.world, &gen.options, true, &playthrough));
 	rewind(f);
 	read_all(f, "spoiler", spoiler);
 	snprintf(path, sizeof path, "%s/spoiler.json", case_dir);

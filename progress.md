@@ -16,7 +16,7 @@
     - [x] Chunk 1: e2e-combos target and two case directories
     - [x] Chunk 2: the 29 case configs and their goldens
     - [x] Chunk 3: fill claims and the coverage guard
-    - [ ] Chunk 4: fixes for divergent combinations
+    - [x] Chunk 4: fixes for divergent combinations
     - [ ] Chunk 5: measure against step 1.1
   - [ ] 1.4 Port the post-fill draws
   - [ ] 1.5 rando_rom skeleton and claims by write group

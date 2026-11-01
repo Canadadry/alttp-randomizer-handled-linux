@@ -463,7 +463,7 @@ static Meta crystals_meta(const char *k, RandoOptionKey option, RandoCrystals va
 	return m;
 }
 
-static void write_meta(FILE *out, const RandoWorld *world, const RandoOptions *options)
+static void write_meta(FILE *out, const RandoWorld *world, const RandoOptions *options, bool hints)
 {
 	const RandoConfig *c = &world->config;
 	Meta meta[] = {
@@ -482,7 +482,7 @@ static void write_meta(FILE *out, const RandoWorld *world, const RandoOptions *o
 		{"entry_crystals_tower", META_STRING,
 		 rando_option_value_name(RANDO_OPTION_CRYSTALS_TOWER, (int)options->crystals_tower), 0},
 		{"goal", META_STRING, NAMED(goal_names, c->goal), 0},
-		{"hints", META_STRING, "on", 0},
+		{"hints", META_STRING, hints ? "on" : "off", 0},
 		{"item_functionality", META_STRING, NAMED(functionality_names, c->item_functionality), 0},
 		{"item_placement", META_STRING, NAMED(placement_names, c->item_placement), 0},
 		{"item_pool", META_STRING, NAMED(item_pool_names, c->item_pool), 0},
@@ -517,7 +517,7 @@ static void write_meta(FILE *out, const RandoWorld *world, const RandoOptions *o
 	fputc('}', out);
 }
 
-bool rando_spoiler_write_json(FILE *out, const RandoWorld *world, const RandoOptions *options,
+bool rando_spoiler_write_json(FILE *out, const RandoWorld *world, const RandoOptions *options, bool hints,
 			      const RandoPlaythrough *playthrough)
 {
 	static const char shops[] = "Shops", bosses[] = "Bosses", equipped[] = "Equipped", meta[] = "meta",
@@ -553,7 +553,7 @@ bool rando_spoiler_write_json(FILE *out, const RandoWorld *world, const RandoOpt
 		else if (sections[i] == equipped)
 			write_equipped(out, world);
 		else if (sections[i] == meta)
-			write_meta(out, world, options);
+			write_meta(out, world, options, hints);
 		else if (sections[i] == playthrough_key)
 			write_playthrough(out, playthrough);
 		else

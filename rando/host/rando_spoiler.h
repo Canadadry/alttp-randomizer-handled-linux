@@ -10,9 +10,9 @@
 #include <stdio.h>
 
 /* Writes VT's getSpoiler() for the world as it stands, in the oracle's normalized JSON (keys
- * sorted bytewise, PHP pretty-print, final newline). options are the case's, for meta. A NULL
- * playthrough writes no playthrough key. False on a stream error; the caller owns and closes out. */
-bool rando_spoiler_write_json(FILE *out, const RandoWorld *world, const RandoOptions *options,
+ * sorted bytewise, PHP pretty-print, final newline). options and hints are the case's, for meta. A
+ * NULL playthrough writes no playthrough key. False on a stream error; the caller owns and closes out. */
+bool rando_spoiler_write_json(FILE *out, const RandoWorld *world, const RandoOptions *options, bool hints,
 			      const RandoPlaythrough *playthrough);
 
 /* Writes pool.txt: one line per item, dungeon, advancement, nice, then item pool, in list order, each

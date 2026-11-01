@@ -51,3 +51,4 @@ heart_beep-half fill
 heart_beep-quarter fill
 heart_beep-double fill
 heart_beep-normal fill
+hints-off fill
