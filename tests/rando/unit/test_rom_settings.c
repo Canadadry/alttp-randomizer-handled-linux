@@ -626,6 +626,80 @@ static void check_game_state(void)
 	check_byte(0x180169, 0x01, "setLockAgahnimDoorInEscape");
 }
 
+typedef struct StateWrite {
+	uint32_t address;
+	uint8_t bytes[4];
+	size_t count;
+} StateWrite;
+
+/* setInvertedMode's first writes and its last one, PC addresses from VT's snes_to_pc. */
+static const StateWrite inverted_head[] = {
+	{0x180174, {0x00}, 1}, {0x180038, {0x00}, 1}, {0x18004A, {0x01}, 1}, {0x0103E0, {0xF0}, 1},
+	{0x01334D, {0xF0}, 1}, {0x035B78, {0x8B}, 1}, {0x02AF79, {0xF0}, 1}, {0x06B3C5, {0xC6}, 1},
+	{0x03A3F4, {0xF0}, 1}, {0x03A3F4, {0xF0}, 1},
+};
+
+static int state_write(int k)
+{
+	int i, seen = 0;
+
+	for (i = 0; i < rec.n; i++)
+		if (strcmp(rec.writes[i].method, "setGameState") == 0 && seen++ == k)
+			return i;
+	return -1;
+}
+
+static int state_writes(void)
+{
+	int k = 0;
+
+	while (state_write(k) >= 0)
+		k++;
+	return k;
+}
+
+static void check_state_write(int k, uint32_t address, const uint8_t *bytes, size_t count)
+{
+	int i = state_write(k);
+
+	CHECK(i >= 0);
+	if (i < 0)
+		return;
+	CHECK(rec.writes[i].address == address);
+	CHECK(rec.writes[i].count == count);
+	if (rec.writes[i].count == count)
+		CHECK(memcmp(rec.pool + rec.writes[i].at, bytes, count) == 0);
+}
+
+/* setFixFakeWorld(false), setOpenMode's lamp cone, then setInvertedMode's list with setFixFakeWorld(true)
+ * after the morph poof; it locks the Agahnim door itself. */
+static void check_inverted_state(void)
+{
+	static const uint8_t frog[3] = {0xF0, 0xE1, 0x05};
+	static const uint8_t on = 0x01, poof = 0xD0, aga = 0x02;
+	size_t k;
+	int n, i, morph = -1, fake = -1;
+
+	build_variant(&gen, RANDO_VARIANT_INVERTED, NULL);
+	run();
+	for (k = 0; k < sizeof inverted_head / sizeof inverted_head[0]; k++)
+		check_state_write((int)k, inverted_head[k].address, inverted_head[k].bytes, inverted_head[k].count);
+	n = state_writes();
+	CHECK(n == 195);
+	check_state_write(n - 1, 0x0332AB, frog, 3);
+	for (k = 0; (int)k < n; k++) {
+		i = state_write((int)k);
+		if (rec.writes[i].address == 0x04540C)
+			morph = (int)k;
+		if (rec.writes[i].address == 0x180174 && k > 0)
+			fake = (int)k;
+	}
+	CHECK(morph > 0 && fake == morph + 1);
+	check_state_write(morph, 0x04540C, &poof, 1);
+	check_state_write(fake, 0x180174, &on, 1);
+	check_byte(0x180169, aga, "setGameState");
+}
+
 /* A shop as VT's region constructor and setShops leave it: its ROM bytes, then its records' item byte and
  * price. */
 typedef struct VtShop {
@@ -1022,6 +1096,7 @@ int main(int argc, char **argv)
 	check_swordless();
 	check_swords_in_pool();
 	check_game_state();
+	check_inverted_state();
 	check_open_shops();
 	check_take_any_shops();
 	check_cleared_upgrade_shop();

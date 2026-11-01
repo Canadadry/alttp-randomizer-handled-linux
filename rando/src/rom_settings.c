@@ -361,10 +361,17 @@ static void write_game_state(RomOut *out, RandoState state)
 	case RANDO_STATE_RETRO:
 		emit_byte(out, 0x180038, 0x00, method);
 		break;
-	case RANDO_STATE_INVERTED:
-		/* TODO step 7, chunk 4: the rest of setInvertedMode, which starts with setOpenMode. */
+	case RANDO_STATE_INVERTED: {
+		size_t i;
+
 		emit_byte(out, 0x180038, 0x00, method);
+		for (i = 0; i < INVERTED_WRITES; i++) {
+			const RomWrite *w = &rando_inverted_writes[i];
+
+			emit(out, w->address, rando_inverted_bytes + w->offset, w->size, method);
+		}
 		break;
+	}
 	case RANDO_STATE_STANDARD:
 		emit_byte(out, 0x180038, 0x01, method);
 		break;

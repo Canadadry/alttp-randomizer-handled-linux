@@ -39,4 +39,17 @@ extern const uint8_t rando_retro_dig_prizes[RETRO_DIG_PRIZES_SIZE];
 
 extern const RomShop rando_rom_shops[RANDO_SHOP_COUNT];
 
+#define INVERTED_WRITES 193
+#define INVERTED_BYTES 510
+
+/* A write of size bytes from rando_inverted_bytes[offset]. */
+typedef struct RomWrite {
+	uint32_t address;
+	uint16_t offset;
+	uint8_t size;
+} RomWrite;
+
+extern const RomWrite rando_inverted_writes[INVERTED_WRITES];
+extern const uint8_t rando_inverted_bytes[INVERTED_BYTES];
+
 #endif
