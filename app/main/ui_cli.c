@@ -24,7 +24,6 @@ static const char usage[] = "usage: ui_cli --sd <root> [--every] [--cols <n>] [-
 static const char *const key_names[] = {"up", "down", "left", "right", "a",	  "b",	   "x",	   "y",
 					"l1", "r1",   "l2",   "r2",    "select", "start", "menu"};
 
-/* Fails to build when a button has no name, or a name no button. */
 typedef char key_names_match_buttons[sizeof key_names / sizeof key_names[0] == UI_BUTTON_COUNT ? 1 : -1];
 
 typedef struct Key {
@@ -100,7 +99,6 @@ static bool parse_md5(const char *s, uint8_t out[RANDO_MD5_SIZE])
 	return true;
 }
 
-/* Digits at s[from, from + n), as a number in [min, max]. */
 static bool field(const char *s, int from, int n, int min, int max, int *out)
 {
 	int i, v = 0;
@@ -286,7 +284,6 @@ static void set_up(void)
 		memcpy(shell.gen.base_md5, opt.base_md5, RANDO_MD5_SIZE);
 }
 
-/* Press then release through the filter; QUIT as soon as either quits. */
 static UiAppEvent play(UiButton button)
 {
 	if (ui_app_input(&shell.app, button, true) == UI_APP_QUIT)

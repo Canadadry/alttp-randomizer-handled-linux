@@ -105,7 +105,6 @@ RandoSaveStatus rando_seed_save(const char *rom_dir, const char *history_dir, co
 	return RANDO_SAVE_OK;
 }
 
-/* True when path is still there after remove. */
 static bool remove_cache(const char *sd_root, const char *rel)
 {
 	char path[RANDO_SEED_PATH_MAX];

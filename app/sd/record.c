@@ -107,7 +107,6 @@ static void skip_ws(Parser *p)
 		p->pos++;
 }
 
-/* '\0' at the end of the text. */
 static char peek(Parser *p)
 {
 	skip_ws(p);
@@ -122,7 +121,6 @@ static bool expect(Parser *p, char c, const char *what)
 	return true;
 }
 
-/* A string without escapes or control characters, copied NUL-terminated into out[STRING_MAX]. */
 static bool parse_string(Parser *p, const char *what, char out[STRING_MAX])
 {
 	size_t n = 0;
@@ -152,7 +150,6 @@ static bool is_number_char(char c)
 	return (c >= '0' && c <= '9') || c == '-' || c == '+' || c == '.' || c == 'e' || c == 'E';
 }
 
-/* The number token at the cursor, as [*start, *start + *n). */
 static bool number_token(Parser *p, const char *what, size_t *start, size_t *n)
 {
 	skip_ws(p);
@@ -165,7 +162,6 @@ static bool number_token(Parser *p, const char *what, size_t *start, size_t *n)
 	return true;
 }
 
-/* "," continues (true, *more set), "}" ends (true, *more cleared). */
 static bool next_member(Parser *p, const char *what, bool *more)
 {
 	char c = peek(p);
@@ -341,7 +337,6 @@ static int hex_digit(char c)
 	return c >= '0' && c <= '9' ? c - '0' : c - 'A' + 10;
 }
 
-/* Accepts only the rom the settings and a valid code make. */
 static bool check_rom(Parser *p, RandoRecord *out, const char *rom)
 {
 	const char *code = out->name.code;
@@ -475,14 +470,12 @@ static void line_begin(Outline *o, int indent)
 		put(o, "  ", 2);
 }
 
-/* put always leaves room for this newline. */
 static void line_end(Outline *o)
 {
 	if (!o->cut)
 		o->out[o->len++] = '\n';
 }
 
-/* The string token at the cursor, its bytes between the quotes as written, VT's ":<digits>" suffix dropped. */
 static bool raw_string(Parser *p, size_t *start, size_t *n)
 {
 	size_t end, i;
@@ -516,7 +509,6 @@ static bool all_digits(const char *s, size_t n)
 	return n > 0;
 }
 
-/* Numeric order of two all-digit keys, then record order. */
 static bool member_before(const char *text, const Member *a, const Member *b)
 {
 	const char *x = text + a->key, *y = text + b->key;
@@ -533,7 +525,6 @@ static bool member_before(const char *text, const Member *a, const Member *b)
 	return c != 0 ? c < 0 : a->index < b->index;
 }
 
-/* Reads the member at the cursor up to its value, which it leaves unread. */
 static bool member_head(Parser *p, size_t index, Member *m)
 {
 	if (!raw_string(p, &m->key, &m->key_len) || !expect(p, ':', "spoiler"))
@@ -544,7 +535,6 @@ static bool member_head(Parser *p, size_t index, Member *m)
 	return true;
 }
 
-/* After a member's value: true with *more set on ",", cleared on close. */
 static bool member_tail(Parser *p, char close, bool *more)
 {
 	char c = peek(p);
@@ -558,7 +548,6 @@ static bool member_tail(Parser *p, char close, bool *more)
 
 static bool outline_value(Parser *p, Outline *o, int depth, int indent, const char *label, size_t label_len);
 
-/* The cursor on '{'; members at indent, numeric keys first in numeric order, then the others. */
 static bool outline_object(Parser *p, Outline *o, int depth, int indent, bool top)
 {
 	size_t start, index;

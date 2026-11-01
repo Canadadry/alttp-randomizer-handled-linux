@@ -39,7 +39,6 @@ bool rando_history_init(RandoHistory *h, const char *sd_root)
 	return true;
 }
 
-/* Reads and strictly parses <history>/<code>.json into h->record; false on any failure or another code. */
 static bool read_record(RandoHistory *h, const char *code)
 {
 	char path[RANDO_SEED_PATH_MAX], error[RANDO_RECORD_ERROR_MAX];
@@ -61,7 +60,6 @@ static bool regular_file(const char *dir, const char *name)
 	return stat(path, &st) == 0 && S_ISREG(st.st_mode);
 }
 
-/* The code of a "<code>.json" name, or false. */
 static bool record_code(const char *name, char code[RANDO_NAME_CODE_MAX])
 {
 	size_t n = strlen(name);
@@ -108,7 +106,6 @@ static void entry_of(const RandoRecord *r, UiHistoryEntry *e)
 	e->has_spoiler = r->has_spoiler;
 }
 
-/* Keeps out sorted newest first and at most UI_HISTORY_MAX long, setting truncated when one is dropped. */
 static void insert(UiHistoryList *out, const UiHistoryEntry *e)
 {
 	int i;
@@ -183,7 +180,7 @@ UiStrId rando_history_delete_text(RandoHistoryDeleteStatus status)
 	return delete_texts[status];
 }
 
-/* Room for a profile folder, "/states/<core>/" and any file name. */
+/* 512: "/states/<core>/" plus any file name (NAME_MAX 255); a shorter one skips long state files. */
 #define DELETE_PATH_MAX (RANDO_SEED_PATH_MAX + 512)
 
 static bool present(const char *path)
@@ -193,7 +190,6 @@ static bool present(const char *path)
 	return lstat(path, &st) == 0;
 }
 
-/* True when the file at <dir>/<name><ext> is absent afterwards, whatever it was. */
 static bool gone(const char *dir, const char *name, const char *ext)
 {
 	char path[DELETE_PATH_MAX];
@@ -203,7 +199,6 @@ static bool gone(const char *dir, const char *name, const char *ext)
 	return !present(path);
 }
 
-/* The first regular file of dir starting with prefix, into path; false when none (or dir cannot be listed). */
 static bool find_state(const char *dir, const char *prefix, char path[DELETE_PATH_MAX])
 {
 	size_t n = strlen(prefix);
@@ -228,7 +223,6 @@ static bool find_state(const char *dir, const char *prefix, char path[DELETE_PAT
 	return found;
 }
 
-/* The .srm and the states of one profile folder; false when one stays. No removal runs while dir is open. */
 static bool delete_profile(const char *profile, const char *base)
 {
 	char dir[DELETE_PATH_MAX], prefix[RANDO_NAME_ROM_MAX + 8], path[DELETE_PATH_MAX];
@@ -241,6 +235,7 @@ static bool delete_profile(const char *profile, const char *base)
 	ok = gone(dir, base, ".srm");
 	snprintf(dir, sizeof dir, "%s/" RANDO_SD_STATES_DIR "/" RANDO_SD_CORE_DIR, profile);
 	snprintf(prefix, sizeof prefix, "%s.state", base);
+	/* One rescan per removal: removing while dir is open leaves readdir's result unspecified. */
 	while (find_state(dir, prefix, path)) {
 		remove(path);
 		if (present(path))

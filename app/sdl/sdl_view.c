@@ -60,8 +60,7 @@ SdlViewStatus sdl_view_open(SdlView *view, const char *font_path, int surface_w,
 	return SDLVIEW_FONT_TOO_SMALL;
 }
 
-/* TTF_RenderGlyph_Blended would give a tight bitmap needing per-glyph metrics; a one-character
- * string gives the full line height with the glyph on its baseline, blittable at the cell's corner. */
+/* A one-character string, not TTF_RenderGlyph_Blended's tight bitmap: full line height, glyph on its baseline. */
 static SDL_Surface *glyph(SdlView *view, UiLineStyle style, char c)
 {
 	int i = (unsigned char)c - 0x20;

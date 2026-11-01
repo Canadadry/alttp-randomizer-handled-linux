@@ -75,7 +75,6 @@ RandoAppText rando_app_bps_text(RandoBpsResult result)
 	return bps_texts[result];
 }
 
-/* The end of the path's last component, trailing slashes skipped: path[*end] is cut; false when none. */
 static bool drop_component(const char *path, size_t *end)
 {
 	size_t n = *end;

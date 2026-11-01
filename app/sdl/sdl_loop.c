@@ -15,7 +15,6 @@ typedef struct Loop {
 	long max_frames, frames;
 } Loop;
 
-/* True when the frame limit is reached. */
 static bool frame(Loop *loop)
 {
 	static UiScreen screen;

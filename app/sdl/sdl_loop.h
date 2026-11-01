@@ -12,9 +12,6 @@ typedef enum SdlLoopResult {
 	SDLLOOP_ERROR
 } SdlLoopResult;
 
-/* Drives app with SDL events until it quits, SDL_QUIT arrives, max_frames frames were presented (0: no
- * limit) or SDL_WaitEvent fails. grid is initialised by the caller, its size kept; each frame is the app's
- * screen rendered on it and handed to present. Key events queued during a generation are dropped. */
 SdlLoopResult sdl_loop_run(UiApp *app, UiGrid *grid, SdlPresentFn present, void *present_ctx, long max_frames);
 
 #endif

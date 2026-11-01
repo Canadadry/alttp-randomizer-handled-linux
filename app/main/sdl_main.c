@@ -31,6 +31,7 @@ typedef struct Presenter {
 	SDL_Surface *offscreen, *screen;
 } Presenter;
 
+/* About 7.3 MiB, near Linux's 8 MiB default stack: keep it static. */
 static RandoAppShell shell;
 static SdlView view;
 static UiGrid grid;
@@ -43,8 +44,7 @@ static void fail_usage(const char *what, const char *arg)
 	exit(2);
 }
 
-/* Printed after SDL_Quit, so the device's console is restored; why is copied first since SDL_Quit
- * clears SDL's error. */
+/* Printed after SDL_Quit restores the device's console; why is copied first, SDL_Quit clears SDL's error. */
 static void fail_setup(const char *what, const char *why)
 {
 	static char line[1024];
