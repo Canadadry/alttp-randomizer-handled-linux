@@ -25,4 +25,7 @@ uint8_t rando_rom_item_byte(RandoItemId item);
 /* VT's World::writeToRom setters between the item loop and writeCredits. */
 void rando_rom_write_settings(RomOut *out, const RandoGen *gen);
 
+/* VT's writeCredits: the credits data, then its 17 scene pointers. */
+void rando_rom_write_credits(RomOut *out, const RandoGen *gen);
+
 #endif

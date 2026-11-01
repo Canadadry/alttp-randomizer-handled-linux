@@ -45,7 +45,7 @@
     - [x] Chunk 5: claims to all settings
   - [ ] 1.8 Port the credits writes
     - [x] Chunk 1: credit_tables.txt oracle fixture
-    - [ ] Chunk 2: encoder, scenes and picks
+    - [x] Chunk 2: encoder, scenes and picks
     - [ ] Chunk 3: the six override tables
     - [ ] Chunk 4: claims to all credits
   - [ ] 1.9 Port the text, dialog and hints writes
