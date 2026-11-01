@@ -63,8 +63,6 @@ static const char *parse_string(Parser *ps, char out[CASE_STRING_MAX])
 	return "unterminated string";
 }
 
-static const char *const heart_beep_names[] = {"off", "half", "quarter", "double", "normal"};
-
 typedef enum CaseKey {
 	CASE_KEY_HINTS,
 	CASE_KEY_HEART_BEEP,
@@ -83,20 +81,9 @@ static CaseKey case_key_find(const char *key)
 /* Returns false when value is not one of key's values. */
 static bool set_case_key(RandoCase *out, CaseKey key, const char *value)
 {
-	size_t i;
-
-	if (key == CASE_KEY_HINTS) {
-		if (strcmp(value, "on") != 0 && strcmp(value, "off") != 0)
-			return false;
-		out->options.hints = strcmp(value, "on") == 0;
-		return true;
-	}
-	for (i = 0; i < sizeof heart_beep_names / sizeof heart_beep_names[0]; i++)
-		if (strcmp(value, heart_beep_names[i]) == 0) {
-			out->heart_beep = (RandoHeartBeep)i;
-			return true;
-		}
-	return false;
+	if (key == CASE_KEY_HINTS)
+		return rando_hints_find(value, &out->options.hints);
+	return rando_heart_beep_find(value, &out->heart_beep);
 }
 
 bool rando_case_parse_config(const char *text, size_t len, const char *file, RandoCase *out,

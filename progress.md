@@ -69,6 +69,11 @@
     - [x] Chunk 1: CRC32 and the BPS header reader
     - [x] Chunk 2: rando_bps_apply
   - [ ] 2.2 ROM assembly pipeline
+    - [x] Chunk 1: size constants and name tables
+    - [ ] Chunk 2: MD5 module
+    - [ ] Chunk 3: header check and gate target
+    - [ ] Chunk 4: the pipeline
+    - [ ] Chunk 5: the rando_patch CLI
   - [ ] 2.3 Output naming, history record and spoiler
 - [ ] Phase 3 — Onion facts, then the app's UI core and text renderer, host only
   - [ ] 3.1 Confirm the Onion specifics from Onion's sources

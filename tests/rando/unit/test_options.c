@@ -201,6 +201,29 @@ static void check_keys(void)
 	CHECK(rando_option_key_find("logic") == RANDO_OPTION_KEY_COUNT);
 }
 
+static void check_hints_names(void)
+{
+	static const char *const refused[] = {"", "On", "OFF", "yes", "on "};
+	bool found;
+	int i;
+
+	CHECK(strcmp(rando_hints_name(true), "on") == 0);
+	CHECK(strcmp(rando_hints_name(false), "off") == 0);
+	found = false;
+	CHECK(rando_hints_find("on", &found));
+	CHECK(found);
+	CHECK(rando_hints_find("off", &found));
+	CHECK(!found);
+	for (i = 0; i < (int)(sizeof refused / sizeof refused[0]); i++) {
+		found = true;
+		CHECK(!rando_hints_find(refused[i], &found));
+		CHECK(found);
+		found = false;
+		CHECK(!rando_hints_find(refused[i], &found));
+		CHECK(!found);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	(void)argc;
@@ -209,6 +232,7 @@ int main(int argc, char **argv)
 	check_every_value();
 	check_crowd_control();
 	check_hints();
+	check_hints_names();
 	check_resolved_crystals();
 	check_rejections();
 	check_keys();

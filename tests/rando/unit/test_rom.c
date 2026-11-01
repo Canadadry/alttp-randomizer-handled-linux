@@ -201,9 +201,38 @@ static void check_log_writer(void)
 	fclose(log.file);
 }
 
+static void check_size_constants(void)
+{
+	CHECK(RANDO_ROM_SIZE == 0x200000u);
+	CHECK(RANDO_ROM_SOURCE_SIZE == 0x100000u);
+}
+
+static void check_heart_beep_names(void)
+{
+	static const char *const names[] = {"off", "half", "quarter", "double", "normal"};
+	static const char *const refused[] = {"", "Half", "fast", "half "};
+	RandoHeartBeep found;
+	int i;
+
+	CHECK(RANDO_HEART_BEEP_COUNT == 5);
+	for (i = 0; i < RANDO_HEART_BEEP_COUNT; i++) {
+		CHECK(strcmp(rando_heart_beep_name((RandoHeartBeep)i), names[i]) == 0);
+		found = RANDO_HEART_BEEP_COUNT;
+		CHECK(rando_heart_beep_find(names[i], &found));
+		CHECK(found == (RandoHeartBeep)i);
+	}
+	for (i = 0; i < (int)(sizeof refused / sizeof refused[0]); i++) {
+		found = RANDO_HEART_BEEP_QUARTER;
+		CHECK(!rando_heart_beep_find(refused[i], &found));
+		CHECK(found == RANDO_HEART_BEEP_QUARTER);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	test_fixtures_mode(TEST, argc, argv);
+	check_size_constants();
+	check_heart_beep_names();
 	check_baseline_writes();
 	check_heart_beeps();
 	check_heart_beep_refused();

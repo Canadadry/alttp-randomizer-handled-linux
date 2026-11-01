@@ -2,7 +2,6 @@
 
 #include <assert.h>
 
-#define ROM_SIZE 0x200000u
 #define HEADER_ADDRESS 0x7FDCu
 #define HEADER_SIZE 4u
 
@@ -13,11 +12,11 @@ bool rando_rom_update_checksum(RandoRomBuffer *rom)
 	uint16_t inverse;
 	size_t i;
 	assert(rom != NULL && rom->bytes != NULL);
-	if (rom->size != ROM_SIZE)
+	if (rom->size != RANDO_ROM_SIZE)
 		return false;
 	/* The four header bytes never feed the sum: 0x1FE stands for them once written. */
 	sum = 0x1FEu;
-	for (i = 0; i < ROM_SIZE; i++) {
+	for (i = 0; i < RANDO_ROM_SIZE; i++) {
 		if (i >= HEADER_ADDRESS && i < HEADER_ADDRESS + HEADER_SIZE)
 			continue;
 		sum += rom->bytes[i];

@@ -115,6 +115,11 @@ const char *rando_option_key_name(RandoOptionKey key);
  * gives "random". Asserts both are in range. */
 const char *rando_option_value_name(RandoOptionKey key, int value);
 
+/* "on" or "off", the case format's hints values. */
+const char *rando_hints_name(bool hints);
+/* Returns false and leaves *out unchanged unless name is exactly "on" or "off". */
+bool rando_hints_find(const char *name, bool *out);
+
 /* The oracle wrapper's World::factory arguments on top of rando_config_init: no World constructor
  * derivation. crystals_ganon and crystals_tower are the resolved counts, asserted in 0..7. */
 void rando_config_from_options(const RandoOptions *options, int crystals_ganon, int crystals_tower,

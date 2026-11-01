@@ -7,13 +7,23 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* VT's Rom::SIZE, the randomized image, and the headerless JP 1.0 ROM it is built from. */
+#define RANDO_ROM_SIZE 0x200000u
+#define RANDO_ROM_SOURCE_SIZE 0x100000u
+
 typedef enum RandoHeartBeep {
 	RANDO_HEART_BEEP_OFF,
 	RANDO_HEART_BEEP_HALF,
 	RANDO_HEART_BEEP_QUARTER,
 	RANDO_HEART_BEEP_DOUBLE,
 	RANDO_HEART_BEEP_NORMAL,
+	RANDO_HEART_BEEP_COUNT,
 } RandoHeartBeep;
+
+/* The case format's name: "off", "half", "quarter", "double", "normal". Asserts the range. */
+const char *rando_heart_beep_name(RandoHeartBeep heart_beep);
+/* Returns false and leaves *out unchanged on an unknown name. */
+bool rando_heart_beep_find(const char *name, RandoHeartBeep *out);
 
 /* One write of count bytes (never 0) at a PC address. method is the oracle's tag for the write, a
  * static string the module owns: never freed. Returning false refuses the write. */
@@ -42,13 +52,13 @@ typedef struct RandoRomBuffer {
 bool rando_rom_buffer_write(void *ctx, uint32_t address, const uint8_t *bytes, size_t count, const char *method);
 
 /* VT's Rom::updateChecksum: writes the inverse then the checksum, little-endian, at 0x7FDC. Returns
- * false and writes nothing unless rom->size is 0x200000 (VT's Rom::SIZE). */
+ * false and writes nothing unless rom->size is RANDO_ROM_SIZE. */
 bool rando_rom_update_checksum(RandoRomBuffer *rom);
 
 /* alttpr.com's browser writes at VT's defaults, in step 1.2's order: quickswap, music, flashing,
  * menu speed, red hearts, then the default Link sprite copied from source (the JP ROM, header
  * stripped, only read, not overlapping rom). Returns false and writes nothing unless rom->size is
- * 0x200000 and source_size is 0x100000. */
+ * RANDO_ROM_SIZE and source_size is RANDO_ROM_SOURCE_SIZE. */
 bool rando_rom_write_cosmetic_defaults(RandoRomBuffer *rom, const uint8_t *source, size_t source_size);
 
 #endif

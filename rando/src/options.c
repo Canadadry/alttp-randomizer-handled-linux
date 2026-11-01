@@ -139,6 +139,22 @@ const char *rando_option_value_name(RandoOptionKey key, int value)
 	return keys[key].values[value];
 }
 
+const char *rando_hints_name(bool hints)
+{
+	return hints ? "on" : "off";
+}
+
+bool rando_hints_find(const char *name, bool *out)
+{
+	if (strcmp(name, "on") == 0)
+		*out = true;
+	else if (strcmp(name, "off") == 0)
+		*out = false;
+	else
+		return false;
+	return true;
+}
+
 bool rando_options_set(RandoOptions *o, const char *key, const char *value)
 {
 	RandoOptionKey k = rando_option_key_find(key);

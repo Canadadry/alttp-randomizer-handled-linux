@@ -3,8 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-#define ROM_SIZE 0x200000u
-#define SOURCE_SIZE 0x100000u
 #define VERSION_ADDRESS 0x7FE2u
 #define GFX_ADDRESS 0x80000u
 #define GFX_SIZE 0x7000u
@@ -59,7 +57,7 @@ bool rando_rom_write_cosmetic_defaults(RandoRomBuffer *rom, const uint8_t *sourc
 {
 	uint8_t *bytes;
 	assert(rom != NULL && rom->bytes != NULL && source != NULL);
-	if (rom->size != ROM_SIZE || source_size != SOURCE_SIZE)
+	if (rom->size != RANDO_ROM_SIZE || source_size != RANDO_ROM_SOURCE_SIZE)
 		return false;
 	bytes = rom->bytes;
 	bytes[0x18004B] = 0x00;
