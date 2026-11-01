@@ -4,26 +4,26 @@
 # case's attempt 0. `<case> all <group>` also claims rom_writes.txt up to the
 # last write of that write_groups.txt group, the whole log for the last group.
 # An unclaimed case is PENDING.
-dungeon_items-full+state-inverted all
-dungeon_items-full+state-retro all
-dungeon_items-full+state-standard all
-glitches-hybrid_major_glitches+state-inverted all
-glitches-hybrid_major_glitches+state-retro all
-glitches-hybrid_major_glitches+state-standard all
-glitches-major_glitches+dungeon_items-full all
-glitches-major_glitches+state-inverted all
-glitches-major_glitches+state-retro all
-glitches-major_glitches+state-standard all
-glitches-no_logic+state-inverted all
-glitches-no_logic+state-retro all
-glitches-no_logic+state-standard all
-glitches-overworld_glitches+state-inverted all
-glitches-overworld_glitches+state-retro all
-glitches-overworld_glitches+state-standard all
-goal-ganonhunt+state-inverted all
-goal-ganonhunt+state-retro all
-goal-ganonhunt+state-standard all
-goal-triforce-hunt+state-inverted all
-goal-triforce-hunt+state-retro all
-goal-triforce-hunt+state-standard all
-state-retro+item_pool-expert all
+dungeon_items-full+state-inverted all items
+dungeon_items-full+state-retro all items
+dungeon_items-full+state-standard all items
+glitches-hybrid_major_glitches+state-inverted all items
+glitches-hybrid_major_glitches+state-retro all items
+glitches-hybrid_major_glitches+state-standard all items
+glitches-major_glitches+dungeon_items-full all items
+glitches-major_glitches+state-inverted all items
+glitches-major_glitches+state-retro all items
+glitches-major_glitches+state-standard all items
+glitches-no_logic+state-inverted all items
+glitches-no_logic+state-retro all items
+glitches-no_logic+state-standard all items
+glitches-overworld_glitches+state-inverted all items
+glitches-overworld_glitches+state-retro all items
+glitches-overworld_glitches+state-standard all items
+goal-ganonhunt+state-inverted all items
+goal-ganonhunt+state-retro all items
+goal-ganonhunt+state-standard all items
+goal-triforce-hunt+state-inverted all items
+goal-triforce-hunt+state-retro all items
+goal-triforce-hunt+state-standard all items
+state-retro+item_pool-expert all items
