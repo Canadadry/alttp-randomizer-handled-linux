@@ -103,7 +103,7 @@
     - [x] Chunk 3: flow state machine
     - [x] Chunk 4: SD runner and status tables
     - [x] Chunk 5: end to end
-  - [ ] 3.6 History tab
+  - [x] 3.6 History tab
     - [x] Chunk 1: spoiler outline
     - [x] Chunk 2: core History state machine
     - [x] Chunk 3: SD scan and spoiler reading
