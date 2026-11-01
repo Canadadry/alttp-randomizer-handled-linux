@@ -67,7 +67,7 @@
 - [ ] Phase 2 — Full ROM assembly, host only
   - [ ] 2.1 BPS applier in C
     - [x] Chunk 1: CRC32 and the BPS header reader
-    - [ ] Chunk 2: rando_bps_apply
+    - [x] Chunk 2: rando_bps_apply
   - [ ] 2.2 ROM assembly pipeline
   - [ ] 2.3 Output naming, history record and spoiler
 - [ ] Phase 3 — Onion facts, then the app's UI core and text renderer, host only

@@ -2,6 +2,7 @@
 #include "rando_crc32.h"
 
 #include <assert.h>
+#include <string.h>
 
 #define MAGIC_SIZE 4u
 #define FOOTER_SIZE 12u
@@ -41,6 +42,27 @@ static int decode_number(const uint8_t *patch, size_t *pos, size_t end, size_t *
 	return 1;
 }
 
+/* Reads a relative-offset number and moves *offset by it. Returns 0 on a bad number, or when the
+ * offset would go below 0 or past SIZE_MAX. */
+static int move_offset(const uint8_t *patch, size_t *pos, size_t end, size_t *offset)
+{
+	size_t d, delta;
+
+	if (!decode_number(patch, pos, end, &d))
+		return 0;
+	delta = d >> 1;
+	if (d & 1) {
+		if (delta > *offset)
+			return 0;
+		*offset -= delta;
+	} else {
+		if (delta > SIZE_MAX - *offset)
+			return 0;
+		*offset += delta;
+	}
+	return 1;
+}
+
 RandoBpsResult rando_bps_read_header(const uint8_t *patch, size_t patch_size, RandoBpsHeader *out)
 {
 	RandoBpsHeader h;
@@ -65,5 +87,71 @@ RandoBpsResult rando_bps_read_header(const uint8_t *patch, size_t patch_size, Ra
 	if (h.patch_crc != rando_crc32(patch, patch_size - 4))
 		return RANDO_BPS_PATCH_CRC;
 	*out = h;
+	return RANDO_BPS_OK;
+}
+
+RandoBpsResult rando_bps_apply(const uint8_t *patch, size_t patch_size, const uint8_t *source, size_t source_size,
+			       uint8_t *target, size_t target_capacity, size_t *target_size)
+{
+	RandoBpsHeader h;
+	RandoBpsResult r;
+	size_t pos, end, out = 0, source_offset = 0, target_offset = 0;
+
+	assert(target_size != NULL && (source != NULL || source_size == 0) && (target != NULL || target_capacity == 0));
+	*target_size = 0;
+	r = rando_bps_read_header(patch, patch_size, &h);
+	if (r != RANDO_BPS_OK)
+		return r;
+	if (source_size != h.source_size)
+		return RANDO_BPS_SOURCE_SIZE;
+	if (rando_crc32(source, source_size) != h.source_crc)
+		return RANDO_BPS_SOURCE_CRC;
+	if (h.target_size > target_capacity)
+		return RANDO_BPS_TARGET_TOO_SMALL;
+	pos = h.actions_offset;
+	end = patch_size - FOOTER_SIZE;
+	while (pos < end) {
+		size_t n, length;
+		if (!decode_number(patch, &pos, end, &n))
+			return RANDO_BPS_MALFORMED;
+		length = (n >> 2) + 1;
+		if (length > h.target_size - out)
+			return RANDO_BPS_MALFORMED;
+		switch (n & 3) {
+		case 0:
+			if (out > source_size || length > source_size - out)
+				return RANDO_BPS_MALFORMED;
+			memcpy(target + out, source + out, length);
+			break;
+		case 1:
+			if (length > end - pos)
+				return RANDO_BPS_MALFORMED;
+			memcpy(target + out, patch + pos, length);
+			pos += length;
+			break;
+		case 2:
+			if (!move_offset(patch, &pos, end, &source_offset) || source_offset > source_size ||
+			    length > source_size - source_offset)
+				return RANDO_BPS_MALFORMED;
+			memcpy(target + out, source + source_offset, length);
+			source_offset += length;
+			break;
+		default: {
+			size_t i;
+			if (!move_offset(patch, &pos, end, &target_offset) || target_offset >= out)
+				return RANDO_BPS_MALFORMED;
+			for (i = 0; i < length; i++)
+				target[out + i] = target[target_offset + i];
+			target_offset += length;
+			break;
+		}
+		}
+		out += length;
+	}
+	if (out != h.target_size)
+		return RANDO_BPS_MALFORMED;
+	if (rando_crc32(target, out) != h.target_crc)
+		return RANDO_BPS_TARGET_CRC;
+	*target_size = out;
 	return RANDO_BPS_OK;
 }
