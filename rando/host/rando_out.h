@@ -7,6 +7,15 @@
 #include <stdio.h>
 
 #define RANDO_OUT_ERROR_MAX 1280
+#define RANDO_OUT_PATCH_MAX (4u << 20)
+
+typedef enum RandoOutRead {
+	RANDO_OUT_READ_OK,
+	RANDO_OUT_READ_MISSING, /* fopen failed with ENOENT */
+	RANDO_OUT_READ_OPEN,
+	RANDO_OUT_READ_READ,
+	RANDO_OUT_READ_TOO_LARGE,
+} RandoOutRead;
 
 typedef struct RandoTraceFile {
 	FILE *file;
@@ -47,5 +56,13 @@ bool rando_attempts_write(const char *out_dir, uint32_t attempt, char error[RAND
 /* A RandoAssembleOutputFn; ctx is the path (const char *). Writes the file with "wb" and removes it on any
  * failure after it was created. */
 bool rando_out_write_file(void *ctx, const uint8_t *bytes, size_t size);
+
+/* Reads at most max + 1 bytes of path into buf (max + 1 bytes long). On OK, *size <= max and *total
+ * = *size; on TOO_LARGE, *size = max + 1 and *total the file's size, -1 when it cannot be told. On
+ * MISSING and OPEN, errno is fopen's. Prints nothing. */
+RandoOutRead rando_out_read_capped(const char *path, uint8_t *buf, size_t max, size_t *size, long *total);
+
+/* From /dev/urandom, else a mix of the time and the clock. */
+uint32_t rando_out_random_seed(void);
 
 #endif

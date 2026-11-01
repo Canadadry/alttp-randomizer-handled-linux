@@ -6,9 +6,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
-#include <time.h>
 
-#define PATCH_FILE_MAX (4u << 20)
 #define KEY_MAX 64
 
 enum {
@@ -20,7 +18,7 @@ enum {
 
 static RandoAssembleWork work;
 static uint8_t source[RANDO_ROM_SOURCE_SIZE + 1];
-static uint8_t patch[PATCH_FILE_MAX + 1];
+static uint8_t patch[RANDO_OUT_PATCH_MAX + 1];
 
 static bool refuse(char error[RANDO_PATCH_ERROR_MAX], const char *fmt, ...)
 {
@@ -126,46 +124,22 @@ const char *rando_patch_bps_name(RandoBpsResult result)
 	return (size_t)result < RANDO_BPS_RESULT_COUNT ? names[result] : "unknown";
 }
 
-/* Reads at most max bytes into buf; *size is max + 1 when the file is larger, the true size then in
- * *total when it can be told (else -1). */
-static bool read_capped(const char *path, uint8_t *buf, size_t max, size_t *size, long *total, FILE *err)
+/* Prints the CLI's message for a failed read; false unless status is OK or TOO_LARGE. */
+static bool read_input(const char *path, uint8_t *buf, size_t max, size_t *size, long *total, FILE *err)
 {
-	FILE *f = fopen(path, "rb");
-	bool failed;
-	if (f == NULL) {
+	switch (rando_out_read_capped(path, buf, max, size, total)) {
+	case RANDO_OUT_READ_OK:
+	case RANDO_OUT_READ_TOO_LARGE:
+		return true;
+	case RANDO_OUT_READ_MISSING:
+	case RANDO_OUT_READ_OPEN:
 		fprintf(err, "rando_patch: %s: cannot open: %s\n", path, strerror(errno));
 		return false;
+	case RANDO_OUT_READ_READ:
+		break;
 	}
-	*size = fread(buf, 1, max + 1, f);
-	failed = ferror(f) != 0;
-	*total = (long)*size;
-	if (!failed && *size > max)
-		*total = fseek(f, 0, SEEK_END) == 0 ? ftell(f) : -1;
-	fclose(f);
-	if (failed) {
-		fprintf(err, "rando_patch: %s: read error\n", path);
-		return false;
-	}
-	return true;
-}
-
-static uint32_t draw_seed(void)
-{
-	uint8_t bytes[4];
-	FILE *f = fopen("/dev/urandom", "rb");
-	uint32_t seed;
-	if (f != NULL) {
-		size_t n = fread(bytes, 1, sizeof bytes, f);
-		fclose(f);
-		if (n == sizeof bytes)
-			return (uint32_t)bytes[0] | (uint32_t)bytes[1] << 8 | (uint32_t)bytes[2] << 16 |
-			       (uint32_t)bytes[3] << 24;
-	}
-	seed = (uint32_t)time(NULL) * 2654435761u ^ (uint32_t)clock();
-	seed ^= seed >> 16;
-	seed *= 0x85EBCA6Bu;
-	seed ^= seed >> 13;
-	return seed;
+	fprintf(err, "rando_patch: %s: read error\n", path);
+	return false;
 }
 
 static void source_size_message(FILE *err, const char *path, long size)
@@ -184,17 +158,17 @@ int rando_patch_run(const RandoPatchArgs *args, FILE *out, FILE *err)
 	size_t source_size, patch_size;
 	long total;
 
-	if (!read_capped(args->base_path, source, RANDO_ROM_SOURCE_SIZE, &source_size, &total, err))
+	if (!read_input(args->base_path, source, RANDO_ROM_SOURCE_SIZE, &source_size, &total, err))
 		return EXIT_INPUT;
 	if (source_size != RANDO_ROM_SOURCE_SIZE) {
 		source_size_message(err, args->base_path, total);
 		return EXIT_INPUT;
 	}
-	if (!read_capped(args->bps_path, patch, PATCH_FILE_MAX, &patch_size, &total, err))
+	if (!read_input(args->bps_path, patch, RANDO_OUT_PATCH_MAX, &patch_size, &total, err))
 		return EXIT_INPUT;
-	if (patch_size > PATCH_FILE_MAX) {
+	if (patch_size > RANDO_OUT_PATCH_MAX) {
 		fprintf(err, "rando_patch: %s: larger than %u bytes, not the base patch\n", args->bps_path,
-			PATCH_FILE_MAX);
+			RANDO_OUT_PATCH_MAX);
 		return EXIT_INPUT;
 	}
 
@@ -202,7 +176,7 @@ int rando_patch_run(const RandoPatchArgs *args, FILE *out, FILE *err)
 	request.source_size = source_size;
 	request.patch = patch;
 	request.patch_size = patch_size;
-	request.seed = args->has_seed ? args->seed : draw_seed();
+	request.seed = args->has_seed ? args->seed : rando_out_random_seed();
 	request.output = rando_out_write_file;
 	request.output_ctx = (void *)args->out_path;
 

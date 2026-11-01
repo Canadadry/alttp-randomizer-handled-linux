@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <string.h>
+#include <time.h>
 
 #define OUT_PATH_MAX 1024
 
@@ -141,4 +142,40 @@ bool rando_out_write_file(void *ctx, const uint8_t *bytes, size_t size)
 	if (!ok)
 		remove(path);
 	return ok;
+}
+
+RandoOutRead rando_out_read_capped(const char *path, uint8_t *buf, size_t max, size_t *size, long *total)
+{
+	FILE *f = fopen(path, "rb");
+	bool failed;
+	if (f == NULL)
+		return errno == ENOENT ? RANDO_OUT_READ_MISSING : RANDO_OUT_READ_OPEN;
+	*size = fread(buf, 1, max + 1, f);
+	failed = ferror(f) != 0;
+	*total = (long)*size;
+	if (!failed && *size > max)
+		*total = fseek(f, 0, SEEK_END) == 0 ? ftell(f) : -1;
+	fclose(f);
+	if (failed)
+		return RANDO_OUT_READ_READ;
+	return *size > max ? RANDO_OUT_READ_TOO_LARGE : RANDO_OUT_READ_OK;
+}
+
+uint32_t rando_out_random_seed(void)
+{
+	uint8_t bytes[4];
+	FILE *f = fopen("/dev/urandom", "rb");
+	uint32_t seed;
+	if (f != NULL) {
+		size_t n = fread(bytes, 1, sizeof bytes, f);
+		fclose(f);
+		if (n == sizeof bytes)
+			return (uint32_t)bytes[0] | (uint32_t)bytes[1] << 8 | (uint32_t)bytes[2] << 16 |
+			       (uint32_t)bytes[3] << 24;
+	}
+	seed = (uint32_t)time(NULL) * 2654435761u ^ (uint32_t)clock();
+	seed ^= seed >> 16;
+	seed *= 0x85EBCA6Bu;
+	seed ^= seed >> 13;
+	return seed;
 }
