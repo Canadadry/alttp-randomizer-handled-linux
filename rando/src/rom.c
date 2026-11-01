@@ -11,11 +11,16 @@ void rando_rom_emit(RomOut *out, uint32_t address, const uint8_t *bytes, size_t 
 		out->ok = out->writer->write(out->writer->ctx, address, bytes, count, method);
 }
 
-/* TODO step 11. */
 static void write_heart_beep(RomOut *out, RandoHeartBeep heart_beep)
 {
-	(void)out;
-	(void)heart_beep;
+	static const uint8_t speeds[] = {
+		[RANDO_HEART_BEEP_OFF] = 0x00,	  [RANDO_HEART_BEEP_HALF] = 0x40,
+		[RANDO_HEART_BEEP_QUARTER] = 0x80, [RANDO_HEART_BEEP_DOUBLE] = 0x10,
+		[RANDO_HEART_BEEP_NORMAL] = 0x20,
+	};
+
+	assert((unsigned)heart_beep < sizeof speeds);
+	rando_rom_emit(out, 0x180033, &speeds[heart_beep], 1, "setHeartBeepSpeed");
 }
 
 bool rando_rom_write(const RandoGen *gen, RandoHeartBeep heart_beep, const RandoRomWriter *writer)

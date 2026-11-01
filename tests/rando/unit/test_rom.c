@@ -23,6 +23,10 @@ typedef struct Recorder {
 	int text;
 	int sram;
 	int total;
+	int beep;
+	uint32_t beep_address;
+	size_t beep_count;
+	uint8_t beep_byte;
 	bool in_order;
 	bool all_inside;
 	const char *last_settings;
@@ -32,7 +36,8 @@ static bool record(void *ctx, uint32_t address, const uint8_t *bytes, size_t cou
 {
 	Recorder *r = ctx;
 
-	(void)bytes;
+	if (r->beep > 0)
+		r->in_order = false;
 	if (strcmp(method, "writeItem") == 0) {
 		r->items++;
 		if (r->settings > 0 || r->credits > 0 || r->text > 0 || r->sram > 0 || r->total > 0)
@@ -53,6 +58,13 @@ static bool record(void *ctx, uint32_t address, const uint8_t *bytes, size_t cou
 		r->total++;
 		if (r->sram != 1)
 			r->in_order = false;
+	} else if (strcmp(method, "setHeartBeepSpeed") == 0) {
+		r->beep++;
+		r->beep_address = address;
+		r->beep_count = count;
+		r->beep_byte = bytes[0];
+		if (r->total != 1)
+			r->in_order = false;
 	} else {
 		r->settings++;
 		r->last_settings = method;
@@ -67,11 +79,10 @@ static bool record(void *ctx, uint32_t address, const uint8_t *bytes, size_t cou
 static RandoGen gen, before;
 static uint8_t rom_bytes[ROM_SIZE];
 
-/* Every group but the heart beep writes so far: step 11 rewrites this expectation. */
 static void check_baseline_writes(void)
 {
 	RandoOptions options;
-	Recorder rec = {0, 0, 0, 0, 0, 0, true, true, NULL};
+	Recorder rec = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, true, NULL};
 	RandoRomWriter writer = {record, &rec};
 	RandoRomBuffer rom = {rom_bytes, sizeof rom_bytes};
 	RandoRomWriter buffer = {rando_rom_buffer_write, &rom};
@@ -81,12 +92,51 @@ static void check_baseline_writes(void)
 	memcpy(&before, &gen, sizeof gen);
 	CHECK(rando_rom_write(&gen, RANDO_HEART_BEEP_HALF, &writer));
 	CHECK(rec.items > 0 && rec.settings > 0 && rec.credits == 2 && rec.text == 1 && rec.sram == 1
-	      && rec.total == 1);
+	      && rec.total == 1 && rec.beep == 1);
 	CHECK(rec.in_order);
 	CHECK(rec.last_settings != NULL && strcmp(rec.last_settings, "enableFastRom") == 0);
 	CHECK(rec.all_inside);
 	CHECK(rando_rom_write(&gen, RANDO_HEART_BEEP_HALF, &buffer));
 	CHECK(memcmp(&before, &gen, sizeof gen) == 0);
+}
+
+static void check_heart_beep(RandoHeartBeep heart_beep, uint8_t expected)
+{
+	Recorder rec = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, true, NULL};
+	RandoRomWriter writer = {record, &rec};
+
+	CHECK(rando_rom_write(&gen, heart_beep, &writer));
+	CHECK(rec.beep == 1 && rec.in_order);
+	CHECK(rec.beep_address == 0x180033 && rec.beep_count == 1 && rec.beep_byte == expected);
+}
+
+static void check_heart_beeps(void)
+{
+	check_heart_beep(RANDO_HEART_BEEP_OFF, 0x00);
+	check_heart_beep(RANDO_HEART_BEEP_HALF, 0x40);
+	check_heart_beep(RANDO_HEART_BEEP_QUARTER, 0x80);
+	check_heart_beep(RANDO_HEART_BEEP_DOUBLE, 0x10);
+	check_heart_beep(RANDO_HEART_BEEP_NORMAL, 0x20);
+}
+
+static bool refuse_heart_beep(void *ctx, uint32_t address, const uint8_t *bytes, size_t count, const char *method)
+{
+	int *calls = ctx;
+
+	(void)address;
+	(void)bytes;
+	(void)count;
+	(*calls)++;
+	return strcmp(method, "setHeartBeepSpeed") != 0;
+}
+
+static void check_heart_beep_refused(void)
+{
+	int calls = 0;
+	RandoRomWriter writer = {refuse_heart_beep, &calls};
+
+	CHECK(!rando_rom_write(&gen, RANDO_HEART_BEEP_HALF, &writer));
+	CHECK(calls > 1);
 }
 
 /* Every byte of buf equals fill, except bytes[0..count) at address. */
@@ -155,6 +205,8 @@ int main(int argc, char **argv)
 {
 	test_fixtures_mode(TEST, argc, argv);
 	check_baseline_writes();
+	check_heart_beeps();
+	check_heart_beep_refused();
 	check_buffer_writer();
 	check_log_writer();
 	printf(TEST ": passed\n");
