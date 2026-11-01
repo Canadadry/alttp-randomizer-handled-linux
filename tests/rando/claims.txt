@@ -46,3 +46,8 @@ goal-ganonhunt fill
 glitches-no_logic fill
 state-inverted fill
 state-retro fill
+heart_beep-off fill
+heart_beep-half fill
+heart_beep-quarter fill
+heart_beep-double fill
+heart_beep-normal fill

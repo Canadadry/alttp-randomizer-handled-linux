@@ -15,7 +15,7 @@
   - [ ] 1.3 Golden cases for the new settings and for combinations
     - [x] Chunk 1: e2e-combos target and two case directories
     - [x] Chunk 2: the 29 case configs and their goldens
-    - [ ] Chunk 3: fill claims and the coverage guard
+    - [x] Chunk 3: fill claims and the coverage guard
     - [ ] Chunk 4: fixes for divergent combinations
     - [ ] Chunk 5: measure against step 1.1
   - [ ] 1.4 Port the post-fill draws

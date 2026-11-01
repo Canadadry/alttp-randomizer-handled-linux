@@ -4,7 +4,11 @@
 #include "support.h"
 
 #include <dirent.h>
+#include <stdbool.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define TEST "test_case_reader"
@@ -31,28 +35,178 @@ static void check_baseline(void)
 	CHECK(c.heart_beep == RANDO_HEART_BEEP_HALF);
 }
 
-/* Every committed case must be readable by the driver. */
-static void check_every_case(void)
-{
-	DIR *dir = opendir("cases");
-	struct dirent *entry;
-	char path[512], error[RANDO_CASE_ERROR_MAX];
-	RandoCase c;
-	int n = 0;
+#define ENTRIES_MAX 128
+#define CASES_MIN 50
+#define COMBOS_MIN 23
 
-	if (dir == NULL)
-		test_fail(TEST, "cannot open cases/");
-	while ((entry = readdir(dir)) != NULL) {
+typedef struct CaseEntry {
+	const char *dir;
+	char name[256];
+	RandoCase c;
+} CaseEntry;
+
+/* Reads every case of dir into set from *n on. On an unreadable case returns false with its error. */
+static bool read_dir(const char *dir, CaseEntry *set, size_t *n, char error[RANDO_CASE_ERROR_MAX])
+{
+	DIR *d = opendir(dir);
+	struct dirent *entry;
+	char path[512];
+
+	if (d == NULL)
+		test_fail(TEST, "cannot open %s/", dir);
+	while ((entry = readdir(d)) != NULL) {
 		if (entry->d_name[0] == '.')
 			continue;
-		snprintf(path, sizeof path, "cases/%s", entry->d_name);
-		if (!rando_case_read(path, &c, error))
-			test_fail(TEST, "%s", error);
-		n++;
+		if (*n == ENTRIES_MAX)
+			test_fail(TEST, "more than %d cases, raise ENTRIES_MAX", ENTRIES_MAX);
+		snprintf(path, sizeof path, "%s/%s", dir, entry->d_name);
+		if (!rando_case_read(path, &set[*n].c, error)) {
+			closedir(d);
+			return false;
+		}
+		set[*n].dir = dir;
+		snprintf(set[*n].name, sizeof set[*n].name, "%s", entry->d_name);
+		(*n)++;
 	}
-	closedir(dir);
-	if (n < 44)
-		test_fail(TEST, "%d cases read, the matrix has 44", n);
+	closedir(d);
+	return true;
+}
+
+/* A synthetic case: the baseline with up to two keys set (NULL for none). */
+static void add_entry(CaseEntry *set, size_t *n, const char *dir, const char *name, const char *k1, const char *v1,
+		      const char *k2, const char *v2)
+{
+	CaseEntry *e = &set[(*n)++];
+
+	e->dir = dir;
+	snprintf(e->name, sizeof e->name, "%s", name);
+	rando_options_init(&e->c.options);
+	e->c.hints = true;
+	e->c.heart_beep = RANDO_HEART_BEEP_HALF;
+	e->c.seed = 1;
+	e->c.has_attempts = false;
+	if ((k1 && !rando_options_set(&e->c.options, k1, v1)) || (k2 && !rando_options_set(&e->c.options, k2, v2)))
+		test_fail(TEST, "bad synthetic case %s", name);
+}
+
+typedef struct Pair {
+	RandoOptionKey key;
+	int value;
+} Pair;
+
+/* The pairs the plan requires, each with state; in this order. */
+static size_t required_pairs(Pair out[][2])
+{
+	static const RandoOptionGoal goals[] = {RANDO_OPTION_GOAL_TRIFORCE_HUNT, RANDO_OPTION_GOAL_GANONHUNT};
+	size_t n = 0;
+	int s, v;
+	size_t g;
+
+	for (s = RANDO_OPTION_STATE_OPEN; s <= RANDO_OPTION_STATE_RETRO; s++)
+		for (v = RANDO_GLITCHES_NONE; v <= RANDO_GLITCHES_NO_LOGIC; v++) {
+			out[n][0] = (Pair){RANDO_OPTION_GLITCHES, v};
+			out[n++][1] = (Pair){RANDO_OPTION_STATE, s};
+		}
+	for (s = RANDO_OPTION_STATE_OPEN; s <= RANDO_OPTION_STATE_RETRO; s++) {
+		out[n][0] = (Pair){RANDO_OPTION_DUNGEON_ITEMS, RANDO_OPTION_DUNGEON_ITEMS_FULL};
+		out[n++][1] = (Pair){RANDO_OPTION_STATE, s};
+	}
+	for (g = 0; g < sizeof goals / sizeof goals[0]; g++)
+		for (s = RANDO_OPTION_STATE_OPEN; s <= RANDO_OPTION_STATE_RETRO; s++) {
+			out[n][0] = (Pair){RANDO_OPTION_GOAL, (int)goals[g]};
+			out[n++][1] = (Pair){RANDO_OPTION_STATE, s};
+		}
+	return n;
+}
+
+static void pair_name(const Pair p[2], char *out, size_t cap)
+{
+	snprintf(out, cap, "%s-%s+%s-%s", rando_option_key_name(p[0].key), rando_option_value_name(p[0].key, p[0].value),
+		 rando_option_key_name(p[1].key), rando_option_value_name(p[1].key, p[1].value));
+}
+
+/* The baseline with the pair set: the only options a case covering the pair may have. */
+static void pair_options(const Pair p[2], RandoOptions *out)
+{
+	int i;
+
+	rando_options_init(out);
+	for (i = 0; i < 2; i++)
+		if (!rando_options_set(out, rando_option_key_name(p[i].key), rando_option_value_name(p[i].key, p[i].value)))
+			test_fail(TEST, "cannot set pair key %s", rando_option_key_name(p[i].key));
+}
+
+/* Writes the first required pair no case covers into missing (128 bytes) and returns true; false if
+ * every pair is covered. */
+static bool missing_pair(const CaseEntry *set, size_t n, char *missing)
+{
+	Pair pairs[64][2];
+	size_t np = required_pairs(pairs), i, j;
+	RandoOptions want;
+
+	missing[0] = '\0';
+	for (i = 0; i < np; i++) {
+		pair_options(pairs[i], &want);
+		for (j = 0; j < n; j++)
+			if (memcmp(&set[j].c.options, &want, sizeof want) == 0)
+				break;
+		if (j == n) {
+			pair_name(pairs[i], missing, 128);
+			return true;
+		}
+	}
+	return false;
+}
+
+/* One case per required pair, in required_pairs' order. */
+static void add_required(CaseEntry *set, size_t *n)
+{
+	Pair pairs[64][2];
+	size_t np = required_pairs(pairs), i;
+	char name[128];
+
+	for (i = 0; i < np; i++) {
+		pair_name(pairs[i], name, sizeof name);
+		add_entry(set, n, "combos", name, rando_option_key_name(pairs[i][0].key),
+			  rando_option_value_name(pairs[i][0].key, pairs[i][0].value), rando_option_key_name(pairs[i][1].key),
+			  rando_option_value_name(pairs[i][1].key, pairs[i][1].value));
+	}
+}
+
+/* The first name present in two directories, or NULL. */
+static const char *duplicate_name(const CaseEntry *set, size_t n)
+{
+	size_t i, j;
+
+	for (i = 0; i < n; i++)
+		for (j = i + 1; j < n; j++)
+			if (strcmp(set[i].name, set[j].name) == 0 && strcmp(set[i].dir, set[j].dir) != 0)
+				return set[i].name;
+	return NULL;
+}
+
+/* Every committed case and combination must be readable, uniquely named, and cover the required pairs. */
+static void check_every_case(void)
+{
+	static CaseEntry set[ENTRIES_MAX];
+	char error[RANDO_CASE_ERROR_MAX], missing[128];
+	size_t n = 0, ncases;
+	const char *dup;
+
+	if (!read_dir("cases", set, &n, error))
+		test_fail(TEST, "%s", error);
+	ncases = n;
+	if (!read_dir("combos", set, &n, error))
+		test_fail(TEST, "%s", error);
+	if (ncases < CASES_MIN)
+		test_fail(TEST, "%zu cases read in cases/, the matrix has %d", ncases, CASES_MIN);
+	if (n - ncases < COMBOS_MIN)
+		test_fail(TEST, "%zu cases read in combos/, the matrix has %d", n - ncases, COMBOS_MIN);
+	dup = duplicate_name(set, n);
+	if (dup != NULL)
+		test_fail(TEST, "case in both cases/ and combos/: %s", dup);
+	if (missing_pair(set, n, missing))
+		test_fail(TEST, "no case covers %s with every other setting at the baseline", missing);
 }
 
 static const char baseline_json[] =
@@ -246,11 +400,84 @@ static void check_missing_case(void)
 	CHECK(strncmp(error, "cases/no-such-case/config.json: ", 32) == 0);
 }
 
+static void check_coverage_guard(void)
+{
+	static CaseEntry set[ENTRIES_MAX];
+	char missing[128];
+	size_t n = 0;
+	const char *dup;
+
+	add_entry(set, &n, "cases", "baseline", NULL, NULL, NULL, NULL);
+	if (!missing_pair(set, n, missing) || strcmp(missing, "glitches-overworld_glitches+state-open") != 0)
+		test_fail(TEST, "a set with only the baseline should miss glitches-overworld_glitches+state-open, got %s",
+			  missing);
+	n = 0;
+	add_required(set, &n);
+	if (missing_pair(set, n, missing))
+		test_fail(TEST, "the complete synthetic set misses %s", missing);
+	set[n - 1] = set[n - 2];
+	if (!missing_pair(set, n, missing) || strcmp(missing, "goal-ganonhunt+state-retro") != 0)
+		test_fail(TEST, "dropping goal-ganonhunt+state-retro gave %s", missing);
+	n = 0;
+	add_required(set, &n);
+	rando_options_set(&set[n - 1].c.options, "weapons", "swordless");
+	if (!missing_pair(set, n, missing) || strcmp(missing, "goal-ganonhunt+state-retro") != 0)
+		test_fail(TEST, "a pair with a third setting changed still counted: %s", missing);
+	n = 0;
+	add_required(set, &n);
+	set[n - 1].c.hints = false;
+	set[n - 1].c.heart_beep = RANDO_HEART_BEEP_OFF;
+	if (missing_pair(set, n, missing))
+		test_fail(TEST, "hints or heart_beep stopped a pair counting: %s", missing);
+
+	n = 0;
+	add_entry(set, &n, "cases", "baseline", NULL, NULL, NULL, NULL);
+	add_entry(set, &n, "combos", "state-retro", "state", "retro", NULL, NULL);
+	if (duplicate_name(set, n) != NULL)
+		test_fail(TEST, "distinct names reported as duplicate");
+	add_entry(set, &n, "cases", "state-retro", "state", "retro", NULL, NULL);
+	dup = duplicate_name(set, n);
+	if (dup == NULL || strcmp(dup, "state-retro") != 0)
+		test_fail(TEST, "a name in both directories not reported");
+}
+
+static void check_unreadable_combination(void)
+{
+	static CaseEntry set[ENTRIES_MAX];
+	char root[] = "/tmp/test_case_reader_XXXXXX", path[512], error[RANDO_CASE_ERROR_MAX];
+	size_t n = 0;
+	FILE *f;
+	bool ok;
+
+	if (mkdtemp(root) == NULL)
+		test_fail(TEST, "mkdtemp failed");
+	snprintf(path, sizeof path, "%s/broken", root);
+	if (mkdir(path, 0700) != 0)
+		test_fail(TEST, "mkdir %s failed", path);
+	snprintf(path, sizeof path, "%s/broken/config.json", root);
+	f = fopen(path, "w");
+	if (f == NULL)
+		test_fail(TEST, "cannot write %s", path);
+	fputs("{}", f);
+	fclose(f);
+	ok = read_dir(root, set, &n, error);
+	remove(path);
+	snprintf(path, sizeof path, "%s/broken", root);
+	rmdir(path);
+	rmdir(root);
+	if (ok)
+		test_fail(TEST, "a directory with a broken case was read");
+	if (strstr(error, "broken/config.json") == NULL)
+		test_fail(TEST, "the error does not name the broken case: %s", error);
+}
+
 int main(int argc, char **argv)
 {
 	(void)argc;
 	(void)argv;
 	check_baseline();
+	check_coverage_guard();
+	check_unreadable_combination();
 	check_every_case();
 	check_config();
 	check_case_keys();
