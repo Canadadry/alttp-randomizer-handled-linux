@@ -121,12 +121,15 @@ The goals behind every rule below:
 
 ### Phase 2 — Full ROM assembly, host only
 
-1. **BPS applier in C** (no allocation, caller buffers, source and target CRC32 checks). Verified by unit tests on small hand-built BPS files covering every BPS action and each CRC failure.
-2. **ROM assembly pipeline**: check the source MD5 (`03a63945…`), resize to 2 MiB, apply the base patch, check MD5 `edc01f3d…`, generate, run `rando_rom`, apply the heart beep and the writes Phase 1 step 2's note marks "reproduced in C" (in the order that note gives), update the checksum, and write the `.sfc`. A host CLI `rando_patch --base <jp.sfc> --out <file> [settings]` does it end to end. As in VT's `rom.js`, the BPS applies to the unresized 1 MiB JP ROM, not the 2 MiB copy. Verified by:
+1. **BPS applier in C** (no allocation, caller buffers, source and target CRC32 checks). The target is a buffer of its own, never the source's: a SourceCopy may read any source offset, including ones an in-place apply would already have overwritten, and Phase 2 step 2 still reads the unpatched 1 MiB source after the patch (the default Link sprite, step 1.11's note). Verified by unit tests on small hand-built BPS files covering every BPS action and each CRC failure, including a SourceCopy back to a source offset below the current output offset, after a TargetRead wrote different bytes there (the output holds the source's bytes).
+2. **ROM assembly pipeline**: check the source MD5 (`03a63945…`), apply the base patch from the 1 MiB JP ROM into a separate 2 MiB buffer (the patch's declared target size is the resize), check MD5 `edc01f3d…`, generate, run `rando_rom`, apply the heart beep and the writes Phase 1 step 2's note marks "reproduced in C" (in the order that note gives), update the checksum, and write the `.sfc`. A host CLI `rando_patch --base <jp.sfc> --out <file> [settings]` does it end to end. As in VT's `rom.js`, the BPS applies to the unresized 1 MiB JP ROM, not a 2 MiB copy; that buffer is only read, and stays unchanged until `rando_rom_write_cosmetic_defaults` has copied the Link sprite from it. `[settings]` are the case format's keys and values (every `RandoOptionKey`, `hints`, `heart_beep`), parsed through the library's name tables; heart beep and hints get theirs in the library, and `case_reader.c` uses them instead of its own list. The ROM and source sizes (`0x200000`, `0x100000`) are one pair of public constants in `rando_rom.h`, used by the checksum, the cosmetic defaults, the pipeline and the header-size test. Verified by:
    - a host test with a **synthetic** base ROM and a synthetic BPS, which checks the order of operations and each error path (wrong MD5, bad BPS, write failure);
    - a test that the written ROM equals the base-patched buffer with exactly the logged writes and the "reproduced in C" writes applied, then the checksum;
+   - a test whose synthetic BPS writes different bytes over the sprite ranges (`0x80000+0x7000`, `0xDD308+120`, `0xDEDF5+4`) checks that the written ROM holds the synthetic source's bytes there;
+   - MD5 (a library module like step 1's CRC32) checked against RFC 1321's test-suite values and one longer synthetic buffer whose digest is computed with Python's `hashlib`;
+   - the pipeline takes the expected source and target digests as inputs, so the synthetic tests run its success path; one test checks that the CLI and the app pass §2's `03a63945…` and `edc01f3d…`;
    - the header-size test that Phase 4 step 2's gate runs on `data/base.bps` is written here, and checked on a synthetic BPS header.
-3. **Output naming, history record and spoiler.** Name a ROM `<Mode>-<Goal>-<code>.sfc`, where `<code>` is 6 hex digits derived from the seed and settings, with a counter suffix on collision. The history record JSON holds the settings, an ISO date and the optional spoiler (reuse `rando/host/spoiler_json.c`'s format). Verified by unit tests: naming of every mode and goal, collision handling, and a record round-trip (write, then read back identical).
+3. **Output naming, history record and spoiler.** Name a ROM `<Mode>-<Goal>-<code>.sfc`, where `<code>` is 6 hex digits derived from the seed and settings, with a counter suffix on collision. The history record JSON holds the settings, an ISO date and the optional spoiler (reuse `rando/host/spoiler_json.c`'s format). Verified by unit tests: naming of every mode and goal, collision handling, and a record round-trip (write, then read back identical) with every setting, hints and heart beep at a non-default value.
 
 ### Phase 3 — Onion facts, then the app's UI core and text renderer, host only
 
@@ -161,7 +164,7 @@ CI is manual-only (`workflow_dispatch`) until the owner turns it on: each step's
 
 ### Phase 5 — Cleanup
 
-1. skill: rework-comments — every file written by this plan.
+1. skill: rework-comments — every file written by this plan; its input includes the comment warnings each phase's warn-review listed (rule violations, unchecked claims; `notes/`).
 2. **README**: install (copy `App/ALttPR/`, put the JP 1.0 ROM as `base.sfc`), use, and deletion behavior. Verified by review against §2.
 
 ## 4. Done when
