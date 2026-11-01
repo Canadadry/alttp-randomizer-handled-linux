@@ -38,6 +38,11 @@
     - [x] Chunk 2: setting-dependent rules, Hera byte, alternate bow
     - [x] Chunk 3: claims to all items
   - [ ] 1.7 Port the settings and flags writes
+    - [x] Chunk 1: config keys
+    - [ ] Chunk 2: settings source and config-only rows
+    - [ ] Chunk 3: world-dependent rows
+    - [ ] Chunk 4: inverted
+    - [ ] Chunk 5: claims to all settings
   - [ ] 1.8 Port the credits writes
   - [ ] 1.9 Port the text, dialog and hints writes
   - [ ] 1.10 Port the initial SRAM writes

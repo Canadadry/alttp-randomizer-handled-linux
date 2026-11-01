@@ -322,25 +322,56 @@ static void check_derivations(void)
 	CHECK(!c.shops_hard_mode);
 	CHECK(c.item_overflow_replacement_shield == RANDO_ITEM_TwentyRupees2);
 	CHECK(overrides(&c) == 0);
+	CHECK(c.rom_cape_magic_usage_normal == 0x04 && c.rom_cape_magic_usage_half == 0x08
+	      && c.rom_cape_magic_usage_quarter == 0x10);
+	CHECK(c.rom_cane_of_byrna_invulnerability);
+	CHECK(c.rom_powdered_sprite_fairy_prize == 0xE3);
+	CHECK(c.rom_bottle_fill_health == 0xA0);
+	CHECK(c.rom_stun_items == 0x03);
+	CHECK(!c.rom_silvers_only_at_ganon && !c.rom_no_farie_drops);
+	CHECK(c.item_overflow_count_sword == 4 && c.item_overflow_count_armor == 2);
+	CHECK(c.item_overflow_count_boss_heart_container == 10 && c.item_overflow_count_piece_of_heart == 24);
 
 	c = derived(RANDO_ITEM_POOL_NORMAL, RANDO_ITEM_FUNCTIONALITY_HARD, RANDO_GOAL_GANON);
 	CHECK(!c.rom_catchable_fairies && c.rom_bottle_fill_magic == 0x40);
+	CHECK(c.rom_cape_magic_usage_normal == 0x02 && c.rom_cape_magic_usage_half == 0x04
+	      && c.rom_cape_magic_usage_quarter == 0x08);
+	CHECK(!c.rom_cane_of_byrna_invulnerability);
+	CHECK(c.rom_powdered_sprite_fairy_prize == 0xD8);
+	CHECK(c.rom_bottle_fill_health == 0x38);
+	CHECK(c.rom_stun_items == 0x02);
+	CHECK(c.rom_silvers_only_at_ganon && c.rom_no_farie_drops);
+	CHECK(c.item_overflow_count_sword == 4 && c.item_overflow_count_piece_of_heart == 24);
 	c = derived(RANDO_ITEM_POOL_NORMAL, RANDO_ITEM_FUNCTIONALITY_EXPERT, RANDO_GOAL_GANON);
 	CHECK(!c.rom_catchable_fairies && c.rom_bottle_fill_magic == 0x20);
 	CHECK(overrides(&c) == 0);
+	CHECK(c.rom_cape_magic_usage_normal == 0x02 && c.rom_cape_magic_usage_half == 0x04
+	      && c.rom_cape_magic_usage_quarter == 0x08);
+	CHECK(!c.rom_cane_of_byrna_invulnerability);
+	CHECK(c.rom_powdered_sprite_fairy_prize == 0xD8);
+	CHECK(c.rom_bottle_fill_health == 0x20);
+	CHECK(c.rom_stun_items == 0x00);
+	CHECK(c.rom_silvers_only_at_ganon && c.rom_no_farie_drops);
 
 	c = derived(RANDO_ITEM_POOL_HARD, RANDO_ITEM_FUNCTIONALITY_NORMAL, RANDO_GOAL_GANON);
 	CHECK(c.item_overflow_count_shield == 2 && overrides(&c) == 0);
 	CHECK(c.item_overflow_count_bow == 1);
+	CHECK(c.item_overflow_count_sword == 3 && c.item_overflow_count_armor == 0);
+	CHECK(c.item_overflow_count_boss_heart_container == 6 && c.item_overflow_count_piece_of_heart == 16);
 	CHECK(c.shops_hard_mode);
 	CHECK(c.rom_catchable_fairies);
+	CHECK(c.rom_stun_items == 0x03 && !c.rom_no_farie_drops);
 	c = derived(RANDO_ITEM_POOL_EXPERT, RANDO_ITEM_FUNCTIONALITY_NORMAL, RANDO_GOAL_GANON);
 	CHECK(c.item_overflow_count_shield == 1 && overrides(&c) == 0);
 	CHECK(c.item_overflow_count_bow == 1);
+	CHECK(c.item_overflow_count_sword == 2 && c.item_overflow_count_armor == 0);
+	CHECK(c.item_overflow_count_boss_heart_container == 2 && c.item_overflow_count_piece_of_heart == 8);
 	CHECK(c.shops_hard_mode);
 	c = derived(RANDO_ITEM_POOL_CROWD_CONTROL, RANDO_ITEM_FUNCTIONALITY_NORMAL, RANDO_GOAL_GANON);
 	CHECK(c.item_overflow_count_shield == 0);
 	CHECK(c.item_overflow_count_bow == 1);
+	CHECK(c.item_overflow_count_sword == 4 && c.item_overflow_count_armor == 1);
+	CHECK(c.item_overflow_count_boss_heart_container == 1 && c.item_overflow_count_piece_of_heart == 20);
 	CHECK(!c.shops_hard_mode);
 	CHECK(c.item_overflow_replacement_shield == RANDO_ITEM_TwentyRupees2);
 	CHECK(c.item_count[RANDO_ITEM_BugCatchingNet] == 0);
@@ -373,6 +404,51 @@ static void check_derivations(void)
 	input.item_overflow_replacement_shield = RANDO_ITEM_FiftyRupees;
 	rando_world_init(&world, RANDO_VARIANT_OPEN, &input);
 	CHECK(world.config.item_overflow_replacement_shield == RANDO_ITEM_FiftyRupees);
+}
+
+static RandoConfig dungeon_items_config(RandoDungeonItems dungeon_items, RandoLogic logic)
+{
+	RandoConfig config;
+	RandoWorld world;
+
+	rando_config_init(&config);
+	config.dungeon_items = dungeon_items;
+	config.logic = logic;
+	rando_world_init(&world, RANDO_VARIANT_OPEN, &config);
+	return world.config;
+}
+
+/* World::__construct's dungeonItems switch on rom.freeItemText, rom.freeItemMenu and rom.dungeonCount,
+ * cumulative from full down, and the glitched-logic bit of the menu. */
+static void check_free_item_derivation(void)
+{
+	RandoConfig c, input;
+	RandoWorld world;
+
+	c = dungeon_items_config(RANDO_DUNGEON_ITEMS_STANDARD, RANDO_LOGIC_NO_GLITCHES);
+	CHECK(c.rom_free_item_text == 0x00 && c.rom_free_item_menu == 0x00 && !c.rom_dungeon_count_pickup);
+	c = dungeon_items_config(RANDO_DUNGEON_ITEMS_MC, RANDO_LOGIC_NO_GLITCHES);
+	CHECK(c.rom_free_item_text == 0x16 && c.rom_free_item_menu == 0x0C && c.rom_dungeon_count_pickup);
+	c = dungeon_items_config(RANDO_DUNGEON_ITEMS_MCS, RANDO_LOGIC_NO_GLITCHES);
+	CHECK(c.rom_free_item_text == 0x17 && c.rom_free_item_menu == 0x0D && c.rom_dungeon_count_pickup);
+	c = dungeon_items_config(RANDO_DUNGEON_ITEMS_FULL, RANDO_LOGIC_NO_GLITCHES);
+	CHECK(c.rom_free_item_text == 0x1F && c.rom_free_item_menu == 0x0F && c.rom_dungeon_count_pickup);
+
+	c = dungeon_items_config(RANDO_DUNGEON_ITEMS_FULL, RANDO_LOGIC_MAJOR_GLITCHES);
+	CHECK(c.rom_free_item_text == 0x1F && c.rom_free_item_menu == 0x1F);
+	c = dungeon_items_config(RANDO_DUNGEON_ITEMS_STANDARD, RANDO_LOGIC_HYBRID_MAJOR_GLITCHES);
+	CHECK(c.rom_free_item_text == 0x00 && c.rom_free_item_menu == 0x10 && !c.rom_dungeon_count_pickup);
+	c = dungeon_items_config(RANDO_DUNGEON_ITEMS_STANDARD, RANDO_LOGIC_NO_LOGIC);
+	CHECK(c.rom_free_item_menu == 0x10);
+	c = dungeon_items_config(RANDO_DUNGEON_ITEMS_MC, RANDO_LOGIC_OVERWORLD_GLITCHES);
+	CHECK(c.rom_free_item_menu == 0x0C);
+
+	rando_config_init(&input);
+	input.dungeon_items = RANDO_DUNGEON_ITEMS_MC;
+	input.rom_free_item_text = 0x01;
+	input.rom_free_item_menu = 0x20;
+	rando_world_init(&world, RANDO_VARIANT_OPEN, &input);
+	CHECK(world.config.rom_free_item_text == 0x17 && world.config.rom_free_item_menu == 0x2C);
 }
 
 static int glitch_flags_set(const RandoConfig *c, int overworld, int major)
@@ -1267,6 +1343,7 @@ int main(int argc, char **argv)
 	check_shop_prices();
 	check_shop_inventory();
 	check_derivations();
+	check_free_item_derivation();
 	check_overworld_glitches_derivation();
 	check_major_glitches_derivation();
 	check_location_classes();

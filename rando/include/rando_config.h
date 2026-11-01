@@ -87,7 +87,7 @@ typedef enum RandoItemFunctionality {
 /* One field per VT world config key the ported code reads, holding VT's value or, when the key
  * is absent, the default the reading code passes to config(). rando_world_init applies the
  * World constructor's derived keys (dungeon_items, logic, item_placement, mode_weapons, item_pool,
- * item_functionality, goal) to its copy. */
+ * item_functionality, goal) to its copy; rom_free_item_text and rom_free_item_menu are OR-ed into. */
 typedef struct RandoConfig {
 	RandoState mode_state;
 	RandoWeapons mode_weapons;
@@ -105,8 +105,20 @@ typedef struct RandoConfig {
 	int item_require_lamp;
 	int item_overflow_count_shield;
 	int item_overflow_count_bow;
+	int item_overflow_count_sword;
+	int item_overflow_count_armor;
+	int item_overflow_count_boss_heart_container;
+	int item_overflow_count_piece_of_heart;
 	RandoItemId item_overflow_replacement_shield;
 	int rom_bottle_fill_magic;
+	int rom_bottle_fill_health;
+	int rom_cape_magic_usage_normal;
+	int rom_cape_magic_usage_half;
+	int rom_cape_magic_usage_quarter;
+	int rom_powdered_sprite_fairy_prize;
+	int rom_stun_items;
+	int rom_free_item_text;
+	int rom_free_item_menu;
 	/* item.count.<raw name>; RANDO_CONFIG_NULL is absent, and 0 is an override (VT's `?? default`). */
 	int16_t item_count[RANDO_ITEM_COUNT];
 	bool ignore_can_kill_escape_things;
@@ -127,6 +139,11 @@ typedef struct RandoConfig {
 	RandoItemId region_bosses_have_item;
 	bool region_take_anys;
 	bool rom_catchable_fairies;
+	bool rom_cane_of_byrna_invulnerability;
+	bool rom_silvers_only_at_ganon;
+	bool rom_no_farie_drops;
+	/* rom.dungeonCount === 'pickup'; 'off' otherwise, the only other value any path sets. */
+	bool rom_dungeon_count_pickup;
 	bool rom_rupee_bow;
 	bool rom_generic_keys;
 	bool rom_map_on_pickup;

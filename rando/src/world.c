@@ -43,28 +43,45 @@ static const ItemCount crowd_control_counts[] = {
 	{RANDO_ITEM_Cape, 0},           {RANDO_ITEM_TwentyRupees2, 4},
 };
 
-/* An overflow count RANDO_CONFIG_NULL: the key keeps its value. */
+/* overrides_overflow false: every overflow count keeps its value. */
 typedef struct ItemPoolValues {
-	int overflow_count_shield;
-	int overflow_count_bow;
+	bool overrides_overflow;
+	int8_t overflow_count_sword;
+	int8_t overflow_count_armor;
+	int8_t overflow_count_shield;
+	int8_t overflow_count_bow;
+	int8_t overflow_count_boss_heart_container;
+	int8_t overflow_count_piece_of_heart;
 	bool shops_hard_mode;
 	const ItemCount *counts;
 	int ncounts;
 } ItemPoolValues;
 
 static const ItemPoolValues item_pool_values[] = {
-	[RANDO_ITEM_POOL_NORMAL] = {RANDO_CONFIG_NULL, RANDO_CONFIG_NULL, false, NULL, 0},
-	[RANDO_ITEM_POOL_HARD] = {2, 1, true, NULL, 0},
-	[RANDO_ITEM_POOL_EXPERT] = {1, 1, true, NULL, 0},
-	[RANDO_ITEM_POOL_CROWD_CONTROL] = {0, 1, false, crowd_control_counts,
+	[RANDO_ITEM_POOL_NORMAL] = {false, 0, 0, 0, 0, 0, 0, false, NULL, 0},
+	[RANDO_ITEM_POOL_HARD] = {true, 3, 0, 2, 1, 6, 16, true, NULL, 0},
+	[RANDO_ITEM_POOL_EXPERT] = {true, 2, 0, 1, 1, 2, 8, true, NULL, 0},
+	[RANDO_ITEM_POOL_CROWD_CONTROL] = {true, 4, 1, 0, 1, 1, 20, false, crowd_control_counts,
 					   (int)(sizeof crowd_control_counts / sizeof crowd_control_counts[0])},
 };
 
-/* RANDO_CONFIG_NULL: normal functionality, nothing changes. */
-static const int functionality_bottle_fill_magic[] = {
-	[RANDO_ITEM_FUNCTIONALITY_NORMAL] = RANDO_CONFIG_NULL,
-	[RANDO_ITEM_FUNCTIONALITY_HARD] = 0x40,
-	[RANDO_ITEM_FUNCTIONALITY_EXPERT] = 0x20,
+/* applies false: normal functionality, nothing changes. Every applied case also sets
+ * rom.CatchableFairies false and rom.CatchableBees true (the default, so not stored). */
+typedef struct FunctionalityValues {
+	bool applies;
+	uint8_t cape_magic_usage_normal, cape_magic_usage_half, cape_magic_usage_quarter;
+	bool cane_of_byrna_invulnerability;
+	uint8_t powdered_sprite_fairy_prize;
+	uint8_t bottle_fill_health, bottle_fill_magic;
+	uint8_t stun_items;
+	bool silvers_only_at_ganon;
+	bool no_farie_drops;
+} FunctionalityValues;
+
+static const FunctionalityValues functionality_values[] = {
+	[RANDO_ITEM_FUNCTIONALITY_NORMAL] = {false, 0, 0, 0, false, 0, 0, 0, 0, false, false},
+	[RANDO_ITEM_FUNCTIONALITY_HARD] = {true, 0x02, 0x04, 0x08, false, 0xD8, 0x38, 0x40, 0x02, true, true},
+	[RANDO_ITEM_FUNCTIONALITY_EXPERT] = {true, 0x02, 0x04, 0x08, false, 0xD8, 0x20, 0x20, 0x00, true, true},
 };
 
 /* RANDO_CONFIG_NULL for the goals that are not hunts. */
@@ -106,6 +123,7 @@ static void derive_config(RandoConfig *c, RandoVariant variant)
 		[RANDO_VARIANT_RETRO] = RANDO_STATE_RETRO,
 	};
 	const ItemPoolValues *pool;
+	const FunctionalityValues *functionality;
 	bool glitched;
 	int i;
 
@@ -120,44 +138,63 @@ static void derive_config(RandoConfig *c, RandoVariant variant)
 	switch (c->dungeon_items) {
 	case RANDO_DUNGEON_ITEMS_FULL:
 		c->region_wild_big_keys = true;
+		c->rom_free_item_text |= 0x18;
+		c->rom_free_item_menu |= 0x02;
 		/* fall through */
 	case RANDO_DUNGEON_ITEMS_MCS:
 		c->region_wild_keys = true;
+		c->rom_free_item_text |= 0x11;
+		c->rom_free_item_menu |= 0x01;
 		/* fall through */
 	case RANDO_DUNGEON_ITEMS_MC:
 		c->region_wild_maps = true;
 		c->rom_map_on_pickup = true;
 		c->region_wild_compasses = true;
+		c->rom_dungeon_count_pickup = true;
+		c->rom_free_item_text |= 0x16;
+		c->rom_free_item_menu |= 0x0C;
 		break;
 	case RANDO_DUNGEON_ITEMS_STANDARD:
 		break;
 	}
 	glitched = c->logic == RANDO_LOGIC_HYBRID_MAJOR_GLITCHES || c->logic == RANDO_LOGIC_MAJOR_GLITCHES
 		|| c->logic == RANDO_LOGIC_NO_LOGIC || c->can_one_frame_clip_uw;
+	if (glitched)
+		c->rom_free_item_menu |= 0x10;
 	c->rom_vanilla_keys = c->rom_vanilla_keys || (!c->region_wild_keys && glitched);
 	c->rom_vanilla_big_keys = c->rom_vanilla_big_keys || (!c->region_wild_big_keys && glitched);
 	c->rom_vanilla_compasses = c->rom_vanilla_compasses || (!c->region_wild_compasses && glitched);
 	c->rom_vanilla_maps = c->rom_vanilla_maps || (!c->region_wild_maps && glitched);
-	/* TODO: item.pool's overflow counts other than Shield and Bow. */
+	/* TODO: item.pool and item.functionality superexpert, not an alttpr.com value. */
 	assert((size_t)c->item_pool < sizeof item_pool_values / sizeof item_pool_values[0]);
-	assert((size_t)c->item_functionality
-	       < sizeof functionality_bottle_fill_magic / sizeof functionality_bottle_fill_magic[0]);
+	assert((size_t)c->item_functionality < sizeof functionality_values / sizeof functionality_values[0]);
 	assert((size_t)c->goal < sizeof hunt_values / sizeof hunt_values[0]);
 	pool = &item_pool_values[c->item_pool];
-	if (pool->overflow_count_shield != RANDO_CONFIG_NULL)
+	if (pool->overrides_overflow) {
+		c->item_overflow_count_sword = pool->overflow_count_sword;
+		c->item_overflow_count_armor = pool->overflow_count_armor;
 		c->item_overflow_count_shield = pool->overflow_count_shield;
-	if (pool->overflow_count_bow != RANDO_CONFIG_NULL)
 		c->item_overflow_count_bow = pool->overflow_count_bow;
+		c->item_overflow_count_boss_heart_container = pool->overflow_count_boss_heart_container;
+		c->item_overflow_count_piece_of_heart = pool->overflow_count_piece_of_heart;
+	}
 	if (pool->shops_hard_mode)
 		c->shops_hard_mode = true;
 	for (i = 0; i < pool->ncounts; i++)
 		c->item_count[pool->counts[i].item] = pool->counts[i].count;
-	/* TODO: item.functionality's rom.CapeMagicUsage.*, CaneOfByrnaInvulnerability,
-	 * PowderedSpriteFairyPrize, BottleFill.Health, CatchableBees, StunItems, SilversOnlyAtGanon,
-	 * NoFarieDrops. */
-	if (functionality_bottle_fill_magic[c->item_functionality] != RANDO_CONFIG_NULL) {
-		c->rom_bottle_fill_magic = functionality_bottle_fill_magic[c->item_functionality];
+	functionality = &functionality_values[c->item_functionality];
+	if (functionality->applies) {
+		c->rom_cape_magic_usage_normal = functionality->cape_magic_usage_normal;
+		c->rom_cape_magic_usage_half = functionality->cape_magic_usage_half;
+		c->rom_cape_magic_usage_quarter = functionality->cape_magic_usage_quarter;
+		c->rom_cane_of_byrna_invulnerability = functionality->cane_of_byrna_invulnerability;
+		c->rom_powdered_sprite_fairy_prize = functionality->powdered_sprite_fairy_prize;
+		c->rom_bottle_fill_health = functionality->bottle_fill_health;
+		c->rom_bottle_fill_magic = functionality->bottle_fill_magic;
 		c->rom_catchable_fairies = false;
+		c->rom_stun_items = functionality->stun_items;
+		c->rom_silvers_only_at_ganon = functionality->silvers_only_at_ganon;
+		c->rom_no_farie_drops = functionality->no_farie_drops;
 	}
 	c->region_require_better_bow = c->item_placement == RANDO_PLACEMENT_BASIC
 		|| c->mode_weapons == RANDO_WEAPONS_SWORDLESS;
