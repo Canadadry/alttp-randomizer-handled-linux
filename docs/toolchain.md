@@ -1,9 +1,19 @@
-# Onion platform facts
+# Onion toolchain facts
 
 What this repository takes from Onion, each fact cited from Onion's own
 sources at `OnionUI/Onion` commit
 [`07505ea58c7bba698d6b9220ff43946a43cac76b`](https://github.com/OnionUI/Onion/tree/07505ea58c7bba698d6b9220ff43946a43cac76b)
 (2026-01-21).
+
+The other Onion facts (app folder, SDL, screen, buttons, SNES list, saves)
+are in [`docs/onion.md`](onion.md).
+
+Re-checked at `v4.5-dev`
+[`2bab767e4a17b1b489f02c9fb6af8dde310d4c3e`](https://github.com/OnionUI/Onion/tree/2bab767e4a17b1b489f02c9fb6af8dde310d4c3e)
+(2026-02-07): same `TOOLCHAIN` and `with-toolchain` lines
+([`Makefile` line 51](https://github.com/OnionUI/Onion/blob/2bab767e4a17b1b489f02c9fb6af8dde310d4c3e/Makefile#L51),
+[lines 263–264](https://github.com/OnionUI/Onion/blob/2bab767e4a17b1b489f02c9fb6af8dde310d4c3e/Makefile#L263-L264)),
+same miyoomini flags (`src/common/config.mk` and `.github/workflows/` identical).
 
 ## Toolchain
 
