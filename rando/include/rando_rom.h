@@ -45,4 +45,10 @@ bool rando_rom_buffer_write(void *ctx, uint32_t address, const uint8_t *bytes, s
  * false and writes nothing unless rom->size is 0x200000 (VT's Rom::SIZE). */
 bool rando_rom_update_checksum(RandoRomBuffer *rom);
 
+/* alttpr.com's browser writes at VT's defaults, in step 1.2's order: quickswap, music, flashing,
+ * menu speed, red hearts, then the default Link sprite copied from source (the JP ROM, header
+ * stripped, only read, not overlapping rom). Returns false and writes nothing unless rom->size is
+ * 0x200000 and source_size is 0x100000. */
+bool rando_rom_write_cosmetic_defaults(RandoRomBuffer *rom, const uint8_t *source, size_t source_size);
+
 #endif

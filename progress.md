@@ -62,7 +62,7 @@
   - [ ] 1.11 Checksum and heart beep
     - [x] Chunk 1: heart beep and whole-log claims
     - [x] Chunk 2: checksum
-    - [ ] Chunk 3: browser defaults
+    - [x] Chunk 3: browser defaults
   - [ ] 1.12 skill: check-e2e — whole case list, then e2e-combos
 - [ ] Phase 2 — Full ROM assembly, host only
   - [ ] 2.1 BPS applier in C
