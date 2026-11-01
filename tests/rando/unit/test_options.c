@@ -224,6 +224,35 @@ static void check_hints_names(void)
 	}
 }
 
+/* Every value of every key set by name reads back as its index; the other keys keep the baseline's. */
+static void check_get(void)
+{
+	static const int value_count[RANDO_OPTION_KEY_COUNT] = {5, 2, 4, 3, 7, 9, 9, 4, 4, 4, 3};
+	RandoOptions baseline, options;
+	int k, other, v;
+
+	rando_options_init(&baseline);
+	for (k = 0; k < RANDO_OPTION_KEY_COUNT; k++)
+		CHECK(rando_options_get(&baseline, (RandoOptionKey)k) ==
+		      (k == RANDO_OPTION_CRYSTALS_TOWER || k == RANDO_OPTION_CRYSTALS_GANON ? RANDO_CRYSTALS_7 : 0));
+	for (k = 0; k < RANDO_OPTION_KEY_COUNT; k++) {
+		for (v = 0; v < value_count[k]; v++) {
+			options = baseline;
+			if (!rando_options_set(&options, rando_option_key_name((RandoOptionKey)k),
+					       rando_option_value_name((RandoOptionKey)k, v)))
+				test_fail(TEST, "%s value %d rejected", rando_option_key_name((RandoOptionKey)k), v);
+			if (rando_options_get(&options, (RandoOptionKey)k) != v)
+				test_fail(TEST, "%s=%s: get gives %d", rando_option_key_name((RandoOptionKey)k),
+					  rando_option_value_name((RandoOptionKey)k, v),
+					  rando_options_get(&options, (RandoOptionKey)k));
+			for (other = 0; other < RANDO_OPTION_KEY_COUNT; other++)
+				if (other != k)
+					CHECK(rando_options_get(&options, (RandoOptionKey)other) ==
+					      rando_options_get(&baseline, (RandoOptionKey)other));
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	(void)argc;
@@ -236,6 +265,7 @@ int main(int argc, char **argv)
 	check_resolved_crystals();
 	check_rejections();
 	check_keys();
+	check_get();
 	printf(TEST ": hand-written cases passed\n");
 	return 0;
 }

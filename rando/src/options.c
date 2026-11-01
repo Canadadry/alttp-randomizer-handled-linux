@@ -183,3 +183,23 @@ bool rando_options_set(RandoOptions *o, const char *key, const char *value)
 	}
 	return true;
 }
+
+int rando_options_get(const RandoOptions *o, RandoOptionKey key)
+{
+	switch (key) {
+	case RANDO_OPTION_GLITCHES: return (int)o->glitches;
+	case RANDO_OPTION_ITEM_PLACEMENT: return (int)o->item_placement;
+	case RANDO_OPTION_DUNGEON_ITEMS: return (int)o->dungeon_items;
+	case RANDO_OPTION_ACCESSIBILITY: return (int)o->accessibility;
+	case RANDO_OPTION_GOAL: return (int)o->goal;
+	case RANDO_OPTION_CRYSTALS_TOWER: return (int)o->crystals_tower;
+	case RANDO_OPTION_CRYSTALS_GANON: return (int)o->crystals_ganon;
+	case RANDO_OPTION_STATE: return (int)o->state;
+	case RANDO_OPTION_WEAPONS: return (int)o->weapons;
+	case RANDO_OPTION_ITEM_POOL: return (int)o->item_pool;
+	case RANDO_OPTION_ITEM_FUNCTIONALITY: return (int)o->item_functionality;
+	case RANDO_OPTION_KEY_COUNT: break;
+	}
+	assert(!"option key out of range");
+	return -1;
+}

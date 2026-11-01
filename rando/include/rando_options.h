@@ -107,6 +107,9 @@ void rando_options_init(RandoOptions *options);
  * unchanged on an unknown key or value. */
 bool rando_options_set(RandoOptions *options, const char *key, const char *value);
 
+/* The key's enum value, the inverse of rando_options_set. Asserts key < RANDO_OPTION_KEY_COUNT. */
+int rando_options_get(const RandoOptions *options, RandoOptionKey key);
+
 /* RANDO_OPTION_KEY_COUNT when the key is unknown. */
 RandoOptionKey rando_option_key_find(const char *key);
 /* Asserts key < RANDO_OPTION_KEY_COUNT. */
