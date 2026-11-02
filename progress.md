@@ -113,13 +113,13 @@
     - [x] Chunk 1: app state
     - [x] Chunk 2: SD wiring
     - [x] Chunk 3: ui_cli, build and smoke test
-- [ ] Phase 4 — Onion and PC builds
+- [x] Phase 4 — Onion and PC builds
   - [x] 4.1 SDL renderer and input
     - [x] Chunk 1: key map and sdl-pc skeleton
     - [x] Chunk 2: renderer and font
     - [x] Chunk 3: frame loop, SDL main and smoke
     - [x] Chunk 4: sdl-arm, CI job and docs
-  - [ ] 4.2 Miyoo build and package
+  - [x] 4.2 Miyoo build and package
   - [x] 4.3 Performance budget
     - [x] Chunk 1: driver modes and make measure sections
     - [x] Chunk 2: measure-compare
@@ -137,7 +137,7 @@
     - [x] fix: ui_cli and app_gen dates outside the record's range
   - [ ] 5.2 README
 - [x] Owner to-do written (notes/owner-todo.md)
-- [ ] Step 4.2 chunks
+- [x] Step 4.2 chunks
   - [x] Chunk 1: gate on the real patch
   - [x] Chunk 2: package files and zip builder
   - [x] Chunk 3: make package, CI job and docs
