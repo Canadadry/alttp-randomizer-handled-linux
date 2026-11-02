@@ -180,6 +180,8 @@ CI is manual-only (`workflow_dispatch`) until the owner turns it on: each step's
   - delete from History removes the ROM, save and states;
   - the PC build looks right.
 
+How the final check records §4 (method, added by plan review after Phase 4): each item is noted "held" with its evidence or "waits on owner" with its `notes/owner-todo.md` section. The per-case timing item cites step 4.3's judgement (a) plus `git diff 52186a8 HEAD -- rando` (comments and assert messages only), not a new measurement: `40314c3` and `52186a8` are reachable only through `refs/pull/2/head` or `origin/plan-1-onion-generator`, so `measure-compare` needs `git fetch origin refs/pull/2/head` first. Every item waiting on the owner gets a `[ ]` child under a `Done when (§4): owner checks` item at the end of `progress.md`; the owner's reported result goes in the commit message that ticks it (and in `notes/owner-todo.md` until that file goes), and the `docs:` commit removing the plan file and `progress.md` follows the last tick.
+
 ## 5. Open questions
 
 1. ~~Which repository.~~ Resolved: this repository (`Canadadry/alttp-randomizer-handled-linux`), bootstrapped at the same paths as `alttp-ds` (`rando/`, `tests/rando/`); Phase 1 step 1 takes the code over.
