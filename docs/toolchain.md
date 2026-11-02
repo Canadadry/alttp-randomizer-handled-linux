@@ -70,3 +70,15 @@ same miyoomini flags (`src/common/config.mk` and `.github/workflows/` identical)
   sysroot resolves `<SDL/SDL.h>` with no `-I`. Linking proves every SDL
   symbol the code uses exists in the device's libraries; `file` checks a
   dynamically linked 32-bit ARM EABI executable, and nothing is run.
+- `make package` runs `make sdl-arm`, strips its binary with the image's
+  `${CROSS_COMPILE}strip`, and checks the stripped copy on the host: `file`
+  reports a stripped, dynamically linked 32-bit ARM EABI5 executable with the
+  armhf loader `/lib/ld-linux-armhf.so.3` (`file` prints no hard-float word),
+  `readelf -h` reports `hard-float ABI` in the ELF flags, and `readelf -d`
+  lists `libSDL-1.2.so.0` and `libSDL_ttf-2.0.so.0` as NEEDED; a miss fails
+  with the offending line. It re-checks `data/base.bps` with
+  `test_patch_header --file`, then `app/package/build_zip.py` writes
+  `tests/rando/build/package/ALttPR.zip` (`App/ALttPR/`: the binary,
+  `launch.sh`, `config.json`, `icon.png`, `base.bps`, the font and its
+  licence). The shipped binary has `sdl-arm`'s flags, the same as the code
+  `e2e-arm` and `unit-arm` run under qemu; it is not run itself.

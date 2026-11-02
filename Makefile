@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-arm patch-header measure-compare check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-arm package patch-header measure-compare check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -16,6 +16,7 @@ help:
 	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
 	@echo "make sdl-pc         the SDL PC build, its SDL tests and headless smoke test (needs libsdl1.2-dev, libsdl-ttf2.0-dev)"
 	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
+	@echo "make package        the release zip tests/rando/build/package/ALttPR.zip: sdl-arm stripped, ABI-checked, with app/package/ and data/ (needs docker)"
 	@echo "make patch-header   the base patch checked like make test checks data/base.bps (BPS=<file>, default data/base.bps), kept out of check"
 	@echo "make measure-compare the generator timed against a worktree of 40314c3, interleaved, +-10% verdicts, kept out of check"
 	@echo "make check          the net: everything that must be green before a push"
@@ -71,7 +72,11 @@ sdl-pc:
 sdl-arm:
 	$(MAKE) -C tests/rando sdl-arm
 
-# Outside the net until data/base.bps exists. BPS is relative to this directory.
+# Outside the net: needs docker.
+package:
+	$(MAKE) -C tests/rando package
+
+# Outside the net; make test checks data/base.bps. BPS is relative to this directory.
 patch-header:
 	$(MAKE) -C tests/rando patch-header $(if $(BPS),BPS=$(abspath $(BPS)))
 
