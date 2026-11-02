@@ -124,7 +124,7 @@
     - [x] Chunk 1: driver modes and make measure sections
     - [x] Chunk 2: measure-compare
     - [x] Chunk 3: the run and its record
-- [ ] Phase 5 — Cleanup
+- [x] Phase 5 — Cleanup
   - [x] 5.1 skill: rework-comments
     - [x] rando/include and rando/src
     - [x] regions and rando/host
@@ -135,13 +135,13 @@
     - [x] record.c assert and orphaned assert messages
     - [x] fix: test_app_shell path snprintf under Onion's gcc
     - [x] fix: ui_cli and app_gen dates outside the record's range
-  - [ ] 5.2 README
+  - [x] 5.2 README
 - [x] Owner to-do written (notes/owner-todo.md)
 - [x] Step 4.2 chunks
   - [x] Chunk 1: gate on the real patch
   - [x] Chunk 2: package files and zip builder
   - [x] Chunk 3: make package, CI job and docs
-- [ ] Step 5.2 chunks
+- [x] Step 5.2 chunks
   - [x] README: install, use, deletion
 - [ ] Done when (§4): owner checks
   - [ ] Base patch MD5 edc01f3d… confirmed (notes/owner-todo.md §1)
