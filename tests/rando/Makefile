@@ -93,7 +93,8 @@ test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@./no_sdl.sh --exempt $(SDL_MAIN) $(APP)/core $(APP)/sd $(APP)/main
 	@python3 -I ./no_literals.py $(APP)/core
 	@python3 -I ./no_literals.py --no-table $(APP)/sdl
-	@echo "test: $(words $(UNIT_TESTS)) unit tests, the ui_cli smoke test, the discovery self-test, the app SDL check and the UI-core and SDL-layer literal checks ran"
+	@python3 -I ./test_package.py -q
+	@echo "test: $(words $(UNIT_TESTS)) unit tests, the ui_cli smoke test, the discovery self-test, the app SDL check, the UI-core and SDL-layer literal checks and the package self-test ran"
 
 lint: $(LINT_OBJ) $(LINT_APP_OBJ)
 	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC) $(APP_MAIN_SRC)) app/ sources build with -pedantic-errors"
