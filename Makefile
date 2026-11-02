@@ -1,11 +1,23 @@
-.PHONY: help install test test-rando test-template lint check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-arm patch-header measure-compare check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
 	@echo "make test           the fast loop: unit tests, on the host, in seconds"
 	@echo "make test-rando     the randomizer's unit tests (tests/rando)"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
-	@echo "make lint           rando/ built as strict ISO C99 (-pedantic-errors)"
+	@echo "make ui-cli         builds tests/rando/build/ui_cli, the agent's text view of the app"
+	@echo "make lint           rando/ and app/ built as strict ISO C99 (-pedantic-errors)"
+	@echo "make logic          unit tests replaying the oracle fixtures (tests/rando/oracle)"
+	@echo "make selftest       the e2e driver's own self-test"
+	@echo "make e2e            every case of tests/rando/cases diffed against its golden"
+	@echo "make e2e-combos     every case of tests/rando/combos diffed against its golden, kept out of e2e"
+	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
+	@echo "make unit-arm       every unit test on the Onion cross build under qemu-arm (needs docker, qemu-user)"
+	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
+	@echo "make sdl-pc         the SDL PC build, its SDL tests and headless smoke test (needs libsdl1.2-dev, libsdl-ttf2.0-dev)"
+	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
+	@echo "make patch-header   the base patch's declared sizes checked (BPS=<file>, default data/base.bps), kept out of check"
+	@echo "make measure-compare the generator timed against a worktree of 40314c3, interleaved, +-10% verdicts, kept out of check"
 	@echo "make check          the net: everything that must be green before a push"
 
 install:
@@ -23,8 +35,49 @@ test-template:
 	python3 -m unittest discover -s .claude/hooks/tests
 	python3 -m unittest discover -s .claude/skills/plan-pilot/tests
 
+ui-cli:
+	$(MAKE) -C tests/rando ui-cli
+
 lint:
 	$(MAKE) -C tests/rando lint
 
+logic:
+	$(MAKE) -C tests/rando logic
+
+selftest:
+	$(MAKE) -C tests/rando selftest
+
+e2e:
+	$(MAKE) -C tests/rando e2e
+
+e2e-combos:
+	$(MAKE) -C tests/rando e2e-combos
+
+# Outside the net: needs docker and qemu-user.
+e2e-arm:
+	$(MAKE) -C tests/rando e2e-arm
+
+# Outside the net: needs docker and qemu-user.
+unit-arm:
+	$(MAKE) -C tests/rando unit-arm
+
+# Outside the net: sdl-pc needs the SDL 1.2 and SDL_ttf 2.0 packages, sdl-arm docker.
+sdl:
+	$(MAKE) -C tests/rando sdl
+
+sdl-pc:
+	$(MAKE) -C tests/rando sdl-pc
+
+sdl-arm:
+	$(MAKE) -C tests/rando sdl-arm
+
+# Outside the net until data/base.bps exists. BPS is relative to this directory.
+patch-header:
+	$(MAKE) -C tests/rando patch-header $(if $(BPS),BPS=$(abspath $(BPS)))
+
+# Outside the net: creates or reuses tmp/measure-ref-40314c3.
+measure-compare:
+	$(MAKE) -C tests/rando measure-compare
+
 # The net. A change that keeps it green is correct; one that breaks it is a bug.
-check: test lint
+check: test lint logic selftest e2e e2e-combos

@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+ | Glitches                        None   |
+ | Item Placement              Advanced   |
+ | Dungeon Items               Standard   |
+ | Accessibility         100% Inventory   |
+x| Goal           Master Sword Pedestal   |
+ | Tower Crystals                     7   |
+ | Ganon Crystals                     7   |
+X| World State                    Retro   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal  v|
+i| Not supported with Goal                |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

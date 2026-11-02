@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Open-Ganon-1CA10A-2.sfc                |
+ | Generated 2026-11-01 14:05             |
+ | Seed 4294967295                        |
+ | Glitches                        None   |
+ | Item Placement              Advanced   |
+ | Dungeon Items               Standard   |
+ | Accessibility         100% Inventory   |
+ | Goal                    Defeat Ganon   |
+ | Tower Crystals                     7   |
+ | Ganon Crystals                     7   |
+ | World State                     Open   |
+ | Swords                    Randomized  v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+

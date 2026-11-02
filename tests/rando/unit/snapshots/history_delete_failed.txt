@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Generated Seeds                        |
+>| Open-Ganon-1CA10A-2.sfc                |
+ | Inverted-Dungeons-2B3C4D.sfc           |
+ | Open-Ganon-1CA10A.sfc                  |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+E| Some save files were not deleted       |
+_| A Details  X Delete                    |
+ +----------------------------------------+

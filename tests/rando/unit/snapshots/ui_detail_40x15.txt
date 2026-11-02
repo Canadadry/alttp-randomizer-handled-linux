@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Open-Ganon-1CA10A.sfc                  |
+ | Seed 1CA10A                            |
+ | Mode: Open                             |
+ | Goal: Defeat Ganon                     |
+ | Logic: No Glitches                     |
+ |                                        |
+ | Light World                            |
+ | Link's House: Bow                      |
+ | Sahasrahla: Moon Pearl                 |
+ | Pedestal: Master Sword                 |
+ | Kakariko Well - Top: Bombos            |
+ | Blind's Hideout - Far Left: Progressi~v|
+E| Cannot read the record                 |
+_| B Back                                 |
+ +----------------------------------------+

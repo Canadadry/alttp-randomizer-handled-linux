@@ -29,6 +29,22 @@ make check
 `make test` is the fast loop (unit tests); `make check` is everything that
 must be green before a push.
 
+`make test` also builds the host CLI `tests/rando/build/rando_patch`, which
+writes a seeded ROM from your own headerless JP 1.0 ROM and the base patch:
+
+```bash
+tests/rando/build/rando_patch --base <jp.sfc> --out <file> [--bps <patch>] [--seed <n>] [key=value ...]
+```
+
+The keys are the case format's (`goal=triforce-hunt`, `hints=off`,
+`heart_beep=quarter`, ...); a missing key keeps VT's default, `--bps`
+defaults to `data/base.bps` and a missing `--seed` is drawn at random.
+
+`make e2e-arm` cross-builds the generator with Onion's own toolchain (a
+pinned docker image, see `docs/toolchain.md`) and runs the e2e cases on it
+under `qemu-arm`; `make unit-arm` does the same with every unit test. Both
+need docker and `qemu-user`, and are not part of `make check`.
+
 ## Working with Claude
 
 ### Skills you run

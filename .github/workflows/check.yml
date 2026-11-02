@@ -10,3 +10,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: make -k check
+
+  # The SDL build, outside check: the PC build with its tests and smoke test,
+  # then the Onion cross build (docker is on GitHub's runners).
+  sdl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y libsdl1.2-dev libsdl-ttf2.0-dev
+      - run: make sdl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alttpr-pc
+          path: tests/rando/build/sdl/alttpr

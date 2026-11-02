@@ -1,0 +1,47 @@
+# VT's stages in draw order (Randomizer::prepareWorld), then the spoiler checks
+# each stage owes: `check <stage> section <Name>`, `check <stage> keys <glob>`,
+# `check <stage> pool` or `check <stage> attempts`.
+stage crystals
+stage getAdvancementItems
+stage setShops
+stage setMedallions
+stage placeBosses
+stage fillPrizes
+stage setFountains
+stage shufflePrizePacks
+stage prepareWorld
+stage fill
+stage setTexts
+stage randomizeCredits
+stage applyHints
+stage writeItem
+stage setDiggingGameRng
+stage writeRNGBlock
+stage writePrizePacksToRom
+check setShops section Shops
+check setMedallions keys *Medallion:1
+check placeBosses section Bosses
+check fillPrizes keys *- Prize:1
+check setFountains keys *Bottle:1
+check prepareWorld pool
+check fill section Castle Tower
+check fill section Dark Palace
+check fill section Dark World
+check fill section Death Mountain
+check fill section Desert Palace
+check fill section Eastern Palace
+check fill section Ganons Tower
+check fill section Hyrule Castle
+check fill section Ice Palace
+check fill section Light World
+check fill section Misery Mire
+check fill section Skull Woods
+check fill section Swamp Palace
+check fill section Thieves Town
+check fill section Tower Of Hera
+check fill section Turtle Rock
+check fill section Equipped
+check fill section Special
+check fill section meta
+check fill section playthrough
+check fill attempts

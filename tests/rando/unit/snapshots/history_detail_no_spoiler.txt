@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Inverted-Dungeons-2B3C4D.sfc           |
+ | Tower Crystals                     7  ^|
+ | Ganon Crystals                     7   |
+ | World State                 Inverted   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal   |
+ | Hints                             On   |
+ | Heart Beep                Half Speed   |
+ | Spoiler in History               Off   |
+ |                                        |
+ | No spoiler kept for this seed          |
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+

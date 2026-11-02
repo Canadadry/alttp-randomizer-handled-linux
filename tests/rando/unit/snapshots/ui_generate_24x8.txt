@@ -1,0 +1,10 @@
+ +------------------------+
+=|[Generate]  History     |
+#| Generate a seed        |
+ | Item funct~   Normal  ^|
+ |   Zelda no Densetsu~   |
+ | Heart beep    Normal   |
+>| Spoiler log    < Off >v|
+i| Left and right change~ |
+_| A Select  B Back  L/R~ |
+ +------------------------+

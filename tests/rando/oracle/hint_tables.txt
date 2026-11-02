@@ -1,0 +1,432 @@
+item Nothing 0
+item UncleSword 0
+item L1Sword 0
+item L1SwordAndShield 0
+item L2Sword 0
+item MasterSword 0
+item L3Sword 0
+item L4Sword 0
+item BlueShield 0
+item RedShield 0
+item MirrorShield 0
+item FireRod 2
+item IceRod 2
+item Hammer 2
+item Hookshot 2
+item Bow 2
+item Boomerang 2
+item Powder 2
+item Bee 0
+item Bombos 2
+item Ether 2
+item Quake 2
+item Lamp 2
+item Shovel 2
+item OcarinaInactive 2
+item CaneOfSomaria 2
+item Bottle 0
+item PieceOfHeart 0
+item CaneOfByrna 2
+item Cape 2
+item MagicMirror 2
+item PowerGlove 2
+item TitansMitt 2
+item BookOfMudora 2
+item Flippers 2
+item MoonPearl 2
+item BugCatchingNet 2
+item BlueMail 0
+item RedMail 0
+item Key 0
+item Compass 0
+item HeartContainerNoAnimation 0
+item Bomb 0
+item ThreeBombs 0
+item Mushroom 2
+item RedBoomerang 2
+item BottleWithRedPotion 0
+item BottleWithGreenPotion 0
+item BottleWithBluePotion 0
+item RedPotion 0
+item GreenPotion 0
+item BluePotion 0
+item TenBombs 0
+item BigKey 0
+item Map 0
+item OneRupee 0
+item FiveRupees 0
+item TwentyRupees 0
+item PendantOfCourage 0
+item PendantOfWisdom 0
+item PendantOfPower 0
+item BowAndArrows 2
+item BowAndSilverArrows 2
+item BottleWithBee 0
+item BottleWithFairy 0
+item BossHeartContainer 0
+item HeartContainer 0
+item OneHundredRupees 0
+item FiftyRupees 0
+item Heart 0
+item Arrow 2
+item TenArrows 0
+item SmallMagic 0
+item ThreeHundredRupees 0
+item TwentyRupees2 0
+item BottleWithGoldBee 0
+item OcarinaActive 2
+item PegasusBoots 2
+item BombUpgrade5 0
+item BombUpgrade10 0
+item BombUpgrade50 0
+item ArrowUpgrade5 0
+item ArrowUpgrade10 0
+item ArrowUpgrade70 0
+item HalfMagic 2
+item QuarterMagic 2
+item Programmable1 0
+item Programmable2 0
+item Programmable3 0
+item SilverArrowUpgrade 2
+item Rupoor 0
+item RedClock 0
+item BlueClock 0
+item GreenClock 0
+item ProgressiveSword 0
+item ProgressiveShield 0
+item ProgressiveArmor 0
+item ProgressiveGlove 2
+item singleRNG 0
+item multiRNG 0
+item ProgressiveBow 2
+item Triforce 0
+item PowerStar 0
+item TriforcePiece 0
+item MapLW 0
+item MapDW 0
+item MapA2 0
+item MapD7 0
+item MapD4 0
+item MapP3 0
+item MapD5 0
+item MapD3 0
+item MapD6 0
+item MapD1 0
+item MapD2 0
+item MapA1 0
+item MapP2 0
+item MapP1 0
+item MapH1 0
+item MapH2 0
+item CompassA2 0
+item CompassD7 0
+item CompassD4 0
+item CompassP3 0
+item CompassD5 0
+item CompassD3 0
+item CompassD6 0
+item CompassD1 0
+item CompassD2 0
+item CompassA1 0
+item CompassP2 0
+item CompassP1 0
+item CompassH1 0
+item CompassH2 0
+item BigKeyA2 0
+item BigKeyD7 0
+item BigKeyD4 0
+item BigKeyP3 0
+item BigKeyD5 0
+item BigKeyD3 0
+item BigKeyD6 0
+item BigKeyD1 0
+item BigKeyD2 0
+item BigKeyA1 0
+item BigKeyP2 0
+item BigKeyP1 0
+item BigKeyH1 0
+item BigKeyH2 0
+item KeyH2 0
+item KeyH1 0
+item KeyP1 0
+item KeyP2 0
+item KeyA1 0
+item KeyD2 0
+item KeyD1 0
+item KeyD6 0
+item KeyD3 0
+item KeyD5 0
+item KeyP3 0
+item KeyD4 0
+item KeyD7 0
+item KeyA2 0
+item KeyGK 0
+item Crystal1 0
+item Crystal2 0
+item Crystal3 0
+item Crystal4 0
+item Crystal5 0
+item Crystal6 0
+item Crystal7 0
+item RescueZelda 0
+item DefeatAgahnim 0
+item BigRedBomb 0
+item DefeatAgahnim2 0
+item DefeatGanon 0
+item Armos Knights 0
+item Lanmolas 0
+item Moldorm 0
+item Helmasaur King 0
+item Arrghus 0
+item Mothula 0
+item Blind 0
+item Kholdstare 0
+item Vitreous 0
+item Trinexx 0
+item Agahnim 0
+item Agahnim 2 0
+item Ganon 0
+location Agahnim 2 0
+location Agahnim 0
+location Aginah's Cave 2
+location Blacksmith 2
+location Blind's Hideout - Far Left 0
+location Blind's Hideout - Far Right 0
+location Blind's Hideout - Left 0
+location Blind's Hideout - Right 0
+location Blind's Hideout - Top 2
+location Bombos Tablet 2
+location Bottle Merchant 2
+location Brewery 2
+location Bumper Cave 2
+location C-Shaped House 0
+location Castle Tower - Dark Maze 2
+location Castle Tower - Room 03 0
+location Catfish 4
+location Cave 45 0
+location Checkerboard Cave 2
+location Chest Game 0
+location Chicken House 2
+location Desert Ledge 0
+location Desert Palace - Big Chest 0
+location Desert Palace - Big Key Chest 0
+location Desert Palace - Compass Chest 0
+location Desert Palace - Boss 2
+location Desert Palace - Map Chest 0
+location Desert Palace - Prize 0
+location Desert Palace - Torch 3
+location Digging Game 0
+location Eastern Palace - Boss 2
+location Eastern Palace - Big Chest 0
+location Eastern Palace - Big Key Chest 0
+location Eastern Palace - Cannonball Chest 0
+location Eastern Palace - Compass Chest 0
+location Eastern Palace - Map Chest 0
+location Eastern Palace - Prize 0
+location Ether Tablet 2
+location Floating Island 2
+location Floodgate Chest 0
+location Flute Spot 2
+location Ganon 0
+location Ganon's Tower - Big Chest 0
+location Ganon's Tower - Big Key Chest 2
+location Ganon's Tower - Big Key Room - Left 2
+location Ganon's Tower - Big Key Room - Right 2
+location Ganon's Tower - Bob's Chest 0
+location Ganon's Tower - Bob's Torch 3
+location Ganon's Tower - Compass Room - Bottom Left 2
+location Ganon's Tower - Compass Room - Bottom Right 2
+location Ganon's Tower - Compass Room - Top Left 2
+location Ganon's Tower - Compass Room - Top Right 2
+location Ganon's Tower - DMs Room - Bottom Left 3
+location Ganon's Tower - DMs Room - Bottom Right 3
+location Ganon's Tower - DMs Room - Top Left 3
+location Ganon's Tower - DMs Room - Top Right 3
+location Ganon's Tower - Firesnake Room 3
+location Ganon's Tower - Hope Room - Left 0
+location Ganon's Tower - Hope Room - Right 0
+location Ganon's Tower - Map Chest 2
+location Ganon's Tower - Mini Helmasaur Room - Left 0
+location Ganon's Tower - Mini Helmasaur Room - Right 0
+location Ganon's Tower - Moldorm Chest 2
+location Ganon's Tower - Pre-Moldorm Chest 0
+location Ganon's Tower - Randomizer Room - Bottom Left 4
+location Ganon's Tower - Randomizer Room - Bottom Right 4
+location Ganon's Tower - Randomizer Room - Top Left 4
+location Ganon's Tower - Randomizer Room - Top Right 4
+location Ganon's Tower - Tile Room 2
+location Graveyard Ledge 2
+location Hammer Pegs 2
+location Hobo 2
+location Hookshot Cave - Bottom Left 3
+location Hookshot Cave - Bottom Right 2
+location Hookshot Cave - Top Left 3
+location Hookshot Cave - Top Right 3
+location Hype Cave - Bottom 2
+location Hype Cave - Middle Left 2
+location Hype Cave - Middle Right 2
+location Hype Cave - NPC 3
+location Hype Cave - Top 2
+location Hyrule Castle - Boomerang Chest 0
+location Hyrule Castle - Map Chest 0
+location Hyrule Castle - Zelda's Cell 0
+location Ice Palace - Big Chest 2
+location Ice Palace - Big Key Chest 4
+location Ice Palace - Compass Chest 0
+location Ice Palace - Freezor Chest 2
+location Ice Palace - Iced T Room 2
+location Ice Palace - Boss 5
+location Ice Palace - Map Chest 4
+location Ice Palace - Prize 0
+location Ice Palace - Spike Room 2
+location Ice Rod Cave 2
+location Kakariko Tavern 0
+location Kakariko Well - Bottom 0
+location Kakariko Well - Left 0
+location Kakariko Well - Middle 0
+location Kakariko Well - Right 0
+location Kakariko Well - Top 2
+location King Zora 5
+location King's Tomb 2
+location Lake Hylia Island 0
+location Library 2
+location Link's House 0
+location Link's Uncle 2
+location Lost Woods Hideout 0
+location Lumberjack Tree 2
+location Magic Bat 2
+location Master Sword Pedestal 2
+location Maze Race 0
+location Mimic Cave 2
+location Mini Moldorm Cave - Far Left 2
+location Mini Moldorm Cave - Far Right 2
+location Mini Moldorm Cave - Left 2
+location Mini Moldorm Cave - NPC 3
+location Mini Moldorm Cave - Right 2
+location Mire Shed - Left 0
+location Mire Shed - Right 0
+location Misery Mire - Big Chest 0
+location Misery Mire - Big Key Chest 2
+location Misery Mire - Bridge Chest 0
+location Misery Mire - Compass Chest 2
+location Misery Mire - Main Lobby 0
+location Misery Mire - Map Chest 0
+location Misery Mire - Prize 0
+location Misery Mire - Spike Chest 0
+location Misery Mire - Boss 3
+location Misery Mire Medallion 0
+location Mushroom 2
+location Old Man 3
+location Palace of Darkness - Big Chest 0
+location Palace of Darkness - Big Key Chest 0
+location Palace of Darkness - Compass Chest 0
+location Palace of Darkness - Dark Basement - Left 2
+location Palace of Darkness - Dark Basement - Right 2
+location Palace of Darkness - Dark Maze - Bottom 2
+location Palace of Darkness - Dark Maze - Top 2
+location Palace of Darkness - Harmless Hellway 0
+location Palace of Darkness - Boss 4
+location Palace of Darkness - Map Chest 0
+location Palace of Darkness - Prize 0
+location Palace of Darkness - Shooter Room 0
+location Palace of Darkness - Stalfos Basement 0
+location Palace of Darkness - The Arena - Bridge 0
+location Palace of Darkness - The Arena - Ledge 0
+location Paradox Cave Lower - Far Left 0
+location Paradox Cave Lower - Far Right 0
+location Paradox Cave Lower - Left 0
+location Paradox Cave Lower - Middle 0
+location Paradox Cave Lower - Right 0
+location Paradox Cave Upper - Left 2
+location Paradox Cave Upper - Right 2
+location Pegasus Rocks 2
+location Potion Shop 2
+location Purple Chest 0
+location Pyramid Bottle 0
+location Pyramid Fairy - Bow 2
+location Pyramid Fairy - Left 2
+location Pyramid Fairy - Right 2
+location Pyramid Fairy - Sword 2
+location Pyramid 0
+location Sahasrahla 3
+location Sahasrahla's Hut - Left 0
+location Sahasrahla's Hut - Middle 0
+location Sahasrahla's Hut - Right 0
+location Sanctuary 0
+location Secret Passage 0
+location Sewers - Dark Cross 2
+location Sewers - Secret Room - Left 0
+location Sewers - Secret Room - Middle 0
+location Sewers - Secret Room - Right 0
+location Sick Kid 3
+location Skull Woods - Big Chest 0
+location Skull Woods - Big Key Chest 0
+location Skull Woods - Bridge Room 0
+location Skull Woods - Compass Chest 0
+location Skull Woods - Map Chest 0
+location Skull Woods - Boss 2
+location Skull Woods - Pinball Room 0
+location Skull Woods - Pot Prison 0
+location Skull Woods - Prize 0
+location Spectacle Rock Cave 2
+location Spectacle Rock 2
+location Spike Cave 3
+location Spiral Cave 0
+location Stumpy 2
+location Sunken Treasure 0
+location Superbunny Cave - Bottom 0
+location Superbunny Cave - Top 0
+location Swamp Palace - Boss 4
+location Swamp Palace - Big Chest 3
+location Swamp Palace - Big Key Chest 3
+location Swamp Palace - Compass Chest 2
+location Swamp Palace - Entrance 0
+location Swamp Palace - Flooded Room - Left 4
+location Swamp Palace - Flooded Room - Right 4
+location Swamp Palace - Map Chest 2
+location Swamp Palace - Prize 0
+location Swamp Palace - Waterfall Room 3
+location Swamp Palace - West Chest 3
+location Thieves' Town - Ambush Chest 0
+location Thieves' Town - Attic 0
+location Thieves' Town - Big Chest 2
+location Thieves' Town - Big Key Chest 0
+location Thieves' Town - Boss 2
+location Thieves' Town - Blind's Cell 0
+location Thieves' Town - Compass Chest 0
+location Thieves' Town - Map Chest 0
+location Thieves' Town - Prize 0
+location Tower of Hera - Basement Cage 2
+location Tower of Hera - Big Chest 0
+location Tower of Hera - Big Key Chest 2
+location Tower of Hera - Compass Chest 0
+location Tower of Hera - Map Chest 0
+location Tower of Hera - Boss 2
+location Tower of Hera - Prize 0
+location Turtle Rock - Big Chest 0
+location Turtle Rock - Big Key Chest 0
+location Turtle Rock - Chain Chomps 0
+location Turtle Rock - Compass Chest 2
+location Turtle Rock - Crystaroller Room 0
+location Turtle Rock - Eye Bridge - Bottom Left 0
+location Turtle Rock - Eye Bridge - Bottom Right 0
+location Turtle Rock - Eye Bridge - Top Left 0
+location Turtle Rock - Eye Bridge - Top Right 0
+location Turtle Rock - Prize 0
+location Turtle Rock - Roller Room - Left 2
+location Turtle Rock - Roller Room - Right 2
+location Turtle Rock - Boss 3
+location Turtle Rock Medallion 2
+location Waterfall Bottle 0
+location Waterfall Fairy - Left 3
+location Waterfall Fairy - Right 3
+location Zelda 0
+location Zora's Ledge 0
+strings blind.txt 77
+strings fortune.txt 20
+strings ganon_1.txt 31
+strings ganon_phase_3_no_silvers.txt 36
+strings hint.txt 37
+strings tavern_man.txt 51
+strings triforce.txt 39
+strings uncle.txt 55

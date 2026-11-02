@@ -14,9 +14,27 @@ in `docs/`, then `README.md`.
 - `rando/` is the randomizer library: `include/` its public headers, `src/`
   its sources. The generator, the oracle and their tests are taken over from
   `Canadadry/alttp-ds` (`rando/`, `tests/rando/`).
+- `rando/host/` is host-side code on top of the library: the case reader, the
+  spoiler JSON, the playthrough, the output, and the generator's `main`
+  (`host/main/rando_gen.c`).
+- `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
+  like the library, built with only `rando/include` and itself on the include
+  path, no SDL. `app/sd/` is the SD-card layer (`record.c`, `seed_save.c`).
+  `app/sdl/` is the SDL 1.2 renderer and input layer (key map, view, frame
+  loop). `app/core` uses the library; `app/sd` the library, `rando/host` and
+  `app/core` (it hands the core its runners and stores); `app/sdl` the
+  library and `app/core`; nothing in `rando/` includes `app/`. Its tests live
+  in `tests/rando/unit/`, the SDL ones in `tests/rando/sdl/`.
+  `app/main/` holds the mains: `ui_cli.c`, the host tool that plays a
+  key sequence into the app on a directory used as the SD card and prints
+  the text screen; and `sdl_main.c`, the SDL app for the device and the PC.
+- `data/` holds the shipped font (DejaVu Sans Mono) and its licence.
 - `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
+- `tests/rando/cases/` holds the e2e cases, one directory each with its VT
+  golden; `tests/rando/oracle/` the PHP VT oracle (`gen_golden.sh`, `vt.patch`)
+  and the fixtures it writes.
 
 ## Checks
 
@@ -34,16 +52,62 @@ in `docs/`, then `README.md`.
 - Throwaway files go in `tmp/` (git-ignored).
 - Install: nothing (`make install` says so). The checks need only host `gcc`,
   `make` and `python3`.
-- `make test` = `make -C tests/rando test` (the randomizer's unit tests) plus
+- `make test` = `make -C tests/rando test` (the randomizer's and the app's
+  unit tests, linked with the app archive `librando_app.a`; the UI snapshots
+  in `tests/rando/unit/snapshots/`, edited by hand only; and
+  `tests/rando/no_sdl.sh`, which fails on any SDL include under `app/core/`,
+  `app/sd/` or `app/main/` (`sdl_main.c` exempt by exact path) after proving
+  itself on planted ones; and `tests/rando/no_literals.py`, which fails on
+  any string literal with a letter under `app/core/` outside the English
+  table `ui_strings_en.c`, or under `app/sdl/`, after proving itself on
+  planted sources; and `ui_cli`, built from `make test`'s
+  own objects, with its smoke test `unit/smoke_ui_cli.c`) plus
   `test-template` (the tooling under `.claude/`).
-- `make check` = `test` plus `lint` (`rando/` built with `-std=c99
-  -pedantic-errors`). Run `make -k check` to see every failure at once.
+- `make ui-cli` builds `ui_cli` alone; look at the app with
+  `tests/rando/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
+  argument prints its usage).
+- `make check` = `test` plus `lint` (`rando/` and `app/` built with
+  `-std=c99 -pedantic-errors`, except `app/sdl/` and `sdl_main.c`, which
+  `make sdl` builds that way), `logic` (unit tests replaying the oracle fixtures),
+  `selftest` (the e2e driver's own self-test), `e2e` (every case diffed
+  against its golden, one `DIVERGENT <case>` line per failure) and
+  `e2e-combos` (every combination case diffed against its golden, kept out
+  of `e2e`). Run
+  `make -k check` to see every failure at once.
+- `make -C tests/rando measure`, outside the net, gives the per-case times
+  every later budget is measured against, the whole pipeline's time
+  (`rando_assemble` on the synthetic base) and its Cortex-A7 projection
+  against the ~10 s line.
+- `make -C tests/rando measure-compare`, outside the net, times the current
+  generator against a throwaway worktree of `40314c3`
+  (`tmp/measure-ref-40314c3`), interleaved per case, full and stopped after
+  `fill`, with ±10% verdicts; a reference that does not build is a `setup:`
+  line.
+- `make e2e-arm`, outside the net, builds the generator with Onion's pinned
+  toolchain (`onion-toolchain.sh`, `docs/toolchain.md`) and runs the e2e
+  cases on it under `qemu-arm`. `make unit-arm`, outside the net too, builds
+  every unit test the same way and runs it under `qemu-arm` from
+  `tests/rando`, `--fixtures` included for `LOGIC_TESTS`. Both need docker
+  and qemu-user; a missing one fails with a `setup:` line, a setup problem,
+  not a bug.
+- `make sdl` = `sdl-pc` + `sdl-arm`, outside the net. `make sdl-pc` needs
+  `libsdl1.2-dev` (sdl12-compat on SDL2) and `libsdl-ttf2.0-dev`, else a
+  `setup:` line: it builds the SDL layer and `sdl_main.c`, runs the SDL tests
+  of `tests/rando/sdl/` and the smoke test `sdl/smoke_sdl.sh`, all with the
+  dummy video driver. `make sdl-arm` needs docker: it compiles and links the
+  same code with Onion's toolchain against its SDL 1.2, and runs nothing.
+  The owner looks at the PC build with `make sdl-pc`, then
+  `tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf`.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
-  oracle) runs only to regenerate goldens. The SDL PC build (`libsdl2-dev`)
-  and the qemu-arm run of the cross build are CI jobs, not `check`.
-- CI: `.github/workflows/check.yml` runs `make -k check`, manually only
-  (`workflow_dispatch`) until the owner turns on its push and pull-request
-  triggers.
+  oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
+  `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
+  build are not `check`.
+  `make patch-header` (the base patch's declared sizes, `BPS=<file>`) is
+  outside it until `data/base.bps` exists.
+- CI: `.github/workflows/check.yml` runs `make -k check`, and in a job
+  `sdl` `make sdl` (the PC binary uploaded as the artifact `alttpr-pc`),
+  manually only (`workflow_dispatch`) until the owner turns on its push and
+  pull-request triggers.
 
 ## Ground rules
 

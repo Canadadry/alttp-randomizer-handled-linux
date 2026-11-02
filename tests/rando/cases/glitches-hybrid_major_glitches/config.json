@@ -1,0 +1,13 @@
+{
+    "glitches": "hybrid_major_glitches",
+    "item_placement": "advanced",
+    "dungeon_items": "standard",
+    "accessibility": "items",
+    "goal": "ganon",
+    "crystals_tower": "7",
+    "crystals_ganon": "7",
+    "state": "open",
+    "weapons": "randomized",
+    "item_pool": "normal",
+    "item_functionality": "normal"
+}

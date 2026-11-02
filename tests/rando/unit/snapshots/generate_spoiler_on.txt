@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+ | Goal                    Defeat Ganon  ^|
+ | Tower Crystals                     7   |
+ | Ganon Crystals                     7   |
+ | World State                     Open   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal   |
+ | Hints                             On   |
+ | Heart Beep                Half Speed   |
+>| Spoiler in History              < On > |
+ | Generate Seed                          |
+ |                                        |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
