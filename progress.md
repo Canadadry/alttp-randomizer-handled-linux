@@ -136,3 +136,4 @@
     - [x] fix: test_app_shell path snprintf under Onion's gcc
     - [x] fix: ui_cli and app_gen dates outside the record's range
   - [ ] 5.2 README
+- [x] Owner to-do written (notes/owner-todo.md)
