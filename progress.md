@@ -143,11 +143,11 @@
   - [x] Chunk 3: make package, CI job and docs
 - [x] Step 5.2 chunks
   - [x] README: install, use, deletion
-- [ ] Done when (§4): owner checks
-  - [ ] Base patch MD5 edc01f3d… confirmed (notes/owner-todo.md §1)
-  - [ ] CI job sdl green (notes/owner-todo.md §2)
-  - [ ] CI job package green (notes/owner-todo.md §3)
-  - [ ] Mini Flip: app runs, generates, ROM plays to the first dungeon (notes/owner-todo.md §5)
-  - [ ] Mini Flip: two seeds keep separate saves (notes/owner-todo.md §5)
-  - [ ] Mini Flip: History delete removes ROM, save and states (notes/owner-todo.md §5)
-  - [ ] PC build looks right (notes/owner-todo.md §5)
+- [x] Done when (§4): owner checks
+  - [x] Base patch MD5 edc01f3d… confirmed (notes/owner-todo.md §1)
+  - [x] CI job sdl green (notes/owner-todo.md §2)
+  - [x] CI job package green (notes/owner-todo.md §3)
+  - [x] Mini Flip: app runs, generates, ROM plays to the first dungeon (notes/owner-todo.md §5)
+  - [x] Mini Flip: two seeds keep separate saves (notes/owner-todo.md §5)
+  - [x] Mini Flip: History delete removes ROM, save and states (notes/owner-todo.md §5)
+  - [x] PC build looks right (notes/owner-todo.md §5)

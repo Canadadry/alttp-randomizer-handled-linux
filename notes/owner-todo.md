@@ -1,7 +1,9 @@
 # Owner to-do — plan 1 (ALttPR on Miyoo)
 
-Branch `plan-1-miyoo-package` (not `plan-1-onion-generator`). Delete this
-file once every item is done.
+Branch `plan-1-miyoo-package` (not `plan-1-onion-generator`). Plan 1 was
+closed with the plan's section 4 owner checks waived, not done: §1's MD5
+confirmation, §2, §3 and §5 are still open. Delete this file once every
+item is done.
 
 ## 1. Build and commit the base patch — done, one confirmation left
 
