@@ -137,3 +137,7 @@
     - [x] fix: ui_cli and app_gen dates outside the record's range
   - [ ] 5.2 README
 - [x] Owner to-do written (notes/owner-todo.md)
+- [ ] Step 4.2 chunks
+  - [x] Chunk 1: gate on the real patch
+  - [ ] Chunk 2: package files and zip builder
+  - [ ] Chunk 3: make package, CI job and docs

@@ -16,7 +16,7 @@ help:
 	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
 	@echo "make sdl-pc         the SDL PC build, its SDL tests and headless smoke test (needs libsdl1.2-dev, libsdl-ttf2.0-dev)"
 	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
-	@echo "make patch-header   the base patch's declared sizes checked (BPS=<file>, default data/base.bps), kept out of check"
+	@echo "make patch-header   the base patch checked like make test checks data/base.bps (BPS=<file>, default data/base.bps), kept out of check"
 	@echo "make measure-compare the generator timed against a worktree of 40314c3, interleaved, +-10% verdicts, kept out of check"
 	@echo "make check          the net: everything that must be green before a push"
 

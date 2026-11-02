@@ -102,8 +102,8 @@ in `docs/`, then `README.md`.
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`.
-  `make patch-header` (the base patch's declared sizes, `BPS=<file>`) is
-  outside it until `data/base.bps` exists.
+  `make patch-header` (the base patch's header, source CRC32, size cap and
+  pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
 - CI: `.github/workflows/check.yml` runs `make -k check`, and in a job
   `sdl` `make sdl` (the PC binary uploaded as the artifact `alttpr-pc`),
   manually only (`workflow_dispatch`) until the owner turns on its push and
