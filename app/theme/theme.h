@@ -66,10 +66,109 @@ typedef struct ThemeFont {
 	ThemeAnchor anchor;
 } ThemeFont;
 
+/* Fields an optional section leaves out are zero; present says whether it was given. */
+typedef struct ThemeBand {
+	bool present;
+	int x, y, w, h;
+	ThemeColour colour;
+	int top_line, bottom_line;
+	ThemeColour line_colour;
+} ThemeBand;
+
+typedef struct ThemeTabSlot {
+	int x, active_x, marker_x;
+} ThemeTabSlot;
+
+/* font fields are indexes into Theme.fonts. */
+typedef struct ThemeTabs {
+	int font;
+	int y, right;
+	ThemeColour colour, active_colour;
+	ThemeMarker active_before, active_after;
+	int marker_y;
+	ThemeBand band;
+	ThemeTabSlot slots[THEME_TABS_MAX];
+	int slot_count;
+} ThemeTabs;
+
+typedef struct ThemeRule {
+	bool present;
+	ThemeColour colour;
+	int y, thickness, dash, gap, offset, end;
+} ThemeRule;
+
+typedef struct ThemeTitle {
+	int font;
+	int x, y, right;
+	ThemeColour colour, alert_colour;
+	ThemeRule rule;
+} ThemeTitle;
+
+/* Row bands' y is relative to the row's top. */
+typedef struct ThemeList {
+	int font;
+	int top, bottom, row_height, text_y;
+	int label_x, label_x_cursor, right, value_right, value_max;
+	int label_gap, arrow_left_gap, arrow_right_gap;
+	ThemeColour label_colour, value_colour, text_colour, disabled_colour, selected_colour,
+		selected_disabled_colour;
+	ThemeMarker cursor, cursor_disabled, arrow_left, arrow_right, scroll_up, scroll_down;
+	int cursor_x, scroll_x, cursor_y, arrow_y, scroll_y;
+	ThemeBand selected, selected_disabled;
+} ThemeList;
+
+typedef struct ThemeNotice {
+	int font;
+	int x, emphasis_x, right, top, row_height, text_y;
+	ThemeColour colour, emphasis_colour;
+} ThemeNotice;
+
+typedef struct ThemeMessage {
+	int font;
+	int x, y, right;
+	ThemeColour info_colour, error_colour;
+} ThemeMessage;
+
+/* In UiHintButton's order: this module does not include the core. */
+typedef enum ThemeButtonIndex {
+	THEME_BUTTON_LEFT_RIGHT,
+	THEME_BUTTON_A,
+	THEME_BUTTON_B,
+	THEME_BUTTON_X,
+	THEME_BUTTON_Y,
+	THEME_BUTTON_START,
+	THEME_BUTTON_COUNT
+} ThemeButtonIndex;
+
+typedef enum ThemeButtonKind {
+	THEME_BUTTON_HINT_TEXT,
+	THEME_BUTTON_SPRITE
+} ThemeButtonKind;
+
+/* file is "" for THEME_BUTTON_HINT_TEXT. */
+typedef struct ThemeButton {
+	ThemeButtonKind kind;
+	char file[THEME_FILE_MAX];
+} ThemeButton;
+
+typedef struct ThemeFooter {
+	int font;
+	int x, y, key_y, right, key_gap, hint_gap;
+	ThemeColour label_colour, primary_colour;
+	ThemeButton buttons[THEME_BUTTON_COUNT];
+	ThemeBand band;
+} ThemeFooter;
+
 typedef struct Theme {
 	ThemeScreen screen;
 	ThemeFont fonts[THEME_FONTS_MAX];
 	int font_count;
+	ThemeTabs tabs;
+	ThemeTitle title;
+	ThemeList list;
+	ThemeNotice notice;
+	ThemeMessage message;
+	ThemeFooter footer;
 } Theme;
 
 typedef struct ThemeError {
@@ -79,5 +178,11 @@ typedef struct ThemeError {
 /* text is NUL-terminated; file only names it in messages. On false, err holds the first
    problem and out's content is unspecified. */
 bool theme_parse(Theme *out, const char *text, const char *file, ThemeError *err);
+
+#define THEME_FILE_BYTES_MAX 16384
+
+/* Reads <dir>/theme.ini (at most THEME_FILE_BYTES_MAX bytes) into a static buffer, so it is not
+   reentrant, and parses it; the same contract as theme_parse. */
+bool theme_load(Theme *out, const char *dir, ThemeError *err);
 
 #endif

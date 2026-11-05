@@ -1,8 +1,12 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "support.h"
 #include "theme.h"
 
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #define TEST "test_theme"
 #define FILE_NAME "t.ini"
@@ -26,7 +30,37 @@
 	"cell = 16 32\n" \
 	"anchor = top\n"
 
+#define CLASSIC_DIR "../../themes/classic"
+
 static Theme theme;
+static char classic[THEME_FILE_BYTES_MAX + 1];
+static const char *rest;
+static char buf[THEME_FILE_BYTES_MAX * 2];
+
+static void read_classic(void)
+{
+	FILE *f = fopen(CLASSIC_DIR "/theme.ini", "rb");
+	size_t n;
+
+	if (!f)
+		test_fail(TEST, "cannot open %s/theme.ini", CLASSIC_DIR);
+	n = fread(classic, 1, sizeof classic - 1, f);
+	fclose(f);
+	classic[n] = '\0';
+	rest = strstr(classic, "\n[tabs]\n");
+	if (!rest)
+		test_fail(TEST, "classic has no [tabs] section");
+}
+
+/* The sections after [screen] and [font.*] are classic's, so a prefix is a whole theme. */
+static const char *with_rest(const char *prefix)
+{
+	if (strlen(prefix) + strlen(rest) >= sizeof buf)
+		test_fail(TEST, "theme text too long");
+	strcpy(buf, prefix);
+	strcat(buf, rest);
+	return buf;
+}
 
 static void parse_ok(int line, const char *text)
 {
@@ -48,8 +82,442 @@ static void parse_fails(int line, const char *text, const char *expected)
 		test_fail(TEST, "%s:%d: got \"%s\", expected \"%s\"", __FILE__, line, err.message, expected);
 }
 
-#define OK(text) parse_ok(__LINE__, text)
-#define FAILS(text, expected) parse_fails(__LINE__, text, expected)
+#define OK(text) parse_ok(__LINE__, with_rest(text))
+#define FAILS(text, expected) parse_fails(__LINE__, with_rest(text), expected)
+#define FAILS_RAW(text, expected) parse_fails(__LINE__, text, expected)
+
+
+static char work[THEME_FILE_BYTES_MAX * 2];
+static char expected[THEME_ERROR_MAX];
+
+static void start(void)
+{
+	strcpy(work, classic);
+}
+
+static char *section_at(const char *section)
+{
+	char header[64];
+	char *at;
+
+	snprintf(header, sizeof header, "\n[%s]\n", section);
+	if (strncmp(work, header + 1, strlen(header + 1)) == 0)
+		return work;
+	at = strstr(work, header);
+	if (!at)
+		test_fail(TEST, "classic has no [%s]", section);
+	return at + 1;
+}
+
+static int line_number(const char *at)
+{
+	const char *c;
+	int line = 1;
+
+	for (c = work; c < at; c++)
+		line += *c == '\n';
+	return line;
+}
+
+/* Replaces the first line starting with prefix from [section]'s header on ("" removes it);
+   returns that line's number. */
+static int replace(const char *section, const char *prefix, const char *with)
+{
+	char *at = section_at(section);
+	char *end;
+	char tail[sizeof work];
+	int line;
+
+	while (strncmp(at, prefix, strlen(prefix)) != 0) {
+		at = strchr(at, '\n');
+		if (!at)
+			test_fail(TEST, "no line \"%s\" in [%s]", prefix, section);
+		at++;
+	}
+	line = line_number(at);
+	end = strchr(at, '\n') + 1;
+	strcpy(tail, end);
+	if (*with) {
+		strcpy(at, with);
+		strcat(at, "\n");
+	} else {
+		*at = '\0';
+	}
+	strcat(work, tail);
+	return line;
+}
+
+static int header_line(const char *section)
+{
+	return line_number(section_at(section));
+}
+
+/* Removes [section] up to the next section's header. */
+static void drop(const char *section)
+{
+	char *at = section_at(section);
+	char *next = strstr(at, "\n[");
+	char tail[sizeof work];
+
+	strcpy(tail, next ? next + 1 : "");
+	strcpy(at, tail);
+}
+
+static const char *expect(const char *fmt, int line)
+{
+	snprintf(expected, sizeof expected, fmt, line);
+	return expected;
+}
+
+#define WORK_OK() parse_ok(__LINE__, work)
+#define WORK_FAILS(message) parse_fails(__LINE__, work, message)
+
+static void test_classic_line_and_section_problems(void)
+{
+	int line;
+
+	start();
+	line = replace("list", "top =", "tops = 64");
+	WORK_FAILS(expect(FILE_NAME ":%d: list.tops: unknown key", line));
+	start();
+	line = replace("footer", "button.start", "button.strat = hint_text");
+	WORK_FAILS(expect(FILE_NAME ":%d: footer.button.strat: unknown key", line));
+	start();
+	line = replace("title", "x =", "x = 16\nx = 17");
+	WORK_FAILS(expect(FILE_NAME ":%d: title.x: duplicate key", line + 1));
+	start();
+	line = replace("notice", "[notice]", "[notices]");
+	WORK_FAILS(expect(FILE_NAME ":%d: [notices]: unknown section", line));
+	start();
+	line = replace("tab.2", "[tab.2]", "[tab.1]");
+	WORK_FAILS(expect(FILE_NAME ":%d: [tab.1]: duplicate section", line));
+	start();
+	line = replace("tab.2", "[tab.2]", "[tab.02]");
+	WORK_FAILS(expect(FILE_NAME ":%d: [tab.02]: unknown section", line));
+	start();
+	line = replace("tab.2", "[tab.2]", "[tab.x]");
+	WORK_FAILS(expect(FILE_NAME ":%d: [tab.x]: unknown section", line));
+	start();
+	line = replace("list", "[list]", "[list.band]");
+	WORK_FAILS(expect(FILE_NAME ":%d: [list.band]: unknown section", line));
+	start();
+	replace("screen", "[screen]", "colour = #000000\n[screen]");
+	WORK_FAILS(FILE_NAME ":1: key outside a section");
+	start();
+	line = replace("list", "top =", "top 64");
+	WORK_FAILS(expect(FILE_NAME ":%d: not \"key = value\" or \"[section]\"", line));
+	start();
+	line = replace("list", "top =",
+		       "; xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+		       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+		       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+	WORK_FAILS(expect(FILE_NAME ":%d: line longer than 255 bytes", line));
+	start();
+	line = replace("tab.1", "x =", "x =\t16");
+	WORK_FAILS(expect(FILE_NAME ":%d: not printable ASCII", line));
+	start();
+	line = replace("tab.1", "x =", "x = 16\r");
+	WORK_FAILS(expect(FILE_NAME ":%d: not printable ASCII", line));
+}
+
+static void test_classic_missing_keys_and_sections(void)
+{
+	FAILS_RAW("", FILE_NAME ": [screen]: missing");
+	start();
+	replace("list", "text_y", "");
+	WORK_FAILS(expect(FILE_NAME ":%d: list.text_y: missing", header_line("list")));
+	start();
+	replace("footer", "x =", "");
+	replace("list", "top =", "");
+	WORK_FAILS(expect(FILE_NAME ":%d: list.top: missing", header_line("list")));
+	start();
+	replace("footer.band", "line_colour", "");
+	replace("tabs.band", "w =", "");
+	replace("screen", "image", "");
+	WORK_FAILS(expect(FILE_NAME ":%d: screen.image: missing", header_line("screen")));
+	start();
+	replace("footer", "x =", "");
+	drop("message");
+	WORK_FAILS(expect(FILE_NAME ":%d: footer.x: missing", header_line("footer")));
+	start();
+	drop("message");
+	WORK_FAILS(FILE_NAME ": [message]: missing");
+	start();
+	drop("notice");
+	drop("message");
+	WORK_FAILS(FILE_NAME ": [notice]: missing");
+	start();
+	drop("tab.1");
+	drop("tab.2");
+	WORK_FAILS(FILE_NAME ": [tab.<n>]: missing");
+	start();
+	drop("list.selected_disabled");
+	WORK_FAILS(FILE_NAME ": [list.selected_disabled]: missing");
+	start();
+	drop("tabs");
+	WORK_FAILS(FILE_NAME ": [tabs]: missing");
+}
+
+static void test_optional_sections(void)
+{
+	start();
+	drop("tabs.band");
+	WORK_OK();
+	CHECK(!theme.tabs.band.present && theme.footer.band.present);
+	start();
+	drop("footer.band");
+	WORK_OK();
+	CHECK(!theme.footer.band.present && theme.tabs.band.present);
+	start();
+	replace("list", "[list]",
+		"[title.rule]\ncolour = #a0a0a0\ny = 77\nthickness = 4\ndash = 8\ngap = 4\noffset = 12\nend = 610\n\n[list]");
+	WORK_OK();
+	CHECK(theme.title.rule.present && theme.title.rule.y == 77 && theme.title.rule.thickness == 4);
+	CHECK(theme.title.rule.dash == 8 && theme.title.rule.gap == 4 && theme.title.rule.offset == 12);
+	CHECK(theme.title.rule.end == 610 && theme.title.rule.colour.r == 0xa0);
+	start();
+	replace("list", "[list]", "[title.rule]\ncolour = #a0a0a0\ny = 77\n\n[list]");
+	WORK_FAILS(expect(FILE_NAME ":%d: title.rule.thickness: missing", header_line("title.rule")));
+}
+
+#define MARKER_PROBLEM "not a marker (none, text:<chars>, sprite:<file.png>)"
+
+static void fails_with(int test_line, const char *section, const char *prefix, const char *with, const char *fmt)
+{
+	int line;
+
+	start();
+	line = replace(section, prefix, with);
+	parse_fails(test_line, work, expect(fmt, line));
+}
+
+#define EDIT_FAILS(section, prefix, with, fmt) fails_with(__LINE__, section, prefix, with, fmt)
+
+static void test_classic_values(void)
+{
+	EDIT_FAILS("list", "top =", "top = 6x4", FILE_NAME ":%d: list.top: not an integer");
+	EDIT_FAILS("list", "text_y", "text_y = -129", FILE_NAME ":%d: list.text_y: out of range -128..128");
+	EDIT_FAILS("list", "text_y", "text_y = 129", FILE_NAME ":%d: list.text_y: out of range -128..128");
+	EDIT_FAILS("tabs", "y =", "y = 481", FILE_NAME ":%d: tabs.y: out of range 0..480");
+	EDIT_FAILS("tabs", "y =", "y = -1", FILE_NAME ":%d: tabs.y: out of range 0..480");
+	EDIT_FAILS("tab.2", "x =", "x = 641", FILE_NAME ":%d: tab.2.x: out of range 0..640");
+	EDIT_FAILS("list", "row_height", "row_height = 7", FILE_NAME ":%d: list.row_height: out of range 8..240");
+	EDIT_FAILS("notice", "row_height", "row_height = 241", FILE_NAME ":%d: notice.row_height: out of range 8..240");
+	EDIT_FAILS("list.selected", "y =", "y = 241", FILE_NAME ":%d: list.selected.y: out of range 0..240");
+	EDIT_FAILS("footer.band", "y =", "y = 481", FILE_NAME ":%d: footer.band.y: out of range 0..480");
+	EDIT_FAILS("footer.band", "w =", "w = 0", FILE_NAME ":%d: footer.band.w: out of range 1..640");
+	EDIT_FAILS("tabs.band", "h =", "h = 481", FILE_NAME ":%d: tabs.band.h: out of range 1..480");
+	EDIT_FAILS("tabs.band", "top_line", "top_line = 17", FILE_NAME ":%d: tabs.band.top_line: out of range 0..16");
+	EDIT_FAILS("footer", "hint_gap", "hint_gap = -1", FILE_NAME ":%d: footer.hint_gap: out of range 0..640");
+	EDIT_FAILS("message", "info_colour", "info_colour = #9ad0f", FILE_NAME ":%d: message.info_colour: not a colour (#rrggbb)");
+	EDIT_FAILS("message", "info_colour", "info_colour = #9ad0fg", FILE_NAME ":%d: message.info_colour: not a colour (#rrggbb)");
+	EDIT_FAILS("message", "info_colour", "info_colour = 9ad0ff", FILE_NAME ":%d: message.info_colour: not a colour (#rrggbb)");
+	EDIT_FAILS("list.selected", "line_colour", "line_colour = red",
+		   FILE_NAME ":%d: list.selected.line_colour: not a colour (#rrggbb)");
+	EDIT_FAILS("font.mono", "file", "file = fonts/a.ttf", FILE_NAME ":%d: font.mono.file: not a file name (.ttf)");
+	EDIT_FAILS("screen", "image", "image = ../frame.png", FILE_NAME ":%d: screen.image: not a file name (.png)");
+}
+
+static void test_classic_markers_and_buttons(void)
+{
+	start();
+	replace("list", "cursor =", "cursor = sprite:triforce-16_b.png");
+	replace("tabs", "active_after", "active_after = none");
+	replace("footer", "button.start", "button.start = sprite:start.png");
+	WORK_OK();
+	CHECK(theme.list.cursor.kind == THEME_MARKER_SPRITE && strcmp(theme.list.cursor.file, "triforce-16_b.png") == 0);
+	CHECK(theme.list.cursor.text[0] == '\0');
+	CHECK(theme.tabs.active_after.kind == THEME_MARKER_NONE);
+	CHECK(theme.list.arrow_left.kind == THEME_MARKER_TEXT && strcmp(theme.list.arrow_left.text, "<") == 0);
+	CHECK(theme.footer.buttons[THEME_BUTTON_START].kind == THEME_BUTTON_SPRITE);
+	CHECK(strcmp(theme.footer.buttons[THEME_BUTTON_START].file, "start.png") == 0);
+	CHECK(theme.footer.buttons[THEME_BUTTON_A].kind == THEME_BUTTON_HINT_TEXT);
+	EDIT_FAILS("list", "arrow_left", "arrow_left = <", FILE_NAME ":%d: list.arrow_left: " MARKER_PROBLEM);
+	EDIT_FAILS("list", "arrow_left", "arrow_left = text:12345678", FILE_NAME ":%d: list.arrow_left: " MARKER_PROBLEM);
+	EDIT_FAILS("list", "cursor =", "cursor = sprite:", FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
+	EDIT_FAILS("list", "cursor =", "cursor = sprite:a/b.png", FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
+	EDIT_FAILS("list", "cursor =", "cursor = sprite:..png", FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
+	EDIT_FAILS("list", "cursor =", "cursor = sprite:.a.png", FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
+	EDIT_FAILS("list", "cursor =", "cursor = sprite:a.ttf", FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
+	EDIT_FAILS("list", "cursor =",
+		   "cursor = sprite:abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh.png",
+		   FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
+	EDIT_FAILS("tabs", "active_before", "active_before = Sprite:a.png", FILE_NAME ":%d: tabs.active_before: " MARKER_PROBLEM);
+	EDIT_FAILS("screen", "cut", "cut = sprite:cut.png", FILE_NAME ":%d: screen.cut: not a marker (none, text:<chars>)");
+	EDIT_FAILS("footer", "button.a", "button.a = A", FILE_NAME ":%d: footer.button.a: not hint_text or sprite:<file.png>");
+	EDIT_FAILS("footer", "button.a", "button.a = text:A", FILE_NAME ":%d: footer.button.a: not hint_text or sprite:<file.png>");
+	EDIT_FAILS("footer", "button.a", "button.a = none", FILE_NAME ":%d: footer.button.a: not hint_text or sprite:<file.png>");
+	EDIT_FAILS("footer", "button.y", "button.y = sprite:../y.png",
+		   FILE_NAME ":%d: footer.button.y: not hint_text or sprite:<file.png>");
+}
+
+static void test_classic_cross_checks(void)
+{
+	EDIT_FAILS("list", "font", "font = mona", FILE_NAME ":%d: list.font: unknown font mona");
+	EDIT_FAILS("footer", "font", "font = Mono", FILE_NAME ":%d: footer.font: unknown font Mono");
+	start();
+	replace("font.mono", "cell", "cell = none");
+	WORK_FAILS(expect(FILE_NAME ":%d: font.mono.size: fit needs a cell", header_line("font.mono") + 2));
+	start();
+	replace("font.mono", "cell", "cell = none");
+	replace("title", "font", "font = big");
+	WORK_FAILS(expect(FILE_NAME ":%d: title.font: unknown font big", header_line("title") + 1));
+	start();
+	replace("font.mono", "[font.mono]", "[font.big]\nfile = Big.ttf\nsize = 20\ncell = none\nanchor = baseline\n\n[font.mono]");
+	replace("title", "font", "font = big");
+	WORK_OK();
+	CHECK(theme.font_count == 2 && theme.title.font == 0 && theme.list.font == 1 && theme.tabs.font == 1);
+	start();
+	replace("tabs.band", "x =", "x = 1");
+	WORK_FAILS(expect(FILE_NAME ":%d: tabs.band.w: outside the screen", header_line("tabs.band") + 3));
+	start();
+	replace("tabs.band", "x =", "x = 640");
+	WORK_FAILS(expect(FILE_NAME ":%d: tabs.band.w: outside the screen", header_line("tabs.band") + 3));
+	start();
+	replace("footer.band", "y =", "y = 449");
+	WORK_FAILS(expect(FILE_NAME ":%d: footer.band.h: outside the screen", header_line("footer.band") + 4));
+	start();
+	replace("footer.band", "y =", "y = 0");
+	replace("footer.band", "h =", "h = 480");
+	WORK_OK();
+	start();
+	replace("list.selected", "w =", "w = 641");
+	WORK_FAILS(expect(FILE_NAME ":%d: list.selected.w: out of range 1..640", header_line("list.selected") + 3));
+	start();
+	replace("list.selected", "x =", "x = 1");
+	WORK_FAILS(expect(FILE_NAME ":%d: list.selected.w: outside the screen", header_line("list.selected") + 3));
+	EDIT_FAILS("list.selected", "h =", "h = 33", FILE_NAME ":%d: list.selected.h: out of range 1..32");
+	EDIT_FAILS("list.selected_disabled", "y =", "y = 1", FILE_NAME ":%d: list.selected_disabled.y: out of range 0..0");
+	start();
+	replace("list.selected", "y =", "y = 4");
+	replace("list.selected", "h =", "h = 28");
+	WORK_OK();
+	CHECK(theme.list.selected.y == 4 && theme.list.selected.h == 28);
+	start();
+	replace("list", "top =", "top = 416");
+	WORK_FAILS(expect(FILE_NAME ":%d: list.bottom: out of range 448..480", header_line("list") + 3));
+	start();
+	replace("list", "top =", "top = 400");
+	WORK_FAILS(expect(FILE_NAME ":%d: list.bottom: out of range 432..480", header_line("list") + 3));
+	start();
+	replace("list", "top =", "top = 384");
+	WORK_OK();
+	EDIT_FAILS("list", "value_right", "value_right = 625", FILE_NAME ":%d: list.value_right: out of range 0..624");
+	EDIT_FAILS("list", "label_x =", "label_x = 624", FILE_NAME ":%d: list.label_x: out of range 0..623");
+	EDIT_FAILS("list", "label_x_cursor", "label_x_cursor = 630", FILE_NAME ":%d: list.label_x_cursor: out of range 0..623");
+	start();
+	replace("list", "value_right", "value_right = 624");
+	WORK_OK();
+}
+
+#define TAB_NUMBERING FILE_NAME ": [tab.<n>]: tab slots must be numbered 1 to N, N at most 4"
+#define TAB(n) "[tab." n "]\nx = 0\nactive_x = 0\nmarker_x = 0\n\n"
+
+static void test_classic_tab_slots(void)
+{
+	start();
+	replace("tab.2", "[tab.2]", "[tab.3]");
+	WORK_FAILS(TAB_NUMBERING);
+	start();
+	replace("tab.1", "[tab.1]", "[tab.0]");
+	WORK_FAILS(TAB_NUMBERING);
+	start();
+	drop("tab.1");
+	WORK_FAILS(TAB_NUMBERING);
+	start();
+	replace("title", "[title]", TAB("3") TAB("4") "[title]");
+	WORK_OK();
+	CHECK(theme.tabs.slot_count == 4 && theme.tabs.slots[1].x == 192);
+	start();
+	replace("title", "[title]", TAB("4") TAB("3") TAB("5") "[title]");
+	WORK_FAILS(TAB_NUMBERING);
+	start();
+	replace("title", "[title]", TAB("999999") "[title]");
+	WORK_FAILS(TAB_NUMBERING);
+	start();
+	replace("tab.2", "x =", "");
+	replace("title", "[title]", TAB("4") "[title]");
+	WORK_FAILS(expect(FILE_NAME ":%d: tab.2.x: missing", header_line("tab.2")));
+	start();
+	replace("tab.2", "[tab.2]", "[tab.3]");
+	replace("tab.1", "[tab.1]", "[tab.2]\nx = 0\nactive_x = 0\nmarker_x = 0\n[tab.1]");
+	WORK_OK();
+	CHECK(theme.tabs.slot_count == 3 && theme.tabs.slots[0].x == 16 && theme.tabs.slots[2].x == 192);
+}
+
+#define LOAD_DIR "build/test_theme_load"
+
+static void write_load_file(const char *bytes, size_t n)
+{
+	FILE *f;
+
+	if (mkdir(LOAD_DIR, 0700) != 0 && errno != EEXIST)
+		test_fail(TEST, "mkdir %s failed", LOAD_DIR);
+	f = fopen(LOAD_DIR "/theme.ini", "wb");
+	if (!f || fwrite(bytes, 1, n, f) != n || fclose(f) != 0)
+		test_fail(TEST, "cannot write %s/theme.ini", LOAD_DIR);
+}
+
+static void load_fails(int line, const char *dir, const char *expected)
+{
+	ThemeError err;
+
+	memset(&err, 0, sizeof err);
+	if (theme_load(&theme, dir, &err))
+		test_fail(TEST, "%s:%d: loaded, expected \"%s\"", __FILE__, line, expected);
+	if (strcmp(err.message, expected) != 0)
+		test_fail(TEST, "%s:%d: got \"%s\", expected \"%s\"", __FILE__, line, err.message, expected);
+}
+
+static void test_load(void)
+{
+	ThemeError err;
+	size_t n;
+
+	load_fails(__LINE__, "build/no_such_theme", "build/no_such_theme/theme.ini: cannot open: No such file or directory");
+	start();
+	n = strlen(work);
+	memset(work + n, '\n', THEME_FILE_BYTES_MAX - n);
+	write_load_file(work, THEME_FILE_BYTES_MAX);
+	if (!theme_load(&theme, LOAD_DIR, &err))
+		test_fail(TEST, "%d bytes refused: %s", THEME_FILE_BYTES_MAX, err.message);
+	CHECK(theme.list.top == 64);
+	work[THEME_FILE_BYTES_MAX] = '\n';
+	write_load_file(work, THEME_FILE_BYTES_MAX + 1);
+	load_fails(__LINE__, LOAD_DIR, LOAD_DIR "/theme.ini: larger than 16384 bytes");
+	start();
+	replace("list", "top =", "top = 6x4");
+	n = strlen(work);
+	*strstr(work, "6x4") = '\0';
+	write_load_file(work, n);
+	load_fails(__LINE__, LOAD_DIR, expect(LOAD_DIR "/theme.ini:%d: not printable ASCII", header_line("list") + 2));
+	start();
+	replace("list", "top =", "top = 6x4");
+	write_load_file(work, strlen(work));
+	load_fails(__LINE__, LOAD_DIR, expect(LOAD_DIR "/theme.ini:%d: list.top: not an integer", header_line("list") + 2));
+}
+
+static void test_classic_loads(void)
+{
+	ThemeError err;
+
+	memset(&err, 0, sizeof err);
+	if (!theme_load(&theme, CLASSIC_DIR, &err))
+		test_fail(TEST, "classic refused: %s", err.message);
+	CHECK(theme.font_count == 1);
+	CHECK(theme.fonts[0].size.fit);
+	CHECK(theme.fonts[0].cell.present && theme.fonts[0].cell.w == 16 && theme.fonts[0].cell.h == 32);
+	CHECK(theme.list.font == 0 && theme.footer.font == 0);
+	CHECK(theme.list.top == 64 && theme.list.bottom == 416 && theme.list.row_height == 32);
+	CHECK(theme.list.label_x == 16 && theme.list.right == 624);
+	CHECK(theme.tabs.slot_count == 2);
+	CHECK(theme.tabs.slots[1].x == 192 && theme.tabs.slots[1].marker_x == 176);
+	CHECK(theme.tabs.active_before.kind == THEME_MARKER_TEXT && strcmp(theme.tabs.active_before.text, "[") == 0);
+	CHECK(theme.tabs.band.present && theme.footer.band.present && !theme.title.rule.present);
+	CHECK(theme.list.selected.present && theme.list.selected.colour.r == 0x2f);
+	CHECK(theme.footer.buttons[THEME_BUTTON_START].kind == THEME_BUTTON_HINT_TEXT);
+	CHECK(theme.message.error_colour.r == 0xff && theme.message.error_colour.g == 0x6b);
+}
 
 static void test_minimal_theme_values(void)
 {
@@ -117,7 +585,7 @@ static void test_section_problems(void)
 	FAILS(SCREEN "[font.Mono]\n", FILE_NAME ":5: [font.Mono]: unknown section");
 	FAILS(SCREEN "[font.a-b]\n", FILE_NAME ":5: [font.a-b]: unknown section");
 	FAILS(SCREEN "[font.abcdefghijklmnop]\n", FILE_NAME ":5: [font.abcdefghijklmnop]: unknown section");
-	OK(SCREEN "[font.abcdefghijklmno]\nfile = a.ttf\nsize = 8\ncell = none\nanchor = top\n");
+	OK(SCREEN "[font.abcdefghijklmno]\nfile = a.ttf\nsize = 8\ncell = none\nanchor = top\n" FONT_MONO);
 	CHECK(strcmp(theme.fonts[0].name, "abcdefghijklmno") == 0);
 	FAILS(SCREEN "[fonts.mono]\n", FILE_NAME ":5: [fonts.mono]: unknown section");
 	FAILS(SCREEN "[screen.x]\n", FILE_NAME ":5: [screen.x]: unknown section");
@@ -131,7 +599,7 @@ static void test_fonts(void)
 	CHECK(theme.font_count == 2);
 	CHECK(strcmp(theme.fonts[1].name, "big") == 0 && strcmp(theme.fonts[1].file, "Big-Font_2.ttf") == 0);
 	CHECK(theme.fonts[1].size.px == 64 && theme.fonts[1].cell.w == 64 && theme.fonts[1].cell.h == 128);
-	OK(SCREEN "[font.f1]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
+	OK(SCREEN "[font.mono]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
 	   "[font.f2]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
 	   "[font.f3]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
 	   "[font.f4]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
@@ -141,7 +609,7 @@ static void test_fonts(void)
 	   "[font.f8]\n" "file = b.ttf\nsize = 9\ncell = none\nanchor = top\n");
 	CHECK(theme.font_count == THEME_FONTS_MAX);
 	CHECK(strcmp(theme.fonts[7].name, "f8") == 0 && theme.fonts[7].size.px == 9);
-	FAILS(SCREEN "[font.f1]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
+	FAILS(SCREEN "[font.mono]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
 	      "[font.f2]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
 	      "[font.f3]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
 	      "[font.f4]\n" "file = a.ttf\nsize = 8\ncell = none\nanchor = top\n"
@@ -276,6 +744,16 @@ static void test_message_is_truncated_not_overflowed(void)
 
 int main(void)
 {
+	read_classic();
+	test_classic_loads();
+	test_classic_line_and_section_problems();
+	test_classic_missing_keys_and_sections();
+	test_optional_sections();
+	test_classic_values();
+	test_classic_markers_and_buttons();
+	test_classic_cross_checks();
+	test_classic_tab_slots();
+	test_load();
 	test_minimal_theme_values();
 	test_missing_sections();
 	test_blank_and_comment_lines_are_ignored();

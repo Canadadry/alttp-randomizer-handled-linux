@@ -25,12 +25,16 @@ in `docs/`, then `README.md`.
   `app/core` (it hands the core its runners and stores); `app/sdl` the
   library and `app/core`; nothing in `rando/` includes `app/`. Its tests live
   in `tests/rando/unit/`, the SDL ones in `tests/rando/sdl/`.
+  `app/theme/` is the theme loader (`theme.ini` into a `Theme` struct):
+  pure C99, no SDL, built with only itself on the include path.
   `app/main/` holds the mains: `ui_cli.c`, the host tool that plays a
   key sequence into the app on a directory used as the SD card and prints
   the text screen; and `sdl_main.c`, the SDL app for the device and the PC.
   `app/package/` holds the Onion app folder's files (`launch.sh`,
   `config.json`, `icon.png`) and `build_zip.py`, which writes the release zip
   (self-test `tests/rando/test_package.py`).
+- `themes/` holds one folder per theme (`themes/classic/`: today's look as a
+  theme).
 - `data/` holds the shipped font (DejaVu Sans Mono) and its licence.
 - `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
@@ -59,7 +63,7 @@ in `docs/`, then `README.md`.
   unit tests, linked with the app archive `librando_app.a`; the UI snapshots
   in `tests/rando/unit/snapshots/`, edited by hand only; and
   `tests/rando/no_sdl.sh`, which fails on any SDL include under `app/core/`,
-  `app/sd/` or `app/main/` (`sdl_main.c` exempt by exact path) after proving
+  `app/sd/`, `app/theme/` or `app/main/` (`sdl_main.c` exempt by exact path) after proving
   itself on planted ones; and `tests/rando/no_literals.py`, which fails on
   any string literal with a letter under `app/core/` outside the English
   table `ui_strings_en.c`, or under `app/sdl/`, after proving itself on
