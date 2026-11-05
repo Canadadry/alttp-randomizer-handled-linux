@@ -68,7 +68,12 @@ in `docs/`, then `README.md`.
   `test-template` (the tooling under `.claude/`).
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/rando/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
-  argument prints its usage).
+  argument prints its usage). `--seed`, `--date`, `--source-md5` and
+  `--base-md5` fix a run; `--unsupported <setting>=<value>,...` is a
+  test-only override of the library's unsupported pairs. The SDL app
+  `alttpr` takes the same keys and flags (one shared module,
+  `app/sd/rando_fixed_run.c`), plus `--shot-text <file>`; with keys, its run
+  ends after the last one.
 - `make check` = `test` plus `lint` (`rando/` and `app/` built with
   `-std=c99 -pedantic-errors`, except `app/sdl/` and `sdl_main.c`, which
   `make sdl` builds that way), `logic` (unit tests replaying the oracle fixtures),
@@ -101,6 +106,20 @@ in `docs/`, then `README.md`.
   same code with Onion's toolchain against its SDL 1.2, and runs nothing.
   The owner looks at the PC build with `make sdl-pc`, then
   `tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf`.
+- `make sdl-pc` also runs the golden comparison
+  (`tests/rando/sdl/goldens.sh --compare`): it proves itself on a planted
+  flipped byte and a removed golden, then plays the 13 states of
+  `sdl/golden_states.txt` (each on a fresh SD from `sd_fixture`) and prints
+  one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch, else
+  `goldens: 13 states byte-identical`. The goldens in
+  `tests/rando/sdl/goldens/` are pinned to the Claude Code cloud container
+  (Ubuntu 24.04.5, sdl12-compat 1.2.68 on SDL2 2.30.0, SDL_ttf 2.0.11,
+  FreeType 2.13.2), fingerprinted in `goldens/environment.txt`; on another
+  host it fails with `setup: goldens pinned to <fp>, this host is <fp>`, a
+  setup problem that verifies nothing, not a bug.
+- `make sdl-goldens`, outside the net, writes the goldens once (every state
+  rendered twice, refused unless byte-identical) and refuses a folder that
+  already holds any: goldens are never regenerated to get green.
 - `make package`, outside the net, needs docker: it runs `sdl-arm`, strips
   the binary with Onion's toolchain, checks it with `file` and `readelf`
   (32-bit ARM EABI5, dynamically linked, `/lib/ld-linux-armhf.so.3`,
@@ -112,7 +131,7 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
-  build are not `check`, nor is `make package`.
+  build are not `check`, nor are `make package` and `make sdl-goldens`.
   `make patch-header` (the base patch's header, source CRC32, size cap and
   pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
 - CI: `.github/workflows/check.yml` runs `make -k check`, in a job

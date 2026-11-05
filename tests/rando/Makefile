@@ -113,10 +113,11 @@ sdl-pc:
 	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf || { echo "setup: SDL 1.2 and SDL_ttf 2.0 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev)" >&2; exit 1; }
 	@$(MAKE) --no-print-directory sdl-pc-build
 
-sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP)
+sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP) $(SD_FIXTURE)
 	@set -e; for t in $(SDL_BINS); do SDL_VIDEODRIVER=dummy ./$$t; done
 	@./sdl/smoke_sdl.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf
-	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests and the smoke test ran under the dummy video driver"
+	@./sdl/goldens.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf ./$(SD_FIXTURE) --compare $(GOLDENS_DIR)
+	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests, the smoke test and the golden comparison ran under the dummy video driver"
 
 # sdl-goldens: writes the goldens once, refused if GOLDENS_DIR already holds any.
 sdl-goldens:
