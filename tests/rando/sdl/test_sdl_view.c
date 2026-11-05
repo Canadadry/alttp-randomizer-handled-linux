@@ -146,7 +146,11 @@ static void test_rendered_screen(void)
 	sc.cursor = 1;
 	sc.message_kind = UI_MESSAGE_ERROR;
 	sc.message = "Not supported";
-	sc.footer = "A Select";
+	{
+		UiHint hint = {UI_HINT_A, "A", "Select", false};
+
+		CHECK(ui_screen_add_hint(&sc, hint));
+	}
 	CHECK(ui_grid_init(&g, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
 	CHECK(ui_grid_render(&g, &sc));
 	open_default();

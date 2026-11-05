@@ -6,6 +6,9 @@
     - [x] Chunk 4 — The goldens, committed alone
     - [x] Chunk 5 — Comparison in make sdl-pc, and the record
   - [ ] Step 1.2 — Mockup inventory and the core changes it calls for
+    - [x] Chunk 1 — Structured footer
+    - [ ] Chunk 2 — Style fields
+    - [ ] Chunk 3 — Inventory in the step notes
   - [ ] Step 1.3 — Theme loader (pure C)
   - [ ] Step 1.4 — Page and width from the theme
   - [ ] Step 1.5 — SDL renderer from `UiScreen`

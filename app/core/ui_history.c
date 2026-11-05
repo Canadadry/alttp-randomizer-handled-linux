@@ -394,7 +394,8 @@ static void list_screen(UiHistory *state, UiScreen *out)
 	out->cursor = state->cursor - state->scroll;
 	out->more_above = state->scroll > 0;
 	out->more_below = state->scroll + state->page < state->list.count;
-	out->footer = ui_str(t, UI_STR_HISTORY_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_A, UI_STR_HINT_DETAILS, false));
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_X, UI_STR_HINT_DELETE, false));
 	if (out->message_kind == UI_MESSAGE_NONE) {
 		fill_date_line(state, &state->list.entries[state->cursor]);
 		out->message_kind = UI_MESSAGE_INFO;
@@ -457,7 +458,8 @@ static void detail_screen(UiHistory *state, UiScreen *out)
 		detail_row(state, i, out);
 	out->more_above = state->detail_scroll > 0;
 	out->more_below = state->detail_scroll + state->page < rows;
-	out->footer = ui_str(state->strings, UI_STR_HISTORY_DETAIL_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(state->strings, UI_HINT_B, UI_STR_HINT_BACK, false));
+	ui_screen_add_hint(out, ui_str_hint(state->strings, UI_HINT_X, UI_STR_HINT_DELETE, false));
 	show_message(state, out);
 }
 
@@ -471,7 +473,8 @@ static void confirm_screen(UiHistory *state, UiScreen *out)
 	add_text(out, entry->name.rom);
 	add_text(out, ui_str(t, UI_STR_HISTORY_DELETE_WHAT));
 	add_text(out, ui_str(t, UI_STR_HISTORY_DELETE_FOREVER));
-	out->footer = ui_str(t, UI_STR_HISTORY_CONFIRM_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_A, UI_STR_HINT_DELETE, false));
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_B, UI_STR_HINT_KEEP, false));
 	show_message(state, out);
 }
 

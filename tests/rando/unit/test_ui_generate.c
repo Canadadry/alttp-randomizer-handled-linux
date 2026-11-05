@@ -322,6 +322,40 @@ static void test_greying(void)
 	CHECK(key(UI_BUTTON_START) == UI_GENERATE_GENERATE);
 }
 
+static void check_hint(const UiScreen *s, int i, UiHintButton button, UiStrId key, UiStrId label, bool primary)
+{
+	const UiStrTable *en = ui_str_english();
+	const UiHint *h = &s->hints[i];
+
+	CHECK(i < s->hint_count);
+	if (h->button != button || strcmp(h->key, ui_str(en, key)) != 0 || strcmp(h->label, ui_str(en, label)) != 0 ||
+	    h->primary != primary)
+		test_fail(TEST, "hint %d: %d \"%s\" \"%s\" %d", i, (int)h->button, h->key, h->label, (int)h->primary);
+}
+
+static void check_generate_hints(void)
+{
+	UiScreen screen;
+
+	ui_generate_screen(&gen, &screen);
+	CHECK(screen.hint_count == 3);
+	check_hint(&screen, 0, UI_HINT_LEFT_RIGHT, UI_STR_KEY_LEFT_RIGHT, UI_STR_HINT_CHANGE, false);
+	check_hint(&screen, 1, UI_HINT_Y, UI_STR_KEY_Y, UI_STR_HINT_DEFAULT, false);
+	check_hint(&screen, 2, UI_HINT_START, UI_STR_KEY_START, UI_STR_HINT_GENERATE, true);
+}
+
+/* START stays primary while the action is greyed. */
+static void test_hints(void)
+{
+	init_defaults();
+	check_generate_hints();
+	init_with_pair(true);
+	keys(UI_BUTTON_UP, 1);
+	check_generate_hints();
+	CHECK(key(UI_BUTTON_START) == UI_GENERATE_NONE);
+	check_generate_hints();
+}
+
 static char dir[64], path[128];
 
 static void make_dir(void)
@@ -409,6 +443,7 @@ int main(int argc, char **argv)
 	test_snapshots();
 	test_library_list_by_default();
 	test_greying();
+	test_hints();
 	test_restore();
 	printf("%s: passed\n", TEST);
 	return 0;

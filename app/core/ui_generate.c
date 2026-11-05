@@ -216,7 +216,9 @@ void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 	out->scroll = state->scroll;
 	out->more_above = state->scroll > 0;
 	out->more_below = state->scroll + state->page < UI_GENERATE_ROW_COUNT;
-	out->footer = ui_str(t, UI_STR_GENERATE_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_LEFT_RIGHT, UI_STR_HINT_CHANGE, false));
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_Y, UI_STR_HINT_DEFAULT, false));
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_START, UI_STR_HINT_GENERATE, true));
 	if (state->message_kind != UI_MESSAGE_NONE) {
 		out->message_kind = state->message_kind;
 		out->message = state->message == UI_STR_GENERATE_UNSUPPORTED ? state->refusal : ui_str(t, state->message);

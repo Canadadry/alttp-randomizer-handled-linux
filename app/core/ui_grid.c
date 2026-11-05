@@ -229,6 +229,25 @@ static void put_line(UiGrid *grid, int line, const char *text, UiLineStyle style
 	grid->styles[line] = style;
 }
 
+static void put_footer(UiGrid *grid, const UiScreen *screen)
+{
+	int line = grid->lines - 1;
+	Pen pen = pen_at(grid, line, 1, grid->cols - 1);
+	int i;
+
+	if (screen->hint_count == 0)
+		return;
+	for (i = 0; i < screen->hint_count; i++) {
+		if (i > 0)
+			pen_text(&pen, "  ");
+		pen_text(&pen, screen->hints[i].key);
+		pen_char(&pen, ' ');
+		pen_text(&pen, screen->hints[i].label);
+	}
+	pen_done(&pen);
+	grid->styles[line] = UI_LINE_FOOTER;
+}
+
 bool ui_grid_render(UiGrid *grid, const UiScreen *screen)
 {
 	assert(grid_size_valid(grid->cols, grid->lines));
@@ -242,7 +261,6 @@ bool ui_grid_render(UiGrid *grid, const UiScreen *screen)
 	if (screen->message_kind != UI_MESSAGE_NONE)
 		put_line(grid, grid->lines - 2, screen->message,
 			 screen->message_kind == UI_MESSAGE_ERROR ? UI_LINE_ERROR : UI_LINE_INFO);
-	if (text_len(screen->footer) > 0)
-		put_line(grid, grid->lines - 1, screen->footer, UI_LINE_FOOTER);
+	put_footer(grid, screen);
 	return true;
 }

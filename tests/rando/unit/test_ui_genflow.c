@@ -220,6 +220,31 @@ static void test_screens(void)
 	test_snapshot(TEST, SNAPSHOTS "genflow_failed_filled.txt", render());
 }
 
+static void check_back_hint(void)
+{
+	UiScreen screen;
+
+	ui_genflow_screen(&flow, &screen);
+	CHECK(screen.hint_count == 1);
+	CHECK(screen.hints[0].button == UI_HINT_A && !screen.hints[0].primary);
+	CHECK(strcmp(screen.hints[0].key, "A") == 0 && strcmp(screen.hints[0].label, "Back") == 0);
+}
+
+static void test_hints(void)
+{
+	UiGenRequest r = request_of(0, RANDO_HEART_BEEP_HALF, false);
+	UiScreen screen;
+
+	reset(success("Open-Ganon-1CA10A.sfc", true, false));
+	ui_genflow_start(&flow, &r);
+	ui_genflow_screen(&flow, &screen);
+	CHECK(screen.hint_count == 0);
+	generate(success("Open-Ganon-1CA10A.sfc", true, false));
+	check_back_hint();
+	generate(failure(UI_STR_GENERATE_UNSUPPORTED, UI_STR_SETTING_GOAL, UI_STR_GENERATE_ACTION));
+	check_back_hint();
+}
+
 static void test_arity_zero_status_ignores_its_argument(void)
 {
 	UiScreen screen;
@@ -241,6 +266,7 @@ int main(int argc, char **argv)
 	test_keys_while_generating_change_nothing();
 	test_keys_when_done();
 	test_screens();
+	test_hints();
 	test_arity_zero_status_ignores_its_argument();
 	printf(TEST ": passed\n");
 	return EXIT_SUCCESS;

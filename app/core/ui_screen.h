@@ -5,6 +5,7 @@
 
 #define UI_TABS_MAX 4
 #define UI_ROWS_MAX 64
+#define UI_HINTS_MAX 4
 
 typedef enum UiRowKind {
 	UI_ROW_SETTING,
@@ -25,6 +26,24 @@ typedef enum UiMessageKind {
 	UI_MESSAGE_ERROR
 } UiMessageKind;
 
+typedef enum UiHintButton {
+	UI_HINT_LEFT_RIGHT,
+	UI_HINT_A,
+	UI_HINT_B,
+	UI_HINT_X,
+	UI_HINT_Y,
+	UI_HINT_START,
+	UI_HINT_BUTTON_COUNT
+} UiHintButton;
+
+/* At most one hint of a valid screen is primary. */
+typedef struct UiHint {
+	UiHintButton button;
+	const char *key;
+	const char *label;
+	bool primary;
+} UiHint;
+
 typedef struct UiScreen {
 	const char *tabs[UI_TABS_MAX];
 	int tab_count;
@@ -37,12 +56,15 @@ typedef struct UiScreen {
 	bool more_above, more_below;
 	UiMessageKind message_kind;
 	const char *message;
-	const char *footer;
+	UiHint hints[UI_HINTS_MAX];
+	int hint_count;
 } UiScreen;
 
 void ui_screen_init(UiScreen *screen);
 
 bool ui_screen_add_row(UiScreen *screen, UiRow row);
+
+bool ui_screen_add_hint(UiScreen *screen, UiHint hint);
 
 bool ui_screen_valid(const UiScreen *screen);
 

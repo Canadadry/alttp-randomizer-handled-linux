@@ -92,6 +92,17 @@ static void add(UiScreen *s, UiRowKind kind, const char *label, const char *valu
 	CHECK(ui_screen_add_row(s, row));
 }
 
+static void hint(UiScreen *s, UiHintButton button, const char *key, const char *label, bool primary)
+{
+	UiHint h;
+
+	h.button = button;
+	h.key = key;
+	h.label = label;
+	h.primary = primary;
+	CHECK(ui_screen_add_hint(s, h));
+}
+
 /* 18 rows, the cursor moved from the top to row 13 (a setting), scroll following it on a page of page. */
 static void generate_screen(UiScreen *s, int page)
 {
@@ -123,7 +134,9 @@ static void generate_screen(UiScreen *s, int page)
 	s->scroll = ui_scroll_follow(0, s->cursor, s->row_count, page);
 	s->message_kind = UI_MESSAGE_INFO;
 	s->message = "Left and right change the value";
-	s->footer = "A Select  B Back  L/R Tab";
+	hint(s, UI_HINT_A, "A", "Select", false);
+	hint(s, UI_HINT_B, "B", "Back", false);
+	hint(s, UI_HINT_LEFT_RIGHT, "L/R", "Tab", false);
 }
 
 static void test_snapshot_generate_default(void)
@@ -172,7 +185,7 @@ static void test_snapshot_detail(void)
 	s.more_below = true;
 	s.message_kind = UI_MESSAGE_ERROR;
 	s.message = "Cannot read the record";
-	s.footer = "B Back";
+	hint(&s, UI_HINT_B, "B", "Back", false);
 	check_snapshot(&s, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES, SNAPSHOTS "ui_detail_40x15.txt");
 }
 
@@ -188,7 +201,7 @@ static void test_snapshot_cursor_on_disabled(void)
 	add(&s, UI_ROW_SETTING, "Enemy shuffle", "None", true);
 	add(&s, UI_ROW_ACTION, "Generate", NULL, false);
 	s.cursor = 1;
-	s.footer = "A Select";
+	hint(&s, UI_HINT_A, "A", "Select", false);
 	check_snapshot(&s, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES, SNAPSHOTS "ui_disabled_cursor_40x15.txt");
 }
 
@@ -231,7 +244,6 @@ static void test_null_text_draws_as_empty(void)
 	add(&s, UI_ROW_ACTION, NULL, NULL, false);
 	s.cursor = 0;
 	s.message_kind = UI_MESSAGE_INFO;
-	s.footer = "";
 	CHECK(ui_grid_init(&g, 20, 6));
 	CHECK(ui_grid_render(&g, &s));
 	check_line(&g, 0, UI_LINE_TABS, "[]  B               ");
@@ -240,6 +252,41 @@ static void test_null_text_draws_as_empty(void)
 	check_line(&g, 3, UI_LINE_ROW, "                    ");
 	check_line(&g, 4, UI_LINE_INFO, "                    ");
 	check_line(&g, 5, UI_LINE_BLANK, "                    ");
+	hint(&s, UI_HINT_A, NULL, NULL, false);
+	hint(&s, UI_HINT_B, NULL, "Back", false);
+	hint(&s, UI_HINT_X, "X", NULL, false);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 5, UI_LINE_FOOTER, "     Back  X        ");
+}
+
+static void test_hints_join_into_the_footer(void)
+{
+	UiScreen s;
+	UiGrid g;
+
+	ui_screen_init(&s);
+	CHECK(ui_grid_init(&g, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	hint(&s, UI_HINT_LEFT_RIGHT, "</>", "Change", false);
+	hint(&s, UI_HINT_Y, "Y", "Default", false);
+	hint(&s, UI_HINT_START, "START", "Generate", true);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_FOOTER, " </> Change  Y Default  START Generate  ");
+	s.hints[2].primary = false;
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_FOOTER, " </> Change  Y Default  START Generate  ");
+	hint(&s, UI_HINT_A, "A", "Back", false);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_FOOTER, " </> Change  Y Default  START Generate~ ");
+
+	ui_screen_init(&s);
+	hint(&s, UI_HINT_A, "A", "Delete", false);
+	hint(&s, UI_HINT_B, "B", "Keep", false);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_FOOTER, " A Delete  B Keep                       ");
+
+	ui_screen_init(&s);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_BLANK, "                                        ");
 }
 
 static void test_bytes_outside_printable_ascii_draw_as_question_marks(void)
@@ -325,6 +372,7 @@ int main(void)
 	test_snapshot_empty();
 	test_invalid_screen_leaves_a_blank_grid();
 	test_null_text_draws_as_empty();
+	test_hints_join_into_the_footer();
 	test_bytes_outside_printable_ascii_draw_as_question_marks();
 	test_tab_bar_is_cut();
 	test_setting_cut_boundaries();

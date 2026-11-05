@@ -40,6 +40,26 @@ static bool put(char *buf, size_t cap, size_t *len, const char *src, size_t n)
 	return true;
 }
 
+UiHint ui_str_hint(const UiStrTable *table, UiHintButton button, UiStrId label, bool primary)
+{
+	static const UiStrId keys[UI_HINT_BUTTON_COUNT] = {
+		[UI_HINT_LEFT_RIGHT] = UI_STR_KEY_LEFT_RIGHT,
+		[UI_HINT_A] = UI_STR_KEY_A,
+		[UI_HINT_B] = UI_STR_KEY_B,
+		[UI_HINT_X] = UI_STR_KEY_X,
+		[UI_HINT_Y] = UI_STR_KEY_Y,
+		[UI_HINT_START] = UI_STR_KEY_START,
+	};
+	UiHint hint;
+
+	assert((int)button >= 0 && button < UI_HINT_BUTTON_COUNT);
+	hint.button = button;
+	hint.key = ui_str(table, keys[button]);
+	hint.label = ui_str(table, label);
+	hint.primary = primary;
+	return hint;
+}
+
 bool ui_str_fill(const char *pattern, const char *arg, char *buf, size_t cap)
 {
 	const char *slot;

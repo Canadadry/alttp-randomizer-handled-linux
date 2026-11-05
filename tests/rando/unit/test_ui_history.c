@@ -182,6 +182,56 @@ static bool unchanged(void)
 	return strcmp(before, render()) == 0;
 }
 
+/* The current screen's hints, as "A Details|X Delete", buttons as a number before each. */
+static const char *hints(void)
+{
+	static char out[128];
+	UiScreen screen;
+	size_t len = 0;
+	int i;
+
+	ui_history_screen(&history, &screen);
+	out[0] = '\0';
+	for (i = 0; i < screen.hint_count; i++) {
+		const UiHint *h = &screen.hints[i];
+
+		len += (size_t)snprintf(out + len, sizeof out - len, "%s%d:%s %s%s", i > 0 ? "|" : "", (int)h->button,
+					h->key, h->label, h->primary ? "*" : "");
+	}
+	return out;
+}
+
+static void check_hints(const char *expected)
+{
+	const char *got = hints();
+
+	if (strcmp(got, expected) != 0)
+		test_fail(TEST, "hints \"%s\", expected \"%s\"", got, expected);
+}
+
+static void test_hints(void)
+{
+	char list_hints[64], detail_hints[64], confirm_hints[64];
+
+	snprintf(list_hints, sizeof list_hints, "%d:A Details|%d:X Delete", UI_HINT_A, UI_HINT_X);
+	snprintf(detail_hints, sizeof detail_hints, "%d:B Back|%d:X Delete", UI_HINT_B, UI_HINT_X);
+	snprintf(confirm_hints, sizeof confirm_hints, "%d:A Delete|%d:B Keep", UI_HINT_A, UI_HINT_B);
+	memset(&list, 0, sizeof list);
+	start();
+	check_hints("");
+	three_seeds();
+	start();
+	check_hints(list_hints);
+	keys(UI_BUTTON_A, 1);
+	check_hints(detail_hints);
+	keys(UI_BUTTON_X, 1);
+	check_hints(confirm_hints);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_X, 1);
+	check_hints(confirm_hints);
+}
+
 static void test_list(void)
 {
 	three_seeds();
@@ -551,6 +601,7 @@ int main(void)
 	test_wrapping();
 	test_line_index_full();
 	test_strings();
+	test_hints();
 	printf(TEST ": passed\n");
 	return 0;
 }
