@@ -232,6 +232,55 @@ static void test_hints(void)
 	check_hints(confirm_hints);
 }
 
+/* A screen's style fields, as "alert notice 0": tone, body, then the emphasised rows' indexes. */
+static const char *style_of(const UiScreen *screen)
+{
+	static char out[128];
+	size_t len;
+	int i;
+
+	len = (size_t)snprintf(out, sizeof out, "%s %s", screen->title_tone == UI_TITLE_ALERT ? "alert" : "normal",
+			       screen->body_kind == UI_BODY_NOTICE ? "notice" : "list");
+	for (i = 0; i < screen->row_count; i++)
+		if (screen->rows[i].emphasis)
+			len += (size_t)snprintf(out + len, sizeof out - len, " %d", i);
+	return out;
+}
+
+static void check_style(const UiScreen *screen, const char *expected)
+{
+	const char *got = style_of(screen);
+
+	if (strcmp(got, expected) != 0)
+		test_fail(TEST, "style \"%s\", expected \"%s\"", got, expected);
+}
+
+static void check_history_style(const char *expected)
+{
+	UiScreen screen;
+
+	ui_history_screen(&history, &screen);
+	check_style(&screen, expected);
+}
+
+static void test_styles(void)
+{
+	memset(&list, 0, sizeof list);
+	start();
+	check_history_style("normal notice");
+	three_seeds();
+	start();
+	check_history_style("normal list");
+	keys(UI_BUTTON_A, 1);
+	check_history_style("normal list");
+	keys(UI_BUTTON_X, 1);
+	check_history_style("alert notice 0");
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_X, 1);
+	check_history_style("alert notice 0");
+}
+
 static void test_list(void)
 {
 	three_seeds();
@@ -602,6 +651,7 @@ int main(void)
 	test_line_index_full();
 	test_strings();
 	test_hints();
+	test_styles();
 	printf(TEST ": passed\n");
 	return 0;
 }

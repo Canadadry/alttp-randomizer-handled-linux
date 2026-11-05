@@ -245,6 +245,52 @@ static void test_hints(void)
 	check_back_hint();
 }
 
+/* A screen's style fields, as "alert notice 0": tone, body, then the emphasised rows' indexes. */
+static const char *style_of(const UiScreen *screen)
+{
+	static char out[128];
+	size_t len;
+	int i;
+
+	len = (size_t)snprintf(out, sizeof out, "%s %s", screen->title_tone == UI_TITLE_ALERT ? "alert" : "normal",
+			       screen->body_kind == UI_BODY_NOTICE ? "notice" : "list");
+	for (i = 0; i < screen->row_count; i++)
+		if (screen->rows[i].emphasis)
+			len += (size_t)snprintf(out + len, sizeof out - len, " %d", i);
+	return out;
+}
+
+static void check_style(const UiScreen *screen, const char *expected)
+{
+	const char *got = style_of(screen);
+
+	if (strcmp(got, expected) != 0)
+		test_fail(TEST, "style \"%s\", expected \"%s\"", got, expected);
+}
+
+static void check_flow_style(const char *expected)
+{
+	UiScreen screen;
+
+	ui_genflow_screen(&flow, &screen);
+	check_style(&screen, expected);
+}
+
+static void test_styles(void)
+{
+	UiGenRequest r = request_of(0, RANDO_HEART_BEEP_HALF, false);
+
+	reset(success("Open-Ganon-1CA10A.sfc", true, false));
+	ui_genflow_start(&flow, &r);
+	check_flow_style("normal notice");
+	generate(success("Open-Ganon-1CA10A.sfc", true, false));
+	check_flow_style("normal notice 1");
+	generate(success("Open-Ganon-2B3C4D.sfc", false, true));
+	check_flow_style("normal notice 1");
+	generate(failure(UI_STR_GENERATE_UNSUPPORTED, UI_STR_SETTING_GOAL, UI_STR_GENERATE_ACTION));
+	check_flow_style("alert notice");
+}
+
 static void test_arity_zero_status_ignores_its_argument(void)
 {
 	UiScreen screen;
@@ -267,6 +313,7 @@ int main(int argc, char **argv)
 	test_keys_when_done();
 	test_screens();
 	test_hints();
+	test_styles();
 	test_arity_zero_status_ignores_its_argument();
 	printf(TEST ": passed\n");
 	return EXIT_SUCCESS;

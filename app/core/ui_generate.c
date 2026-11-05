@@ -192,7 +192,7 @@ void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 	out->active_tab = 0;
 	out->title = ui_str(t, UI_STR_GENERATE_TITLE);
 	for (id = 0; id < RANDO_SETTING_COUNT; id++) {
-		UiRow row = {UI_ROW_SETTING, NULL, NULL, false};
+		UiRow row = {UI_ROW_SETTING, NULL, NULL, false, false};
 
 		row.label = ui_str(t, ui_setting_label((RandoSettingId)id));
 		row.disabled = holding_pair(state, id) != NULL;
@@ -202,8 +202,8 @@ void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 		ui_screen_add_row(out, row);
 	}
 	{
-		UiRow spoiler = {UI_ROW_SETTING, NULL, NULL, false};
-		UiRow action = {UI_ROW_ACTION, NULL, NULL, false};
+		UiRow spoiler = {UI_ROW_SETTING, NULL, NULL, false, false};
+		UiRow action = {UI_ROW_ACTION, NULL, NULL, false, false};
 
 		spoiler.label = ui_str(t, UI_STR_SETTING_SPOILER);
 		spoiler.value = ui_str(t, state->spoiler ? UI_STR_SPOILER_ON : UI_STR_SPOILER_OFF);

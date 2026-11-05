@@ -348,12 +348,18 @@ UiHistoryEvent ui_history_key(UiHistory *state, UiButton button)
 	return list_key(state, button);
 }
 
-static void add_text(UiScreen *out, const char *text)
+static void add_text_row(UiScreen *out, const char *text, bool emphasis)
 {
-	UiRow row = {UI_ROW_TEXT, NULL, NULL, false};
+	UiRow row = {UI_ROW_TEXT, NULL, NULL, false, false};
 
 	row.label = text;
+	row.emphasis = emphasis;
 	ui_screen_add_row(out, row);
+}
+
+static void add_text(UiScreen *out, const char *text)
+{
+	add_text_row(out, text, false);
 }
 
 static void fill_date_line(UiHistory *state, const UiHistoryEntry *entry)
@@ -381,12 +387,13 @@ static void list_screen(UiHistory *state, UiScreen *out)
 	out->title = ui_str(t, UI_STR_HISTORY_TITLE);
 	show_message(state, out);
 	if (state->list.count == 0) {
+		out->body_kind = UI_BODY_NOTICE;
 		add_text(out, ui_str(t, UI_STR_HISTORY_EMPTY));
 		add_text(out, ui_str(t, UI_STR_HISTORY_EMPTY_HINT));
 		return;
 	}
 	for (i = state->scroll; i < state->list.count && i < state->scroll + state->page; i++) {
-		UiRow row = {UI_ROW_ACTION, NULL, NULL, false};
+		UiRow row = {UI_ROW_ACTION, NULL, NULL, false, false};
 
 		row.label = state->list.entries[i].name.rom;
 		ui_screen_add_row(out, row);
@@ -407,7 +414,7 @@ static void detail_row(UiHistory *state, int index, UiScreen *out)
 {
 	const UiStrTable *t = state->strings;
 	const UiHistoryEntry *entry = &state->list.entries[state->cursor];
-	UiRow row = {UI_ROW_SETTING, NULL, NULL, false};
+	UiRow row = {UI_ROW_SETTING, NULL, NULL, false, false};
 	char *buf = state->rows[out->row_count];
 
 	if (index == 0) {
@@ -470,7 +477,9 @@ static void confirm_screen(UiHistory *state, UiScreen *out)
 
 	ui_str_fill(ui_str(t, UI_STR_HISTORY_DELETE_CONFIRM), entry->name.code, state->title, sizeof state->title);
 	out->title = state->title;
-	add_text(out, entry->name.rom);
+	out->title_tone = UI_TITLE_ALERT;
+	out->body_kind = UI_BODY_NOTICE;
+	add_text_row(out, entry->name.rom, true);
 	add_text(out, ui_str(t, UI_STR_HISTORY_DELETE_WHAT));
 	add_text(out, ui_str(t, UI_STR_HISTORY_DELETE_FOREVER));
 	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_A, UI_STR_HINT_DELETE, false));

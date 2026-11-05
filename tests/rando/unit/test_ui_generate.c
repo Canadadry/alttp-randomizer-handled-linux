@@ -322,6 +322,29 @@ static void test_greying(void)
 	CHECK(key(UI_BUTTON_START) == UI_GENERATE_GENERATE);
 }
 
+/* A screen's style fields, as "alert notice 0": tone, body, then the emphasised rows' indexes. */
+static const char *style_of(const UiScreen *screen)
+{
+	static char out[128];
+	size_t len;
+	int i;
+
+	len = (size_t)snprintf(out, sizeof out, "%s %s", screen->title_tone == UI_TITLE_ALERT ? "alert" : "normal",
+			       screen->body_kind == UI_BODY_NOTICE ? "notice" : "list");
+	for (i = 0; i < screen->row_count; i++)
+		if (screen->rows[i].emphasis)
+			len += (size_t)snprintf(out + len, sizeof out - len, " %d", i);
+	return out;
+}
+
+static void check_style(const UiScreen *screen, const char *expected)
+{
+	const char *got = style_of(screen);
+
+	if (strcmp(got, expected) != 0)
+		test_fail(TEST, "style \"%s\", expected \"%s\"", got, expected);
+}
+
 static void check_hint(const UiScreen *s, int i, UiHintButton button, UiStrId key, UiStrId label, bool primary)
 {
 	const UiStrTable *en = ui_str_english();
@@ -342,6 +365,7 @@ static void check_generate_hints(void)
 	check_hint(&screen, 0, UI_HINT_LEFT_RIGHT, UI_STR_KEY_LEFT_RIGHT, UI_STR_HINT_CHANGE, false);
 	check_hint(&screen, 1, UI_HINT_Y, UI_STR_KEY_Y, UI_STR_HINT_DEFAULT, false);
 	check_hint(&screen, 2, UI_HINT_START, UI_STR_KEY_START, UI_STR_HINT_GENERATE, true);
+	check_style(&screen, "normal list");
 }
 
 /* START stays primary while the action is greyed. */

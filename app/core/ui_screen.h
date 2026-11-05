@@ -18,6 +18,7 @@ typedef struct UiRow {
 	const char *label;
 	const char *value;
 	bool disabled;
+	bool emphasis;
 } UiRow;
 
 typedef enum UiMessageKind {
@@ -25,6 +26,18 @@ typedef enum UiMessageKind {
 	UI_MESSAGE_INFO,
 	UI_MESSAGE_ERROR
 } UiMessageKind;
+
+typedef enum UiTitleTone {
+	UI_TITLE_NORMAL,
+	UI_TITLE_ALERT,
+	UI_TITLE_TONE_COUNT
+} UiTitleTone;
+
+typedef enum UiBodyKind {
+	UI_BODY_LIST,
+	UI_BODY_NOTICE,
+	UI_BODY_KIND_COUNT
+} UiBodyKind;
 
 typedef enum UiHintButton {
 	UI_HINT_LEFT_RIGHT,
@@ -49,6 +62,8 @@ typedef struct UiScreen {
 	int tab_count;
 	int active_tab;
 	const char *title;
+	UiTitleTone title_tone;
+	UiBodyKind body_kind;
 	UiRow rows[UI_ROWS_MAX];
 	int row_count;
 	int cursor;

@@ -89,6 +89,7 @@ static void add(UiScreen *s, UiRowKind kind, const char *label, const char *valu
 	row.label = label;
 	row.value = value;
 	row.disabled = disabled;
+	row.emphasis = false;
 	CHECK(ui_screen_add_row(s, row));
 }
 
@@ -289,6 +290,51 @@ static void test_hints_join_into_the_footer(void)
 	check_line(&g, 14, UI_LINE_BLANK, "                                        ");
 }
 
+static void check_same_grid(const UiScreen *plain, const UiScreen *styled)
+{
+	char plain_text[UI_GRID_TEXT_MAX], styled_text[UI_GRID_TEXT_MAX];
+	UiGrid a, b;
+	int i;
+
+	CHECK(ui_grid_init(&a, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	CHECK(ui_grid_init(&b, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	CHECK(ui_grid_render(&a, plain));
+	CHECK(ui_grid_render(&b, styled));
+	CHECK(ui_grid_text(&a, plain_text, sizeof plain_text) > 0);
+	CHECK(ui_grid_text(&b, styled_text, sizeof styled_text) > 0);
+	if (strcmp(plain_text, styled_text) != 0)
+		test_fail(TEST, "styled grid:\n%s\nexpected:\n%s", styled_text, plain_text);
+	for (i = 0; i < a.lines; i++)
+		if (a.styles[i] != b.styles[i])
+			test_fail(TEST, "line %d: style %d, expected %d", i, (int)b.styles[i], (int)a.styles[i]);
+}
+
+static void test_style_fields_do_not_change_the_grid(void)
+{
+	UiScreen plain, styled;
+	int i;
+
+	generate_screen(&plain, UI_GRID_DEFAULT_LINES - 4);
+	plain.message_kind = UI_MESSAGE_ERROR;
+	styled = plain;
+	styled.title_tone = UI_TITLE_ALERT;
+	styled.body_kind = UI_BODY_NOTICE;
+	for (i = 0; i < styled.row_count; i++)
+		styled.rows[i].emphasis = true;
+	check_same_grid(&plain, &styled);
+
+	ui_screen_init(&plain);
+	plain.title = "Delete seed 1CA10A?";
+	add(&plain, UI_ROW_TEXT, "Open-Ganon-1CA10A.sfc", NULL, false);
+	add(&plain, UI_ROW_TEXT, "The ROM and its spoiler", NULL, false);
+	hint(&plain, UI_HINT_A, "A", "Delete", false);
+	styled = plain;
+	styled.title_tone = UI_TITLE_ALERT;
+	styled.body_kind = UI_BODY_NOTICE;
+	styled.rows[0].emphasis = true;
+	check_same_grid(&plain, &styled);
+}
+
 static void test_bytes_outside_printable_ascii_draw_as_question_marks(void)
 {
 	UiScreen s;
@@ -373,6 +419,7 @@ int main(void)
 	test_invalid_screen_leaves_a_blank_grid();
 	test_null_text_draws_as_empty();
 	test_hints_join_into_the_footer();
+	test_style_fields_do_not_change_the_grid();
 	test_bytes_outside_printable_ascii_draw_as_question_marks();
 	test_tab_bar_is_cut();
 	test_setting_cut_boundaries();

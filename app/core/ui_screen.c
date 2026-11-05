@@ -12,6 +12,8 @@ void ui_screen_init(UiScreen *screen)
 	screen->tab_count = 0;
 	screen->active_tab = 0;
 	screen->title = NULL;
+	screen->title_tone = UI_TITLE_NORMAL;
+	screen->body_kind = UI_BODY_LIST;
 	screen->row_count = 0;
 	screen->cursor = -1;
 	screen->scroll = 0;
@@ -60,6 +62,10 @@ bool ui_screen_valid(const UiScreen *screen)
 	int last_scroll;
 
 	if (!hints_valid(screen))
+		return false;
+	if ((int)screen->title_tone < 0 || screen->title_tone >= UI_TITLE_TONE_COUNT)
+		return false;
+	if ((int)screen->body_kind < 0 || screen->body_kind >= UI_BODY_KIND_COUNT)
 		return false;
 
 	if (screen->tab_count < 0 || screen->tab_count > UI_TABS_MAX)

@@ -31,6 +31,8 @@ static void test_init_gives_the_empty_screen(void)
 	CHECK(s.message_kind == UI_MESSAGE_NONE);
 	CHECK(s.message == NULL);
 	CHECK(s.hint_count == 0);
+	CHECK(s.title_tone == UI_TITLE_NORMAL);
+	CHECK(s.body_kind == UI_BODY_LIST);
 }
 
 static void test_add_hint_appends_until_full(void)
@@ -81,11 +83,35 @@ static void test_valid_checks_the_hints(void)
 	CHECK(!ui_screen_valid(&s));
 }
 
+static void test_valid_checks_the_style_fields(void)
+{
+	UiScreen s;
+
+	ui_screen_init(&s);
+	s.title_tone = UI_TITLE_ALERT;
+	s.body_kind = UI_BODY_NOTICE;
+	CHECK(ui_screen_valid(&s));
+
+	s.title_tone = UI_TITLE_TONE_COUNT;
+	CHECK(!ui_screen_valid(&s));
+	s.title_tone = (UiTitleTone)-1;
+	CHECK(!ui_screen_valid(&s));
+	s.title_tone = UI_TITLE_NORMAL;
+	CHECK(ui_screen_valid(&s));
+
+	s.body_kind = UI_BODY_KIND_COUNT;
+	CHECK(!ui_screen_valid(&s));
+	s.body_kind = (UiBodyKind)-1;
+	CHECK(!ui_screen_valid(&s));
+	s.body_kind = UI_BODY_LIST;
+	CHECK(ui_screen_valid(&s));
+}
+
 static void test_add_row_appends_until_full(void)
 {
 	UiScreen s;
-	UiRow row = {UI_ROW_SETTING, "Mode", "Open", true};
-	UiRow extra = {UI_ROW_ACTION, "Generate", NULL, false};
+	UiRow row = {UI_ROW_SETTING, "Mode", "Open", true, true};
+	UiRow extra = {UI_ROW_ACTION, "Generate", NULL, false, false};
 	int i;
 
 	ui_screen_init(&s);
@@ -93,6 +119,7 @@ static void test_add_row_appends_until_full(void)
 	CHECK(s.row_count == 1);
 	CHECK(s.rows[0].kind == UI_ROW_SETTING);
 	CHECK(s.rows[0].label == row.label && s.rows[0].value == row.value && s.rows[0].disabled);
+	CHECK(s.rows[0].emphasis);
 	for (i = 1; i < UI_ROWS_MAX; i++)
 		CHECK(ui_screen_add_row(&s, row));
 	CHECK(s.row_count == UI_ROWS_MAX);
@@ -105,7 +132,7 @@ static void test_add_row_appends_until_full(void)
 /* Three rows, two tabs, cursor and scroll at their boundaries. */
 static void valid_screen(UiScreen *s)
 {
-	UiRow row = {UI_ROW_TEXT, "line", NULL, false};
+	UiRow row = {UI_ROW_TEXT, "line", NULL, false, false};
 	int i;
 
 	ui_screen_init(s);
@@ -241,6 +268,7 @@ int main(void)
 	test_add_row_appends_until_full();
 	test_add_hint_appends_until_full();
 	test_valid_checks_the_hints();
+	test_valid_checks_the_style_fields();
 	test_valid_accepts_the_boundaries();
 	test_valid_refuses_each_field_out_of_range();
 	test_scroll_follow();
