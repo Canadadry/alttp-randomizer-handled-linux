@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" shape-rendering="crispEdges">
+  <title>Generated Seeds - empty</title>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap');
+      text { font-family: 'Press Start 2P', monospace; }
+    </style>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10106c"/><stop offset="1" stop-color="#04043c"/></linearGradient>
+    <g id="triforce"><polygon points="8,0 12,6 4,6"/><polygon points="4,8 8,14 0,14"/><polygon points="12,8 16,14 8,14"/></g>
+    <g id="heart"><path fill="#e83838" d="M1 0h2v1H1zM4 0h2v1H4zM0 1h7v2H0zM1 3h5v1H1zM2 4h3v1H2zM3 5h1v1H3z"/><path fill="#f8f8f8" d="M1 1h1v1H1z"/></g>
+  </defs>
+  <rect width="640" height="480" fill="#0c0c34"/>
+  <path fill="#f8f8f8" d="M6,10 L10,10 L10,6 L630,6 L630,10 L634,10 L634,470 L630,470 L630,474 L10,474 L10,470 L6,470 Z"/>
+  <path fill="#3858d8" d="M10,14 L14,14 L14,10 L626,10 L626,14 L630,14 L630,466 L626,466 L626,470 L14,470 L14,466 L10,466 Z"/>
+  <rect x="14" y="14" width="612" height="452" fill="url(#panel)"/>
+  <!-- Tabs -->
+  <rect x="14" y="54" width="612" height="4" fill="#3858d8"/>
+  <text x="30" y="42" font-size="16" fill="#98a8f0">Generate</text>
+  <use href="#triforce" transform="translate(186 27) scale(1.25)" fill="#f8d038"/>
+  <text x="214" y="42" font-size="16" fill="#f8d038">History</text>
+  <use href="#heart" transform="translate(544 27) scale(3)"/>
+  <use href="#heart" transform="translate(571 27) scale(3)"/>
+  <use href="#heart" transform="translate(598 27) scale(3)"/>
+  <!-- Title -->
+  <text x="30" y="82" font-size="14" fill="#78d8f8">Generated Seeds</text>
+  <line x1="252" y1="77" x2="610" y2="77" stroke="#3858d8" stroke-width="4" stroke-dasharray="8 4"/>
+  <text x="30" y="120" font-size="14" fill="#f8f8f8">No seeds yet</text>
+  <text x="30" y="152" font-size="14" fill="#f8f8f8">Make one in the Generate tab</text>
+</svg>
