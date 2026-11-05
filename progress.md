@@ -9,7 +9,7 @@
     - [x] Chunk 1 — Structured footer
     - [x] Chunk 2 — Style fields
     - [x] Chunk 3 — Inventory in the step notes
-  - [ ] Step 1.3 — Theme loader (pure C)
+  - [x] Step 1.3 — Theme loader (pure C)
     - [x] Chunk 1 — Loader syntax and the module in the build
     - [x] Chunk 2 — Full schema, classic, theme_load
     - [x] Chunk 3 — Inventory fixture

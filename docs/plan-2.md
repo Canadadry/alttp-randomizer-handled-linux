@@ -427,3 +427,26 @@ message, hint labels), 10 px (help line, phase 2); the START and A/B/X/Y
 letters are inside their sprites. Row heights: 24 px (list), 32 px
 (notice). Everything a per-zone font, size, colour, row height and
 position.
+
+### Step 1.3
+
+- Done in 3 chunks (`50294b5`, `7d9bc46`, and the inventory fixture): pure
+  C99 `app/theme/` (`theme_parse`, `theme_load` reading `<dir>/theme.ini`,
+  16 KiB cap, static buffer, one `<file>:<line>: <section>.<key>: <problem>`
+  message per error); `themes/classic/theme.ini` (list top 64, bottom 416,
+  rows 32, label x 16, right 624; DejaVu `fit` in a 16×32 cell); test_theme
+  (classic, broken variants, theme_load cases) in `make test`;
+  `test_sdl_classic` in `make sdl-pc` checks classic against
+  `sdl_view_palette`, the 40×15 grid and the fitted cell; the inventory
+  fixture `tests/rando/unit/themes/inventory/theme.ini` expresses every T
+  and S row of step 1.2's inventory with no format change (mapping in the
+  step 3 PRD's Further Notes, removed with it: the fixture is the record).
+- Left open by the PRD and decided by the implementers: end-of-file check
+  order (missing keys, missing sections, font count, tab numbering, font
+  references, fit without cell, bands, list order); cross-check errors
+  point at the key's own line; new messages `[tab.<n>]: missing` and
+  `cannot open: path too long`.
+- Risk for `make unit-arm` (outside the net, not run): test_theme's open
+  error expects glibc's "No such file or directory" text.
+- Pushes of `50294b5` and `7d9bc46` went out on `make test`, `make lint` and
+  `make sdl-pc` alone, before the step's `make check` (green since).
