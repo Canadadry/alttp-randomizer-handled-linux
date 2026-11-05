@@ -1,0 +1,6 @@
+{
+  "label": "ALttPR",
+  "icon": "/mnt/SDCARD/App/ALttPR/icon.png",
+  "launch": "launch.sh",
+  "description": "A Link to the Past Randomizer seeds"
+}

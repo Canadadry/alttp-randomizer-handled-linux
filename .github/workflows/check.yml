@@ -24,3 +24,18 @@ jobs:
         with:
           name: alttpr-pc
           path: tests/rando/build/sdl/alttpr
+
+  # The Miyoo release, outside check: the zip from Onion's toolchain, then the
+  # cross-built generator on the e2e cases under qemu-arm.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y qemu-user
+      - run: make package
+      - run: make e2e-arm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alttpr-miyoo
+          path: tests/rando/build/package/ALttPR.zip

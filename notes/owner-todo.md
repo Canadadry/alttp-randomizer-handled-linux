@@ -1,44 +1,41 @@
 # Owner to-do — plan 1 (ALttPR on Miyoo)
 
-Branch `plan-1-onion-generator`. The run stopped at Phase 4 step 2 (Miyoo
-package): `data/base.bps` is missing. Delete this file once every item is done.
+Branch `plan-1-miyoo-package` (not `plan-1-onion-generator`). Plan 1 was
+closed with the plan's section 4 owner checks waived, not done: §1's MD5
+confirmation, §4 and §5 are still open (§2 and §3 done since). Delete this file once every
+item is done.
 
-## 1. Build and commit the base patch — blocking
+## 1. Build and commit the base patch — done, one confirmation left
 
-On a PC, with the JP 1.0 ROM as `jp.sfc` (headerless, MD5
-`03a63945398191337e896e5771f77173`), and `asar` and `flips` installed:
+`data/base.bps` is committed (`e13553b`) and `make test` checks it (sizes
+1,048,576 -> 2,097,152, source CRC32 `3322EFFC`). Left: confirm that the
+patched `work.sfc`'s MD5 was `edc01f3db798ae4dfe21101311598d44`; the agent
+cannot check it without the ROM.
 
-```sh
-git clone https://github.com/KatDevsGames/z3randomizer
-git -C z3randomizer checkout dcb0a2b42d14445f7994a0e9e4d63cbecf4b98d3
-cp jp.sfc work.sfc && truncate -s 2097152 work.sfc
-(cd z3randomizer && asar --fix-checksum=off LTTP_RND_GeneralBugfixes.asm ../work.sfc)
-md5sum work.sfc        # must print edc01f3db798ae4dfe21101311598d44
-flips --create --bps jp.sfc work.sfc base.bps
-```
+## 2. Run the `sdl` CI job — done
 
-Then, in the repository:
-
-```sh
-git checkout plan-1-onion-generator
-mkdir -p data && cp /path/to/base.bps data/base.bps
-make patch-header BPS=data/base.bps   # must pass (1,048,576 -> 2,097,152 bytes)
-git add data/base.bps
-git commit -m "chore: add the base patch for build edc01f3d"
-git push
-```
-
-Then confirm that `work.sfc`'s MD5 was `edc01f3d…`. The run resumes at Phase 4
-step 2 (cross build, `App/ALttPR/` zip, CI job), then Phase 5 step 2 (README),
-then opens the pull request.
-
-## 2. Run the `sdl` CI job
+Green on 2026-11-05 at `5075e75` (run https://github.com/Canadadry/alttp-randomizer-handled-linux/actions/runs/42024695341), artifact `alttpr-pc`.
 
 GitHub → Actions → **check** → **Run workflow**. It builds the SDL app for the
 PC and for ARM and uploads the PC binary (`alttpr-pc`). Report whether it is
 green.
 
-## 3. Check the Mini Flip (end of `docs/onion.md`)
+## 3. Run the `package` CI job — done
+
+Green on 2026-11-05 at `5075e75` (same run: `make package`, `make e2e-arm`,
+`check` job too), artifact `alttpr-miyoo`, kept until 2027-02-03.
+
+GitHub → Actions → **check** → **Run workflow**. Its `package` job builds the
+Miyoo release with `make package`, runs `make e2e-arm` (the cross-built
+generator on every e2e case under qemu-arm) and uploads the zip as
+`alttpr-miyoo`. Report whether it is green. Locally, `make package` (docker
+needed) writes the same zip to `tests/rando/build/package/ALttPR.zip`.
+
+To install it for the plan §4 hand checks (item 5): unzip `ALttPR.zip` at the SD card's
+root (it holds only `App/ALttPR/`), and put the JP 1.0 ROM next to the app as
+`App/ALttPR/base.sfc`.
+
+## 4. Check the Mini Flip (end of `docs/onion.md`)
 
 The device needs an Onion **`v4.5-dev`** build: only that branch knows the
 Flip, `main` does not.
@@ -56,7 +53,7 @@ Flip, `main` does not.
 7. After deleting a seed from History, what do Recents and the game switcher
    show?
 
-## 4. Hand checks once the zip exists (plan §4)
+## 5. Hand checks with the zip installed (plan §4)
 
 - The app runs on the Mini Flip, generates a seed, and the ROM boots and plays
   to at least the first dungeon.
@@ -67,13 +64,13 @@ Flip, `main` does not.
 - The PC build looks right: `make sdl-pc`, then
   `tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf`.
 
-## 5. Decisions left to the owner (optional)
+## 6. Decisions left to the owner (optional)
 
 - The **Spoiler** option is not remembered: it starts off at every launch,
   while the other settings are restored. Say if it should be remembered.
 - The PC build was not checked on macOS.
 
-## 6. Clean-up (optional)
+## 7. Clean-up (optional)
 
 `rm -rf /tmp/test_history_*` on the session machine (three trees left by
 failed test runs; the permission check refused the agent's delete).

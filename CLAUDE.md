@@ -28,6 +28,9 @@ in `docs/`, then `README.md`.
   `app/main/` holds the mains: `ui_cli.c`, the host tool that plays a
   key sequence into the app on a directory used as the SD card and prints
   the text screen; and `sdl_main.c`, the SDL app for the device and the PC.
+  `app/package/` holds the Onion app folder's files (`launch.sh`,
+  `config.json`, `icon.png`) and `build_zip.py`, which writes the release zip
+  (self-test `tests/rando/test_package.py`).
 - `data/` holds the shipped font (DejaVu Sans Mono) and its licence.
 - `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
@@ -98,16 +101,25 @@ in `docs/`, then `README.md`.
   same code with Onion's toolchain against its SDL 1.2, and runs nothing.
   The owner looks at the PC build with `make sdl-pc`, then
   `tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf`.
+- `make package`, outside the net, needs docker: it runs `sdl-arm`, strips
+  the binary with Onion's toolchain, checks it with `file` and `readelf`
+  (32-bit ARM EABI5, dynamically linked, `/lib/ld-linux-armhf.so.3`,
+  stripped, `hard-float ABI`, NEEDED `libSDL-1.2.so.0` and
+  `libSDL_ttf-2.0.so.0`), re-runs `test_patch_header --file` on
+  `data/base.bps`, and writes `tests/rando/build/package/ALttPR.zip`, whose
+  only top-level folder is `App/ALttPR/`; the same commit gives the same zip
+  bytes.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
-  build are not `check`.
-  `make patch-header` (the base patch's declared sizes, `BPS=<file>`) is
-  outside it until `data/base.bps` exists.
-- CI: `.github/workflows/check.yml` runs `make -k check`, and in a job
-  `sdl` `make sdl` (the PC binary uploaded as the artifact `alttpr-pc`),
-  manually only (`workflow_dispatch`) until the owner turns on its push and
-  pull-request triggers.
+  build are not `check`, nor is `make package`.
+  `make patch-header` (the base patch's header, source CRC32, size cap and
+  pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
+- CI: `.github/workflows/check.yml` runs `make -k check`, in a job
+  `sdl` `make sdl` (the PC binary uploaded as the artifact `alttpr-pc`), and
+  in a job `package` `make package` then `make e2e-arm` (the zip uploaded as
+  the artifact `alttpr-miyoo`), all manually only (`workflow_dispatch`)
+  until the owner turns on its push and pull-request triggers.
 
 ## Ground rules
 

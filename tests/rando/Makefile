@@ -84,7 +84,13 @@ ARM_SDL_DIR := $(ARM_DIR)/sdl
 ARM_SDL_APP := $(ARM_SDL_DIR)/alttpr
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
-.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-arm lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
+# package: sdl-arm's binary stripped, checked and zipped with app/package/ and data/.
+PKG_DIR := $(BUILD)/package
+PKG_BIN := $(PKG_DIR)/alttpr
+PKG_ZIP := $(PKG_DIR)/ALttPR.zip
+PKG_BPS := ../../data/base.bps
+
+.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
 
 test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -93,7 +99,8 @@ test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@./no_sdl.sh --exempt $(SDL_MAIN) $(APP)/core $(APP)/sd $(APP)/main
 	@python3 -I ./no_literals.py $(APP)/core
 	@python3 -I ./no_literals.py --no-table $(APP)/sdl
-	@echo "test: $(words $(UNIT_TESTS)) unit tests, the ui_cli smoke test, the discovery self-test, the app SDL check and the UI-core and SDL-layer literal checks ran"
+	@python3 -I ./test_package.py -q
+	@echo "test: $(words $(UNIT_TESTS)) unit tests, the ui_cli smoke test, the discovery self-test, the app SDL check, the UI-core and SDL-layer literal checks and the package self-test ran"
 
 lint: $(LINT_OBJ) $(LINT_APP_OBJ)
 	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC) $(APP_MAIN_SRC)) app/ sources build with -pedantic-errors"
@@ -156,6 +163,27 @@ sdl-arm:
 	@file $(ARM_SDL_APP) | grep 'ELF 32-bit LSB executable, ARM, EABI5' | grep -q 'dynamically linked' || { file $(ARM_SDL_APP); echo "sdl-arm: $(ARM_SDL_APP) is not a dynamically linked 32-bit ARM EABI executable" >&2; exit 1; }
 	@file $(ARM_SDL_APP)
 	@echo "sdl-arm: the SDL layer and main compiled with -pedantic-errors and linked against the toolchain's SDL 1.2 and SDL_ttf"
+
+# The checks print the offending file/readelf line on a miss.
+package: sdl-arm $(BUILD)/test_patch_header
+	@rm -rf $(PKG_DIR) && mkdir -p $(PKG_DIR)
+	@echo "package: stripping $(ARM_SDL_APP) into $(PKG_BIN) with Onion's toolchain"
+	@$(TOOLCHAIN) sh -c '"$${CROSS_COMPILE}strip" -o $(PKG_BIN) $(ARM_SDL_APP)'
+	@f="$$(file $(PKG_BIN))"; \
+		for m in 'ELF 32-bit LSB executable, ARM, EABI5' 'dynamically linked' 'interpreter /lib/ld-linux-armhf.so.3' ', stripped'; do \
+			case "$$f" in *"$$m"*) ;; *) echo "$$f"; echo "package: $(PKG_BIN) lacks '$$m'" >&2; exit 1 ;; esac; \
+		done
+	@h="$$(readelf -h $(PKG_BIN) | grep 'Flags:')"; \
+		case "$$h" in *'hard-float ABI'*) ;; *) echo "$$h"; echo "package: $(PKG_BIN) is not hard-float ABI" >&2; exit 1 ;; esac
+	@d="$$(readelf -d $(PKG_BIN) | grep NEEDED)"; \
+		for l in libSDL-1.2.so.0 libSDL_ttf-2.0.so.0; do \
+			case "$$d" in *"[$$l]"*) ;; *) echo "$$d"; echo "package: $(PKG_BIN) does not need $$l" >&2; exit 1 ;; esac; \
+		done
+	@./$(BUILD)/test_patch_header --file $(PKG_BPS)
+	@python3 -I ../../app/package/build_zip.py $(PKG_BIN) ../../app/package ../../data $(PKG_ZIP)
+	@file $(PKG_BIN)
+	@readelf -h $(PKG_BIN) | grep 'Flags:'
+	@echo "package: tests/rando/$(PKG_ZIP), $$(wc -c < $(PKG_ZIP)) bytes"
 
 # unit-arm: every unit test built like e2e-arm's generator, run under qemu-arm
 # from here (fixture paths are relative), LOGIC_TESTS with --fixtures too.
