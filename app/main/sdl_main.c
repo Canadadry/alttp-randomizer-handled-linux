@@ -2,12 +2,14 @@
 
 #include "rando_app_gen.h"
 #include "rando_app_shell.h"
+#include "rando_fixed_run.h"
 #include "sdl_loop.h"
 #include "sdl_view.h"
 #include "ui_grid.h"
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,12 +21,24 @@
 #define CWD_MAX 4096
 #define DEFAULT_FONT "DejaVuSansMono.ttf"
 
-static const char usage[] = "usage: alttpr [--sd <root>] [--font <file>] [--frames <n>] [--shot <file.bmp>]\n";
+static const char usage[] = "usage: alttpr [--sd <root>] [--font <file>] [--frames <n>] [--shot <file.bmp>] "
+			    "[--shot-text <file>] [--seed <n>] [--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] "
+			    "[--base-md5 <32 hex>] [--] [<key>...]\n"
+			    "keys: up down left right a b x y l1 r1 l2 r2 select start menu, <key>*<n> repeats, "
+			    "- reads keys from standard input; with keys, the run ends after the last one\n";
 
 typedef struct Options {
-	const char *sd, *font, *shot;
+	const char *sd, *font, *shot, *shot_text;
 	long frames;
+	bool scripted;
+	RandoFixedRun run;
+	RandoFixedKeys keys;
 } Options;
+
+typedef struct ScriptPos {
+	const RandoFixedKeys *keys;
+	int key, repeat;
+} ScriptPos;
 
 typedef struct Presenter {
 	SdlView *view;
@@ -33,6 +47,8 @@ typedef struct Presenter {
 
 /* About 7.3 MiB, near Linux's 8 MiB default stack: keep it static. */
 static RandoAppShell shell;
+static Options opt;
+static char text[UI_GRID_TEXT_MAX];
 static SdlView view;
 static UiGrid grid;
 static char root[RANDO_SEED_DIR_MAX];
@@ -64,28 +80,62 @@ static const char *value_of(int argc, char **argv, int *i)
 	return argv[*i];
 }
 
-static void parse_args(int argc, char **argv, Options *opt)
+static void add_keys(const char *arg)
 {
+	char buf[RANDO_FIXED_TOKEN_MAX + 1];
+	const char *bad = NULL;
+
+	opt.scripted = true;
+	switch (rando_fixed_keys_arg(&opt.keys, arg, stdin, buf, &bad)) {
+	case RANDO_FIXED_KEY_OK:
+		break;
+	case RANDO_FIXED_KEY_UNKNOWN:
+		fail_usage("unknown key", bad);
+		break;
+	case RANDO_FIXED_KEY_BAD_REPEAT:
+		fail_usage("bad repeat count", bad);
+		break;
+	case RANDO_FIXED_KEY_TOO_MANY:
+		fail_usage("too many keys", NULL);
+		break;
+	}
+}
+
+static void parse_args(int argc, char **argv)
+{
+	bool keys_only = false;
 	int i;
 
-	opt->sd = NULL;
-	opt->font = DEFAULT_FONT;
-	opt->shot = NULL;
-	opt->frames = 0;
+	opt.font = DEFAULT_FONT;
 	for (i = 1; i < argc; i++) {
 		const char *a = argv[i];
 
-		if (strcmp(a, "--sd") == 0) {
-			opt->sd = value_of(argc, argv, &i);
+		if (keys_only || strncmp(a, "--", 2) != 0) {
+			keys_only = true;
+			add_keys(a);
+		} else if (strcmp(a, "--") == 0) {
+			keys_only = true;
+		} else if (strcmp(a, "--sd") == 0) {
+			opt.sd = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--font") == 0) {
-			opt->font = value_of(argc, argv, &i);
+			opt.font = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--shot") == 0) {
-			opt->shot = value_of(argc, argv, &i);
+			opt.shot = value_of(argc, argv, &i);
+		} else if (strcmp(a, "--shot-text") == 0) {
+			opt.shot_text = value_of(argc, argv, &i);
+		} else if (rando_fixed_run_takes(a)) {
+			char what[32];
+			const char *v = value_of(argc, argv, &i);
+
+			if (!rando_fixed_run_option(&opt.run, a, v)) {
+				snprintf(what, sizeof what, "bad %s", a);
+				fail_usage(what, v);
+			}
 		} else if (strcmp(a, "--frames") == 0) {
 			const char *v = value_of(argc, argv, &i);
 			char *end = NULL;
 
-			if (v[0] < '0' || v[0] > '9' || (opt->frames = strtol(v, &end, 10)) < 1 || opt->frames > 1000000 ||
+			if (v[0] < '0' || v[0] > '9' || (opt.frames = strtol(v, &end, 10)) < 1 || opt.frames > 1000000 ||
 			    *end != '\0')
 				fail_usage("bad --frames", v);
 		} else {
@@ -103,14 +153,49 @@ static void present(void *ctx, const UiGrid *g)
 	SDL_Flip(p->screen);
 }
 
+static bool script_next(void *ctx, UiButton *out)
+{
+	ScriptPos *pos = ctx;
+
+	while (pos->key < pos->keys->count && pos->repeat >= pos->keys->key[pos->key].count) {
+		pos->key++;
+		pos->repeat = 0;
+	}
+	if (pos->key >= pos->keys->count)
+		return false;
+	pos->repeat++;
+	*out = pos->keys->key[pos->key].button;
+	return true;
+}
+
+static void write_shot_text(const char *path)
+{
+	FILE *f;
+	size_t n = ui_grid_text(&grid, text, sizeof text);
+
+	if (n == 0)
+		fail_setup(path, "the screen does not fit the grid");
+	f = fopen(path, "wb");
+	if (f == NULL)
+		fail_setup(path, strerror(errno));
+	if (fwrite(text, 1, n, f) != n || fclose(f) != 0)
+		fail_setup(path, "cannot write");
+}
+
 int main(int argc, char **argv)
 {
-	Options opt;
 	Presenter p;
+	ScriptPos pos;
+	SdlScript script;
 	SdlViewStatus st;
 	SdlLoopResult result;
 
-	parse_args(argc, argv, &opt);
+	parse_args(argc, argv);
+	pos.keys = &opt.keys;
+	pos.key = 0;
+	pos.repeat = 0;
+	script.next = script_next;
+	script.ctx = &pos;
 	if (opt.sd != NULL) {
 		if (strlen(opt.sd) + 1 > sizeof root)
 			fail_setup("SD root does not fit", opt.sd);
@@ -122,6 +207,7 @@ int main(int argc, char **argv)
 		fail_setup("grid", NULL);
 	if (!rando_app_shell_init(&shell, root, NULL, ui_grid_page(&grid), grid.cols - 2))
 		fail_setup("SD root does not fit", root);
+	rando_fixed_run_apply(&opt.run, &shell);
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 		fail_setup("SDL_Init", SDL_GetError());
 	p.screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 32, SDL_HWSURFACE);
@@ -141,11 +227,13 @@ int main(int argc, char **argv)
 	if (st != SDLVIEW_OK)
 		fail_setup(opt.font, "no font size fits the screen's cells");
 	p.view = &view;
-	result = sdl_loop_run(&shell.app, &grid, present, &p, opt.frames);
+	result = sdl_loop_run(&shell.app, &grid, present, &p, opt.frames, opt.scripted ? &script : NULL);
 	if (result == SDLLOOP_ERROR)
 		fail_setup("SDL_WaitEvent", SDL_GetError());
 	if (opt.shot != NULL && SDL_SaveBMP(p.offscreen, opt.shot) != 0)
 		fail_setup(opt.shot, SDL_GetError());
+	if (opt.shot_text != NULL)
+		write_shot_text(opt.shot_text);
 	sdl_view_close(&view);
 	SDL_FreeSurface(p.offscreen);
 	TTF_Quit();

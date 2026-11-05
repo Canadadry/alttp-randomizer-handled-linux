@@ -1,7 +1,7 @@
 - [ ] Phase 1 — Theme engine with a `classic` theme identical to today
   - [ ] Step 1.1 — Goldens of the current rendering
     - [x] Chunk 1 — Shared fixed-run options
-    - [ ] Chunk 2 — Scripted SDL app
+    - [x] Chunk 2 — Scripted SDL app
     - [ ] Chunk 3 — Fixture tool, state table and golden script
     - [ ] Chunk 4 — The goldens, committed alone
     - [ ] Chunk 5 — Comparison in make sdl-pc, and the record

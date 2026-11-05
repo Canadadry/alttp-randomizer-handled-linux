@@ -20,6 +20,9 @@ typedef struct SdlInput {
 
 bool sdl_keys_button(SDLKey key, UiButton *out);
 
+/* The key the device sends for button, never an alias. */
+bool sdl_keys_key(UiButton button, SDLKey *out);
+
 SdlInputKind sdl_keys_event(const SDL_Event *event, SdlInput *out);
 
 #endif

@@ -96,6 +96,24 @@ static void test_unmapped(void)
 	CHECK(out == UI_BUTTON_COUNT);
 }
 
+static void test_inverse(void)
+{
+	int b, i;
+
+	for (b = 0; b < UI_BUTTON_COUNT; b++) {
+		SDLKey key = SDLK_UNKNOWN;
+		UiButton back = UI_BUTTON_COUNT;
+		bool device_key = false;
+
+		CHECK(sdl_keys_key((UiButton)b, &key));
+		CHECK(sdl_keys_button(key, &back) && back == (UiButton)b);
+		for (i = 0; i < COUNT(device); i++)
+			device_key = device_key || (device[i].key == key && device[i].button == (UiButton)b);
+		if (!device_key)
+			test_fail(TEST, "button %d: key %d is not its device key", b, (int)key);
+	}
+}
+
 static SdlInputKind key_event(Uint8 type, SDLKey key, SdlInput *in)
 {
 	SDL_Event e;
@@ -142,6 +160,7 @@ int main(void)
 	test_device_keys();
 	test_aliases();
 	test_unmapped();
+	test_inverse();
 	test_events();
 	printf("%s: passed\n", TEST);
 	return 0;

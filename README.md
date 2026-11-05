@@ -341,6 +341,23 @@ tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf
 | L2 / R2 | Tab / Backspace (also Page Up / Page Down) |
 | Start / Select / Menu | Enter / Right Ctrl / Esc |
 
+To capture a screen without a window, play keys into the app headless and
+save the last frame, as a picture and as text:
+
+```bash
+SDL_VIDEODRIVER=dummy tests/rando/build/sdl/alttpr --sd tmp/sd \
+  --font data/DejaVuSansMono.ttf --shot tmp/shot.bmp --shot-text tmp/shot.txt \
+  --seed 1 --date 2026-11-01T14:03:27 down*3 r1
+```
+
+The keys come after the options (or after `--`), with `ui_cli`'s names
+(`up down left right a b x y l1 r1 l2 r2 select start menu`, `<key>*<n>`
+repeats, `-` reads them from standard input); the run ends after the last
+key, or earlier at `--frames <n>` or on `menu`. `--seed` and `--date` fix
+the seed and the date, `--source-md5` and `--base-md5` replace the base
+ROM's expected digests. A bad option, key or value exits with status 2 and
+the usage.
+
 ## Working with Claude
 
 ### Skills you run

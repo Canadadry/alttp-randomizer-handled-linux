@@ -160,9 +160,36 @@ static void start(void)
 	frame_count = 0;
 }
 
+typedef struct Script {
+	const UiButton *button;
+	int count, next;
+} Script;
+
+static bool script_next(void *ctx, UiButton *out)
+{
+	Script *s = ctx;
+
+	if (s->next >= s->count)
+		return false;
+	*out = s->button[s->next++];
+	return true;
+}
+
 static SdlLoopResult run(long max_frames)
 {
-	return sdl_loop_run(&app, &grid, present, &frame_count, max_frames);
+	return sdl_loop_run(&app, &grid, present, &frame_count, max_frames, NULL);
+}
+
+static SdlLoopResult run_script(const UiButton *buttons, int count, long max_frames, Script *s)
+{
+	SdlScript script;
+
+	s->button = buttons;
+	s->count = count;
+	s->next = 0;
+	script.next = script_next;
+	script.ctx = s;
+	return sdl_loop_run(&app, &grid, present, &frame_count, max_frames, &script);
 }
 
 static void test_one_frame(void)
@@ -277,6 +304,70 @@ static void test_frame_limit(void)
 	CHECK(frame_count == 2);
 }
 
+static void test_script_as_pushed(void)
+{
+	static const UiButton buttons[] = { UI_BUTTON_DOWN, UI_BUTTON_RIGHT, UI_BUTTON_R1, UI_BUTTON_L1 };
+	static const SDLKey keys[] = { SDLK_DOWN, SDLK_RIGHT, SDLK_t, SDLK_e };
+	static char pushed[FRAMES_MAX][UI_GRID_TEXT_MAX];
+	int pushed_count, i;
+	Script s;
+	SDL_Event e;
+
+	start();
+	for (i = 0; i < 4; i++)
+		tap(keys[i]);
+	push_type(SDL_QUIT);
+	CHECK(run(0) == SDLLOOP_QUIT);
+	pushed_count = frame_count;
+	memcpy(pushed, frames, sizeof(pushed));
+	CHECK(pushed_count == 9);
+
+	start();
+	push_type(SDL_QUIT);
+	CHECK(run_script(buttons, 4, 0, &s) == SDLLOOP_SCRIPT_END);
+	CHECK(frame_count == pushed_count);
+	for (i = 0; i < frame_count; i++)
+		CHECK(strcmp(frames[i], pushed[i]) == 0);
+	CHECK(SDL_PollEvent(&e) == 1 && e.type == SDL_QUIT);
+}
+
+static void test_script_after_run(void)
+{
+	static const UiButton buttons[] = { UI_BUTTON_START, UI_BUTTON_A, UI_BUTTON_R1 };
+	Script s;
+
+	start();
+	fake.push_during_run = true;
+	CHECK(run_script(buttons, 3, 0, &s) == SDLLOOP_SCRIPT_END);
+	CHECK(fake.run_calls == 1 && s.next == 3);
+	CHECK(ui_app_tab(&app) == UI_APP_TAB_HISTORY);
+	current(expected);
+	CHECK(strcmp(frames[frame_count - 1], expected) == 0);
+	CHECK(frame_count == fake.frames_at_run + 1 + 4);
+}
+
+static void test_script_frame_cap(void)
+{
+	static const UiButton buttons[] = { UI_BUTTON_DOWN, UI_BUTTON_START, UI_BUTTON_A };
+	Script s;
+
+	start();
+	CHECK(run_script(buttons, 3, 5, &s) == SDLLOOP_FRAMES);
+	CHECK(fake.run_calls == 0 && frame_count == 5);
+	CHECK(strstr(frames[4], "Generating Seed") != NULL);
+}
+
+static void test_script_menu(void)
+{
+	static const UiButton buttons[] = { UI_BUTTON_DOWN, UI_BUTTON_MENU, UI_BUTTON_DOWN };
+	Script s;
+
+	start();
+	CHECK(run_script(buttons, 3, 0, &s) == SDLLOOP_QUIT);
+	CHECK(s.next == 2 && frame_count == 4);
+	CHECK(ui_app_key(&app, UI_BUTTON_DOWN) == UI_APP_QUIT);
+}
+
 int main(void)
 {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -291,6 +382,10 @@ int main(void)
 	test_expose();
 	test_chord();
 	test_frame_limit();
+	test_script_as_pushed();
+	test_script_after_run();
+	test_script_frame_cap();
+	test_script_menu();
 	SDL_Quit();
 	printf("%s: passed\n", TEST);
 	return 0;

@@ -8,6 +8,7 @@ typedef struct KeyMap {
 	UiButton button;
 } KeyMap;
 
+/* Device keys first, so the first row of a button is its device key. */
 static const KeyMap keys[] = {
 	{ SDLK_UP, UI_BUTTON_UP },
 	{ SDLK_DOWN, UI_BUTTON_DOWN },
@@ -40,6 +41,20 @@ bool sdl_keys_button(SDLKey key, UiButton *out)
 	for (i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
 		if (keys[i].key == key) {
 			*out = keys[i].button;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool sdl_keys_key(UiButton button, SDLKey *out)
+{
+	size_t i;
+
+	assert(out != NULL);
+	for (i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
+		if (keys[i].button == button) {
+			*out = keys[i].key;
 			return true;
 		}
 	}
