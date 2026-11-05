@@ -92,6 +92,10 @@ expect 0 --sd "$play" --font "$font" --shot "$tmp/quit.bmp" --shot-text "$tmp/qu
 shown "$tmp/quit.txt" "No seeds yet"
 [ -s "$tmp/quit.bmp" ] || fail "a quit wrote no --shot"
 
+# shellcheck disable=SC2086
+expect 0 --sd "$play" --font "$font" $fixed --unsupported goal=ganon,state=open --shot-text "$tmp/greyed.txt" up
+shown "$tmp/greyed.txt" "X| Generate Seed" "Not supported with"
+
 expect 2 --sd "$play" --font "$font" bogus
 grep -q "unknown key: bogus" "$tmp/err" || fail "a bad key is not named"
 expect 2 --sd "$play" --font "$font" down*0
@@ -100,6 +104,8 @@ grep -q "bad --seed: x" "$tmp/err" || fail "a bad --seed is not named"
 expect 2 --sd "$play" --font "$font" --date 2026-13-01T14:03:27 down
 expect 2 --sd "$play" --font "$font" --source-md5 00 down
 expect 2 --sd "$play" --font "$font" --base-md5 zz112233445566778899aabbccddeeff down
+expect 2 --sd "$play" --font "$font" --unsupported goal=ganon down
+grep -q "bad --unsupported: goal=ganon" "$tmp/err" || fail "a bad --unsupported is not named"
 expect 2 --sd "$play" --font "$font" down --frames 1
 grep -q "usage: alttpr" "$tmp/err" || fail "a usage error does not print the usage"
 echo "smoke_sdl: alttpr started, rendered one frame offscreen, played scripted keys and exited"

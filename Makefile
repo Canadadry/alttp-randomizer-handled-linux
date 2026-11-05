@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-arm package patch-header measure-compare check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-arm package patch-header measure-compare check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -71,6 +71,10 @@ sdl-pc:
 
 sdl-arm:
 	$(MAKE) -C tests/rando sdl-arm
+
+# Outside the net, run once: refused when the goldens folder already holds goldens.
+sdl-goldens:
+	$(MAKE) -C tests/rando sdl-goldens
 
 # Outside the net: needs docker.
 package:

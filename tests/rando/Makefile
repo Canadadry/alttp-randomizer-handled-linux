@@ -70,6 +70,8 @@ SDL_OBJ := $(patsubst $(APP)/sdl/%.c,$(SDL_DIR)/obj/%.o,$(SDL_SRC))
 SDL_BINS := $(addprefix $(SDL_DIR)/,$(SDL_TESTS))
 SDL_APP := $(SDL_DIR)/alttpr
 SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf)
+SD_FIXTURE := $(BUILD)/sd_fixture
+GOLDENS_DIR ?= sdl/goldens
 SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf)
 
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
@@ -90,7 +92,7 @@ PKG_BIN := $(PKG_DIR)/alttpr
 PKG_ZIP := $(PKG_DIR)/ALttPR.zip
 PKG_BPS := ../../data/base.bps
 
-.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
+.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-goldens sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
 
 test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -115,6 +117,13 @@ sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP)
 	@set -e; for t in $(SDL_BINS); do SDL_VIDEODRIVER=dummy ./$$t; done
 	@./sdl/smoke_sdl.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf
 	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests and the smoke test ran under the dummy video driver"
+
+# sdl-goldens: writes the goldens once, refused if GOLDENS_DIR already holds any.
+sdl-goldens:
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf || { echo "setup: SDL 1.2 and SDL_ttf 2.0 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev)" >&2; exit 1; }
+	@$(MAKE) --no-print-directory $(SDL_APP) $(SD_FIXTURE)
+	@echo "sdl-goldens: writing $(GOLDENS_DIR); an existing set is refused, never regenerated"
+	@./sdl/goldens.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf ./$(SD_FIXTURE) --write $(GOLDENS_DIR)
 
 logic: $(LOGIC_BINS)
 	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
@@ -245,6 +254,9 @@ $(UI_CLI): $(APP)/main/ui_cli.c $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR)
 
 $(SMOKE): unit/smoke_ui_cli.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
+
+$(SD_FIXTURE): sdl/sd_fixture.c unit/synthetic_base.h $(SUPPORT_OBJ) $(RANDO_LIB) $(APP_HDR) $(RANDO_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -Iunit -o $@ $< $(SUPPORT_OBJ) $(RANDO_LIB)
 
 $(SDL_DIR)/obj/%.o: $(APP)/sdl/%.c $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)

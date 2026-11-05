@@ -7,8 +7,8 @@ static void scan(void *ctx, UiHistoryList *out)
 	rando_history_scan(ctx, out);
 }
 
-bool rando_app_shell_init(RandoAppShell *shell, const char *sd_root, const UiStrTable *strings, int page,
-			  int width)
+bool rando_app_shell_init(RandoAppShell *shell, const char *sd_root, const UiStrTable *strings,
+			  const RandoSettingPair *unsupported, int unsupported_count, int page, int width)
 {
 	UiAppInit init;
 
@@ -18,6 +18,10 @@ bool rando_app_shell_init(RandoAppShell *shell, const char *sd_root, const UiStr
 	init.page = page;
 	init.width = width;
 	ui_generate_init_defaults(&init.generate, strings, page);
+	if (unsupported != NULL) {
+		init.generate.unsupported = unsupported;
+		init.generate.unsupported_count = unsupported_count;
+	}
 	init.generate.settings_unreadable = rando_last_settings_load(shell->gen.settings, &init.generate.options,
 								     &init.generate.heart_beep) ==
 					    RANDO_LAST_SETTINGS_INVALID;

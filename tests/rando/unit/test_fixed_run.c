@@ -122,6 +122,7 @@ static void test_takes(void)
 	CHECK(rando_fixed_run_takes("--date"));
 	CHECK(rando_fixed_run_takes("--source-md5"));
 	CHECK(rando_fixed_run_takes("--base-md5"));
+	CHECK(rando_fixed_run_takes("--unsupported"));
 	CHECK(!rando_fixed_run_takes("--sd"));
 	CHECK(!rando_fixed_run_takes("--seeds"));
 	CHECK(!rando_fixed_run_takes("seed"));
@@ -197,7 +198,7 @@ static RandoAppShell shell, before;
 
 static void start_shell(void)
 {
-	CHECK(rando_app_shell_init(&shell, "/nonexistent/test_fixed_run", NULL, 10, 40));
+	CHECK(rando_app_shell_init(&shell, "/nonexistent/test_fixed_run", NULL, NULL, 0, 10, 40));
 	memcpy(&before, &shell, sizeof shell);
 }
 
@@ -252,6 +253,71 @@ static void test_apply_some(void)
 	CHECK(memcmp(shell.gen.base_md5, run.base_md5, RANDO_MD5_SIZE) == 0);
 }
 
+static void test_unsupported(void)
+{
+	static const char *const bad[] = {
+		"",
+		"goal=pedestal",
+		"goal=pedestal,",
+		"goal=pedestal,state=retro,hints=off",
+		"goal=pedestal;state=retro",
+		"goal=nope,state=retro",
+		"nope=pedestal,state=retro",
+		"goal=pedestal,state=",
+		"=pedestal,state=retro",
+		"goal,state=retro",
+		"goal=pedestal,goal=ganon",
+		"goal=pedestal,state=retro=retro",
+		"goal=Master Sword Pedestal,state=retro",
+	};
+	const RandoSettingPair *pair;
+	RandoFixedRun run;
+	size_t i;
+
+	memset(&run, 0, sizeof run);
+	CHECK(rando_fixed_run_unsupported(&run) == NULL);
+	CHECK(rando_fixed_run_option(&run, "--unsupported", "goal=pedestal,state=retro"));
+	pair = rando_fixed_run_unsupported(&run);
+	CHECK(pair != NULL);
+	CHECK(pair->a == RANDO_SETTING_GOAL && pair->value_a == RANDO_OPTION_GOAL_PEDESTAL);
+	CHECK(pair->b == RANDO_SETTING_STATE && pair->value_b == RANDO_OPTION_STATE_RETRO);
+	CHECK(rando_fixed_run_option(&run, "--unsupported", "heart_beep=off,hints=on"));
+	CHECK(pair->a == RANDO_SETTING_HEART_BEEP && pair->value_a == RANDO_HEART_BEEP_OFF);
+	CHECK(pair->b == RANDO_SETTING_HINTS);
+	for (i = 0; i < sizeof bad / sizeof bad[0]; i++) {
+		if (rando_fixed_run_option(&run, "--unsupported", bad[i]))
+			test_fail(TEST, "--unsupported accepted: %s", bad[i]);
+		CHECK(pair->a == RANDO_SETTING_HEART_BEEP && pair->b == RANDO_SETTING_HINTS);
+	}
+	CHECK(!run.has_seed && !run.has_date && !run.has_source_md5 && !run.has_base_md5);
+
+	memset(&run, 0, sizeof run);
+	CHECK(!rando_fixed_run_option(&run, "--unsupported", "goal=pedestal"));
+	CHECK(rando_fixed_run_unsupported(&run) == NULL);
+}
+
+static bool action_disabled(RandoAppShell *s)
+{
+	static UiScreen screen;
+
+	ui_app_screen(&s->app, &screen);
+	return screen.rows[screen.row_count - 1].disabled;
+}
+
+static void test_shell_unsupported(void)
+{
+	static RandoAppShell greyed;
+	RandoFixedRun run;
+
+	memset(&run, 0, sizeof run);
+	CHECK(rando_fixed_run_option(&run, "--unsupported", "goal=ganon,state=open"));
+	CHECK(rando_app_shell_init(&greyed, "/nonexistent/test_fixed_run", NULL, rando_fixed_run_unsupported(&run), 1, 10,
+				   40));
+	CHECK(action_disabled(&greyed));
+	start_shell();
+	CHECK(!action_disabled(&shell));
+}
+
 static void test_key_argument(void)
 {
 	static const char long_name[] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -288,5 +354,7 @@ int main(int argc, char **argv)
 	test_apply_nothing();
 	test_apply_all();
 	test_apply_some();
+	test_unsupported();
+	test_shell_unsupported();
 	return 0;
 }

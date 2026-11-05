@@ -4,6 +4,7 @@
 #include "rando_app_shell.h"
 #include "rando_md5.h"
 #include "rando_record.h"
+#include "rando_settings.h"
 #include "ui_input.h"
 
 #include <stdbool.h>
@@ -33,10 +34,11 @@ typedef struct RandoFixedKeys {
 } RandoFixedKeys;
 
 typedef struct RandoFixedRun {
-	bool has_seed, has_date, has_source_md5, has_base_md5;
+	bool has_seed, has_date, has_source_md5, has_base_md5, has_unsupported;
 	uint32_t seed;
 	RandoRecordDate date;
 	uint8_t source_md5[RANDO_MD5_SIZE], base_md5[RANDO_MD5_SIZE];
+	RandoSettingPair unsupported;
 } RandoFixedRun;
 
 const char *rando_fixed_key_name(UiButton button);
@@ -57,6 +59,10 @@ bool rando_fixed_run_takes(const char *option);
 
 /* option must be one rando_fixed_run_takes accepts; false on a bad value, run unchanged. */
 bool rando_fixed_run_option(RandoFixedRun *run, const char *option, const char *value);
+
+/* The --unsupported pair, a test-only override of the library's list; NULL when not given. It points
+   into run, so run must outlive the shell it is handed to. */
+const RandoSettingPair *rando_fixed_run_unsupported(const RandoFixedRun *run);
 
 /* The fixed seed and date live in this module's statics: one fixed run per process. */
 void rando_fixed_run_apply(const RandoFixedRun *run, RandoAppShell *shell);

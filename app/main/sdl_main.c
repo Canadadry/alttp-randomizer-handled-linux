@@ -23,7 +23,7 @@
 
 static const char usage[] = "usage: alttpr [--sd <root>] [--font <file>] [--frames <n>] [--shot <file.bmp>] "
 			    "[--shot-text <file>] [--seed <n>] [--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] "
-			    "[--base-md5 <32 hex>] [--] [<key>...]\n"
+			    "[--base-md5 <32 hex>] [--unsupported <setting>=<value>,<setting>=<value>] [--] [<key>...]\n"
 			    "keys: up down left right a b x y l1 r1 l2 r2 select start menu, <key>*<n> repeats, "
 			    "- reads keys from standard input; with keys, the run ends after the last one\n";
 
@@ -205,7 +205,8 @@ int main(int argc, char **argv)
 	}
 	if (!ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES))
 		fail_setup("grid", NULL);
-	if (!rando_app_shell_init(&shell, root, NULL, ui_grid_page(&grid), grid.cols - 2))
+	if (!rando_app_shell_init(&shell, root, NULL, rando_fixed_run_unsupported(&opt.run), 1, ui_grid_page(&grid),
+				  grid.cols - 2))
 		fail_setup("SD root does not fit", root);
 	rando_fixed_run_apply(&opt.run, &shell);
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)

@@ -165,10 +165,44 @@ static bool parse_date(const char *s, RandoRecordDate *out)
 	return true;
 }
 
+/* <setting>=<value> in s[0..len), both library names; false on anything else. */
+static bool parse_setting(const char *s, size_t len, RandoSettingId *id, int *value)
+{
+	char buf[RANDO_FIXED_TOKEN_MAX + 1];
+	const char *eq;
+
+	if (len >= sizeof buf)
+		return false;
+	memcpy(buf, s, len);
+	buf[len] = '\0';
+	eq = strchr(buf, '=');
+	if (eq == NULL)
+		return false;
+	buf[eq - buf] = '\0';
+	*id = rando_setting_find(buf);
+	if (*id == RANDO_SETTING_COUNT)
+		return false;
+	*value = rando_setting_value_find(*id, eq + 1);
+	return *value >= 0;
+}
+
+static bool parse_pair(const char *s, RandoSettingPair *out)
+{
+	const char *comma = strchr(s, ',');
+	RandoSettingPair pair;
+
+	if (comma == NULL || !parse_setting(s, (size_t)(comma - s), &pair.a, &pair.value_a) ||
+	    !parse_setting(comma + 1, strlen(comma + 1), &pair.b, &pair.value_b) || pair.a == pair.b)
+		return false;
+	*out = pair;
+	return true;
+}
+
 bool rando_fixed_run_takes(const char *option)
 {
 	return strcmp(option, "--seed") == 0 || strcmp(option, "--date") == 0 ||
-	       strcmp(option, "--source-md5") == 0 || strcmp(option, "--base-md5") == 0;
+	       strcmp(option, "--source-md5") == 0 || strcmp(option, "--base-md5") == 0 ||
+	       strcmp(option, "--unsupported") == 0;
 }
 
 bool rando_fixed_run_option(RandoFixedRun *run, const char *option, const char *value)
@@ -186,12 +220,21 @@ bool rando_fixed_run_option(RandoFixedRun *run, const char *option, const char *
 		if (!parse_md5(value, run->source_md5))
 			return false;
 		run->has_source_md5 = true;
-	} else {
+	} else if (strcmp(option, "--base-md5") == 0) {
 		if (!parse_md5(value, run->base_md5))
 			return false;
 		run->has_base_md5 = true;
+	} else {
+		if (!parse_pair(value, &run->unsupported))
+			return false;
+		run->has_unsupported = true;
 	}
 	return true;
+}
+
+const RandoSettingPair *rando_fixed_run_unsupported(const RandoFixedRun *run)
+{
+	return run->has_unsupported ? &run->unsupported : NULL;
 }
 
 void rando_fixed_run_apply(const RandoFixedRun *run, RandoAppShell *shell)

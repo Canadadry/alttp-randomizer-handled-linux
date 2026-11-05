@@ -13,7 +13,8 @@
 #include <string.h>
 
 static const char usage[] = "usage: ui_cli --sd <root> [--every] [--cols <n>] [--lines <n>] [--seed <n>] "
-			    "[--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] [--base-md5 <32 hex>] [--] <key>...\n"
+			    "[--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] [--base-md5 <32 hex>] "
+			    "[--unsupported <setting>=<value>,<setting>=<value>] [--] <key>...\n"
 			    "keys: up down left right a b x y l1 r1 l2 r2 select start menu, <key>*<n> repeats, "
 			    "- reads keys from standard input\n";
 
@@ -143,7 +144,8 @@ static void set_up(void)
 {
 	if (!ui_grid_init(&grid, opt.cols, opt.lines))
 		fail_usage("bad grid size", NULL);
-	if (!rando_app_shell_init(&shell, opt.sd, NULL, ui_grid_page(&grid), opt.cols - 2)) {
+	if (!rando_app_shell_init(&shell, opt.sd, NULL, rando_fixed_run_unsupported(&opt.run), 1, ui_grid_page(&grid),
+				  opt.cols - 2)) {
 		fprintf(stderr, "ui_cli: cannot use SD root %s\n", opt.sd);
 		exit(1);
 	}
