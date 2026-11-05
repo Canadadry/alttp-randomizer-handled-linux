@@ -1,0 +1,16 @@
+- [ ] Phase 1 — Theme engine with a `classic` theme identical to today
+  - [ ] Step 1.1 — Goldens of the current rendering
+  - [ ] Step 1.2 — Mockup inventory and the core changes it calls for
+  - [ ] Step 1.3 — Theme loader (pure C)
+  - [ ] Step 1.4 — Page and width from the theme
+  - [ ] Step 1.5 — SDL renderer from `UiScreen`
+  - [ ] Step 1.6 — Old renderer removed, packaging follows
+  - [ ] Step 1.7 — skill: check-net
+- [ ] Phase 2 — The new theme from the mockups
+  - [ ] Step 2.8 — The new theme's geometry
+  - [ ] Step 2.9 — Mockups made true and comparable
+  - [ ] Step 2.10 — `make theme-compare`
+  - [ ] Step 2.11 — Help text per value
+  - [ ] Step 2.12 — The new theme's look
+  - [ ] Step 2.13 — Default theme switched
+  - [ ] Step 2.14 — skill: check-net
