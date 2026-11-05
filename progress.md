@@ -3,7 +3,7 @@
     - [x] Chunk 1 — Shared fixed-run options
     - [x] Chunk 2 — Scripted SDL app
     - [x] Chunk 3 — Fixture tool, state table and golden script
-    - [ ] Chunk 4 — The goldens, committed alone
+    - [x] Chunk 4 — The goldens, committed alone
     - [ ] Chunk 5 — Comparison in make sdl-pc, and the record
   - [ ] Step 1.2 — Mockup inventory and the core changes it calls for
   - [ ] Step 1.3 — Theme loader (pure C)
