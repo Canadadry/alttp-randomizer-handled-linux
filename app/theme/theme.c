@@ -967,3 +967,15 @@ bool theme_load(Theme *out, const char *dir, ThemeError *err)
 	}
 	return theme_parse(out, buf, path, err);
 }
+
+int theme_page(const Theme *theme)
+{
+	assert(theme->list.row_height > 0);
+	return (theme->list.bottom - theme->list.top) / theme->list.row_height;
+}
+
+int theme_columns(const Theme *theme, int advance)
+{
+	assert(advance >= 1);
+	return (theme->list.right - theme->list.label_x) / advance;
+}

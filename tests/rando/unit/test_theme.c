@@ -2,6 +2,7 @@
 
 #include "support.h"
 #include "theme.h"
+#include "ui_grid.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -766,10 +767,70 @@ static void test_message_is_truncated_not_overflowed(void)
 	CHECK(strncmp(err.message, "[screen]\n", 9) == 0);
 }
 
+static void test_classic_page_and_columns(void)
+{
+	static UiGrid grid;
+	ThemeError err;
+
+	memset(&err, 0, sizeof err);
+	if (!theme_load(&theme, CLASSIC_DIR, &err))
+		test_fail(TEST, "classic refused: %s", err.message);
+	CHECK(ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	CHECK(theme_page(&theme) == 11);
+	CHECK(theme_page(&theme) == ui_grid_page(&grid));
+	CHECK(theme_columns(&theme, theme.fonts[theme.list.font].cell.w) == 38);
+	CHECK(theme_columns(&theme, theme.fonts[theme.list.font].cell.w) == UI_GRID_DEFAULT_COLS - 2);
+}
+
+static void list_row_height(int px)
+{
+	char line[32];
+
+	snprintf(line, sizeof line, "row_height = %d", px);
+	replace("list", "row_height", line);
+	snprintf(line, sizeof line, "h = %d", px);
+	replace("list.selected", "h =", line);
+	replace("list.selected_disabled", "h =", line);
+}
+
+static void test_page_floors_partial_rows(void)
+{
+	start();
+	list_row_height(24);
+	WORK_OK();
+	CHECK(theme_page(&theme) == 14);
+	start();
+	list_row_height(30);
+	WORK_OK();
+	CHECK(theme_page(&theme) == 11);
+	start();
+	replace("notice", "row_height", "row_height = 24");
+	WORK_OK();
+	CHECK(theme_page(&theme) == 11);
+}
+
+static void test_columns_floor_partial_characters(void)
+{
+	start();
+	replace("list", "label_x =", "label_x = 20");
+	WORK_OK();
+	CHECK(theme_columns(&theme, 16) == 37);
+	start();
+	WORK_OK();
+	CHECK(theme_columns(&theme, 12) == 50);
+	start();
+	replace("list", "label_x_cursor", "label_x_cursor = 100");
+	WORK_OK();
+	CHECK(theme_columns(&theme, 16) == 38);
+}
+
 int main(void)
 {
 	read_classic();
 	test_classic_loads();
+	test_classic_page_and_columns();
+	test_page_floors_partial_rows();
+	test_columns_floor_partial_characters();
 	test_inventory_loads();
 	test_classic_line_and_section_problems();
 	test_classic_missing_keys_and_sections();

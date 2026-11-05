@@ -185,4 +185,11 @@ bool theme_parse(Theme *out, const char *text, const char *file, ThemeError *err
    reentrant, and parses it; the same contract as theme_parse. */
 bool theme_load(Theme *out, const char *dir, ThemeError *err);
 
+/* Whole list rows between list.top and list.bottom. */
+int theme_page(const Theme *theme);
+
+/* Whole characters of advance px (>= 1) between list.label_x and list.right; label_x_cursor is
+   not used. */
+int theme_columns(const Theme *theme, int advance);
+
 #endif
