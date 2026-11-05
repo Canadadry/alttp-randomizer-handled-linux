@@ -450,3 +450,19 @@ position.
   error expects glibc's "No such file or directory" text.
 - Pushes of `50294b5` and `7d9bc46` went out on `make test`, `make lint` and
   `make sdl-pc` alone, before the step's `make check` (green since).
+
+### Step 1.4
+
+- Done in 2 chunks (`83a5dde` and the `--theme` commit): `theme_page`
+  (whole list rows between `list.top` and `list.bottom`) and
+  `theme_columns` (whole characters of the list font's cell width from
+  `list.label_x` to `list.right`; the core wraps only cursorless History
+  detail text); classic gives 11 and 38, today's values. `alttpr --theme
+  <dir>` loads the theme before SDL starts, sizes the interim grid width+2
+  by page+4 and hands page and width to the core; without `--theme`
+  nothing changes (`--theme` becomes mandatory in step 6). `ui_cli`
+  unchanged. `make sdl-pc` runs the smoke test and the goldens with
+  classic: 13 byte-identical. `make sdl-arm` links with no build change.
+- A list font with no cell is refused for now (the advance needs a font's
+  metrics, which step 5 can measure). `goldens.sh` passes the theme path
+  unquoted: no repository path has a space.
