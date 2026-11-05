@@ -2,6 +2,7 @@
 #define THEME_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define THEME_FONTS_MAX 8
 /* Equals UI_TABS_MAX: this module does not include the core. */
@@ -191,5 +192,30 @@ int theme_page(const Theme *theme);
 /* Whole characters of advance px (>= 1) between list.label_x and list.right; label_x_cursor is
    not used. */
 int theme_columns(const Theme *theme, int advance);
+
+#define THEME_ASSETS_MAX 32
+#define THEME_KEY_MAX 32
+
+typedef enum ThemeAssetKind {
+	THEME_ASSET_SCREEN,
+	THEME_ASSET_FONT,
+	THEME_ASSET_SPRITE
+} ThemeAssetKind;
+
+/* key is spelled as the loader's messages spell it; font is the index into Theme.fonts, -1 for an
+   image. */
+typedef struct ThemeAsset {
+	ThemeAssetKind kind;
+	char key[THEME_KEY_MAX];
+	char file[THEME_FILE_MAX];
+	int font;
+} ThemeAsset;
+
+/* Every file the theme names, once per key: the screen image when present, the fonts in
+   Theme.fonts order, then the sprite markers and sprite buttons. Returns the count. */
+int theme_assets(const Theme *theme, ThemeAsset out[THEME_ASSETS_MAX]);
+
+/* <dir>/<file> into out; false, out unspecified, when it does not fit in size bytes. */
+bool theme_path(char *out, size_t size, const char *dir, const char *file);
 
 #endif

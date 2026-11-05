@@ -979,3 +979,59 @@ int theme_columns(const Theme *theme, int advance)
 	assert(advance >= 1);
 	return (theme->list.right - theme->list.label_x) / advance;
 }
+
+static void add_asset(ThemeAsset *out, int *n, ThemeAssetKind kind, const char *key, const char *file, int font)
+{
+	ThemeAsset *a;
+
+	assert(*n < THEME_ASSETS_MAX);
+	a = &out[(*n)++];
+	a->kind = kind;
+	snprintf(a->key, sizeof a->key, "%s", key);
+	snprintf(a->file, sizeof a->file, "%s", file);
+	a->font = font;
+}
+
+static void add_marker(ThemeAsset *out, int *n, const char *key, const ThemeMarker *m)
+{
+	if (m->kind == THEME_MARKER_SPRITE)
+		add_asset(out, n, THEME_ASSET_SPRITE, key, m->file, -1);
+}
+
+int theme_assets(const Theme *theme, ThemeAsset out[THEME_ASSETS_MAX])
+{
+	static const char *const buttons[THEME_BUTTON_COUNT] = {
+		[THEME_BUTTON_LEFT_RIGHT] = "footer.button.left_right", [THEME_BUTTON_A] = "footer.button.a",
+		[THEME_BUTTON_B] = "footer.button.b",			[THEME_BUTTON_X] = "footer.button.x",
+		[THEME_BUTTON_Y] = "footer.button.y",			[THEME_BUTTON_START] = "footer.button.start",
+	};
+	const ThemeList *l = &theme->list;
+	char key[THEME_KEY_MAX];
+	int n = 0, i;
+
+	if (theme->screen.image.present)
+		add_asset(out, &n, THEME_ASSET_SCREEN, "screen.image", theme->screen.image.file, -1);
+	for (i = 0; i < theme->font_count; i++) {
+		snprintf(key, sizeof key, "font.%s.file", theme->fonts[i].name);
+		add_asset(out, &n, THEME_ASSET_FONT, key, theme->fonts[i].file, i);
+	}
+	add_marker(out, &n, "tabs.active_before", &theme->tabs.active_before);
+	add_marker(out, &n, "tabs.active_after", &theme->tabs.active_after);
+	add_marker(out, &n, "list.cursor", &l->cursor);
+	add_marker(out, &n, "list.cursor_disabled", &l->cursor_disabled);
+	add_marker(out, &n, "list.arrow_left", &l->arrow_left);
+	add_marker(out, &n, "list.arrow_right", &l->arrow_right);
+	add_marker(out, &n, "list.scroll_up", &l->scroll_up);
+	add_marker(out, &n, "list.scroll_down", &l->scroll_down);
+	for (i = 0; i < THEME_BUTTON_COUNT; i++)
+		if (theme->footer.buttons[i].kind == THEME_BUTTON_SPRITE)
+			add_asset(out, &n, THEME_ASSET_SPRITE, buttons[i], theme->footer.buttons[i].file, -1);
+	return n;
+}
+
+bool theme_path(char *out, size_t size, const char *dir, const char *file)
+{
+	int n = snprintf(out, size, "%s/%s", dir, file);
+
+	return n >= 0 && (size_t)n < size;
+}

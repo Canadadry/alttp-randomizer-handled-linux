@@ -61,7 +61,7 @@ static void test_colours(void)
 	CHECK(same(theme.footer.primary_colour, TEXT_OF(UI_LINE_FOOTER)));
 	CHECK(same(theme.footer.band.colour, BAND_OF(UI_LINE_FOOTER)));
 	CHECK(!theme.title.rule.present);
-	CHECK(!theme.screen.image.present);
+	CHECK(theme.screen.image.present && strcmp(theme.screen.image.file, "background.png") == 0);
 }
 
 /* classic draws no band for these styles: the grid's band for them is the background. */
@@ -136,7 +136,7 @@ static void test_fit_is_sdl_view_open(void)
 	SdlViewStatus st;
 	int size;
 
-	snprintf(path, sizeof path, DATA "%s", theme.fonts[0].file);
+	snprintf(path, sizeof path, CLASSIC "/%s", theme.fonts[0].file);
 	CHECK(theme.fonts[0].size.fit);
 	size = fit_size(path, theme.fonts[0].cell.w, theme.fonts[0].cell.h);
 	st = sdl_view_open(&view, path, 640, 480, COLS, LINES);
@@ -145,6 +145,39 @@ static void test_fit_is_sdl_view_open(void)
 	CHECK(view.cell_w == theme.fonts[0].cell.w && view.cell_h == theme.fonts[0].cell.h);
 	CHECK(size > 0 && view.point_size == size);
 	sdl_view_close(&view);
+}
+
+static long read_all(const char *path, unsigned char *buf, long cap)
+{
+	FILE *f = fopen(path, "rb");
+	long n;
+
+	if (f == NULL)
+		test_fail(TEST, "cannot open %s", path);
+	n = (long)fread(buf, 1, (size_t)cap, f);
+	if (!feof(f) && fgetc(f) != EOF)
+		test_fail(TEST, "%s: larger than %ld bytes", path, cap);
+	fclose(f);
+	return n;
+}
+
+static void same_bytes(const char *a, const char *b)
+{
+	static unsigned char x[1 << 20], y[1 << 20];
+	long nx = read_all(a, x, (long)sizeof x), ny = read_all(b, y, (long)sizeof y);
+
+	if (nx != ny || memcmp(x, y, (size_t)nx) != 0)
+		test_fail(TEST, "%s and %s differ", a, b);
+}
+
+/* The goldens' font fingerprint is of data/'s copy. */
+static void test_font_copies_are_identical(void)
+{
+	char path[256];
+
+	snprintf(path, sizeof path, CLASSIC "/%s", theme.fonts[0].file);
+	same_bytes(path, DATA "DejaVuSansMono.ttf");
+	same_bytes(CLASSIC "/DejaVuSansMono-LICENSE.txt", DATA "DejaVuSansMono-LICENSE.txt");
 }
 
 int main(void)
@@ -162,6 +195,7 @@ int main(void)
 	test_colours();
 	test_bands_left_out_are_background();
 	test_geometry();
+	test_font_copies_are_identical();
 	test_fit_is_sdl_view_open();
 	TTF_Quit();
 	SDL_Quit();

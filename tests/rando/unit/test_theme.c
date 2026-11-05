@@ -506,6 +506,7 @@ static void test_classic_loads(void)
 	memset(&err, 0, sizeof err);
 	if (!theme_load(&theme, CLASSIC_DIR, &err))
 		test_fail(TEST, "classic refused: %s", err.message);
+	CHECK(theme.screen.image.present && strcmp(theme.screen.image.file, "background.png") == 0);
 	CHECK(theme.font_count == 1);
 	CHECK(theme.fonts[0].size.fit);
 	CHECK(theme.fonts[0].cell.present && theme.fonts[0].cell.w == 16 && theme.fonts[0].cell.h == 32);
@@ -824,6 +825,94 @@ static void test_columns_floor_partial_characters(void)
 	CHECK(theme_columns(&theme, 16) == 38);
 }
 
+static void check_asset(int line, const ThemeAsset *a, ThemeAssetKind kind, const char *key, const char *file)
+{
+	if (a->kind != kind || strcmp(a->key, key) != 0 || strcmp(a->file, file) != 0)
+		test_fail(TEST, "%s:%d: asset %d %s %s, expected %d %s %s", __FILE__, line, (int)a->kind, a->key, a->file,
+			  (int)kind, key, file);
+}
+
+#define ASSET(a, kind, key, file) check_asset(__LINE__, a, kind, key, file)
+
+static void test_classic_assets(void)
+{
+	ThemeAsset assets[THEME_ASSETS_MAX];
+	ThemeError err;
+
+	if (!theme_load(&theme, CLASSIC_DIR, &err))
+		test_fail(TEST, "classic refused: %s", err.message);
+	CHECK(theme_assets(&theme, assets) == 2);
+	ASSET(&assets[0], THEME_ASSET_SCREEN, "screen.image", "background.png");
+	ASSET(&assets[1], THEME_ASSET_FONT, "font.mono.file", "DejaVuSansMono.ttf");
+	CHECK(assets[1].font == 0);
+}
+
+static void test_inventory_assets(void)
+{
+	static const struct {
+		ThemeAssetKind kind;
+		const char *key, *file;
+	} want[] = {
+		{ THEME_ASSET_SCREEN, "screen.image", "frame.png" },
+		{ THEME_ASSET_FONT, "font.ps2p_16.file", "PressStart2P.ttf" },
+		{ THEME_ASSET_FONT, "font.ps2p_14.file", "PressStart2P.ttf" },
+		{ THEME_ASSET_FONT, "font.ps2p_12.file", "PressStart2P.ttf" },
+		{ THEME_ASSET_SPRITE, "tabs.active_before", "triforce_tab.png" },
+		{ THEME_ASSET_SPRITE, "list.cursor", "triforce_row.png" },
+		{ THEME_ASSET_SPRITE, "list.cursor_disabled", "triforce_row_disabled.png" },
+		{ THEME_ASSET_SPRITE, "list.arrow_left", "arrow_left.png" },
+		{ THEME_ASSET_SPRITE, "list.arrow_right", "arrow_right.png" },
+		{ THEME_ASSET_SPRITE, "list.scroll_up", "scroll_up.png" },
+		{ THEME_ASSET_SPRITE, "list.scroll_down", "scroll_down.png" },
+		{ THEME_ASSET_SPRITE, "footer.button.left_right", "button_dpad.png" },
+		{ THEME_ASSET_SPRITE, "footer.button.a", "button_a.png" },
+		{ THEME_ASSET_SPRITE, "footer.button.b", "button_b.png" },
+		{ THEME_ASSET_SPRITE, "footer.button.x", "button_x.png" },
+		{ THEME_ASSET_SPRITE, "footer.button.y", "button_y.png" },
+		{ THEME_ASSET_SPRITE, "footer.button.start", "button_start.png" },
+	};
+	ThemeAsset assets[THEME_ASSETS_MAX];
+	ThemeError err;
+	size_t i;
+
+	if (!theme_load(&theme, INVENTORY_DIR, &err))
+		test_fail(TEST, "inventory refused: %s", err.message);
+	CHECK(theme_assets(&theme, assets) == (int)(sizeof want / sizeof want[0]));
+	for (i = 0; i < sizeof want / sizeof want[0]; i++)
+		ASSET(&assets[i], want[i].kind, want[i].key, want[i].file);
+	CHECK(assets[1].font == 0 && assets[2].font == 1 && assets[3].font == 2);
+	CHECK(assets[0].font == -1 && assets[4].font == -1);
+}
+
+static void test_assets_skip_text_markers_and_a_missing_image(void)
+{
+	ThemeAsset assets[THEME_ASSETS_MAX];
+
+	start();
+	replace("screen", "image", "image = none");
+	replace("tabs", "active_before", "active_before = sprite:same.png");
+	replace("tabs", "active_after", "active_after = sprite:same.png");
+	replace("footer", "button.b", "button.b = sprite:b.png");
+	WORK_OK();
+	CHECK(theme_assets(&theme, assets) == 4);
+	ASSET(&assets[0], THEME_ASSET_FONT, "font.mono.file", "DejaVuSansMono.ttf");
+	ASSET(&assets[1], THEME_ASSET_SPRITE, "tabs.active_before", "same.png");
+	ASSET(&assets[2], THEME_ASSET_SPRITE, "tabs.active_after", "same.png");
+	ASSET(&assets[3], THEME_ASSET_SPRITE, "footer.button.b", "b.png");
+}
+
+static void test_path_join(void)
+{
+	char out[16];
+
+	CHECK(theme_path(out, sizeof out, "dir", "a.png"));
+	CHECK(strcmp(out, "dir/a.png") == 0);
+	CHECK(theme_path(out, sizeof out, "012345678", "a.png"));
+	CHECK(strcmp(out, "012345678/a.png") == 0);
+	CHECK(!theme_path(out, sizeof out, "0123456789", "a.png"));
+	CHECK(!theme_path(out, sizeof out, "dir", "0123456789abc.png"));
+}
+
 int main(void)
 {
 	read_classic();
@@ -832,6 +921,10 @@ int main(void)
 	test_page_floors_partial_rows();
 	test_columns_floor_partial_characters();
 	test_inventory_loads();
+	test_classic_assets();
+	test_inventory_assets();
+	test_assets_skip_text_markers_and_a_missing_image();
+	test_path_join();
 	test_classic_line_and_section_problems();
 	test_classic_missing_keys_and_sections();
 	test_optional_sections();

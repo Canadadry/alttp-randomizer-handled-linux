@@ -63,19 +63,19 @@ LINT_OBJ := $(patsubst $(RANDO)/src/%.c,$(LINT_DIR)/%.o,$(RANDO_SRC))
 LINT_APP_DIR := $(BUILD)/lint-app
 LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC) $(APP_MAIN_SRC))
 
-# sdl-pc: the SDL layer, built and tested on the host's SDL 1.2 and SDL_ttf 2.0.
+# sdl-pc: the SDL layer, built and tested on the host's SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2.
 # The SDL flags are expanded by sdl-pc's rules only, so test never calls pkg-config.
-SDL_TESTS := test_sdl_keys test_sdl_view test_sdl_loop test_sdl_classic
+SDL_TESTS := test_sdl_keys test_sdl_view test_sdl_loop test_sdl_classic test_sdl_render
 SDL_SRC := $(wildcard $(APP)/sdl/*.c)
 SDL_HDR := $(wildcard $(APP)/sdl/*.h)
 SDL_DIR := $(BUILD)/sdl
 SDL_OBJ := $(patsubst $(APP)/sdl/%.c,$(SDL_DIR)/obj/%.o,$(SDL_SRC))
 SDL_BINS := $(addprefix $(SDL_DIR)/,$(SDL_TESTS))
 SDL_APP := $(SDL_DIR)/alttpr
-SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf)
+SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf SDL_image)
 SD_FIXTURE := $(BUILD)/sd_fixture
 GOLDENS_DIR ?= sdl/goldens
-SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf)
+SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf SDL_image)
 
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
 # flags (docs/toolchain.md), run under qemu-arm by the same e2e driver.
@@ -113,7 +113,7 @@ lint: $(LINT_OBJ) $(LINT_APP_OBJ)
 ui-cli: $(UI_CLI)
 
 sdl-pc:
-	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf || { echo "setup: SDL 1.2 and SDL_ttf 2.0 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev)" >&2; exit 1; }
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf SDL_image || { echo "setup: SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev)" >&2; exit 1; }
 	@$(MAKE) --no-print-directory sdl-pc-build
 
 sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP) $(SD_FIXTURE)
@@ -124,7 +124,7 @@ sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP) $(SD_FIXTURE)
 
 # sdl-goldens: writes the goldens once, refused if GOLDENS_DIR already holds any.
 sdl-goldens:
-	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf || { echo "setup: SDL 1.2 and SDL_ttf 2.0 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev)" >&2; exit 1; }
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf SDL_image || { echo "setup: SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev)" >&2; exit 1; }
 	@$(MAKE) --no-print-directory $(SDL_APP) $(SD_FIXTURE)
 	@echo "sdl-goldens: writing $(GOLDENS_DIR); an existing set is refused, never regenerated"
 	@./sdl/goldens.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf ./$(SD_FIXTURE) --write $(GOLDENS_DIR)
@@ -163,19 +163,19 @@ e2e-arm:
 sdl: sdl-pc sdl-arm
 
 # sdl-arm: the SDL layer and main compiled and linked, dynamically, against the
-# image's sysroot SDL 1.2 / SDL_ttf 2.0; run nowhere. The image's sdl-config and
+# image's sysroot SDL 1.2 / SDL_ttf 2.0 / SDL_image 1.2; run nowhere. The image's sdl-config and
 # pkg-config are the x86 host's, so no SDL flag is asked of them.
 sdl-arm:
 	@rm -rf $(ARM_SDL_DIR) && mkdir -p $(ARM_SDL_DIR)/obj
 	@echo "sdl-arm: building $(ARM_SDL_APP) with Onion's toolchain"
 	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS)"; o=$(ARM_SDL_DIR)/obj; \
-		for s in $(SDL_SRC); do "$$cc" $$f -pedantic-errors $(CORE_INCLUDES) -c -o $$o/sdl_$$(basename $$s .c).o $$s; done; \
+		for s in $(SDL_SRC); do "$$cc" $$f -pedantic-errors $(CORE_INCLUDES) $(THEME_INCLUDES) -c -o $$o/sdl_$$(basename $$s .c).o $$s; done; \
 		"$$cc" $$f -pedantic-errors $(TEST_INCLUDES) -I$(APP)/sdl -c -o $$o/main.o $(SDL_MAIN); \
 		for s in $(APP_SRC) $(HOST_SRC) $(RANDO_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f $(TEST_INCLUDES) -c -o $$o/\$$(basename {} .c).o {}"; \
-		"$$cc" $$f -o $(ARM_SDL_APP) $$o/*.o -lSDL -lSDL_ttf'
+		"$$cc" $$f -o $(ARM_SDL_APP) $$o/*.o -lSDL -lSDL_ttf -lSDL_image'
 	@file $(ARM_SDL_APP) | grep 'ELF 32-bit LSB executable, ARM, EABI5' | grep -q 'dynamically linked' || { file $(ARM_SDL_APP); echo "sdl-arm: $(ARM_SDL_APP) is not a dynamically linked 32-bit ARM EABI executable" >&2; exit 1; }
 	@file $(ARM_SDL_APP)
-	@echo "sdl-arm: the SDL layer and main compiled with -pedantic-errors and linked against the toolchain's SDL 1.2 and SDL_ttf"
+	@echo "sdl-arm: the SDL layer and main compiled with -pedantic-errors and linked against the toolchain's SDL 1.2, SDL_ttf and SDL_image"
 
 # The checks print the offending file/readelf line on a miss.
 package: sdl-arm $(BUILD)/test_patch_header
@@ -268,7 +268,7 @@ $(SD_FIXTURE): sdl/sd_fixture.c unit/synthetic_base.h $(SUPPORT_OBJ) $(RANDO_LIB
 
 $(SDL_DIR)/obj/%.o: $(APP)/sdl/%.c $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) $(SDL_CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) $(THEME_INCLUDES) $(SDL_CFLAGS) -c -o $@ $<
 
 $(SDL_DIR)/test_%: sdl/test_%.c unit/support.h $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
