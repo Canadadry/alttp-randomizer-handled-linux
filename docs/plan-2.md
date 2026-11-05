@@ -319,3 +319,97 @@ sound; touching `rando/`.
 - `alttpr foo` now fails as "unknown key: foo" (exit 2 as before).
 - `git commit --amend` is denied in this session: a PRD removal rides in
   the next step-note commit instead of being folded into the chunk commit.
+
+### Step 1.2
+
+#### Mockup inventory
+
+Sources: **F** `frame.png` (static, never driven by the code); **Z** text in a
+zone; **S** a sprite; **V** a style variant chosen by a `UiScreen` field
+(existing, or added in this step); **T** a theme constant (position, size,
+colour) the format must express. Coordinates are the mockups' (640×480).
+The 12 px mockups (01 to 08) are the reference; 00 is used for its help line
+and for the selected setting row, which no 12 px mockup shows.
+
+##### Common to every mockup
+
+| Element | Source | Detail |
+|---|---|---|
+| Screen background `#0c0c34` | F | full 640×480 |
+| Outer white frame, notched corners | F | `#f8f8f8`, 6–634 × 6–474 |
+| Blue border, notched corners | F | `#3858d8`, 10–630 × 10–470 |
+| Panel gradient | F | `#10106c` → `#04043c`, 14–626 × 14–466 |
+| Tab separator bar | F | `#3858d8`, x14 y54 612×4 |
+| Three hearts | F | x544, 571, 598, y27, pixel heart ×3; decoration |
+| Tab labels | Z, V (`tabs`, `active_tab`) | 16 px, baseline 42; active `#f8d038`, inactive `#98a8f0` |
+| Active tab cursor | S, V (`active_tab`) | triforce, `#f8d038`, ×1.25 (20×18), y27 |
+| Tab slot positions | T | slot 0: cursor x30, text x58 active, **x30 inactive**; slot 1: cursor x186, text x214 active and inactive. The mockups are irregular here: the format must allow a text x per slot and per state |
+| Title | Z, V (`title`, `UiScreen.title_tone`: `UiTitleTone` UI_TITLE_NORMAL/ALERT) | 14 px, x30, baseline 82; normal `#78d8f8`, alert `#ff6868` |
+| Title rule | T | dashed `#3858d8`, 4 px, dash 8 gap 4, y77, from the title text's end + 12 to x610; drawn from the title's rendered width |
+| Message line | Z, V (`message_kind`) | 12 px, x30, baseline 412; info `#78d8f8`, error `#ff6868` |
+| Footer band | T, V (hint count > 0) | `#08084c` x14 y422 612×44, top bar `#3858d8` 4 px; absent on 02 and 06 (no hints): a zone background drawn only when the zone has content |
+| Hint sprite | S, V (`UiHint.button`: `UiHintButton`) | at the hint's x, y433; d-pad 22×22 white cross with `#08084c` notches; A/B/X/Y 22×22 `#f8d038` notched square, letter `#08084c` 12 px inside the sprite; START 66×22 `#e83838` pill, "START" 10 px `#f8f8f8` inside the sprite |
+| Hint label | Z, V (`UiHint.label`, `UiHint.primary`) | 12 px, baseline 448, at sprite x + 32; `#f8f8f8`, primary `#f8d038` |
+| Hint flow | T | first hint x30; next hint at previous label's end + 36 (01: 30, 170, 322; 05: 30, 182; 07: 30, 146) |
+
+##### List body (01, 05, 07) — `UiScreen.body_kind` = `UI_BODY_LIST`
+
+| Element | Source | Detail |
+|---|---|---|
+| Rows | Z | 12 px, 24 px rows, first row top y98 (baseline 114); 12 rows visible in 01 |
+| Label column | T, V (`cursor >= 0`) | x60 with a cursor (01, 05), x30 without (07) |
+| Label / value | Z, V (row kind, `disabled`) | label `#f8f8f8`; value right-aligned at x584, `#b8e8f8`; disabled label and value `#7078b0` |
+| Text row in a list | Z, V (row kind text) | as a label, `#f8f8f8` (07's spoiler lines) |
+| Spoiler indent | Z | the core's leading spaces, 12 px each (07: x30, 42, 54) |
+| Selected band | T, V (`cursor`) | `#2040c0` x22 596×24, 2 px `#6888f8` lines at top and bottom |
+| Row cursor | S, V (`cursor`) | triforce 16×14 at x32, row top + 5; `#f8d038`; `#bcc4ee` when selected and disabled |
+| Selected text | V (`cursor`, `disabled`) | `#f8d038` (05); selected and disabled `#bcc4ee` (01, the greyed Generate Seed; the plan extends it to a greyed selected setting) |
+| Value arrows ◀ ▶ | S, V (selected, setting, not disabled) | from 00 (16 px): ◀ left of the value, ▶ after its right edge (594–606); `#f8d038`; scaled to the 12 px rows by the theme |
+| Scroll up ▲ | S, V (`more_above`, scroll) | 10×6 `#f8d038`, x606–616 on the first row (01, 07) |
+| Scroll down ▼ | S, V (`more_below`, scroll) | not drawn in any 12 px mockup; 00 puts it at the help line's right end (586–606), where a 57-character help line would reach it; decided: mirrored on the last body row like ▲ |
+
+##### Notice body (02, 03, 04, 06, 08) — `UiScreen.body_kind` = `UI_BODY_NOTICE`
+
+| Element | Source | Detail |
+|---|---|---|
+| Rows | Z | 14 px, 32 px rows, baseline 120 then +32, x30, `#f8f8f8`; at most 3 rows |
+| Emphasised row | Z, V (`UiRow.emphasis`) | `#f8d038`, x50 (03 and 08 file names) |
+
+##### Per mockup
+
+- **00 Settings with help** (16 px, not the reference): kept only for the
+  help line (10 px, `#78d8f8`, x34, baseline 418, in the message zone, step
+  11; the message replaces it) and for the selected setting row's arrows
+  and yellow label and value. Its 28 px rows and spread-out footer are the
+  16 px variant, ignored.
+- **01 Settings, greyed and error**: list body, cursor on the greyed
+  Generate Seed (selected-disabled band, greyed cursor and text), World
+  State greyed, ▲, error message, hints left/right Change, Y Default,
+  START Generate (primary, yellow while the action is greyed). Filler:
+  Entrance Shuffle, Boss Shuffle, Enemy Shuffle, Enemy Damage, Enemy Health
+  are not app settings (step 9).
+- **02 Generating**: notice body, two rows, no message, no hints, no footer
+  band.
+- **03 Seed Ready**: notice body, emphasised file name, info message
+  "Play it from the SNES list", hint A Back. Filler: `E76BF9` is not the
+  synthetic base's seed name (step 9).
+- **04 Generation Failed**: alert title, notice body (the advice row),
+  error message, hint A Back.
+- **05 History list**: list body with cursor, file-name rows, selected row
+  yellow, info message (the date line), hints A Details, X Delete. Filler:
+  the file names other than `Open-Ganon-1CA10A.sfc` (step 9).
+- **06 History empty**: notice body, two rows, no hints, no footer band.
+- **07 Seed detail with spoiler**: list body without cursor (labels x30),
+  setting rows and spoiler text rows with indents, ▲, normal-tone title
+  (the file name), hints B Back, X Delete. Filler: the four Enemizer
+  settings (step 9).
+- **08 Delete confirmation**: alert title, notice body, emphasised file
+  name, hints A Delete, B Keep.
+
+##### Fonts and sizes the format must express
+
+Press Start 2P at 16 px (tabs), 14 px (title, notice rows), 12 px (list rows,
+message, hint labels), 10 px (help line, phase 2); the START and A/B/X/Y
+letters are inside their sprites. Row heights: 24 px (list), 32 px
+(notice). Everything a per-zone font, size, colour, row height and
+position.
