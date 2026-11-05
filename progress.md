@@ -12,7 +12,7 @@
   - [ ] Step 1.3 — Theme loader (pure C)
     - [x] Chunk 1 — Loader syntax and the module in the build
     - [x] Chunk 2 — Full schema, classic, theme_load
-    - [ ] Chunk 3 — Inventory fixture
+    - [x] Chunk 3 — Inventory fixture
   - [ ] Step 1.4 — Page and width from the theme
   - [ ] Step 1.5 — SDL renderer from `UiScreen`
   - [ ] Step 1.6 — Old renderer removed, packaging follows

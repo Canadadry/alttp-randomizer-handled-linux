@@ -31,6 +31,7 @@
 	"anchor = top\n"
 
 #define CLASSIC_DIR "../../themes/classic"
+#define INVENTORY_DIR "unit/themes/inventory"
 
 static Theme theme;
 static char classic[THEME_FILE_BYTES_MAX + 1];
@@ -519,6 +520,29 @@ static void test_classic_loads(void)
 	CHECK(theme.message.error_colour.r == 0xff && theme.message.error_colour.g == 0x6b);
 }
 
+static void test_inventory_loads(void)
+{
+	ThemeError err;
+
+	memset(&err, 0, sizeof err);
+	if (!theme_load(&theme, INVENTORY_DIR, &err))
+		test_fail(TEST, "inventory refused: %s", err.message);
+	CHECK(theme.font_count == 3);
+	CHECK(theme.fonts[theme.list.font].anchor == THEME_ANCHOR_BASELINE);
+	CHECK(!theme.fonts[theme.list.font].cell.present && theme.fonts[theme.list.font].size.px == 12);
+	CHECK(theme.fonts[theme.tabs.font].size.px == 16 && theme.fonts[theme.notice.font].size.px == 14);
+	CHECK(theme.screen.image.present && strcmp(theme.screen.image.file, "frame.png") == 0);
+	CHECK(theme.tabs.slot_count == 2 && theme.tabs.slots[0].x == 30 && theme.tabs.slots[0].active_x == 58);
+	CHECK(theme.tabs.active_before.kind == THEME_MARKER_SPRITE && theme.tabs.active_after.kind == THEME_MARKER_NONE);
+	CHECK(theme.title.rule.present && theme.title.rule.thickness == 4 && theme.title.rule.end == 610);
+	CHECK(!theme.tabs.band.present && theme.footer.band.present && theme.footer.band.top_line == 4);
+	CHECK(theme.list.selected.top_line == 2 && theme.list.selected.bottom_line == 2);
+	CHECK(theme.list.cursor.kind == THEME_MARKER_SPRITE && theme.list.scroll_down.kind == THEME_MARKER_SPRITE);
+	CHECK(theme.footer.buttons[THEME_BUTTON_START].kind == THEME_BUTTON_SPRITE);
+	CHECK(theme.footer.key_gap == 10 && theme.footer.hint_gap == 36);
+	CHECK(theme.notice.emphasis_x == 50 && theme.notice.row_height == 32);
+}
+
 static void test_minimal_theme_values(void)
 {
 	OK(SCREEN FONT_MONO);
@@ -746,6 +770,7 @@ int main(void)
 {
 	read_classic();
 	test_classic_loads();
+	test_inventory_loads();
 	test_classic_line_and_section_problems();
 	test_classic_missing_keys_and_sections();
 	test_optional_sections();

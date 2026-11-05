@@ -495,6 +495,42 @@ outcome:
 | Fonts 16, 14, 12 px | three `[font.<name>]` sections, `anchor = baseline`, `cell = none` |
 | Help line (10 px, step 11) | not now: step 11 adds its keys |
 
+### Inventory T and S rows → fixture values (chunk 3, checked row by row)
+
+Every T or S row of plan 2's step notes (Step 1.2, "Mockup inventory"), with
+the keys of `tests/rando/unit/themes/inventory/theme.ini` that express it. No
+row needed a format change.
+
+| Inventory row (source) | Keys = fixture values |
+|---|---|
+| Active tab cursor (S): triforce 20×18, y27 | `tabs.active_before = sprite:triforce_tab.png`, `tabs.active_after = none`, `tabs.marker_y = 27` |
+| Tab slot positions (T): cursor x30/x186, text x58 active, x30 inactive, x214 both | `tab.1.marker_x = 30`, `tab.1.active_x = 58`, `tab.1.x = 30`; `tab.2.marker_x = 186`, `tab.2.x = tab.2.active_x = 214` |
+| Title rule (T): dashed `#3858d8`, 4 px, 8/4, y77, title end + 12 to x610 | `[title.rule]` `colour = #3858d8`, `thickness = 4`, `dash = 8`, `gap = 4`, `y = 77`, `offset = 12`, `end = 610` |
+| Footer band (T): `#08084c` x14 y422 612×44, 4 px `#3858d8` top bar, only with hints | `[footer.band]` 14 422 612 44 `#08084c`, `top_line = 4`, `bottom_line = 0`, `line_colour = #3858d8` (only with hints: the format's band contract) |
+| Hint sprite (S): d-pad, A/B/X/Y, START at the hint's x, y433 | `footer.button.left_right/a/b/x/y/start = sprite:button_*.png`, `footer.key_y = 433` |
+| Hint flow (T): first x30, label 10 px after the key's right edge (correction), next hint + 36 | `footer.x = 30`, `footer.key_gap = 10`, `footer.hint_gap = 36` |
+| Label column (T): x60 with a cursor, x30 without | `list.label_x_cursor = 60`, `list.label_x = 30` |
+| Selected band (T): `#2040c0` x22 596×24, 2 px `#6888f8` lines | `[list.selected]` and `[list.selected_disabled]` 22 0 596 24 `#2040c0`, `top_line = bottom_line = 2`, `line_colour = #6888f8` |
+| Row cursor (S): triforce 16×14 at x32, row top + 5; greyed when selected and disabled | `list.cursor = sprite:triforce_row.png`, `list.cursor_disabled = sprite:triforce_row_disabled.png`, `list.cursor_x = 32`, `list.cursor_y = 5` |
+| Value arrows (S): ◀ left of the value, ▶ after its right edge (594, value at 584) | `list.arrow_left/right = sprite:arrow_*.png`, `list.arrow_right_gap = 10`, `list.arrow_left_gap = 10` (mirrored), `list.value_right = 584` |
+| Scroll up (S): 10×6 at x606 on the first row | `list.scroll_up = sprite:scroll_up.png`, `list.scroll_x = 606` |
+| Scroll down (S): mirrored on the last body row | `list.scroll_down = sprite:scroll_down.png` (same `scroll_x`; the last row is the format's rule) |
+
+The Z and V rows' positions and colours are in the fixture too: fonts
+`ps2p_16/14/12` (`size` 16/14/12, `cell = none`, `anchor = baseline`); tabs
+y42 `#98a8f0`/`#f8d038`; title x30 y82 `#78d8f8`/`#ff6868`; list top 98, 24
+px rows, `text_y = 16`, bottom 386 (12 rows), label `#f8f8f8`, value
+`#b8e8f8`, disabled `#7078b0`, selected `#f8d038`, selected-disabled
+`#bcc4ee`; notice x30, emphasis x50, top 98, 32 px rows, `text_y = 22`
+(baseline 120), `#f8f8f8`/`#f8d038`; message x30 y412 `#78d8f8`/`#ff6868`;
+footer y448, `#f8f8f8`/`#f8d038`; `screen.image = frame.png`, `screen.colour
+= #0c0c34`. Values the inventory does not fix, chosen for the fixture:
+`tabs.right = 540` (before the hearts), `title.right`, `notice.right`,
+`message.right`, `footer.right` 610, `list.right = 600`, `list.value_max =
+240`, `list.label_gap = 12`, `list.arrow_y = 6`, `list.scroll_y = 9`,
+`screen.cut = text:~`, and the selected-disabled band equal to the selected
+one.
+
 ### Other notes
 
 - **The hint flow follows the mockup, not the inventory's wording.** The
