@@ -118,8 +118,8 @@ sdl-pc:
 
 sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP) $(SD_FIXTURE)
 	@set -e; for t in $(SDL_BINS); do SDL_VIDEODRIVER=dummy ./$$t; done
-	@./sdl/smoke_sdl.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf
-	@./sdl/goldens.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf ./$(SD_FIXTURE) --compare $(GOLDENS_DIR)
+	@./sdl/smoke_sdl.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf ../../themes/classic
+	@./sdl/goldens.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf ./$(SD_FIXTURE) --compare $(GOLDENS_DIR) --theme ../../themes/classic
 	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests, the smoke test and the golden comparison ran under the dummy video driver"
 
 # sdl-goldens: writes the goldens once, refused if GOLDENS_DIR already holds any.

@@ -1,14 +1,16 @@
 #!/bin/sh
-# Usage: smoke_sdl.sh ALTTPR FONT
+# Usage: smoke_sdl.sh ALTTPR FONT THEME
 # Starts the SDL main headless (dummy video driver), renders one frame offscreen and exits; checks
 # its exit statuses, the saved frame, and that starting touches nothing on the SD tree. Then plays
-# scripted keys with the fixed-run options and checks the captured frame's text.
+# scripted keys with the fixed-run options and checks the captured frame's text. Last, runs it on
+# THEME and on edited copies of it, checking the grid size reaching the core and each refusal.
 set -eu
 export LC_ALL=C
 export SDL_VIDEODRIVER=dummy
 
 bin="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 font="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
+theme="$(cd "$3" && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 tree="$tmp/sd"
@@ -108,4 +110,68 @@ expect 2 --sd "$play" --font "$font" --unsupported goal=ganon down
 grep -q "bad --unsupported: goal=ganon" "$tmp/err" || fail "a bad --unsupported is not named"
 expect 2 --sd "$play" --font "$font" down --frames 1
 grep -q "usage: alttpr" "$tmp/err" || fail "a usage error does not print the usage"
-echo "smoke_sdl: alttpr started, rendered one frame offscreen, played scripted keys and exited"
+# variant NAME SECTION KEY VALUE...: copies THEME to $tmp/NAME, each KEY of [SECTION] set to VALUE.
+variant() {
+	dir="$tmp/$1"
+	shift
+	rm -rf "$dir"
+	cp -R "$theme" "$dir"
+	while [ $# -gt 0 ]; do
+		awk -v sec="[$1]" -v key="$2" -v val="$3" '
+			/^\[/ { in_sec = ($0 == sec) }
+			in_sec && index($0, key " =") == 1 { $0 = key " = " val; done = 1 }
+			{ print }
+			END { if (!done) exit 1 }
+		' "$dir/theme.ini" >"$dir/theme.new" || fail "no $2 in [$1] of $theme/theme.ini"
+		mv "$dir/theme.new" "$dir/theme.ini"
+		shift 3
+	done
+}
+
+# one_line PREFIX: fails unless standard error is exactly one line starting with PREFIX.
+one_line() {
+	[ "$(wc -l <"$tmp/err" | tr -d ' ')" -eq 1 ] || { cat "$tmp/err" >&2; fail "standard error is not one line"; }
+	case "$(cat "$tmp/err")" in "$1"*) ;; *) cat "$tmp/err" >&2; fail "standard error does not start with: $1" ;; esac
+}
+
+# grid_size FILE LINES COLS: fails unless FILE is a text capture of a LINES x COLS grid.
+grid_size() {
+	python3 -I - "$@" <<'PY' || fail "$1 is not a text capture of $2 lines of $3 columns"
+import sys
+rows = open(sys.argv[1], encoding="utf-8").read().split("\n")
+lines, cols = int(sys.argv[2]), int(sys.argv[3])
+assert rows[-1] == "" and len(rows) - 1 == lines + 2, len(rows)
+assert all(len(r) == cols + 3 for r in rows[:-1]), [len(r) for r in rows]
+PY
+}
+
+themed="$tmp/themed"
+mkdir -p "$themed/App/ALttPR"
+expect 0 --sd "$themed" --font "$font" --frames 1 --shot-text "$tmp/plain.txt"
+expect 0 --sd "$themed" --font "$font" --theme "$theme" --frames 1 --shot-text "$tmp/classic.txt"
+cmp -s "$tmp/plain.txt" "$tmp/classic.txt" || fail "--theme $theme does not capture the same text as no theme"
+grid_size "$tmp/classic.txt" 15 40
+variant tall list row_height 64 list label_x 208
+expect 0 --sd "$themed" --font "$font" --theme "$tmp/tall" --frames 1 --shot-text "$tmp/tall.txt"
+grid_size "$tmp/tall.txt" 9 28
+before="$(listing)"
+expect 1 --sd "$tree" --font "$font" --theme "$tmp/missing" --frames 1
+one_line "alttpr: "
+grep -q "theme.ini" "$tmp/err" || fail "a missing theme does not name theme.ini"
+[ "$(listing)" = "$before" ] || fail "a missing theme changed the SD tree"
+variant unknown
+echo "bogus = 1" >>"$tmp/unknown/theme.ini"
+expect 1 --sd "$tree" --font "$font" --theme "$tmp/unknown" --frames 1
+one_line "alttpr: $tmp/unknown/theme.ini:$(wc -l <"$tmp/unknown/theme.ini" | tr -d ' '): "
+variant narrow list label_x 400
+expect 1 --sd "$tree" --font "$font" --theme "$tmp/narrow" --frames 1
+one_line "alttpr: $tmp/narrow/theme.ini: page 11, width 14: the app shows page 1..36, width 20..94"
+variant nocell font.mono size 16 font.mono cell none
+expect 1 --sd "$tree" --font "$font" --theme "$tmp/nocell" --frames 1
+one_line "alttpr: $tmp/nocell/theme.ini: list.font: no cell, the width needs the font's metrics"
+[ "$(listing)" = "$before" ] || fail "a refused theme changed the SD tree"
+expect 2 --sd "$tree" --font "$font" --theme
+grep -q "usage: alttpr" "$tmp/err" || fail "--theme without a value does not print the usage"
+grep -q -- "--theme <dir>" "$tmp/err" || fail "the usage does not list --theme <dir>"
+
+echo "smoke_sdl: alttpr started, rendered one frame offscreen, played scripted keys, read themes and exited"

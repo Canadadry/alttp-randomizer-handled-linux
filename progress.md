@@ -15,7 +15,7 @@
     - [x] Chunk 3 — Inventory fixture
   - [ ] Step 1.4 — Page and width from the theme
     - [x] Chunk 1 — The derivation
-    - [ ] Chunk 2 — The SDL app reads a theme
+    - [x] Chunk 2 — The SDL app reads a theme
   - [ ] Step 1.5 — SDL renderer from `UiScreen`
   - [ ] Step 1.6 — Old renderer removed, packaging follows
   - [ ] Step 1.7 — skill: check-net

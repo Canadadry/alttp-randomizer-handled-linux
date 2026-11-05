@@ -5,7 +5,9 @@
 #include "rando_fixed_run.h"
 #include "sdl_loop.h"
 #include "sdl_view.h"
+#include "theme.h"
 #include "ui_grid.h"
+#include "ui_history.h"
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
@@ -21,14 +23,14 @@
 #define CWD_MAX 4096
 #define DEFAULT_FONT "DejaVuSansMono.ttf"
 
-static const char usage[] = "usage: alttpr [--sd <root>] [--font <file>] [--frames <n>] [--shot <file.bmp>] "
+static const char usage[] = "usage: alttpr [--sd <root>] [--font <file>] [--theme <dir>] [--frames <n>] [--shot <file.bmp>] "
 			    "[--shot-text <file>] [--seed <n>] [--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] "
 			    "[--base-md5 <32 hex>] [--unsupported <setting>=<value>,<setting>=<value>] [--] [<key>...]\n"
 			    "keys: up down left right a b x y l1 r1 l2 r2 select start menu, <key>*<n> repeats, "
 			    "- reads keys from standard input; with keys, the run ends after the last one\n";
 
 typedef struct Options {
-	const char *sd, *font, *shot, *shot_text;
+	const char *sd, *font, *theme, *shot, *shot_text;
 	long frames;
 	bool scripted;
 	RandoFixedRun run;
@@ -51,6 +53,7 @@ static Options opt;
 static char text[UI_GRID_TEXT_MAX];
 static SdlView view;
 static UiGrid grid;
+static Theme theme;
 static char root[RANDO_SEED_DIR_MAX];
 static char cwd[CWD_MAX];
 
@@ -119,6 +122,8 @@ static void parse_args(int argc, char **argv)
 			opt.sd = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--font") == 0) {
 			opt.font = value_of(argc, argv, &i);
+		} else if (strcmp(a, "--theme") == 0) {
+			opt.theme = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--shot") == 0) {
 			opt.shot = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--shot-text") == 0) {
@@ -141,6 +146,31 @@ static void parse_args(int argc, char **argv)
 		} else {
 			fail_usage("unknown option", a);
 		}
+	}
+}
+
+/* The grid is width + 2 by page + 4, so the grid drawn and the page the core scrolls by agree. */
+static void size_from_theme(int *page, int *width)
+{
+	static char line[THEME_ERROR_MAX + 128];
+	ThemeError err;
+	const ThemeCell *cell;
+
+	if (!theme_load(&theme, opt.theme, &err))
+		fail_setup(err.message, NULL);
+	cell = &theme.fonts[theme.list.font].cell;
+	if (!cell->present) {
+		snprintf(line, sizeof line, "%s/theme.ini: list.font: no cell, the width needs the font's metrics",
+			 opt.theme);
+		fail_setup(line, NULL);
+	}
+	*page = theme_page(&theme);
+	*width = theme_columns(&theme, cell->w);
+	if (*page < 1 || *page > UI_GRID_LINES_MAX - 4 || *width < UI_HISTORY_WIDTH_MIN ||
+	    *width > UI_HISTORY_WIDTH_MAX) {
+		snprintf(line, sizeof line, "%s/theme.ini: page %d, width %d: the app shows page 1..%d, width %d..%d",
+			 opt.theme, *page, *width, UI_GRID_LINES_MAX - 4, UI_HISTORY_WIDTH_MIN, UI_HISTORY_WIDTH_MAX);
+		fail_setup(line, NULL);
 	}
 }
 
@@ -189,6 +219,7 @@ int main(int argc, char **argv)
 	SdlScript script;
 	SdlViewStatus st;
 	SdlLoopResult result;
+	int page, width;
 
 	parse_args(argc, argv);
 	pos.keys = &opt.keys;
@@ -203,10 +234,17 @@ int main(int argc, char **argv)
 	} else if (getcwd(cwd, sizeof cwd) == NULL || !rando_app_sd_root(cwd, root, sizeof root)) {
 		fail_setup("SD root does not fit", NULL);
 	}
-	if (!ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES))
-		fail_setup("grid", NULL);
-	if (!rando_app_shell_init(&shell, root, NULL, rando_fixed_run_unsupported(&opt.run), 1, ui_grid_page(&grid),
-				  grid.cols - 2))
+	if (opt.theme != NULL) {
+		size_from_theme(&page, &width);
+		if (!ui_grid_init(&grid, width + 2, page + 4))
+			fail_setup("grid", NULL);
+	} else {
+		if (!ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES))
+			fail_setup("grid", NULL);
+		page = ui_grid_page(&grid);
+		width = grid.cols - 2;
+	}
+	if (!rando_app_shell_init(&shell, root, NULL, rando_fixed_run_unsupported(&opt.run), 1, page, width))
 		fail_setup("SD root does not fit", root);
 	rando_fixed_run_apply(&opt.run, &shell);
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)

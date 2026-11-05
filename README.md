@@ -358,6 +358,15 @@ the seed and the date, `--source-md5` and `--base-md5` replace the base
 ROM's expected digests. A bad option, key or value exits with status 2 and
 the usage.
 
+`--theme <dir>` reads `<dir>/theme.ini` (for example `themes/classic`) and
+takes from it the number of list rows per page (the list body's height over
+its row height) and the wrap width (the list's label x to its right edge, in
+the list font's cells); the app still draws with `--font`. A missing or
+broken theme, a list font without a cell, or a page outside 1..36 or a width
+outside 20..94 prints one `alttpr: ` line naming `theme.ini` and exits with
+status 1, before anything touches the SD card. Without `--theme`, the page
+and width are the 40×15 grid's.
+
 ## Working with Claude
 
 ### Skills you run
