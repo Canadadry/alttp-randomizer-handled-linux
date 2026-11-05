@@ -288,3 +288,34 @@ sound; touching `rando/`.
   folder name and the golden state list are this plan's to settle.
 
 ## 6. Step notes
+
+### Step 1.1
+
+- Done in 5 chunks (`fb5bb15`..`e200728`): fixed-run options shared in
+  `app/sd/fixed_run.c`; `alttpr` plays keys with `--seed`, `--date`,
+  `--source-md5`, `--base-md5`, `--shot-text`; `tests/rando/sdl/goldens.sh`
+  (write/compare, self-proof, fingerprint) over the 13 states of
+  `golden_states.txt` on synthetic SD cards from `sd_fixture` (`good`,
+  `bad-source`), no ROM; the 13 goldens in `tests/rando/sdl/goldens/`;
+  `make sdl-pc` prints `goldens: 13 states byte-identical`; `make
+  sdl-goldens` writes them, outside the net.
+- Environment, pinned: this session's cloud container, Ubuntu 24.04.5,
+  sdl12-compat 1.2.68 on SDL2 2.30.0, SDL_ttf 2.0.11, FreeType 2.13.2
+  (`freetype2` 26.1.20), SDL_image 1.2.12 installed with `apt-get install
+  libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev`; docker started with
+  `dockerd` by hand. Playwright 1.63.0's Chromium (`/opt/pw-browsers`) took a
+  headless screenshot of a mockup (probe). The second environment (CI `sdl`
+  job) was not dispatched: an agent cannot. The comparison is pinned to this
+  container by `goldens/environment.txt`; elsewhere it prints `setup:
+  goldens pinned to …`. So the CI `sdl` job, if dispatched, now stops on
+  that line: an owner item, not a bug.
+- Deviation, decided by guideline: the library has no unsupported setting
+  pair, so greyed rows, the greyed selected action and the refused START
+  were unreachable. A test-only override `--unsupported
+  <setting>=<value>,<setting>=<value>` (one pair) was added to
+  `fixed_run.c` and `rando_app_shell_init` (NULL keeps the library list);
+  states 4-6 use `state=retro,goal=pedestal`. The state table gained a sixth
+  column (per-state flags); expected strings carry line tags (`X|`, `v|`).
+- `alttpr foo` now fails as "unknown key: foo" (exit 2 as before).
+- `git commit --amend` is denied in this session: a PRD removal rides in
+  the next step-note commit instead of being folded into the chunk commit.
