@@ -79,6 +79,6 @@ exempt="$saved"
 
 if ! out="$(scan "$@")"; then
 	echo "$out" >&2
-	echo "no_sdl: the app's UI core, SD layer and non-SDL mains must not include SDL" >&2
+	echo "no_sdl: the app's UI core, SD layer, theme loader and non-SDL mains must not include SDL" >&2
 	exit 1
 fi

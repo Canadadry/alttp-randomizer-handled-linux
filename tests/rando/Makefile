@@ -4,9 +4,9 @@ RANDO := ../../rando
 APP := ../../app
 BUILD := build
 
-UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run
+UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme
 # No fixture mode: test_prng already replays its vectors in `test`, the others have no fixture.
-LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run,$(UNIT_TESTS))
+LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme,$(UNIT_TESTS))
 
 RANDO_SRC := $(wildcard $(RANDO)/src/*.c $(RANDO)/src/*/*.c)
 RANDO_HDR := $(wildcard $(RANDO)/include/*.h $(RANDO)/src/*.h)
@@ -19,13 +19,16 @@ HOST_LIB := $(BUILD)/librando_host.a
 INCLUDES := -I$(RANDO)/include -I$(RANDO)/host
 APP_CORE_SRC := $(wildcard $(APP)/core/*.c)
 APP_SD_SRC := $(wildcard $(APP)/sd/*.c)
-APP_SRC := $(APP_CORE_SRC) $(APP_SD_SRC)
-APP_HDR := $(wildcard $(APP)/core/*.h $(APP)/sd/*.h)
+APP_THEME_SRC := $(wildcard $(APP)/theme/*.c)
+APP_SRC := $(APP_CORE_SRC) $(APP_SD_SRC) $(APP_THEME_SRC)
+APP_HDR := $(wildcard $(APP)/core/*.h $(APP)/sd/*.h $(APP)/theme/*.h)
 APP_OBJ := $(patsubst $(APP)/%.c,$(BUILD)/app/%.o,$(APP_SRC))
 APP_LIB := $(BUILD)/librando_app.a
 # app/core sees only the library and itself, so an include of app/sd or rando/host fails to build.
 CORE_INCLUDES := -I$(RANDO)/include -I$(APP)/core
-TEST_INCLUDES := $(INCLUDES) -I$(APP)/core -I$(APP)/sd
+# app/theme sees only itself.
+THEME_INCLUDES := -I$(APP)/theme
+TEST_INCLUDES := $(INCLUDES) -I$(APP)/core -I$(APP)/sd -I$(APP)/theme
 SUPPORT_OBJ := $(BUILD)/support.o $(BUILD)/synthetic_base.o
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 GEN := $(BUILD)/rando_gen
@@ -98,7 +101,7 @@ test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@./$(SMOKE) ./$(UI_CLI)
 	@./selftest.sh discovery
-	@./no_sdl.sh --exempt $(SDL_MAIN) $(APP)/core $(APP)/sd $(APP)/main
+	@./no_sdl.sh --exempt $(SDL_MAIN) $(APP)/core $(APP)/sd $(APP)/theme $(APP)/main
 	@python3 -I ./no_literals.py $(APP)/core
 	@python3 -I ./no_literals.py --no-table $(APP)/sdl
 	@python3 -I ./test_package.py -q
@@ -237,6 +240,10 @@ $(BUILD)/app/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(TEST_INCLUDES) -c -o $@ $<
 
+$(BUILD)/app/theme/%.o: $(APP)/theme/%.c $(APP)/theme/theme.h
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(THEME_INCLUDES) -c -o $@ $<
+
 $(APP_LIB): $(APP_OBJ)
 	@rm -f $@
 	ar rcs $@ $^
@@ -282,6 +289,10 @@ $(LINT_APP_DIR)/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
 $(LINT_APP_DIR)/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -c -o $@ $<
+
+$(LINT_APP_DIR)/theme/%.o: $(APP)/theme/%.c $(APP)/theme/theme.h
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors $(THEME_INCLUDES) -c -o $@ $<
 
 $(LINT_APP_DIR)/main/%.o: $(APP)/main/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
