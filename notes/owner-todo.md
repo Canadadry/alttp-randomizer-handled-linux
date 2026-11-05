@@ -2,7 +2,7 @@
 
 Branch `plan-1-miyoo-package` (not `plan-1-onion-generator`). Plan 1 was
 closed with the plan's section 4 owner checks waived, not done: §1's MD5
-confirmation, §2, §3 and §5 are still open. Delete this file once every
+confirmation, §4 and §5 are still open (§2 and §3 done since). Delete this file once every
 item is done.
 
 ## 1. Build and commit the base patch — done, one confirmation left
@@ -12,13 +12,18 @@ item is done.
 patched `work.sfc`'s MD5 was `edc01f3db798ae4dfe21101311598d44`; the agent
 cannot check it without the ROM.
 
-## 2. Run the `sdl` CI job
+## 2. Run the `sdl` CI job — done
+
+Green on 2026-11-05 at `5075e75` (run https://github.com/Canadadry/alttp-randomizer-handled-linux/actions/runs/42024695341), artifact `alttpr-pc`.
 
 GitHub → Actions → **check** → **Run workflow**. It builds the SDL app for the
 PC and for ARM and uploads the PC binary (`alttpr-pc`). Report whether it is
 green.
 
-## 3. Run the `package` CI job
+## 3. Run the `package` CI job — done
+
+Green on 2026-11-05 at `5075e75` (same run: `make package`, `make e2e-arm`,
+`check` job too), artifact `alttpr-miyoo`, kept until 2027-02-03.
 
 GitHub → Actions → **check** → **Run workflow**. Its `package` job builds the
 Miyoo release with `make package`, runs `make e2e-arm` (the cross-built
