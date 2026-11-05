@@ -322,6 +322,20 @@ sound; touching `rando/`.
 
 ### Step 1.2
 
+- Done in 3 chunks (`cebecfa`, `2569dd7`, `3824907`), no snapshot and no
+  SDL golden changed: `UiScreen.footer` became `hints[]` (`UiHint`: a
+  `UiHintButton`, key text and label from the table, `primary`; START
+  Generate is primary); `UiScreen.title_tone` (`UI_TITLE_NORMAL`/`ALERT`:
+  alert on Generation Failed and Delete), `UiScreen.body_kind`
+  (`UI_BODY_LIST`/`NOTICE`: notice on Generating, Seed Ready, Generation
+  Failed, empty History, Delete), `UiRow.emphasis` (the file-name row of
+  Seed Ready and Delete). Notice rows stay `UI_ROW_TEXT`.
+- Correction found by step 3's PRD: a hint label is not at "sprite x + 32"
+  (fails for START in 01, pill x322 66 px wide, label x398); it sits 10 px
+  after the key's right edge, which matches all three labels of 01.
+- Push of these commits refused by GitHub (`remote rejected … fatal error
+  in commit_refs`) on five tries; kept local and retried later.
+
 #### Mockup inventory
 
 Sources: **F** `frame.png` (static, never driven by the code); **Z** text in a

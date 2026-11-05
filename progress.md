@@ -5,7 +5,7 @@
     - [x] Chunk 3 — Fixture tool, state table and golden script
     - [x] Chunk 4 — The goldens, committed alone
     - [x] Chunk 5 — Comparison in make sdl-pc, and the record
-  - [ ] Step 1.2 — Mockup inventory and the core changes it calls for
+  - [x] Step 1.2 — Mockup inventory and the core changes it calls for
     - [x] Chunk 1 — Structured footer
     - [x] Chunk 2 — Style fields
     - [x] Chunk 3 — Inventory in the step notes
