@@ -122,6 +122,12 @@ Locked decisions (owner, grilling of 2026-11-05):
   entry list and `build_zip.py`'s self-test (`tests/rando/test_package.py`)
   follow.
 
+- **A `setup:` line blocks a visual check.** From step 2 on, a step whose
+  check runs `make sdl-pc`, the golden comparison, `make theme-compare` or a
+  `--shot` capture is not verified by a `setup:` line, whatever CLAUDE.md
+  says of setup problems: the pilot runs the check in the environment step 1
+  pinned, or stops.
+
 Out of scope: new settings; translations other than English; animations;
 sound; touching `rando/`.
 
@@ -134,31 +140,64 @@ sound; touching `rando/`.
    states (Generate top, middle and end of list, greyed rows and greyed
    selected action, info and error messages, Generating, Seed Ready,
    Generation Failed, History list, empty, detail with spoiler, confirm
-   delete) and writes one BMP per state under `tests/rando/sdl/goldens/`.
-   This needs a way to feed the SDL app a key sequence and a fixed seed and
-   date, like `ui_cli`'s (`--seed`, `--date`, keys), added to `sdl_main.c`
-   first, without changing what it draws. Verified: the script runs twice
-   with byte-identical output, and the goldens are committed alone.
-2. **Structured footer in the core.** `UiScreen.footer` becomes a list of
-   hints (button, label, primary flag); every screen builds its hints; the
-   text renderer prints today's strings. Verified: `make test` green with no
-   snapshot changed, and the current SDL renderer still matches step 1's
-   goldens.
+   delete) and writes one BMP per state under `tests/rando/sdl/goldens/`. This
+   needs a way to feed the SDL app a key sequence, a fixed seed and date, and
+   the base digests' overrides, like `ui_cli`'s (`--seed`, `--date`,
+   `--source-md5`, `--base-md5`, keys), added to `sdl_main.c` first, without
+   changing what it draws. The script builds its SD card from the synthetic
+   base the way `ui_cli`'s smoke test does
+   (`tests/rando/unit/smoke_ui_cli.c`), with no ROM, plus a fixture that makes
+   generation fail for the failure state; step 9 reuses it. The comparison
+   against the goldens is wired into `make sdl-pc` (outside the net) in this
+   step, so every later step can run it. The goldens' pixels depend on the
+   host's SDL_ttf and FreeType: the step names the environment the goldens are
+   made and compared in (recorded in the step notes), and settles where the
+   comparison runs if it differs between that environment and the CI `sdl`
+   job. Verified: every listed state is reached on that synthetic SD card,
+   with no ROM on the host; the script runs twice with byte-identical output;
+   the comparison also passes in a second environment (the CI `sdl` job,
+   dispatched by hand) or the step records where it is pinned to run; the
+   comparison has really run and passed (not a `setup:` line) in the
+   environment named for the later steps, and that environment can also
+   install SDL_image and run Playwright's Chromium (recorded in the step
+   notes); the goldens are committed alone.
+2. **Mockup inventory and the core changes it calls for.** Every element of
+   the nine mockups is mapped to where it comes from: `frame.png`, text in a
+   zone, a sprite, or a style variant driven by a `UiScreen` field (for
+   example the dashed rule that starts after the title's text, the red title
+   of Generation Failed and Delete, the yellow indented file name of Seed
+   Ready). The inventory goes in the step notes; step 3's format must express
+   it. Each element the core does not expose yet becomes a core change here,
+   the structured footer among them: `UiScreen.footer` becomes a list of
+   hints (button, label, primary flag), every screen builds its hints, the
+   text renderer prints today's strings. Verified: the inventory covers all
+   nine mockups; `make test` green with no snapshot changed; the current SDL
+   renderer still matches step 1's goldens.
 3. **Theme loader (pure C).** Parses `theme.ini` into a theme struct: zones,
    row height, colours, font names and sizes, sprite names; rejects unknown
    keys, missing keys and out-of-range values with a message naming the file,
-   line and key. Unit tests in `tests/rando/unit/` on valid and broken
-   themes. Verified: `make test`.
+   line and key. `classic`'s `theme.ini` is written in this step, so the
+   format is proven able to express today's drawing (one glyph per cell,
+   centred and clipped; the band and text colours of `sdl_view_palette` per
+   line style; the font size chosen by fitting a cell) before anything is
+   built on it, and every entry of step 2's inventory is expressible. Unit
+   tests in `tests/rando/unit/` on valid and broken themes, and `classic`
+   loads. Verified: `make test`; goldens still byte-identical
+   (`make sdl-pc`).
 4. **Page and width from the theme.** The SDL main computes the page size and
    wrap width from the loaded theme and passes them to the core; `ui_cli`
    keeps its grid-derived values. Verified: `make test`; with `classic` the
-   values equal today's (`ui_grid_page`: 11 body lines; width 38).
+   values equal today's (`ui_grid_page`: 11 body lines; width 38); goldens
+   still byte-identical (`make sdl-pc`).
 5. **SDL renderer from `UiScreen`.** `app/sdl/` draws the zones from the
    theme: background image, tabs, title, body rows in their variants (setting,
    selected with `< >` markers, disabled, selected disabled, action, text),
    scroll markers, message line, footer hints with their sprites. Fonts
-   through SDL_ttf, images through SDL_image. `classic` theme committed
-   (DejaVu Sans Mono, today's palette, its background as a PNG). Verified:
+   through SDL_ttf, images through SDL_image, wired into the build in this
+   step (`sdl-pc`'s `setup:` check and link flags, `sdl-arm`'s link line, the
+   CI `sdl` job's `apt-get install`). `classic` theme committed (DejaVu Sans
+   Mono, today's palette, its background as a PNG). Verified: `make sdl-arm`
+   (docker) links against Onion's SDL_image;
    `make sdl-pc` with every golden of step 1 byte-identical under `classic`,
    and the SDL tests cover a missing theme folder, a missing image, a missing
    font and a broken `theme.ini` (each: one stderr line, non-zero exit).
@@ -166,47 +205,69 @@ sound; touching `rando/`.
    `sdl_view_draw` and `sdl_view_palette` are deleted; the SDL app requires
    `--theme <dir>` or finds `themes/default/` next to itself; `make package`
    ships `classic` as default for now, with `libSDL_image-1.2.so.0` in the
-   NEEDED check; CI installs `libsdl-image1.2-dev`; `targets/mac/` follows.
+   NEEDED check; `targets/mac/` follows.
    Verified: `make check`, `make sdl`, `make package` (docker), goldens still
    identical.
 7. skill: check-net — the whole net green after phase 1.
 
 ### Phase 2 — The new theme from the mockups
 
-8. **Mockups made true and comparable.** Press Start 2P and its licence
-   committed under `data/`; every mockup in `design/mockups/` loads it from a
-   local `@font-face` instead of Google Fonts; the content edited to the
-   app's real settings, values and strings (see Rules), each edit its own
-   commit; each mockup paired with the key sequence (and seed, date, SD
-   fixture) that brings the app to its state. Verified: Chromium renders
-   every mockup offline with the local font; every key sequence, played into
-   `ui_cli`, gives a screen whose text matches the mockup's text.
-9. **`make theme-compare`.** Outside the net, needs Playwright's Chromium and
+8. **The new theme's geometry.** `themes/alttp/` (name the plan's to settle)
+   with a `theme.ini` whose zones, fonts and sizes are taken from the 12 px
+   mockups, and Press Start 2P with its licence committed under `data/`; no
+   frame or sprites yet (plain colours stand in). This fixes the page size,
+   the wrap width and the help line's length, which steps 9 and 11 check
+   against. Verified: the theme loads (`make test`) and `make sdl-pc` draws
+   every state with it.
+9. **Mockups made true and comparable.** Every mockup in `design/mockups/`
+   loads Press Start 2P from a local `@font-face` instead of Google Fonts; the
+   content edited to the app's real settings, values and strings (see Rules),
+   each edit its own commit; each mockup paired with the key sequence (and
+   seed, date, SD fixture) that brings the app to its state. The text is
+   played through `ui_cli`, given the grid size that yields the new theme's
+   page and width (`--lines`, `--cols`), checked first to report the same
+   page and width as the SDL app with that theme. Verified: Chromium renders
+   every mockup offline with the local font; every key sequence, played with
+   the new theme's page and width, gives a screen whose
+   text matches the mockup's text, help line excepted (checked in step 11).
+10. **`make theme-compare`.** Outside the net, needs Playwright's Chromium and
    `make sdl-pc`'s prerequisites (else a `setup:` line). Writes, under
    `tests/rando/build/theme-compare/`, one side-by-side image per mockup
    (mockup, app capture, diff) and prints one score per mockup. Verified: it
    runs on `classic` and writes every image; the score of a mockup against
    itself is 0.
-10. **Help text per value.** The about 60 strings in `ui_strings_en.c`, the
+11. **Help text per value.** The about 60 strings in `ui_strings_en.c`, the
     core's help for the selected row's value, the message replacing it; the
     text renderer shows it in the message line, so the snapshots that show a
     setting row without a message change, in this commit, stated as the
     deliberate change. A unit test bounds every help string to the new
-    theme's line (about 57 characters at 10 px in 572 px; the exact bound
-    from the theme). Verified: `make test`.
-11. **The new theme.** `themes/alttp/` (name the plan's to settle): `frame.png`
-    and sprites (triforce cursor, ◀ ▶ ▲ ▼ arrows, d-pad, A, B, X, Y and START
+    theme's help line (about 57 characters at 10 px in 572 px; the exact
+    bound from step 8's theme). Verified: `make test`; the help line of
+    `00_settings_help.svg` matches the app's text.
+12. **The new theme's look.** In `themes/alttp/`: `frame.png` and sprites
+    (triforce cursor, ◀ ▶ ▲ ▼ arrows, d-pad, A, B, X, Y and START
     buttons) drawn from the mockups' own vector shapes, `theme.ini` tuned
     with `make theme-compare` until each capture matches its mockup's layout
     (same zones, same text positions to a few pixels, same colours). Verified:
-    `make sdl-pc` loads and draws every state with it; the side-by-side images
+    `make sdl-pc` loads and draws every state with it; for each mockup, the
+    step notes record which of the three criteria hold on its side-by-side
+    image and why any does not, with the `make theme-compare` score of the
+    first and last tuning pass (informational, no threshold); the step is
+    done when every criterion holds or has its reason; after the last pass
+    the page, width and help line length still equal step 8's, or step 9's
+    text check is re-run and step 11's bound updated in this step, stated;
+    the side-by-side images
     are left for the owner (`tests/rando/build/theme-compare/`) and listed in
     `notes/owner-todo.md`.
-12. **Default theme switched.** The zip ships the new theme as default
+13. **Default theme switched.** The zip ships the new theme as default
     (`classic` stays in the repository for the SDL tests); `README.md` says
     where the theme lives and how to compare it. Verified: `make package`
-    (docker) and `make check`.
-13. skill: check-net — the whole net green at the end.
+    (docker) and `make check`; and the plan's goal shown once: one colour,
+    one font size and one row height edited in the new theme's `theme.ini`,
+    the existing binary relaunched with no rebuild, each change seen in a
+    `--shot` capture, the edits reverted, `git diff` touching nothing under
+    the tests, all recorded in the step notes.
+14. skill: check-net — the whole net green at the end.
 
 ## 4. Done when
 
