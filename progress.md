@@ -15,7 +15,7 @@
     - [x] Choice screen and app views in the UI core
     - [x] Last-game memory on the SD card
     - [x] SDL side: key sequences and the game_choice golden
-  - [ ] Step 1.7 ROM guard
+  - [x] Step 1.7 ROM guard
     - [x] tests/rom_guard.py in make test, self-proven
   - [ ] Step 1.8 ROM-free oracle work
   - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven
