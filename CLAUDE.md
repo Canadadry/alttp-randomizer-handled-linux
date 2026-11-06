@@ -166,13 +166,17 @@ in `docs/`, then `README.md`.
   With the ROM (`tmp/ladx/base.gbc`, SHA-1 `d90ac17e…`, else a `setup:`
   line): `gen_golden.sh --out <dir> [--cases <file>] [--ladxr <dir>]
   [--hashseed <n>] [--rom <file>] [--work <dir>] [<case>...]`, LADX's case
-  runner, runs each case (default list `determinism_cases.txt`) through the
+  runner, runs each case (default the case directories, `tests/ladx/cases/`
+  then `tests/ladx/combos/`, through `ladx_cases.py list`; with `--cases`
+  that list file, e.g. `determinism_cases.txt`) through the
   whole generator (`oracle_run.py --rom`, one process per case, LADXR in a
   new directory under the work root) and writes `<dir>/<case>/`: `run.txt`
   (the sections above, the trace covering `generateRom` and the spoiler,
   then `rom_sha1`, `spoiler_sha1` and the outcome), `meta.txt`, and
   `out.gbc` and `spoiler.json` when LADXR wrote them; it refuses a `<dir>`
-  outside `tmp/` (exit 2): ROM-derived outputs stay there.
+  outside `tmp/` (exit 2): ROM-derived outputs stay there. Without
+  `--cases` it exits 1 after its summary with `gen_golden: <n> cases not
+  ok` when a case's outcome is not `ok`; with `--cases` any outcome passes.
   `oracle_run.py --rom --dir <dir> --reads [--inventory <file>]` (off by
   default; `run.txt`, `out.gbc` and `spoiler.json` unchanged by it) also
   traces the whole run with `read_trace.py` and writes `reads.txt` and
@@ -194,7 +198,10 @@ in `docs/`, then `README.md`.
   ...` per mismatch, then `determinism: <n> cases identical with the ROM
   (...), driver equal to LADXR's CLI`; it fails when the runs did not vary
   in hash seed, checkout and the work root's `git describe`, and on a new
-  untracked file (`STRAY <path>`).
+  untracked file (`STRAY <path>`). `determinism.sh --full` runs
+  `determinism_cases.txt` (passed to `gen_golden.sh` as `--cases`);
+  `determinism.sh --full --all` runs every case directory the same way
+  (about 5 minutes for 116 cases).
   `ladx_cases.py pick [<name>...]` (with the ROM and the checkout at the
   pin, else a `setup:` line, exit 2) writes each expected case that has no
   directory yet (a named one must not exist: it never touches a case; to

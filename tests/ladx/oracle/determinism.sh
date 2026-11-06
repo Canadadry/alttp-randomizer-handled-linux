@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: determinism.sh [--full]
+# Usage: determinism.sh [--full [--all]]
 # Runs every case of determinism_cases.txt through oracle_run.py twice (A: the setup checkout,
 # PYTHONHASHSEED=0; B: a fresh clone in another directory, PYTHONHASHSEED=1) and compares the two
 # outputs: one `same <case>` or `DIFFERENT <case>: line <n>: <A> | <B>` line per case, then a
@@ -9,7 +9,8 @@
 # repository), plus LADXR's own CLI once per case (oracle_run.py --plain), and compares every file:
 # `same <case>` or `DIFFERENT <case>: <file>: ...` / `DIFFERENT <case> (plain): ...` lines. It also
 # fails unless the runs differed in the working directory's `git describe`, and on a new untracked
-# file of the repository (`STRAY <path>`).
+# file of the repository (`STRAY <path>`). --full --all does the same on every case directory of
+# tests/ladx/cases/ and tests/ladx/combos/ (ladx_cases.py list) instead of determinism_cases.txt.
 set -eu
 export LC_ALL=C
 
@@ -21,11 +22,13 @@ clone_b="$work_root/ladxr-determinism"
 compare="python3 -I $oracle_dir/ladx_oracle.py"
 
 full=0
-case "$#:${1-}" in
-0:) ;;
-1:--full) full=1 ;;
+all=0
+case "$#:${1-}:${2-}" in
+0::) ;;
+1:--full:) full=1 ;;
+2:--full:--all) full=1 all=1 ;;
 *)
-	echo "usage: determinism.sh [--full]" >&2
+	echo "usage: determinism.sh [--full [--all]]" >&2
 	exit 2
 	;;
 esac
@@ -120,12 +123,18 @@ if [ "$full" -eq 1 ]; then
 		commit -q --allow-empty -m "tagged work root"
 	git -C "$tagged" tag determinism-tag
 
-	"$oracle_dir/gen_golden.sh" --out "$out_root/a" --hashseed 0
-	"$oracle_dir/gen_golden.sh" --out "$out_root/b" --hashseed 1 --ladxr "$clone_b" --work "$tagged"
+	if [ "$all" -eq 1 ]; then
+		set --
+		case_lines="$(python3 -I "$oracle_dir/ladx_cases.py" list)"
+	else
+		set -- --cases "$oracle_dir/determinism_cases.txt"
+		case_lines="$($compare cases "$oracle_dir/determinism_cases.txt")"
+	fi
+	"$oracle_dir/gen_golden.sh" --out "$out_root/a" --hashseed 0 "$@"
+	"$oracle_dir/gen_golden.sh" --out "$out_root/b" --hashseed 1 --ladxr "$clone_b" --work "$tagged" "$@"
 	status=0
 	count=0
 	names=
-	case_lines="$($compare cases "$oracle_dir/determinism_cases.txt")"
 	while read -r name seed settings; do
 		# python3 without -I or -E, which would drop PYTHONHASHSEED.
 		# shellcheck disable=SC2086

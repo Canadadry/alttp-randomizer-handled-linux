@@ -1,12 +1,14 @@
 #!/bin/sh
 # Usage: gen_golden.sh --out <dir> [--cases <file>] [--ladxr <dir>] [--hashseed <n>] [--rom <file>] [--work <dir>] [<case>...]
-# LADX's case runner: runs each named case of the case list (default determinism_cases.txt; every
-# case when none is named) through oracle_run.py --rom, one python3 process per case, with
+# LADX's case runner: runs each named case (every case when none is named) of the case directories
+# tests/ladx/cases/ then tests/ladx/combos/ (ladx_cases.py list), or with --cases of that case list
+# file (determinism_cases.txt's format), through oracle_run.py --rom, one python3 process per case, with
 # PYTHONHASHSEED <n> (default 0) and bytecode writing off, on the LADXR checkout (default
 # tests/ladx/oracle/ladxr, at the pin), the ROM (default tmp/ladx/base.gbc) and the work root under
 # which LADXR runs (default tmp/ladx-oracle/). It writes <dir>/<case>/ (run.txt, meta.txt, and
 # out.gbc and spoiler.json when LADXR wrote them), prints `<case>: outcome <ok|error|crash>` per
-# case, then `gen_golden: <n> cases written to <dir>`. <dir> must lie inside the repository's tmp/
+# case, then `gen_golden: <n> cases written to <dir>`; without --cases it then exits 1 with
+# `gen_golden: <n> cases not ok` when a case's outcome is not ok. <dir> must lie inside the repository's tmp/
 # (ROM-derived outputs stay there), else exit 2 with nothing written. A missing or wrong ROM, or a
 # missing or unpinned checkout, is a `setup:` line and exit 2. Never called by make.
 set -eu
@@ -28,7 +30,7 @@ setup() {
 }
 
 out=
-cases="$oracle_dir/determinism_cases.txt"
+cases=
 ladxr="$oracle_dir/ladxr"
 hashseed=0
 rom="$repo_dir/tmp/ladx/base.gbc"
@@ -61,8 +63,12 @@ if ! $oracle inside-tmp "$repo_dir" "$out"; then
 	echo "gen_golden: refused, --out $out is not inside $repo_dir/tmp/ (ROM-derived outputs stay under tmp/)" >&2
 	exit 2
 fi
-[ -f "$cases" ] || usage
-case_lines="$($oracle cases "$cases" "$@")" || usage
+if [ -n "$cases" ]; then
+	[ -f "$cases" ] || usage
+	case_lines="$($oracle cases "$cases" "$@")" || usage
+else
+	case_lines="$(python3 -I "$oracle_dir/ladx_cases.py" list "$@")" || usage
+fi
 [ -n "$case_lines" ] || {
 	echo "gen_golden: no cases" >&2
 	exit 2
@@ -80,6 +86,7 @@ sha1="$(python3 -I -c 'import hashlib, sys; print(hashlib.sha1(open(sys.argv[1],
 mkdir -p "$out"
 out="$(cd "$out" && pwd -P)"
 count=0
+not_ok=0
 while read -r name seed settings; do
 	rm -rf "${out:?}/$name"
 	# python3 without -I or -E, which would drop PYTHONHASHSEED.
@@ -88,8 +95,13 @@ while read -r name seed settings; do
 		--rom "$rom" --dir "$out/$name" --work "$work" "$ladxr" "$seed" $settings </dev/null
 	outcome="$(tail -n 1 "$out/$name/run.txt" | cut -d ' ' -f 2)"
 	echo "$name: outcome $outcome"
+	[ "$outcome" = ok ] || not_ok=$((not_ok + 1))
 	count=$((count + 1))
 done <<EOF
 $case_lines
 EOF
 echo "gen_golden: $count cases written to ${out#"$repo_dir/"}"
+if [ -z "$cases" ] && [ "$not_ok" -gt 0 ]; then
+	echo "gen_golden: $not_ok cases not ok" >&2
+	exit 1
+fi
