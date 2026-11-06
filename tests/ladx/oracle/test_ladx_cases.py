@@ -313,8 +313,8 @@ class GoldenTest(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(out[-2], "ladx-cases: goldens in 15 folders, rom_writes.txt %d bytes "
                          "(limits %d per case, %d in all), golden files %d bytes (limit %d)"
-                         % (15 * len(LOG), 192 * 1024, 12 * 1024 * 1024, size,
-                            25 * 1024 * 1024))
+                         % (15 * len(LOG), 224 * 1024, 22 * 1024 * 1024, size,
+                            34 * 1024 * 1024))
 
     def test_a_missing_golden_file_and_a_spoiler_on_a_race_case(self):
         os.remove(self.at("cases", "baseline", "rom_writes.txt"))

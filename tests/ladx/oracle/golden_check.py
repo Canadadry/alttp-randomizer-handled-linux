@@ -6,7 +6,8 @@ rom_writes.txt (the named ones, default every one; root default tests/ladx) agai
 stream gen_golden.sh left in <mirror>/<case>/events.txt (default tmp/ladx-goldens/):
   decode       the log replayed onto the ROM (--rom, default tmp/ladx/base.gbc) gives run.txt's
                rom_sha1;
-  encode       rom_writes.txt is exactly the stream's encoding (write_log.py encode);
+  encode       rom_writes.txt is exactly the stream's encoding (write_log.py encode), its `I`
+               lines from the oracle's re-run record <mirror>/<case>/invariant.txt;
   tags         every segment's group is a group of the inventory (--inventory, default
                notes/ladx-inventory.md) with side table or C;
   scrambled    re-encoded with every byte outside the C-knowable map scrambled, no C group's
@@ -14,8 +15,8 @@ stream gen_golden.sh left in <mirror>/<case>/events.txt (default tmp/ladx-golden
   projection   for each group h, dropping h's segments or changing one of h's records leaves
                every other group's projection unchanged, and the change shows in h's own;
   nintendo     the Nintendo-bytes check (nintendo_bytes.py's policy for a case folder:
-               rom_writes.txt in scope writes, run.txt and spoiler.json general) finds 0 literal
-               runs; never prints a byte.
+               rom_writes.txt in scope writes, run.txt and spoiler.json general, its computed
+               and invariant clearances included) finds 0 literal runs; never prints a byte.
 It prints `ok <case>` or one `BAD <case>: <check>: <detail>` line per problem, then, when no case
 is named, `BAD tags: <detail>` unless the union of the goldens' groups is the inventory's table
 and C groups less spoiler, then `golden-check: <n> cases, <b> bad, <k> literal runs`; exit 1 on
@@ -95,10 +96,13 @@ def _independence(text):
     return problems
 
 
-def check_case(folder, events, rom, sides, known, nintendo, scramble_known=None):
+def check_case(folder, events, rom, sides, known, nintendo, scramble_known=None,
+               invariant=None):
     """[(check, detail)] of one case folder against its event stream (write_log.Events) on the
     source rom; sides {group: side}; known the C-knowable map; nintendo(name, data, scope) ->
-    [literal run description]. scramble_known (default known): the map the scramble keeps."""
+    [literal run description]. scramble_known (default known): the map the scramble keeps.
+    invariant: the oracle's re-run flags (write_log.parse_invariant), which the `I` lines must
+    match."""
     problems = []
     text = _read(os.path.join(folder, "rom_writes.txt"))
     run = _read(os.path.join(folder, "run.txt"))
@@ -116,7 +120,7 @@ def check_case(folder, events, rom, sides, known, nintendo, scramble_known=None)
             problems.append(("tags", "%s is not a table or C group of the inventory" % group))
     try:
         encoded, scrambled = write_log.encode_scrambled(events, rom, sides, known,
-                                                        scramble_known)
+                                                        scramble_known, invariant)
         if encoded != text:
             a, b = encoded.splitlines(), text.splitlines()
             line = next(n for n in range(max(len(a), len(b)))
@@ -207,7 +211,12 @@ def main(argv):
             events = write_log.parse_events(_read(stream))
             if events.source != hashlib.sha1(rom).hexdigest():
                 raise SetupError("%s was recorded on another ROM" % stream)
-            problems = check_case(folder, events, rom, sides, known, nintendo)
+            record = os.path.join(args.mirror, name, "invariant.txt")
+            if not os.path.isfile(record):
+                raise SetupError("no re-run record at %s (run gen_golden.sh)" % record)
+            invariant = write_log.parse_invariant(_read(record))
+            problems = check_case(folder, events, rom, sides, known, nintendo,
+                                  invariant=invariant)
             literals += sum(1 for check, _ in problems if check == "nintendo")
             try:
                 found.update(write_log.groups(_read(os.path.join(folder, "rom_writes.txt"))))

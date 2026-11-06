@@ -203,7 +203,7 @@ DIRS = ("cases", "combos")
 GOLDENS = ("run.txt", "rom_writes.txt", "spoiler.json")
 ALLOWED = ("config.txt", "seed") + GOLDENS
 KB = 1024
-LIMITS = {"rom_writes_case": 192 * KB, "rom_writes_all": 12 * KB * KB, "all": 25 * KB * KB}
+LIMITS = {"rom_writes_case": 224 * KB, "rom_writes_all": 22 * KB * KB, "all": 34 * KB * KB}
 
 
 def config_text(assignments):

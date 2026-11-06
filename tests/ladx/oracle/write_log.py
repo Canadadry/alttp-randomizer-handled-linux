@@ -1,4 +1,4 @@
-"""Usage: python3 -I tests/ladx/oracle/write_log.py encode --events <file> --rom <file> [--inventory <file>] [--out <file>]
+"""Usage: python3 -I tests/ladx/oracle/write_log.py encode --events <file> --rom <file> [--inventory <file>] [--invariant <file>] [--out <file>]
        python3 -I tests/ladx/oracle/write_log.py decode --rom <file> <rom_writes.txt>
        python3 -I tests/ladx/oracle/write_log.py project <rom_writes.txt> <group>
        python3 -I tests/ladx/oracle/write_log.py scrambled --events <file> --rom <file> [--inventory <file>]
@@ -10,7 +10,8 @@ inventory group, every byte that comes from the source ROM a reference, never it
 `encode` turns read_trace.py's event stream (oracle_run.py --reads' events.txt) and the source
 ROM into the log (to --out, else stdout), with the groups' sides from the inventory's Groups
 table (--inventory, default notes/ladx-inventory.md) and the C-knowable source map of
-known_source.py. `decode` replays the log's bank records onto the ROM and prints the result's
+known_source.py; with --invariant, the oracle's re-run record (oracle_run.py --reads'
+invariant.txt, parse_invariant) gives its `I` lines. `decode` replays the log's bank records onto the ROM and prints the result's
 SHA-1. `project` prints one group's projection (itself a log). `scrambled` re-encodes the stream
 with every ROM byte outside the C-knowable map scrambled, the table groups' encoding kept from
 the real ROM (C copies it from step 6's tables), and prints one `SCRAMBLED <group>` line per C
@@ -25,10 +26,16 @@ Format, version 1: line-based ASCII, lowercase hex without 0x.
                                       absolute ROM offset, records by offset
   T <table> <key> <tokens>            a table entry's net new value, key an index in hex or an
                                       alt key, records in table order then index then alt key
+  I <line> <start>+<n>...             after every segment, by line: the B or T record on that
+                                      line holds invariant literal bytes at those indices
 Tokens, single spaces between: `=<n>` keep (n source bytes at the record's own offsets, bank
 records only), `@<q>+<n>` copy (n source bytes from absolute offset q), a run of literal hex,
 `p<v>` an integer-pointer entry (alone in its record). Continuing references are merged and
 adjacent literals joined; the parser refuses anything else, so equal logs are equal text.
+`I` lines are evidence for the Nintendo-bytes check only: decode and projections ignore them, and
+C never writes them. A range is a maximal run of at least 4 literal bytes of a C group's record,
+each the net byte of a write the re-run flagged unchanged (invariant_run.py), holding a 4-byte
+window of the source ROM; ranges in order, never touching.
 
 Encoding rule. A byte's origin in the stream is `src(q)` (an unchanged copy of source byte q) or
 the write identity of the computed byte it copies unchanged; a carried origin is the reference q,
@@ -37,7 +44,11 @@ keep when it equals the source at its own offset (bank records); else its carrie
 the longest source match of at least 4 bytes among the bytes left, lowest offset; else a
 literal. C groups, per byte: a carried origin; else a byte equal to the byte it replaces
 inherits that byte's encoding when
-C can know it (a literal, or a reference into the C-knowable map), else is a literal. The
+C can know it (a literal, or a reference into the C-knowable map), else is a literal; then, once
+the segment ends, each maximal run of its net literal bytes (bank bytes at contiguous offsets,
+each entry alone) is matched, left to right, longest first, against the C-knowable map taken as
+maximal runs of contiguous source offsets: a match of at least 4 bytes inside one run becomes a
+copy of its lowest offset (KS-match; C rebuilds those bytes from step 7's extractions). The
 replaced byte is the same offset's for a bank write; for a table entry the previous value, the
 new one aligned to it by common prefix, then common suffix, each stopping at a byte C cannot
 know; between them, left to right, the longest run of at least 4 bytes without a carried origin
@@ -51,6 +62,7 @@ groups ignored, re-encoded as one canonical segment; no ROM needed.
 """
 
 import argparse
+import bisect
 import hashlib
 import os
 import random
@@ -163,6 +175,33 @@ def parse_events(text):
     return stream
 
 
+INVARIANT_LINE = "ladx-invariant-events 1"
+
+
+def parse_invariant(text):
+    """{event index: per-byte flags} of the oracle's re-run record (invariant.txt: the
+    INVARIANT_LINE, then `<event index> <0 or 1 per byte>`, indices increasing, hex)."""
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    if not lines or lines[0] != INVARIANT_LINE:
+        raise WriteLogError("not a re-run record (no `%s` line)" % INVARIANT_LINE)
+    flags, last = {}, -1
+    for number, line in enumerate(lines[1:], 2):
+        index, _, bits = line.partition(" ")
+        if not HEX.fullmatch(index) or not re.fullmatch(r"[01]+", bits) or int(index, 16) <= last:
+            raise WriteLogError("re-run record line %d: bad line" % number)
+        last = int(index, 16)
+        flags[last] = tuple(b == "1" for b in bits)
+    return flags
+
+
+def invariant_lines(flags):
+    """parse_invariant's text, as lines, for {event index: per-byte flags}."""
+    return [INVARIANT_LINE] + ["%x %s" % (n, "".join("1" if f else "0" for f in flags[n]))
+                               for n in sorted(flags)]
+
+
 # Encoding --------------------------------------------------------------------------------------
 
 def _longest_match(rom, data, start, stop):
@@ -216,6 +255,73 @@ def _table_atoms(rom, values, origins, offset=None):
     return atoms
 
 
+class _KnownRuns:
+    """The C-knowable source map as maximal runs of contiguous offsets: `match` finds the
+    longest run of at least MIN_MATCH bytes inside one of them, at its lowest offset."""
+
+    def __init__(self, rom, known):
+        mask = getattr(known, "mask", None)
+        offsets = ([q for q in range(len(rom)) if q < len(mask) and mask[q] == 1]
+                   if mask is not None else sorted(q for q in known if 0 <= q < len(rom)))
+        self.starts, pieces = [], []
+        for start, stop in _spans(offsets):
+            self.starts.append(start)
+            pieces.append(rom[start:stop])
+        self.bases, at = [], 0
+        for piece in pieces:
+            self.bases.append(at)
+            at += len(piece)
+        self.joined = b"".join(pieces)
+
+    def find(self, data):
+        """The lowest source offset of data inside one run, -1 when there is none."""
+        pos = self.joined.find(data)
+        while pos >= 0:
+            i = bisect.bisect_right(self.bases, pos) - 1
+            end = self.bases[i + 1] if i + 1 < len(self.bases) else len(self.joined)
+            if pos + len(data) <= end:
+                return self.starts[i] + pos - self.bases[i]
+            pos = self.joined.find(data, pos + 1)
+        return -1
+
+    def match(self, data, start, stop):
+        """(offset, length) of the longest match of data[start:stop]'s prefix, None when it is
+        under MIN_MATCH bytes."""
+        if stop - start < MIN_MATCH or self.find(data[start:start + MIN_MATCH]) < 0:
+            return None
+        low, high = MIN_MATCH, stop - start + 1
+        while high - low > 1:
+            mid = (low + high) // 2
+            if self.find(data[start:start + mid]) >= 0:
+                low = mid
+            else:
+                high = mid
+        return self.find(data[start:start + low]), low
+
+    def atoms(self, atoms):
+        """atoms with every run of at least MIN_MATCH literals that matches the map made copies,
+        greedily left to right, longest first."""
+        out, i = list(atoms), 0
+        while i < len(out):
+            if out[i] >= 0:
+                i += 1
+                continue
+            stop = i
+            while stop < len(out) and out[stop] < 0:
+                stop += 1
+            values = bytes(-1 - a for a in out[i:stop])
+            j = 0
+            while j < len(values):
+                found = self.match(values, j, len(values))
+                if found is None:
+                    j += 1
+                else:
+                    out[i + j:i + j + found[1]] = range(found[0], found[0] + found[1])
+                    j += found[1]
+            i = stop
+        return out
+
+
 class _Encoder:
     """The running state: every ROM position's atom, every table entry's atoms (or int
     pointer), and the atom each write identity got when its byte was first written."""
@@ -223,6 +329,8 @@ class _Encoder:
     def __init__(self, events, rom, sides, known, fixed=None):
         """fixed: the table groups' encodings of an earlier run, reused segment by segment."""
         self.rom, self.sides, self.known = rom, sides, known
+        self._known_runs = None
+        self._windows = None
         self.fixed = None if fixed is None else list(fixed)
         self.table_segments = []
         self.tables = list(events.tables)
@@ -248,6 +356,11 @@ class _Encoder:
 
     def knowable(self, atom):
         return _knowable(atom, self.known)
+
+    def known_runs(self):
+        if self._known_runs is None:
+            self._known_runs = _KnownRuns(self.rom, self.known)
+        return self._known_runs
 
     def bank_atom(self, p):
         return self.state.get(p, p)
@@ -298,18 +411,22 @@ class _Encoder:
             else:
                 i += 1
 
-    def segment(self, group, events):
+    def segment(self, group, events, flags=None):
+        """(lines, marks) of one segment; flags: per event, the re-run's per-byte flags or
+        None; marks: {index in lines: [(start, n)]} of the `I` ranges."""
         side = self.sides.get(group)
         if side not in ("table", "C"):
             raise WriteLogError("group %r writes but its side is %r, not table or C" % (group,
                                                                                        side))
         if side == "table":
-            return self._table_segment(group, events)
-        banks, tables = {}, {}
-        for event in events:
+            return self._table_segment(group, events), {}
+        banks, tables, named = {}, {}, {}
+        bank_flags, table_flags = {}, {}
+        for event, flag in zip(events, flags or [None] * len(events)):
             if event[0] == "B":
                 _, _, _, offset, values, origins = event
                 for i, v in enumerate(values):
+                    bank_flags[offset + i] = bool(flag and flag[i])
                     p = offset + i
                     atom = self.carried(origins[i])
                     if atom is None:
@@ -318,6 +435,7 @@ class _Encoder:
                                 and self.knowable(replaced) else _lit(v))
                     self.name(origins[i:i + 1], [atom])
                     banks[p] = self.state[p] = atom
+                    named[("B", p)] = [origins[i]]
                 continue
             _, _, _, table, key, value, origins = event
             self._check_table(table)
@@ -328,8 +446,74 @@ class _Encoder:
                 atoms = self.inherited(value, previous if isinstance(previous, list) else None,
                                        origins)
                 self.name(origins, atoms)
+                named[("T", table, key)] = list(origins)
+                table_flags[(table, key)] = [bool(flag and flag[i]) for i in range(len(value))]
             tables[(table, key)] = self.entries[(table, key)] = atoms
-        return _records(group, banks, tables, self.tables)
+        self._match_known(banks, tables, named)
+        lines = _records(group, banks, tables, self.tables)
+        marks = {}
+        if flags is not None:
+            rows = [[(banks[p], bank_flags[p]) for p in range(start, stop)]
+                    for start, stop in _spans(sorted(banks))]
+            rows += [list(zip(tables[k], table_flags[k])) if isinstance(tables[k], list) else []
+                     for k in sorted(tables, key=_key_order(self.tables))]
+            for n, row in enumerate(rows, 1):
+                ranges = self._marks(row)
+                if ranges:
+                    marks[n] = ranges
+        return lines, marks
+
+    def _marks(self, row):
+        """[(start, n)] of a record's maximal runs of invariant literal atoms, at least MIN_MATCH
+        long, that hold a MIN_MATCH-byte window of the source ROM; row: [(atom, flag)]."""
+        out, i = [], 0
+        while i < len(row):
+            if not (row[i][0] < 0 and row[i][1]):
+                i += 1
+                continue
+            stop = i
+            while stop < len(row) and row[stop][0] < 0 and row[stop][1]:
+                stop += 1
+            values = bytes(-1 - a for a, _ in row[i:stop])
+            windows = self.rom_windows()
+            if any(values[j:j + MIN_MATCH] in windows
+                   for j in range(len(values) - MIN_MATCH + 1)):
+                out.append((i, stop - i))
+            i = stop
+        return out
+
+    def rom_windows(self):
+        if self._windows is None:
+            rom = self.rom
+            self._windows = {rom[i:i + MIN_MATCH] for i in range(len(rom) - MIN_MATCH + 1)}
+        return self._windows
+
+    def _match_known(self, banks, tables, named):
+        """A C segment's net literal runs matching the C-knowable map become copies (bank runs
+        by contiguous offsets, entries each alone); the writes they name follow."""
+        if not any(a < 0 for a in banks.values()) and not any(
+                isinstance(v, list) and any(a < 0 for a in v) for v in tables.values()):
+            return
+        runs = self.known_runs()
+        for start, stop in _spans(sorted(banks)):
+            old = [banks[p] for p in range(start, stop)]
+            new = runs.atoms(old)
+            for i, (a, b) in enumerate(zip(old, new)):
+                if a != b:
+                    p = start + i
+                    banks[p] = self.state[p] = b
+                    self._rename(named[("B", p)], [b])
+        for (table, key), value in tables.items():
+            if isinstance(value, list):
+                new = runs.atoms(value)
+                if new != value:
+                    tables[(table, key)] = self.entries[(table, key)] = new
+                    self._rename(named[("T", table, key)], new)
+
+    def _rename(self, origins, atoms):
+        for q, atom in zip(origins, atoms):
+            if q < KNOWN and atom >= 0:
+                self.written[q] = atom
 
     def _check_table(self, table):
         if table not in self.tables:
@@ -429,24 +613,35 @@ def _header(tables):
     return [VERSION_LINE, " ".join(["tables"] + list(tables))]
 
 
-def encode(events, rom, sides, known):
+def encode(events, rom, sides, known, invariant=None):
     """rom_writes.txt's text for Events on the source rom; sides {group: side}; known: the
-    C-knowable source offsets (any container)."""
-    return _encode(events, rom, sides, known)[0]
+    C-knowable source offsets (any container); invariant: {event index: per-byte flags} of the
+    oracle's re-run (read_invariant), which gives the `I` lines, none when None."""
+    return _encode(events, rom, sides, known, invariant=invariant)[0]
 
 
-def _encode(events, rom, sides, known, fixed=None):
+def _encode(events, rom, sides, known, fixed=None, invariant=None):
     """(text, the table groups' encodings segment by segment)."""
     encoder = _Encoder(events, rom, sides, known, fixed)
     lines = _header(events.tables)
-    run = []
-    for event in events.events + [None]:
+    marks = []
+    run, flags = [], []
+    for n, event in enumerate(events.events + [None]):
         if run and (event is None or event[1] != run[0][1]):
-            lines += encoder.segment(run[0][1], run)
-            run = []
+            got, got_marks = encoder.segment(run[0][1], run,
+                                             None if invariant is None else flags)
+            marks += [(len(lines) + k + 1, ranges) for k, ranges in sorted(got_marks.items())]
+            lines += got
+            run, flags = [], []
         if event is not None:
             run.append(event)
+            flags.append(None if invariant is None else invariant.get(n))
+    lines += [_mark_line(line, ranges) for line, ranges in marks]
     return "".join(line + "\n" for line in lines), encoder.table_segments
+
+
+def _mark_line(line, ranges):
+    return " ".join(["I %x" % line] + ["%x+%x" % r for r in ranges])
 
 
 # Parsing, decode, projection -------------------------------------------------------------------
@@ -494,6 +689,42 @@ def _parse_tokens(fields, offset, number):
 def parse(text):
     """(tables, [(group, {offset: atom}, {(table, key): atoms or int})]) of a log's text, every
     rule of the format checked; WriteLogError names the first broken one."""
+    return _parse(text)[:2]
+
+
+def invariants(text):
+    """{line number: [(start, n)]} of a log's `I` lines, the log checked as parse does."""
+    return _parse(text)[2]
+
+
+_MARK_RANGE = re.compile(r"([0-9a-f]+)\+([0-9a-f]+)")
+
+
+def _parse_mark(fields, number, records):
+    """(line, [(start, n)]) of an `I` line's fields, checked against records {line: atoms}."""
+    if len(fields) < 3:
+        raise WriteLogError("line %d: an I line without a range" % number)
+    line = _hex_int(fields[1], "line")
+    atoms = records.get(line)
+    if "%x" % line != fields[1] or not isinstance(atoms, list):
+        raise WriteLogError("line %d: I line %s names no record" % (number, fields[1]))
+    ranges, end = [], -1
+    for field in fields[2:]:
+        m = _MARK_RANGE.fullmatch(field)
+        if not m:
+            raise WriteLogError("line %d: bad range %r" % (number, field))
+        start, n = int(m.group(1), 16), int(m.group(2), 16)
+        if "%x+%x" % (start, n) != field or n == 0 or start <= end:
+            raise WriteLogError("line %d: range %r not canonical" % (number, field))
+        if start + n > len(atoms) or any(a >= 0 for a in atoms[start:start + n]):
+            raise WriteLogError("line %d: range %r is not all literal" % (number, field))
+        ranges.append((start, n))
+        end = start + n
+    return line, ranges
+
+
+def _parse(text):
+    """parse's (tables, segments) and invariants' marks."""
     lines = text.split("\n")
     if not lines or lines[-1] != "":
         raise WriteLogError("the log does not end with a newline")
@@ -508,8 +739,17 @@ def parse(text):
     order = _key_order(tables)
     segments = []
     last_bank = last_table = None
+    records, marks = {}, {}
     for number, line in enumerate(lines[2:], 3):
         fields = line.split(" ")
+        if fields[0] == "I":
+            mark, ranges = _parse_mark(fields, number, records)
+            if marks and mark <= max(marks):
+                raise WriteLogError("line %d: I lines out of order" % number)
+            marks[mark] = ranges
+            continue
+        if marks:
+            raise WriteLogError("line %d: a line after the I lines" % number)
         if fields[0] == "G" and len(fields) == 2 and NAME.fullmatch(fields[1]):
             if segments and not (segments[-1][1] or segments[-1][2]):
                 raise WriteLogError("line %d: segment %s has no record" % (number - 1,
@@ -530,6 +770,7 @@ def parse(text):
             if entries or last_bank is not None and offset <= last_bank:
                 raise WriteLogError("line %d: bank record out of order or not maximal" % number)
             atoms = _parse_tokens(fields[2:], offset, number)
+            records[number] = atoms
             banks.update((offset + i, a) for i, a in enumerate(atoms))
             last_bank = offset + len(atoms)
         elif fields[0] == "T" and len(fields) >= 3:
@@ -542,12 +783,13 @@ def parse(text):
             if last_table is not None and order((fields[1], key)) <= order(last_table):
                 raise WriteLogError("line %d: table record out of order" % number)
             entries[(fields[1], key)] = _parse_tokens(fields[3:], None, number)
+            records[number] = entries[(fields[1], key)]
             last_table = (fields[1], key)
         else:
             raise WriteLogError("line %d: unknown line %r" % (number, line[:40]))
     if segments and not (segments[-1][1] or segments[-1][2]):
         raise WriteLogError("segment %s has no record" % segments[-1][0])
-    return tables, segments
+    return tables, segments, marks
 
 
 def decode(text, rom):
@@ -611,9 +853,9 @@ def compare_scrambled(events, rom, sides, known, scramble_known=None):
     return encode_scrambled(events, rom, sides, known, scramble_known)[1]
 
 
-def encode_scrambled(events, rom, sides, known, scramble_known=None):
+def encode_scrambled(events, rom, sides, known, scramble_known=None, invariant=None):
     """(encode's text, compare_scrambled's lines) from one encoding on the real rom."""
-    real, fixed = _encode(events, rom, sides, known)
+    real, fixed = _encode(events, rom, sides, known, invariant=invariant)
     other = _encode(events, scramble(rom, known if scramble_known is None else scramble_known),
                     sides, known, fixed)[0]
     lines = []
@@ -655,7 +897,8 @@ def _inputs(args):
     rom = _read(args.rom, binary=True)
     if events.source != hashlib.sha1(rom).hexdigest():
         raise WriteLogError("the event stream was recorded on another ROM")
-    return events, rom, sides_of(_read(args.inventory)), known_source.build(rom)
+    invariant = None if args.invariant is None else parse_invariant(_read(args.invariant))
+    return events, rom, sides_of(_read(args.inventory)), known_source.build(rom), invariant
 
 
 def self_test():
@@ -703,6 +946,7 @@ def main(argv):
         p.add_argument("--events", required=True)
         p.add_argument("--rom", required=True)
         p.add_argument("--inventory", default=DEFAULT_INVENTORY)
+        p.add_argument("--invariant")
         if mode == "encode":
             p.add_argument("--out")
     p = sub.add_parser("decode")
@@ -721,14 +965,15 @@ def main(argv):
         elif args.mode == "project":
             sys.stdout.write(project(_read(args.log), args.group))
         elif args.mode == "encode":
-            text = encode(*_inputs(args))
+            events, rom, sides, known, invariant = _inputs(args)
+            text = encode(events, rom, sides, known, invariant)
             if args.out:
                 with open(args.out, "w", encoding="ascii", newline="\n") as f:
                     f.write(text)
             else:
                 sys.stdout.write(text)
         else:
-            events, rom, sides, known = _inputs(args)
+            events, rom, sides, known, _ = _inputs(args)
             lines = compare_scrambled(events, rom, sides, known)
             for line in lines:
                 print(line)

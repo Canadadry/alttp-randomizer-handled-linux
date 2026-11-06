@@ -92,6 +92,17 @@ class Case(unittest.TestCase):
         self.assertEqual(self.check(), [
             ("encode", "rom_writes.txt is not the stream's encoding, from line 9")])
 
+    def test_the_i_lines_must_be_the_re_run_record_s(self):
+        self.events.events.append(bank("cg", 0x50, self.rom[0x500:0x504]))
+        flags = {5: (True,) * 4}
+        marked = write_log.encode(self.events, self.rom, SIDES, self.known, flags)
+        self.assertIn("\nI ", marked)
+        write(os.path.join(self.folder, "rom_writes.txt"), marked)
+        write(os.path.join(self.folder, "run.txt"), "rom_sha1 %s\noutcome ok\n"
+              % hashlib.sha1(write_log.decode(marked, self.rom)).hexdigest())
+        self.assertEqual(self.check(invariant=flags), [])
+        self.assertEqual([c for c, _ in self.check(invariant={})], ["encode"])
+
     def test_a_group_outside_the_table_and_c_groups(self):
         sides = dict(SIDES, other="-")
         problems = self.check(sides=sides)

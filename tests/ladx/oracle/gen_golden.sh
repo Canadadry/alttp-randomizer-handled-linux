@@ -7,8 +7,9 @@
 # process per case, with PYTHONHASHSEED <n> (default 0) and bytecode writing off, on the LADXR
 # checkout (default tests/ladx/oracle/ladxr, at the pin), the ROM (default tmp/ladx/base.gbc) and
 # the work root under which LADXR runs (default tmp/ladx-oracle/), then encodes each ok case's
-# write log (write_log.py encode). With --out it writes <dir>/<case>/ (run.txt, meta.txt,
-# events.txt, reads.txt, writes.txt, and out.gbc, spoiler.json and rom_writes.txt when written).
+# write log (write_log.py encode, its I lines from the re-run record invariant.txt). With --out it
+# writes <dir>/<case>/ (run.txt, meta.txt, events.txt, invariant.txt, reads.txt, writes.txt, and
+# out.gbc, spoiler.json and rom_writes.txt when written).
 # Without --out it writes the goldens: every file into the mirror (default tmp/ladx-goldens/)
 # <mirror>/<case>/, then into the case folder <root>/<cases|combos>/<case>/ (default root
 # tests/ladx) only run.txt, rom_writes.txt and spoiler.json (when written), replacing its old
@@ -121,7 +122,8 @@ while read -r name seed settings; do
 		--rom "$rom" --dir "$run_dir/$name" --work "$work" --reads "$ladxr" "$seed" $settings </dev/null
 	outcome="$(tail -n 1 "$run_dir/$name/run.txt" | cut -d ' ' -f 2)"
 	if [ "$outcome" = ok ] && ! python3 -I -B "$oracle_dir/write_log.py" encode \
-		--events "$run_dir/$name/events.txt" --rom "$rom" --out "$run_dir/$name/rom_writes.txt"; then
+		--events "$run_dir/$name/events.txt" --invariant "$run_dir/$name/invariant.txt" \
+		--rom "$rom" --out "$run_dir/$name/rom_writes.txt"; then
 		outcome="ok, encode failed"
 	fi
 	echo "$name: outcome $outcome"

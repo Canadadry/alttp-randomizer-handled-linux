@@ -35,8 +35,10 @@ notes/ladx-inventory.md), and writes into --dir, whatever the outcome: reads.txt
 reads: group, site, caller, channel, target, provenance, n= and range) and writes.txt (per
 writing site: group, site, n= positions, sha1= of its net writes) and events.txt (the event
 stream of read_trace.py's Trace.event_lines: every write in order with its values, group, site
-and each byte's origin, a source offset or known, after the parsed entries). The other files are
-the same with or without it.
+and each byte's origin, a source offset or known, after the parsed entries) and invariant.txt
+(invariant_run.py's re-run of every C-group call of generateRom that writes a computed byte, on
+a scrambled copy of the ROM state: per event, one flag per byte, write_log.py's
+parse_invariant). The other files are the same with or without it.
 --plain (with --rom) runs LADXR's own main.main instead, with no hook and no tracer, os.urandom
 handing it the seed on its first call; it writes out.gbc, spoiler.json and plain.txt:
 rom_sha1 | rom none, spoiler_sha1 | spoiler none, then outcome ok | outcome retry (a second
@@ -54,7 +56,9 @@ import shutil
 import subprocess
 import sys
 
+import importlib
 import inventory_check
+import invariant_run
 import ladx_oracle
 import read_trace
 
@@ -189,6 +193,7 @@ class Driver:
             args = ladxr_args(rom, out_rom, spoiler)
         outcome = "outcome ok"
         trace = self._trace(reads) if reads is not None and rom is not None else None
+        rerun = self._rerun(trace, reads) if trace is not None else None
         try:
             with contextlib.redirect_stdout(io.StringIO()):
                 self.randomizer.Randomizer(args, settings, seed=seed)
@@ -201,6 +206,9 @@ class Driver:
         except Exception as e:
             outcome = "outcome crash %s %s" % (type(e).__name__, ladx_oracle.field(str(e)))
         finally:
+            if rerun is not None:
+                rerun.uninstall()
+                write_lines(os.path.join(case_dir, "invariant.txt"), rerun.lines())
             if trace is not None:
                 trace.uninstall()
                 trace.write(os.path.join(case_dir, "reads.txt"))
@@ -215,6 +223,13 @@ class Driver:
         if rom is not None:
             lines += file_records(out_rom, spoiler, outcome == "outcome ok")
         return lines + [outcome]
+
+    def _rerun(self, trace, reads):
+        """invariant_run over the C groups' calls of generateRom (reads: the Reads object)."""
+        targets = [(importlib.import_module(module), attr)
+                   for module, attr in invariant_run.targets_of(reads.text)]
+        return invariant_run.install(trace, targets, invariant_run.sides_of(reads.text),
+                                     tracer=self.tracer)
 
     @staticmethod
     def _trace(groups):
@@ -232,6 +247,14 @@ class Driver:
                 "checkout %s" % self.ladxr_dir,
                 "python %d.%d.%d" % sys.version_info[:3],
                 "describe %s" % self.describe]
+
+
+class Reads(dict):
+    """The inventory's {site: group}, with its text (`text`) for the re-run's groups."""
+
+    def __init__(self, text):
+        super().__init__(inventory_check.site_groups(text))
+        self.text = text
 
 
 def run_plain(ladxr_dir, work_root, rom, case_dir, seed, assignments):
@@ -306,7 +329,7 @@ def main(argv):
     reads = None
     if args.reads:
         with open(args.inventory, "rb") as f:
-            reads = inventory_check.site_groups(f.read().decode("utf-8"))
+            reads = Reads(f.read().decode("utf-8"))
     work = os.path.abspath(args.work)
     if args.rom is not None:
         rom, case_dir = os.path.abspath(args.rom), os.path.abspath(args.dir)

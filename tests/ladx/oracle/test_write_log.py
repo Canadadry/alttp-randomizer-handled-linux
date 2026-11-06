@@ -88,6 +88,113 @@ class CGroups(unittest.TestCase):
                                      "B 10 %02x @301+1" % self.rom[0x300]])
 
 
+class KnownSourceMatch(unittest.TestCase):
+    def setUp(self):
+        rom = bytearray(synthetic_rom())
+        self.value = b"\x5a\xa5\x3c\xc3\x99\x66"
+        rom[0x080:0x086] = self.value
+        rom[0x300:0x306] = self.value
+        rom[0x500:0x506] = self.value
+        self.rom = bytes(rom)
+
+    def test_a_computed_run_equal_to_known_source_bytes_copies_their_lowest_offset(self):
+        log = encode([bank("cg", 0x10, self.value)], self.rom,
+                     known=set(range(0x300, 0x306)) | set(range(0x500, 0x506)))
+        self.assertEqual(body(log), ["G cg", "B 10 @300+6"])
+
+    def test_a_match_never_reaches_outside_the_map_nor_under_four_bytes(self):
+        known = set(range(0x300, 0x304)) | set(range(0x305, 0x306))
+        log = encode([bank("cg", 0x10, self.value)], self.rom, known=known)
+        self.assertEqual(body(log), ["G cg", "B 10 @300+4 9966"])
+        short = encode([bank("cg", 0x10, self.value[:3])], self.rom, known=range(0x300, 0x306))
+        self.assertEqual(body(short), ["G cg", "B 10 5aa53c"])
+
+    def test_an_entry_s_computed_run_copies_known_source_bytes(self):
+        log = encode([entry("cg", "texts", 3, b"\x01" + self.value)], self.rom,
+                     known=range(0x500, 0x506))
+        self.assertEqual(body(log), ["G cg", "T texts 3 01 @500+6"])
+
+    def test_a_table_group_still_matches_any_source_bytes(self):
+        log = encode([bank("fix", 0x10, self.value)], self.rom, known=range(0x500, 0x506))
+        self.assertEqual(body(log), ["G fix", "B 10 @80+6"])
+
+    def test_the_scramble_keeps_a_known_source_match(self):
+        events = stream([bank("cg", 0x10, self.value)])
+        self.assertEqual(write_log.compare_scrambled(events, self.rom, SIDES,
+                                                     set(range(0x300, 0x306))), [])
+
+
+class Invariant(unittest.TestCase):
+    """The `I` lines: a C group's literal bytes the oracle's re-run on a scrambled copy gave
+    unchanged, kept where such a run of at least 4 bytes holds source bytes."""
+
+    def setUp(self):
+        self.rom = synthetic_rom()
+        self.value = self.rom[0x300:0x306]
+
+    def encode(self, events, invariant, **kw):
+        return write_log.encode(stream(events, **kw), self.rom, SIDES, set(), invariant=invariant)
+
+    def test_an_invariant_literal_run_holding_source_bytes_is_marked_by_line_and_byte(self):
+        log = self.encode([bank("other", 0x50, b"\x01"), bank("cg", 0x10, b"\x07" + self.value)],
+                          {1: (False,) + (True,) * 6})
+        self.assertEqual(body(log), ["G other", "B 50 01", "G cg", "B 10 07" + self.value.hex(),
+                                     "I 6 1+6"])
+        self.assertEqual(write_log.invariants(log), {6: [(1, 6)]})
+
+    def test_a_byte_the_re_run_changed_splits_or_drops_the_mark(self):
+        flags = (True, True, False, True, True, True)
+        log = self.encode([bank("cg", 0x10, self.value)], {0: flags})
+        self.assertEqual(body(log)[-1], "B 10 " + self.value.hex())
+        log = self.encode([bank("cg", 0x10, self.value + self.rom[0x400:0x404])],
+                          {0: (False,) + (True,) * 9})
+        self.assertEqual(body(log)[-1], "I 4 1+9")
+
+    def test_runs_without_source_bytes_and_table_groups_are_not_marked(self):
+        log = self.encode([bank("cg", 0x10, b"\x01\x02\x03\x04\x05")], {0: (True,) * 5})
+        self.assertEqual(write_log.invariants(log), {})
+        log = self.encode([bank("fix", 0x10, b"\x01\x02\x03\x04")], {0: (True,) * 4})
+        self.assertEqual(write_log.invariants(log), {})
+
+    def test_the_net_byte_takes_the_flag_of_its_last_write_and_entries_are_marked(self):
+        log = self.encode([bank("cg", 0x10, self.value), bank("cg", 0x12, b"\x00"),
+                           entry("cg", "texts", 2, self.value)],
+                          {0: (True,) * 6, 1: (False,), 2: (True,) * 6})
+        self.assertEqual(body(log)[-2:], ["T texts 2 " + self.value.hex(), "I 5 0+6"])
+        self.assertNotIn("I 4", log)
+
+    def test_projections_and_decode_ignore_the_marks(self):
+        events = [bank("cg", 0x10, self.value)]
+        marked = self.encode(events, {0: (True,) * 6})
+        self.assertEqual(write_log.project(marked, "cg"), write_log.project(
+            self.encode(events, None), "cg"))
+        self.assertEqual(write_log.decode(marked, self.rom), write_log.decode(
+            self.encode(events, None), self.rom))
+
+    def test_the_re_run_s_flags_are_read_back(self):
+        text = "ladx-invariant-events 1\n0 1101\n1f 0\n"
+        self.assertEqual(write_log.parse_invariant(text),
+                         {0: (True, True, False, True), 0x1f: (False,)})
+        for bad in ("", "ladx-invariant-events 1\n0 12\n", "ladx-invariant-events 1\nx 1\n",
+                    "ladx-invariant-events 1\n2 1\n1 1\n"):
+            with self.subTest(text=bad):
+                with self.assertRaises(write_log.WriteLogError):
+                    write_log.parse_invariant(bad)
+
+    def test_a_broken_mark_is_refused(self):
+        head = "ladx-rom-writes 1\ntables texts\nG a\nB 10 0102030405 @0+2\nT texts 1 0607\n"
+        self.assertEqual(write_log.invariants(head + "I 4 0+2 3+2\nI 5 1+1\n"),
+                         {4: [(0, 2), (3, 2)], 5: [(1, 1)]})
+        for marks, pattern in [("I 3 0+1\n", "record"), ("I 4 5+1\n", "literal"),
+                               ("I 4 0+2 2+1\n", "canonical"), ("I 4 2+1 0+1\n", "canonical"),
+                               ("I 5 0+1\nI 4 0+1\n", "order"), ("I 4 0+0\n", "canonical"),
+                               ("I 4 0+1\nG b\nB 1 01\n", "after"), ("I 4\n", "range"),
+                               ("I 9 0+1\n", "record")]:
+            with self.subTest(marks=marks):
+                with self.assertRaisesRegex(write_log.WriteLogError, pattern):
+                    write_log.parse(head + marks)
+
+
 class WriteIdentities(unittest.TestCase):
     def setUp(self):
         self.rom = synthetic_rom()

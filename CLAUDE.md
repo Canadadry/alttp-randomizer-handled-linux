@@ -142,8 +142,8 @@ in `docs/`, then `README.md`.
   budget), then compares `tests/ladx/cases/` and `tests/ladx/combos/` with
   the expected list and checks each folder's goldens: `run.txt`,
   `rom_writes.txt` (parsing, version line included) and `spoiler.json`
-  exactly when `race` is off, and the size budget (`rom_writes.txt` 192 KiB
-  per case and 12 MiB in all, all golden files 25 MiB); one `MISSING`,
+  exactly when `race` is off, and the size budget (`rom_writes.txt` 224 KiB
+  per case and 22 MiB in all, all golden files 34 MiB); one `MISSING`,
   `EXTRA`, `WRONG`, `BADSEED`, `STRAY`, `BOTH`, `NOGOLDEN`, `BADGOLDEN` or
   `BUDGET` line per mismatch (exit 1), else `ladx-cases: goldens in <n>
   folders, [<p> pending, ]rom_writes.txt <b> bytes (limits ...), golden
@@ -181,11 +181,12 @@ in `docs/`, then `README.md`.
   `ladx_cases.py list`; with `--cases`, `--out` only, that list file, e.g.
   `determinism_cases.txt`) through the whole generator (`oracle_run.py
   --rom --reads`, one process per case, LADXR in a new directory under the
-  work root; about 10 s per case) and encodes each ok case's write log
-  (`write_log.py encode`). With `--out` it writes `<dir>/<case>/`:
+  work root; about 15 s per case) and encodes each ok case's write log
+  (`write_log.py encode`, its `I` lines from the run's `invariant.txt`).
+  With `--out` it writes `<dir>/<case>/`:
   `run.txt` (the sections above, the trace covering `generateRom` and the
   spoiler, then `rom_sha1`, `spoiler_sha1` and the outcome), `meta.txt`,
-  `events.txt`, `reads.txt`, `writes.txt`, and `out.gbc`, `spoiler.json`
+  `events.txt`, `invariant.txt`, `reads.txt`, `writes.txt`, and `out.gbc`, `spoiler.json`
   and `rom_writes.txt` when written. Without `--out` it writes the
   goldens: every file into `<mirror>/<case>/` (default
   `tmp/ladx-goldens/`), then only `run.txt`, `rom_writes.txt` and
@@ -200,7 +201,8 @@ in `docs/`, then `README.md`.
   <dir>] [--rom <file>] [--ladxr <dir>] [--inventory <file>] [<case>...]`
   verifies the goldens with the ROM, against the mirror's event streams:
   per case `decode` (the log replayed onto the ROM gives `rom_sha1`),
-  `encode` (the golden is its stream's encoding), `tags` (every group a
+  `encode` (the golden is its stream's encoding, `I` lines from the
+  mirror's `invariant.txt`), `tags` (every group a
   `table` or `C` group of the inventory), `scrambled` (no C group's
   projection changes with every byte outside the C-knowable map
   scrambled), `projection` (dropping or changing another group's records
@@ -209,11 +211,16 @@ in `docs/`, then `README.md`.
   <check>: <detail>` lines, with no case named the union of the goldens'
   groups against the inventory's writing groups less `spoiler` (`BAD
   tags: ...`), then `golden-check: <n> cases, <b> bad, <k> literal runs`;
-  about 12 s per case.
+  about 13 s per case.
   `oracle_run.py --rom --dir <dir> --reads [--inventory <file>]` (off by
   default; `run.txt`, `out.gbc` and `spoiler.json` unchanged by it) also
-  traces the whole run with `read_trace.py` and writes `reads.txt` and
-  `writes.txt` into `<dir>`, whatever the outcome.
+  traces the whole run with `read_trace.py` and writes `reads.txt`,
+  `writes.txt`, `events.txt` and `invariant.txt` into `<dir>`, whatever the
+  outcome: `invariant_run.py` re-runs each C-group call of `generateRom`
+  that writes a computed byte on a scrambled copy of the ROM state (bytes
+  kept: never-written C-knowable source bytes and bytes earlier writes
+  computed; RNG state put back; `patch`'s old-byte check off on the copy)
+  and flags, per event byte, whether the copy holds the same byte.
   `inventory_trace.sh [--out <dir>] [--cases <file>] [--seeds <file>]
   [<case>...]` runs every case that way (default: the case folders, like
   `gen_golden.sh`, then, when no case is named, `determinism_cases.txt`'s
@@ -267,13 +274,14 @@ in `docs/`, then `README.md`.
   <dir>] [--inventory <file>] [--scope strict|general|writes] [--min <n>]
   [--verbose] <file-or-dir>...` proves itself first on planted files against
   a planted synthetic ROM, corpus and inventory, one per scope, view and
-  clearance (`nintendo-bytes: self-test, 48 planted files as expected`, else
+  clearance (`nintendo-bytes: self-test, 51 planted files as expected`, else
   `self-test failed: <case>`, exit 1). Then
   it prints one `LITERAL <path> <view> @<offset> <length> bytes <scope>`
   line per uncleared run of a file that also occurs in the ROM (`--rom`,
   default `tmp/ladx/base.gbc`), never the bytes, then `nintendo-bytes: <n>
   files, rom <sha1>, ladxr <short>, <k> literal runs, cleared <t> trivial,
-  <l> low-info, <p> ladxr-public, <c> computed`; exit 1 when `k > 0`. Scope
+  <l> low-info, <p> ladxr-public, <c> computed, <i> invariant`; exit 1
+  when `k > 0`. Scope
   by repository-relative path: in a case folder
   (`tests/ladx/cases|combos/<case>/`) `run.txt` and `spoiler.json` are
   `general` and `rom_writes.txt` is `writes`; else `strict` under
@@ -297,7 +305,11 @@ in `docs/`, then `README.md`.
   whole in the source bytes its token's group reads, from the inventory's
   `Reads (trace)` ranges, `--inventory`, default `notes/ladx-inventory.md`,
   `written:`/`mixed:` followed to the writers, `computed` coverage rows
-  left out; a missing inventory is a `setup:` line when a run needs it).
+  left out; a missing inventory is a `setup:` line when a run needs it),
+  `invariant` (view `writes` only: every byte of the run lies in its
+  record's `I` ranges, the bytes the oracle's re-run on a scrambled copy
+  gave unchanged, and the run is not C-knowable source bytes of
+  `known_source.py`).
   `--min <n>` is an experimental override of every
   threshold, shown as `min <n> (override)` in the summary, never used by
   the gate or a plan check. Directories are walked sorted, `.git` skipped.
@@ -335,7 +347,8 @@ in `docs/`, then `README.md`.
   default `tests/ladx/oracle/ladxr`: `push-gate: setup: …, push refused`),
   never echoes the link or the bytes, else prints `push-gate: ok, <c>
   commits, <b> blobs, no link, 0 literal runs, cleared <t> trivial, <l>
-  low-info, <p> ladxr-public, <c> computed, no stray untracked file`. While
+  low-info, <p> ladxr-public, <c> computed, <i> invariant, no stray
+  untracked file`. While
   it is armed,
   every push needs `LADX_ROM_URL` exported in the same shell command as
   `git push`, the ROM and the pinned LADXR checkout; a refusal for one of

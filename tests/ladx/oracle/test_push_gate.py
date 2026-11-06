@@ -50,7 +50,8 @@ class Pushes(unittest.TestCase):
         status, output = self.push(lambda r: r.commit("clean", [("a.txt", "text\n")]))
         self.assertEqual(status, 0, output)
         self.assertIn("push-gate: ok, 1 commits, 1 blobs, no link, 0 literal runs, cleared 0 "
-                      "trivial, 0 low-info, 0 ladxr-public, 0 computed, no stray untracked file",
+                      "trivial, 0 low-info, 0 ladxr-public, 0 computed, 0 invariant, no stray untracked "
+                      "file",
                       output)
 
     def test_cleared_runs_pass_and_are_counted(self):

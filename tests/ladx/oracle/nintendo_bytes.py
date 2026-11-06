@@ -4,7 +4,7 @@
 The Nintendo-bytes check: prints one `LITERAL <path> <view> @<offset> <length> bytes <scope>` line
 per run of a file that also occurs in the ROM (--rom, default tmp/ladx/base.gbc) and is not
 cleared, then `nintendo-bytes: <n> files, rom <sha1>, ladxr <short>, <k> literal runs, cleared <t>
-trivial, <l> low-info, <p> ladxr-public, <c> computed`; exit 1 when k > 0, 2 on a `setup:` line.
+trivial, <l> low-info, <p> ladxr-public, <c> computed, <i> invariant`; exit 1 when k > 0, 2 on a `setup:` line.
 Never prints the bytes themselves. --verbose adds `CLEARED <path> <view> @<offset> <length> bytes
 <category>`.
 
@@ -23,7 +23,10 @@ text files of the LADXR checkout --ladxr, default LADXR_DIR or tests/ladx/oracle
 LADXR_PIN, or in their decoded hex-digit runs; else a `setup:` line), `computed` (view `writes`
 only: the run occurs nowhere whole in the source bytes its token's group reads, ReadSets from
 --inventory, default notes/ladx-inventory.md; read only when a writes run needs it, else a
-`setup:` line). Proves itself first, on every run, on planted files against a planted ROM,
+`setup:` line), `invariant` (view `writes` only: every byte of the run lies in its record's
+`I` ranges, the bytes the oracle's re-run of the writing C-group call on a scrambled copy of
+the ROM state gave unchanged (write_log.py), and the run occurs nowhere whole inside the
+C-knowable source map of known_source.py). Proves itself first, on every run, on planted files against a planted ROM,
 corpus and inventory.
 """
 
@@ -142,7 +145,7 @@ def _bytelist_runs(data, index, n):
     return found
 
 
-CLEARANCES = ("trivial", "low-info", "ladxr-public", "computed")
+CLEARANCES = ("trivial", "low-info", "ladxr-public", "computed", "invariant")
 VIEWS = (("raw", _raw_runs), ("hex", _hex_runs), ("bytelist", _bytelist_runs))
 WRITES_MIN = 4
 
@@ -190,12 +193,22 @@ class ReadSets:
     coverage entry names. `(group, run) in reads`: run occurs whole in them. inventory: the
     inventory's text, or a callable returning it on first use; tables(rom) -> {table: {key:
     (start, stop) or int}} (default known_source.parse). Raises SetupError on first use when the
-    inventory cannot be read or parsed."""
+    inventory cannot be read or parsed. `knows(run)`, for the `invariant` clearance: run occurs
+    whole inside the C-knowable source map, known(rom) (default known_source.build) taken as
+    its maximal runs of contiguous offsets."""
 
-    def __init__(self, inventory, rom, tables=None):
+    def __init__(self, inventory, rom, tables=None, known=None):
         self._inventory, self.rom, self._tables = inventory, rom, tables
+        self._known = known
+        self._known_runs = None
         self._parsed = None
         self._pieces = {}
+
+    def knows(self, run):
+        if self._known_runs is None:
+            known = (self._known or _sibling("known_source").build)(self.rom)
+            self._known_runs = _sibling("write_log")._KnownRuns(self.rom, known)
+        return self._known_runs.find(run) >= 0
 
     def _parse(self):
         if self._parsed is not None:
@@ -289,32 +302,50 @@ _LITERAL_TOKEN = re.compile(rb"(?:[0-9a-f]{2})+")
 
 
 def _write_tokens(data):
-    """([(offset, group, bytes)] of a write log's literal tokens, [(offset, bytes)] of the text
-    around them), offsets in data's characters; None when data is not a valid write log."""
+    """([(offset, group, bytes, invariant flags)] of a write log's literal tokens, [(offset,
+    bytes)] of the text around them), offsets in data's characters, a flag per byte for its `I`
+    ranges; None when data is not a valid write log."""
     write_log = _sibling("write_log")
     try:
-        write_log.parse(data.decode("ascii"))
+        marks = write_log.invariants(data.decode("ascii"))
     except (UnicodeDecodeError, ValueError, write_log.WriteLogError):
         return None
     literals, rest = [], []
     group, kept, pos = None, 0, 0
-    for line in data.split(b"\n"):
+    for number, line in enumerate(data.split(b"\n"), 1):
         fields = line.split(b" ")
         if fields[0] == b"G":
             group = fields[1].decode()
         first = {b"B": 2, b"T": 3}.get(fields[0])
-        at = pos
+        flags = bytearray(len(line))
+        for start, n in marks.get(number, ()):
+            flags[start:start + n] = b"\x01" * n
+        at, atom = pos, 0
         for i, field in enumerate(fields):
             if first is not None and i >= first and _LITERAL_TOKEN.fullmatch(field):
                 if at > kept:
                     rest.append((kept, data[kept:at]))
-                literals.append((at, group, bytes.fromhex(field.decode())))
+                decoded = bytes.fromhex(field.decode())
+                literals.append((at, group, decoded, flags[atom:atom + len(decoded)]))
                 kept = at + len(field)
+            if first is not None and i >= first:
+                atom += _token_length(field)
             at += len(field) + 1
         pos += len(line) + 1
     if kept < len(data):
         rest.append((kept, data[kept:]))
     return literals, rest
+
+
+def _token_length(field):
+    """The number of bytes a valid write-log token stands for."""
+    if field[:1] == b"=":
+        return int(field[1:], 16)
+    if field[:1] == b"@":
+        return int(field.partition(b"+")[2], 16)
+    if field[:1] == b"p":
+        return 0
+    return len(field) // 2
 
 
 def _check_writes(data, index, corpus, min_len, reads):
@@ -327,11 +358,13 @@ def _check_writes(data, index, corpus, min_len, reads):
     tokens, rest = parsed
     literals, cleared = [], []
     n = min_len or WRITES_MIN
-    for start, group, decoded in tokens:
+    for start, group, decoded, flags in tokens:
         for off, length in _merged_hits(decoded, index.windows(n), n):
             run = decoded[off:off + length]
             category = _clearance(run, "strict", corpus) or \
-                ("computed" if reads is not None and (group, run) not in reads else None)
+                ("computed" if reads is not None and (group, run) not in reads else None) or \
+                ("invariant" if reads is not None and all(flags[off:off + length])
+                 and not reads.knows(run) else None)
             where = start + 2 * off
             if category:
                 cleared.append(("writes", where, length, category))
@@ -580,7 +613,8 @@ def planted_inventory(rows, coverage=()):
 def planted_reads(rom):
     """The ReadSets of the planted case folder: `reader` reads bank 0x00 0x0400..0x04FF and text
     entry 1 (0x0500..0x051F), `maker` reads nothing, `follower` reads what `reader` wrote, and
-    `summer` reads 0x0400..0x04FF only through a `computed` coverage row."""
+    `summer` reads 0x0400..0x04FF only through a `computed` coverage row; the C-knowable map is
+    0x04C0..0x04CF."""
     text = planted_inventory([
         ("reader(rom)", "bank 0x00 source 0x0400..0x04FF; table texts source 0x0001..0x0001",
          "reader"),
@@ -588,7 +622,8 @@ def planted_reads(rom):
         ("follower(rom)", "bank 0x00 written:reader 0x0010..0x0011", "follower"),
         ("checksum(rom)", "bank 0x00 mixed:maker 0x0400..0x04FF", "summer"),
     ], [("summer", "`checksum(rom)`", "*", "computed")])
-    return ReadSets(text, rom, lambda _: {"texts": {0: (0x600, 0x610), 1: (0x500, 0x520)}})
+    return ReadSets(text, rom, lambda _: {"texts": {0: (0x600, 0x610), 1: (0x500, 0x520)}},
+                    lambda _: set(range(0x4C0, 0x4D0)))
 
 
 def _planted_case_folder(rom):
@@ -628,6 +663,12 @@ def _planted_case_folder(rom):
         ("writes-reference-general", writes, log("G maker", "B 10 @%s+4" % rom[1000:1008].hex()),
          [("hex", 8)], []),
         ("writes-unparsed", writes, unparsed, [("writes", len(unparsed))], []),
+        ("writes-invariant", writes, log("G reader", "B 10 =1 " + leak.hex(), "I 4 1+8"), [],
+         [("writes", 8, "invariant")]),
+        ("writes-invariant-partly", writes, log("G reader", "B 10 " + leak.hex(), "I 4 1+7"),
+         [("writes", 8)], []),
+        ("writes-invariant-known", writes, log("G reader", "B 10 " + rom[0x4C4:0x4CC].hex(),
+                                               "I 4 0+8"), [("writes", 8)], []),
     ]
 
 

@@ -910,8 +910,9 @@ class OracleRunReadsTest(unittest.TestCase):
         plain = self.files(self.run_case("plain"))
         traced = self.files(self.run_case("traced", "--reads"))
         self.assertEqual(sorted(plain), ["out.gbc", "run.txt", "spoiler.json"])
-        self.assertEqual(sorted(traced), ["events.txt", "out.gbc", "reads.txt", "run.txt",
-                                          "spoiler.json", "writes.txt"])
+        self.assertEqual(sorted(traced), ["events.txt", "invariant.txt", "out.gbc", "reads.txt",
+                                          "run.txt", "spoiler.json", "writes.txt"])
+        self.assertEqual(traced["invariant.txt"], b"ladx-invariant-events 1\n")
         for name in plain:
             self.assertEqual(traced[name], plain[name], name)
         self.assertTrue(plain["run.txt"].endswith(b"outcome ok\n"))

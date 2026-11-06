@@ -274,9 +274,9 @@ def log(*lines):
     return ("ladx-rom-writes 1\ntables texts\n" + "".join(l + "\n" for l in lines)).encode()
 
 
-def reads(rows, coverage=(), tables=None):
+def reads(rows, coverage=(), tables=None, known=()):
     return nintendo_bytes.ReadSets(nintendo_bytes.planted_inventory(rows, coverage), ROM,
-                                   tables or (lambda rom: {}))
+                                   tables or (lambda rom: {}), lambda rom: set(known))
 
 
 class CaseFolders(unittest.TestCase):
@@ -461,6 +461,43 @@ class Computed(unittest.TestCase):
             self.verdict("g", sets)
 
 
+class Invariant(unittest.TestCase):
+    """A literal run whose bytes the oracle's re-run on a scrambled copy gave unchanged (the
+    log's `I` lines) is cleared `invariant`, unless it is source bytes C knows."""
+    PATH = CASE + "rom_writes.txt"
+    RUN = ROM[0x480:0x488]
+    READER = [("g(rom)", "bank 0x00 source 0x0400..0x04FF", "g")]
+
+    def verdict(self, marks, run=RUN, known=()):
+        data = log("G g", "B 10 00" + run.hex(), *marks)
+        literals, cleared = check(self.PATH, data, reads=reads(self.READER, known=known))
+        return [view for view, _, _, _ in literals], cleared
+
+    def test_a_run_inside_an_i_range_is_cleared(self):
+        self.assertEqual(self.verdict(["I 4 1+8"]), ([], [("writes", 8, "invariant")]))
+        self.assertEqual(self.verdict(["I 4 0+9"]), ([], [("writes", 8, "invariant")]))
+
+    def test_a_run_with_a_byte_outside_the_ranges_stays_literal(self):
+        self.assertEqual(self.verdict(["I 4 1+7"]), (["writes"], []))
+        self.assertEqual(self.verdict(["I 4 0+4 5+4"]), (["writes"], []))
+        self.assertEqual(self.verdict([]), (["writes"], []))
+
+    def test_a_run_of_bytes_c_knows_from_the_source_stays_literal(self):
+        self.assertEqual(self.verdict(["I 4 1+8"], known=range(0x478, 0x490)), (["writes"], []))
+        self.assertEqual(self.verdict(["I 4 1+8"], known=range(0x481, 0x490)),
+                         ([], [("writes", 8, "invariant")]))
+
+    def test_a_range_names_its_own_record_only(self):
+        data = log("G g", "B 10 " + self.RUN.hex(), "B 20 " + self.RUN.hex(), "I 4 0+8")
+        literals, cleared = check(self.PATH, data, reads=reads(self.READER))
+        self.assertEqual([o for _, o, _, _ in literals], [data.rindex(self.RUN.hex().encode())])
+        self.assertEqual(cleared, [("writes", 8, "invariant")])
+
+    def test_without_read_sets_nothing_is_cleared_invariant(self):
+        literals, cleared = check(self.PATH, log("G g", "B 10 " + self.RUN.hex(), "I 4 0+8"))
+        self.assertEqual((len(literals), cleared), (1, []))
+
+
 @contextlib.contextmanager
 def patched(name, value):
     real = getattr(nintendo_bytes, name)
@@ -473,6 +510,11 @@ def patched(name, value):
 
 class NeverRead(nintendo_bytes.ReadSets):
     def __contains__(self, item):
+        return False
+
+
+class KnowsNothing(nintendo_bytes.ReadSets):
+    def knows(self, run):
         return False
 
 
@@ -498,6 +540,8 @@ class SelfProof(unittest.TestCase):
              else "general", "case-run-general"),
             ("WRITES_MIN", 5, "writes-in-read-set"),
             ("ReadSets", NeverRead, "writes-literal"),
+            ("ReadSets", KnowsNothing, "writes-invariant-known"),
+            ("_token_length", lambda field: 0, "writes-invariant"),
             ("_check_writes", lambda data, index, corpus, min_len, reads:
              real_writes(data, index, corpus, min_len, None), "writes-computed"),
         ]
@@ -535,10 +579,12 @@ class CommandLine(unittest.TestCase):
             code = nintendo_bytes.main(["--rom", self.rom, "--ladxr", self.ladxr, *args])
         return code, out.getvalue().splitlines()
 
-    def summary(self, files, literals, cleared=(0, 0, 0), override="", computed=0):
+    def summary(self, files, literals, cleared=(0, 0, 0), override="", computed=0,
+                invariant=0):
         return (f"nintendo-bytes: {files} files, rom {hashlib.sha1(ROM).hexdigest()}, "
                 f"ladxr {self.short}, {override}{literals} literal runs, cleared {cleared[0]} "
-                f"trivial, {cleared[1]} low-info, {cleared[2]} ladxr-public, {computed} computed")
+                f"trivial, {cleared[1]} low-info, {cleared[2]} ladxr-public, {computed} computed"
+                f", {invariant} invariant")
 
     def test_a_planted_directory_reports_each_run_sorted_by_path_then_offset(self):
         tree = os.path.join(self.dir, "tree")

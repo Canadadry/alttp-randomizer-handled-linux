@@ -5,7 +5,8 @@ Phase 2's push gate, a pre-push hook chained after .claude/hooks/no_claude_branc
 a push (exit 1) when the link held in LADX_ROM_URL is in `git log -p --text` of a pushed commit,
 when a blob the push uploads holds a literal run of the ROM under nintendo_bytes.py's policy (scope
 from the blob's path; the `computed` clearance from the working tree's notes/ladx-inventory.md,
-a blob that needs it refused when it is missing), or when an untracked file sits outside the git-ignored paths (docs/prd/
+a blob that needs it refused when it is missing; the `invariant` clearance from the blob's own
+`I` lines), or when an untracked file sits outside the git-ignored paths (docs/prd/
 allowed, but searched for the link). It fails closed: no LADX_ROM_URL, no tmp/ladx/base.gbc of
 SHA-1 d90ac17e..., or no LADXR checkout at the pin (LADXR_DIR, default tests/ladx/oracle/ladxr)
 refuses. Its messages name commits, paths, blobs, views and scopes, never the link or the bytes.
