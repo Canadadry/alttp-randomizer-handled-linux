@@ -1032,7 +1032,42 @@ static void test_alttp_fonts_are_data_copies(void)
 			  DATA_DIR);
 }
 
-static void check_asset(int line, const ThemeAsset *a, ThemeAssetKind kind, const char *key, const char *file)
+static void test_alttp_holds_only_its_named_files(void)
+{
+	ThemeAsset assets[THEME_ASSETS_MAX];
+	ThemeError err;
+	DIR *dir;
+	struct dirent *e;
+	int n, i;
+
+	if (!theme_load(&theme, ALTTP_DIR, &err))
+		test_fail(TEST, "alttp refused: %s", err.message);
+	n = theme_assets(&theme, assets);
+	for (i = 0; i < n; i++) {
+		char path[512];
+		struct stat st;
+
+		snprintf(path, sizeof path, "%s/%s", ALTTP_DIR, assets[i].file);
+		if (stat(path, &st) != 0 || !S_ISREG(st.st_mode))
+			test_fail(TEST, "%s: %s names %s, not a file of the folder", ALTTP_DIR, assets[i].key, assets[i].file);
+	}
+	dir = opendir(ALTTP_DIR);
+	if (!dir)
+		test_fail(TEST, "cannot open %s: %s", ALTTP_DIR, strerror(errno));
+	while ((e = readdir(dir)) != NULL) {
+		bool named = strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0 ||
+			     strcmp(e->d_name, "theme.ini") == 0 || ends_with(e->d_name, "-LICENSE.txt");
+
+		for (i = 0; i < n && !named; i++)
+			named = strcmp(e->d_name, assets[i].file) == 0;
+		if (!named)
+			test_fail(TEST, "%s/%s: named by no key of theme.ini and not a licence; it would ship in the zip",
+				  ALTTP_DIR, e->d_name);
+	}
+	closedir(dir);
+}
+
+static void check_asset(int line,const ThemeAsset *a, ThemeAssetKind kind, const char *key, const char *file)
 {
 	if (a->kind != kind || strcmp(a->key, key) != 0 || strcmp(a->file, file) != 0)
 		test_fail(TEST, "%s:%d: asset %d %s %s, expected %d %s %s", __FILE__, line, (int)a->kind, a->key, a->file,
@@ -1138,6 +1173,7 @@ int main(void)
 	test_help_columns_floor_partial_characters();
 	test_alttp_loads_within_the_app_ranges();
 	test_alttp_fonts_are_data_copies();
+	test_alttp_holds_only_its_named_files();
 	test_classic_line_and_section_problems();
 	test_classic_missing_keys_and_sections();
 	test_optional_sections();

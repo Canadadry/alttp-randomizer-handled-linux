@@ -52,19 +52,88 @@ static int width(const char *text)
 	return w;
 }
 
-static int marker_width(const ThemeMarker *m)
+static const SDL_Surface *image(const char *file)
 {
 	int i;
 
+	for (i = 0; i < render.asset_count; i++)
+		if (render.images[i] != NULL && strcmp(render.assets[i].file, file) == 0)
+			return render.images[i];
+	test_fail(TEST, "no image for %s", file);
+	return NULL;
+}
+
+static int marker_width(const ThemeMarker *m)
+{
 	if (m->kind == THEME_MARKER_TEXT)
 		return width(m->text);
 	if (m->kind == THEME_MARKER_NONE)
 		return 0;
-	for (i = 0; i < render.asset_count; i++)
-		if (render.images[i] != NULL && strcmp(render.assets[i].file, m->file) == 0)
-			return render.images[i]->w;
-	test_fail(TEST, "no image for %s", m->file);
-	return 0;
+	return image(m->file)->w;
+}
+
+static const SDL_Surface *sprite(const char *key, const ThemeMarker *m)
+{
+	if (m->kind != THEME_MARKER_SPRITE)
+		test_fail(TEST, "%s is not a sprite", key);
+	return image(m->file);
+}
+
+static void within(const char *what, int start, int end, int zone_start, int zone_end, const char *zone)
+{
+	if (start < zone_start || end > zone_end)
+		test_fail(TEST, "%s spans %d..%d, outside %s %d..%d", what, start, end, zone, zone_start, zone_end);
+}
+
+static void test_every_sprite_fits_its_zone(void)
+{
+	const ThemeList *l = &theme.list;
+	const ThemeBand *bands[2];
+	const struct {
+		const char *key;
+		const ThemeMarker *m;
+		int y;
+	} rows[] = {
+		{ "list.cursor", &l->cursor, l->cursor_y },
+		{ "list.cursor_disabled", &l->cursor_disabled, l->cursor_y },
+		{ "list.arrow_left", &l->arrow_left, l->arrow_y },
+		{ "list.arrow_right", &l->arrow_right, l->arrow_y },
+		{ "list.scroll_up", &l->scroll_up, l->scroll_y },
+		{ "list.scroll_down", &l->scroll_down, l->scroll_y },
+	};
+	const ThemeFooter *f = &theme.footer;
+	const SDL_Surface *s;
+	size_t i, b;
+
+	bands[0] = &l->selected;
+	bands[1] = &l->selected_disabled;
+	for (i = 0; i < sizeof rows / sizeof rows[0]; i++) {
+		s = sprite(rows[i].key, rows[i].m);
+		within(rows[i].key, rows[i].y, rows[i].y + s->h, 0, l->row_height, "the row");
+	}
+	for (b = 0; b < 2; b++) {
+		const ThemeBand *band = bands[b];
+		int x = l->value_right + l->arrow_right_gap;
+
+		CHECK(band->present);
+		s = sprite("list.arrow_right", &l->arrow_right);
+		within("list.arrow_right", x, x + s->w, band->x, band->x + band->w, "the selected band");
+		s = sprite("list.scroll_up", &l->scroll_up);
+		within("list.scroll_up", l->scroll_x, l->scroll_x + s->w, band->x, band->x + band->w, "the selected band");
+		s = sprite("list.scroll_down", &l->scroll_down);
+		within("list.scroll_down", l->scroll_x, l->scroll_x + s->w, band->x, band->x + band->w,
+		       "the selected band");
+	}
+	CHECK(f->band.present);
+	for (i = 0; i < THEME_BUTTON_COUNT; i++) {
+		if (f->buttons[i].kind != THEME_BUTTON_SPRITE)
+			test_fail(TEST, "footer button %d is not a sprite", (int)i);
+		s = image(f->buttons[i].file);
+		within(f->buttons[i].file, f->key_y, f->key_y + s->h, f->band.y + f->band.top_line,
+		       f->band.y + f->band.h, "the footer band");
+	}
+	s = sprite("tabs.active_before", &theme.tabs.active_before);
+	within("tabs.active_before", theme.tabs.marker_y, theme.tabs.marker_y + s->h, 0, l->top, "above the list");
 }
 
 /* Mirrors the renderer's setting row: the value right-aligned to value_right, the left arrow before it. */
@@ -129,6 +198,7 @@ int main(void)
 	test_every_font_is_monospace_at_its_size();
 	test_no_setting_row_is_cut();
 	test_every_help_fits_the_help_line();
+	test_every_sprite_fits_its_zone();
 	sdl_render_close(&render);
 	IMG_Quit();
 	TTF_Quit();
