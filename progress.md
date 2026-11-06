@@ -9,7 +9,7 @@
     - [x] Docs follow the new name
   - [x] Step 1.4 Per-game SD layout for ALttP
     - [x] ALttP files under App/ZeldaRando/alttp, ROMs in Roms/SFC/ZeldaRando
-  - [ ] Step 1.5 Onion facts for GBC
+  - [x] Step 1.5 Onion facts for GBC
     - [x] docs/onion.md section 11: GBC list, saves and states
   - [ ] Step 1.6 Game-choice screen in the UI core
   - [ ] Step 1.7 ROM guard
