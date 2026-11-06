@@ -596,3 +596,37 @@ position.
   Master sword) were checked and hold.
 - `make mockups`: 9 texts match, help line included (00's help line equals
   the app's). `make test`, `make sdl-pc` and `make -k check` green.
+
+### Step 2.12
+
+- Done in 4 chunks (`3f074a2`, `66d991e`, `a2e743e`, and the tuning
+  commit): a reproducible art generator (`theme_art.txt` table,
+  `theme_art.js` offline Chromium render of the mockups' own shapes,
+  `theme_art.py` deterministic PNG encoder; `make theme-art` /
+  `theme-art-write`, outside the net, pinned to Playwright 1.63.0's
+  Chromium 153.0.8010.12); measures in `make theme-compare` (text boxes,
+  `offsets.txt`, per-mockup summary: outside-text pixels, worst offset,
+  beyond 2 px, not found); `themes/alttp/` with `frame.png` and 13 sprites.
+- Tuning: pass 1 kept (`title.rule.y` 77 → 75); passes 2 (rule y 76) and 3
+  (title y 83) reverted: each improved one figure of 00 but broke 01–08's
+  zones, a trade not allowed silently. Stopped there (every 01–08
+  criterion holds; 00's remaining difference can only be met by breaking
+  01–08) — a reading of the stopping rule, recorded here.
+- Per mockup, score at 2.10 → first pass → last pass, and the criteria
+  (zones / text positions / colours):
+  - 00: 14.933 → 7.780 → 7.780. Frame and tabs hold; title text within 2
+    px but its rule differs (00 draws baseline 83 and rule 78, 1 px below
+    01–08); help line at the message zone's place by design (x 30,
+    baseline 412, not 00's 34/418: x 34 would cut the help to 57
+    characters). Rows and footer are the 16 px variant, not judged.
+  - 01 8.596 → 0.660 → 0.559; 02 8.265 → 0.301 → 0.207; 03 8.205 →
+    0.466 → 0.353; 04 8.089 → 0.306 → 0.219; 05 8.255 → 0.612 → 0.518; 06
+    8.268 → 0.311 → 0.217; 07 8.524 → 0.668 → 0.596; 08 8.344 → 0.444 →
+    0.353. All three criteria hold after pass 1: outside 0 px, every text
+    at dx 0 dy 0, none missing; the score left is glyph antialiasing.
+- Page, width and help still 12, 48, 58 (no frozen key changed), so step
+  9's text check and step 11's bound needed no re-run beyond `make
+  mockups` (green: 9 texts match, help line included).
+- `make test`, `make sdl-pc`, `make theme-art`, `make mockups` and `make -k
+  check` green. The nine images are in `tests/rando/build/theme-compare/`,
+  listed in `notes/owner-todo.md` §8 for the owner.

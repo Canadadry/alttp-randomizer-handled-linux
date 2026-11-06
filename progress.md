@@ -50,7 +50,7 @@
     - [x] Chunk 1 — Core help strings and the help line
     - [x] Chunk 2 — The SDL renderer draws the help
     - [x] Chunk 3 — Mockup check and docs
-  - [ ] Step 2.12 — The new theme's look
+  - [x] Step 2.12 — The new theme's look
     - [x] Chunk 1 — The art generator
     - [x] Chunk 2 — Measures in make theme-compare
     - [x] Chunk 3 — The art in the theme, first pass
