@@ -25,29 +25,29 @@
   <text x="30" y="82" font-size="14" fill="#78d8f8">Seed Settings</text>
   <line x1="224" y1="77" x2="610" y2="77" stroke="#3858d8" stroke-width="4" stroke-dasharray="8 4"/>
   <!-- Body -->
-  <text x="60" y="114" font-size="12" fill="#f8f8f8">Tower Crystals</text>
-  <text x="584" y="114" font-size="12" fill="#b8e8f8" text-anchor="end">7</text>
+  <text x="60" y="114" font-size="12" fill="#f8f8f8">Accessibility</text>
+  <text x="584" y="114" font-size="12" fill="#b8e8f8" text-anchor="end">100% Inventory</text>
   <polygon points="606,113 616,113 611,107" fill="#f8d038"/>
-  <text x="60" y="138" font-size="12" fill="#f8f8f8">Ganon Crystals</text>
-  <text x="584" y="138" font-size="12" fill="#b8e8f8" text-anchor="end">7</text>
-  <text x="60" y="162" font-size="12" fill="#7078b0">World State</text>
-  <text x="584" y="162" font-size="12" fill="#7078b0" text-anchor="end">Retro</text>
-  <text x="60" y="186" font-size="12" fill="#f8f8f8">Swords</text>
-  <text x="584" y="186" font-size="12" fill="#b8e8f8" text-anchor="end">Swordless</text>
-  <text x="60" y="210" font-size="12" fill="#f8f8f8">Item Pool</text>
-  <text x="584" y="210" font-size="12" fill="#b8e8f8" text-anchor="end">Crowd Control</text>
-  <text x="60" y="234" font-size="12" fill="#f8f8f8">Item Functionality</text>
-  <text x="584" y="234" font-size="12" fill="#b8e8f8" text-anchor="end">Normal</text>
-  <text x="60" y="258" font-size="12" fill="#f8f8f8">Entrance Shuffle</text>
-  <text x="584" y="258" font-size="12" fill="#b8e8f8" text-anchor="end">None</text>
-  <text x="60" y="282" font-size="12" fill="#f8f8f8">Boss Shuffle</text>
-  <text x="584" y="282" font-size="12" fill="#b8e8f8" text-anchor="end">Off</text>
-  <text x="60" y="306" font-size="12" fill="#f8f8f8">Enemy Shuffle</text>
-  <text x="584" y="306" font-size="12" fill="#b8e8f8" text-anchor="end">Off</text>
-  <text x="60" y="330" font-size="12" fill="#f8f8f8">Enemy Damage</text>
-  <text x="584" y="330" font-size="12" fill="#b8e8f8" text-anchor="end">Default</text>
-  <text x="60" y="354" font-size="12" fill="#f8f8f8">Enemy Health</text>
-  <text x="584" y="354" font-size="12" fill="#b8e8f8" text-anchor="end">Default</text>
+  <text x="60" y="138" font-size="12" fill="#7078b0">Goal</text>
+  <text x="584" y="138" font-size="12" fill="#7078b0" text-anchor="end">Defeat Ganon</text>
+  <text x="60" y="162" font-size="12" fill="#f8f8f8">Tower Crystals</text>
+  <text x="584" y="162" font-size="12" fill="#b8e8f8" text-anchor="end">7</text>
+  <text x="60" y="186" font-size="12" fill="#f8f8f8">Ganon Crystals</text>
+  <text x="584" y="186" font-size="12" fill="#b8e8f8" text-anchor="end">7</text>
+  <text x="60" y="210" font-size="12" fill="#7078b0">World State</text>
+  <text x="584" y="210" font-size="12" fill="#7078b0" text-anchor="end">Retro</text>
+  <text x="60" y="234" font-size="12" fill="#f8f8f8">Swords</text>
+  <text x="584" y="234" font-size="12" fill="#b8e8f8" text-anchor="end">Swordless</text>
+  <text x="60" y="258" font-size="12" fill="#f8f8f8">Item Pool</text>
+  <text x="584" y="258" font-size="12" fill="#b8e8f8" text-anchor="end">Crowd Control</text>
+  <text x="60" y="282" font-size="12" fill="#f8f8f8">Item Functionality</text>
+  <text x="584" y="282" font-size="12" fill="#b8e8f8" text-anchor="end">Normal</text>
+  <text x="60" y="306" font-size="12" fill="#f8f8f8">Hints</text>
+  <text x="584" y="306" font-size="12" fill="#b8e8f8" text-anchor="end">On</text>
+  <text x="60" y="330" font-size="12" fill="#f8f8f8">Heart Beep</text>
+  <text x="584" y="330" font-size="12" fill="#b8e8f8" text-anchor="end">Half Speed</text>
+  <text x="60" y="354" font-size="12" fill="#f8f8f8">Spoiler in History</text>
+  <text x="584" y="354" font-size="12" fill="#b8e8f8" text-anchor="end">Off</text>
   <rect x="22" y="362" width="596" height="24" fill="#2040c0"/>
   <rect x="22" y="362" width="596" height="2" fill="#6888f8"/>
   <rect x="22" y="384" width="596" height="2" fill="#6888f8"/>
