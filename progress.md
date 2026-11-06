@@ -17,7 +17,7 @@
     - [x] SDL side: key sequences and the game_choice golden
   - [x] Step 1.7 ROM guard
     - [x] tests/rom_guard.py in make test, self-proven
-  - [ ] Step 1.8 ROM-free oracle work
+  - [x] Step 1.8 ROM-free oracle work
     - [x] Chunk 1: oracle scaffolding and RNG vectors
     - [x] Chunk 2: order audit and known ladxr.patch fixes
       - [x] Order audit tool and table
