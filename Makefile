@@ -53,7 +53,7 @@ rom-guard:
 	python3 -I tests/rom_guard.py
 
 test-ladx-oracle:
-	python3 -I tests/ladx/oracle/test_oracle.py -q
+	python3 -I -B -m unittest discover -s tests/ladx/oracle -p 'test_*.py' -q
 
 ui-cli:
 	$(MAKE) -C tests/alttp ui-cli

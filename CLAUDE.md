@@ -61,7 +61,9 @@ in `docs/`, then `README.md`.
   cloned (never vendored) into `tests/ladx/oracle/ladxr/` (git-ignored) and
   patched with `ladxr.patch` (order fixes only); the Python scripts that run
   it without a ROM (shared helpers `ladx_oracle.py`, unit-tested by
-  `test_oracle.py`); the hand-written inputs `tier1.txt`,
+  `test_oracle.py`); Phase 2's ROM-free tools, each unit-tested by its
+  `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check); the
+  hand-written inputs `tier1.txt`,
   `determinism_cases.txt` and `order_audit.txt`; and the six fixtures they
   write for the C port (`pyrandom_vectors.txt`, `settings.txt`,
   `settings_validate.txt`, `logic_graphs.txt`, `logic_vectors.txt`,
@@ -101,8 +103,9 @@ in `docs/`, then `README.md`.
   JP 1.0 ROM (MD5, with or without a copier header), whatever its name; it
   proves itself first on planted files in throwaway repositories; no git or
   no work tree gives a `setup:` line; else `rom_guard: <n> tracked files, no
-  ROM`; plus `test-ladx-oracle` (`python3 -I tests/ladx/oracle/test_oracle.py`:
-  the LADX oracle's helpers, no LADXR, no network).
+  ROM`; plus `test-ladx-oracle` (`unittest discover` of
+  `tests/ladx/oracle/test_*.py` under `python3 -I`: the LADX oracle's helpers
+  and Phase 2's tools, no LADXR, no ROM, no network).
 - The LADX oracle, outside the net (it needs git, the network for GitHub and
   python3 >= 3.11, else a `setup:` line; no ROM): `tests/ladx/oracle/setup.sh
   [--fresh]` clones LADXR at its pin into `LADXR_DIR` (default
@@ -126,6 +129,18 @@ in `docs/`, then `README.md`.
   writes one configuration's full logic graph, to diff against a
   `logic_vectors.txt` digest. Run every script with `python3` without `-I`
   or `-E` (both drop `PYTHONHASHSEED`).
+- The Nintendo-bytes check, outside the net (python3 only):
+  `python3 -I tests/ladx/oracle/nintendo_bytes.py [--rom <file>] [--min <n>]
+  <file-or-dir>...` proves itself first on planted files against a planted
+  synthetic ROM (`nintendo-bytes: self-test, 6 planted files as expected`,
+  else `self-test failed: <file>`, exit 1), then prints one `LITERAL <path>
+  <view> @<offset> <length> bytes` line per run of `--min` (default 4) or
+  more bytes that also occurs in the ROM (`--rom`, default
+  `tmp/ladx/base.gbc`; any file accepted), in the raw bytes or in the bytes
+  a hex-digit run decodes to at either nibble alignment (directories walked
+  sorted, `.git` skipped, never the bytes themselves), then
+  `nintendo-bytes: <n> files, rom <sha1>, min <m>, <k> literal runs`; exit 1
+  when `k > 0`; a missing ROM or input is a `setup:` line, exit 2.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -273,7 +288,8 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
   `gen_fixtures.sh`, `determinism.sh` and `audit_order.py` run only to
-  regenerate or re-prove its fixtures. The SDL build (`make sdl`,
+  regenerate or re-prove its fixtures; `nintendo_bytes.py` needs the ROM,
+  which only Phase 2 holds. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and
