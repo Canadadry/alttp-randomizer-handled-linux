@@ -24,8 +24,7 @@ headerless Japanese 1.0 ROM (1,048,576 bytes, MD5
 Nintendo ROM is in this repository.
 
 1. Download `ALttPR.zip` from the
-   [Releases](https://github.com/Canadadry/alttp-randomizer-handled-linux/releases)
-   page.
+   [latest release](https://github.com/Canadadry/alttp-randomizer-handled-linux/releases/latest).
 2. Unzip `ALttPR.zip` at the root of the SD card.
 3. Copy your ROM to `App/ALttPR/base.sfc`.
 4. Start **ALttPR** from Onion's Apps list.
