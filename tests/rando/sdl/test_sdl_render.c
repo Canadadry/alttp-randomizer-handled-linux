@@ -12,6 +12,7 @@
 
 #define TEST "test_sdl_render"
 #define CLASSIC "../../themes/classic"
+#define ALTTP "../../themes/alttp"
 #define WORK "build/sdl/render_themes"
 #define DATA_FONT "../../data/DejaVuSansMono.ttf"
 #define FEATURES_SRC "sdl/themes/features"
@@ -780,6 +781,104 @@ static void test_features(void)
 	close_features();
 }
 
+typedef struct Changed {
+	int x0, y0, x1, y1;
+	bool has_colour;
+} Changed;
+
+/* The box of pixels where after differs from before (x0 > x1 when none), and whether one of them is colour. */
+static Changed changed(SDL_Surface *before, SDL_Surface *after, Uint32 colour)
+{
+	Changed c = { 640, 480, -1, -1, false };
+	int x, y;
+
+	for (y = 0; y < 480; y++)
+		for (x = 0; x < 640; x++)
+			if (pixel(before, x, y) != pixel(after, x, y)) {
+				c.x0 = x < c.x0 ? x : c.x0;
+				c.y0 = y < c.y0 ? y : c.y0;
+				c.x1 = x > c.x1 ? x : c.x1;
+				c.y1 = y > c.y1 ? y : c.y1;
+				c.has_colour = c.has_colour || pixel(after, x, y) == colour;
+			}
+	return c;
+}
+
+static UiScreen message_screen(UiMessageKind kind, const char *text)
+{
+	UiScreen sc = base_screen();
+
+	with_tabs(&sc, 0);
+	sc.title = "Seed Settings";
+	add_row(&sc, UI_ROW_SETTING, "Glitches", "None", false, false);
+	sc.cursor = 0;
+	add_hint(&sc, UI_HINT_START, "START", "Generate", true);
+	sc.message_kind = kind;
+	sc.message = text;
+	return sc;
+}
+
+/* Draws sc with the open renderer and returns what changed against the same screen with no message. */
+static Changed message_change(UiMessageKind kind, const char *text, Uint32 colour)
+{
+	UiScreen plain = message_screen(UI_MESSAGE_NONE, NULL), sc = message_screen(kind, text);
+	SDL_Surface *before = surface(), *after = surface();
+	Changed c;
+
+	if (!sdl_render_draw(&render, &plain, before) || !sdl_render_draw(&render, &sc, after))
+		test_fail(TEST, "sdl_render_draw refused the screen");
+	c = changed(before, after, colour);
+	SDL_FreeSurface(before);
+	SDL_FreeSurface(after);
+	return c;
+}
+
+static void test_classic_draws_no_help(void)
+{
+	SdlRenderFailure f;
+	Changed c;
+
+	load(&theme, CLASSIC);
+	CHECK(!theme.help.present);
+	if (!sdl_render_open(&render, &theme, CLASSIC, &f))
+		test_fail(TEST, "classic: reason %d asset %d: %s", (int)f.reason, f.asset, f.error);
+	c = message_change(UI_MESSAGE_HELP, "No glitches required. Standard logic only.", 0);
+	if (c.x1 >= 0)
+		test_fail(TEST, "classic drew a help line in (%d, %d)-(%d, %d)", c.x0, c.y0, c.x1, c.y1);
+	c = message_change(UI_MESSAGE_INFO, "No glitches required. Standard logic only.",
+			   rgb_of(theme.message.info_colour));
+	CHECK(c.x1 >= 0 && c.has_colour);
+	sdl_render_close(&render);
+}
+
+/* alttp's help and message both start at x 30 in the same cyan: the help's 10 px advance against the
+   message's 12 px tells them apart. */
+static void test_alttp_draws_help_in_its_zone(void)
+{
+	static const char text[] = "HHHHHHHHHH";
+	const int n = (int)sizeof text - 1;
+	const ThemeHelp *h = &theme.help;
+	const ThemeMessage *m = &theme.message;
+	SdlRenderFailure f;
+	Changed c;
+
+	load(&theme, ALTTP);
+	CHECK(h->present && theme.fonts[h->font].size.px == 10 && theme.fonts[m->font].size.px == 12);
+	if (!sdl_render_open(&render, &theme, ALTTP, &f))
+		test_fail(TEST, "alttp: reason %d asset %d: %s", (int)f.reason, f.asset, f.error);
+	c = message_change(UI_MESSAGE_HELP, text, rgb_of(h->colour));
+	if (!c.has_colour || c.x0 < h->x || c.x1 >= h->right || c.y1 >= h->y || c.x1 - c.x0 + 1 > n * 10 ||
+	    c.x1 - c.x0 + 1 <= (n - 1) * 10)
+		test_fail(TEST, "help drawn in (%d, %d)-(%d, %d), colour %d", c.x0, c.y0, c.x1, c.y1, c.has_colour);
+	c = message_change(UI_MESSAGE_HELP, chars(80, 'H'), rgb_of(h->colour));
+	if (c.x1 >= h->right)
+		test_fail(TEST, "a long help is drawn up to x %d, past help.right %d", c.x1, h->right);
+	c = message_change(UI_MESSAGE_INFO, text, rgb_of(m->info_colour));
+	if (!c.has_colour || c.x0 < m->x || c.x1 - c.x0 + 1 <= n * 10)
+		test_fail(TEST, "info drawn in (%d, %d)-(%d, %d), colour %d", c.x0, c.y0, c.x1, c.y1, c.has_colour);
+	sdl_render_close(&render);
+}
+
 int main(void)
 {
 	long n;
@@ -797,6 +896,8 @@ int main(void)
 	test_failures();
 	test_open_error_text_is_kept();
 	test_features();
+	test_classic_draws_no_help();
+	test_alttp_draws_help_in_its_zone();
 	IMG_Quit();
 	TTF_Quit();
 	SDL_Quit();

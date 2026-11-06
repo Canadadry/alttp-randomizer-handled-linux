@@ -94,6 +94,23 @@ static void test_no_setting_row_is_cut(void)
 	}
 }
 
+static void test_every_help_fits_the_help_line(void)
+{
+	const ThemeHelp *h = &theme.help;
+	int id, w;
+
+	CHECK(h->present);
+	for (id = UI_STR_HELP_FIRST; id <= UI_STR_HELP_LAST; id++) {
+		const char *text = ui_str(ui_str_english(), (UiStrId)id);
+
+		w = 0;
+		if (TTF_SizeText(render.fonts[h->font], text, &w, NULL) != 0)
+			test_fail(TEST, "TTF_SizeText \"%s\": %s", text, TTF_GetError());
+		if (w > h->right - h->x)
+			test_fail(TEST, "help \"%s\" is %d px, over the help line's %d", text, w, h->right - h->x);
+	}
+}
+
 int main(void)
 {
 	SdlRenderFailure f;
@@ -111,6 +128,7 @@ int main(void)
 		test_fail(TEST, "alttp: reason %d asset %d: %s", (int)f.reason, f.asset, f.error);
 	test_every_font_is_monospace_at_its_size();
 	test_no_setting_row_is_cut();
+	test_every_help_fits_the_help_line();
 	sdl_render_close(&render);
 	IMG_Quit();
 	TTF_Quit();

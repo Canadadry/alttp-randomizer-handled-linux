@@ -48,7 +48,7 @@
     - [x] Chunk 2 — The driver and make targets
   - [ ] Step 2.11 — Help text per value
     - [x] Chunk 1 — Core help strings and the help line
-    - [ ] Chunk 2 — The SDL renderer draws the help
+    - [x] Chunk 2 — The SDL renderer draws the help
     - [ ] Chunk 3 — Mockup check and docs
   - [ ] Step 2.12 — The new theme's look
   - [ ] Step 2.13 — Default theme switched

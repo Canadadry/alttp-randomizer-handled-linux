@@ -508,9 +508,15 @@ static void draw_notice(SdlRender *r, const UiScreen *screen, SDL_Surface *dst)
 static void draw_message(SdlRender *r, const UiScreen *screen, SDL_Surface *dst)
 {
 	const ThemeMessage *m = &r->theme->message;
+	const ThemeHelp *h = &r->theme->help;
 
 	if (screen->message_kind == UI_MESSAGE_NONE)
 		return;
+	if (screen->message_kind == UI_MESSAGE_HELP) {
+		if (h->present)
+			put_text(r, dst, h->font, h->x, h->y, h->right - h->x, screen->message, h->colour);
+		return;
+	}
 	put_text(r, dst, m->font, m->x, m->y, m->right - m->x, screen->message,
 		 screen->message_kind == UI_MESSAGE_ERROR ? m->error_colour : m->info_colour);
 }
