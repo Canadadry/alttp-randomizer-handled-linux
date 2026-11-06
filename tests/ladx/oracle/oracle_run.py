@@ -1,8 +1,8 @@
-"""Usage: python3 oracle_run.py [--out <file>] [--meta <file>] <ladxr dir> <seed hex> [k=v ...]
+"""Usage: python3 oracle_run.py [--out <file>] [--meta <file>] [--work <dir>] [--rom <file> --dir <dir> [--plain]] <ladxr dir> <seed hex> [k=v ...]
 
 Runs LADXR's Randomizer in SKIP_ROM_GENERATION mode (no ROM, no plan, no spoiler) on the seed
-(hex bytes, - for empty) and the settings (set in order, then validate), and writes (to <file>,
-else stdout) its sections in order:
+(hex bytes, - for empty; LADXR's seed setting stays empty) and the settings (set in order, then
+validate), and writes (to <file>, else stdout) its sections in order:
   seed <hex>
   settings <short settings string after validate, "" when empty>
   ws <field> <value>                 the world setup after randomize (ladx_oracle.ws_lines)
@@ -17,15 +17,33 @@ A section LADXR did not reach is left out. A crash is any other exception LADXR 
 can raise IndexError from patches/maze.py's buildMaze on some seeds; LADXR's main.py does not
 catch it).
 --meta writes what must differ between the double run's two runs and is never compared:
-PYTHONHASHSEED, hash("ladxr"), the checkout's path and the Python version.
+PYTHONHASHSEED, hash("ladxr"), the checkout's path, the Python version and the working
+directory's `git describe --tags` answer (- when none), read before LADXR runs.
+--work is the root under which LADXR runs in a new empty directory (default tmp/ladx-oracle/).
+
+--rom turns on full generation with that ROM, read only through LADXR: the same hooks and tracer,
+then generateRom and the JSON spoiler, written into the case directory --dir:
+  run.txt       the sections above (place taken before generateRom; trace covering the whole
+                generation, spoiler included), then rom_sha1 <hex> | rom none,
+                spoiler_sha1 <hex> | spoiler none, before the outcome line
+  out.gbc       the output ROM, when the outcome is ok
+  spoiler.json  the spoiler, when the outcome is ok and race is off
+  meta.txt      as --meta
+--plain (with --rom) runs LADXR's own main.main instead, with no hook and no tracer, os.urandom
+handing it the seed on its first call; it writes out.gbc, spoiler.json and plain.txt:
+rom_sha1 | rom none, spoiler_sha1 | spoiler none, then outcome ok | outcome retry (a second
+os.urandom call: the fill failed and main.py would retry) | outcome exit <code> |
+outcome crash <exception type> <message>.
 Run python3 without -I or -E (both drop PYTHONHASHSEED).
 """
 
 import argparse
 import contextlib
+import hashlib
 import io
 import os
 import shutil
+import subprocess
 import sys
 
 import ladx_oracle
@@ -38,14 +56,53 @@ class _PoolDone(Exception):
     pass
 
 
+class _Retry(BaseException):
+    pass
+
+
+def ladxr_args(rom, out_rom, spoiler):
+    """The Namespace LADXR's main.py parser gives with no option but the input ROM, -o,
+    --spoilerformat json and --spoilerfilename (attributes read from main.py at the pin)."""
+    return argparse.Namespace(
+        input_filename=rom, output_filename=out_rom, dump=None, spoilerformat="json",
+        spoiler_filename=spoiler, test=False, romdebugmode=False, exportmap=None, emptyplan=None,
+        gfxtemplate=None, timeout=None, log_directory=None, settings=None, shortsettings=None,
+        settingjson=False, plan=None, doubletrouble=False, pymod=None)
+
+
+def describe_cwd():
+    """`git describe --tags` in the working directory, - when it gives nothing."""
+    try:
+        done = subprocess.run(["git", "describe", "--tags"], stdout=subprocess.PIPE,
+                              stderr=subprocess.DEVNULL, check=False)
+    except OSError:
+        return "-"
+    return done.stdout.decode("ascii", "replace").strip() or "-"
+
+
+def file_records(out_rom, spoiler, ok):
+    """The rom_sha1/spoiler_sha1 lines; the two files are removed unless the outcome is ok."""
+    lines = []
+    for path, tag in ((out_rom, "rom"), (spoiler, "spoiler")):
+        if not ok and os.path.exists(path):
+            os.remove(path)
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                lines.append("%s_sha1 %s" % (tag, hashlib.sha1(f.read()).hexdigest()))
+        else:
+            lines.append("%s none" % tag)
+    return lines
+
+
 class Driver:
     """Loads LADXR from a checkout once (chdir into a throwaway directory under tmp/ladx-oracle/),
     hooks it from outside, and runs cases. close() goes back and removes the directory."""
 
-    def __init__(self, ladxr_dir):
+    def __init__(self, ladxr_dir, work_root=WORK_ROOT):
         self.ladxr_dir = os.path.abspath(ladxr_dir)
         self.cwd = os.getcwd()
-        self.work = ladx_oracle.enter_checkout(self.ladxr_dir, os.path.abspath(WORK_ROOT))
+        self.work = ladx_oracle.enter_checkout(self.ladxr_dir, os.path.abspath(work_root))
+        self.describe = describe_cwd()
         self.tracer = ladx_oracle.Tracer(self.ladxr_dir)
         self._install = self.tracer.installed()
         self._install.__enter__()
@@ -102,9 +159,10 @@ class Driver:
     def _after_place(self, placer, args, result):
         self.case["place"] = list(ladx_oracle.place_lines(placer._logic.iteminfo_list))
 
-    def run(self, seed, assignments, pool_only=False):
+    def run(self, seed, assignments, pool_only=False, rom=None, case_dir=None):
         """One case: the output lines (without the trace when pool_only, which stops once
-        readItemPool returned and then has outcome ok)."""
+        readItemPool returned and then has outcome ok). With rom, a full generation writing
+        out.gbc and spoiler.json into case_dir, their SHA-1 lines before the outcome."""
         self.case = {"ws": [], "pool": [], "placer_pool": [], "place": [], "pool_only": pool_only}
         del self.tracer.lines[:]
         settings = self.settings.Settings()
@@ -112,8 +170,12 @@ class Driver:
             settings.set(assignment)
         with contextlib.redirect_stdout(io.StringIO()):
             settings.validate()
-        args = argparse.Namespace(input_filename="SKIP_ROM_GENERATION", plan=None, spoilerformat="none",
-                                  log_directory=None, output_filename=None)
+        if rom is None:
+            args = argparse.Namespace(input_filename="SKIP_ROM_GENERATION", plan=None, spoilerformat="none",
+                                      log_directory=None, output_filename=None)
+        else:
+            out_rom, spoiler = os.path.join(case_dir, "out.gbc"), os.path.join(case_dir, "spoiler.json")
+            args = ladxr_args(rom, out_rom, spoiler)
         outcome = "outcome ok"
         try:
             with contextlib.redirect_stdout(io.StringIO()):
@@ -132,44 +194,109 @@ class Driver:
             lines += self.case[section]
         if not pool_only:
             lines += ["trace " + line for line in self.tracer.lines]
+        if rom is not None:
+            lines += file_records(out_rom, spoiler, outcome == "outcome ok")
         return lines + [outcome]
 
     def meta(self):
         return ["hashseed %s" % os.environ.get("PYTHONHASHSEED", "unset"),
                 "hash_ladxr %d" % hash("ladxr"),
                 "checkout %s" % self.ladxr_dir,
-                "python %d.%d.%d" % sys.version_info[:3]]
+                "python %d.%d.%d" % sys.version_info[:3],
+                "describe %s" % self.describe]
+
+
+def run_plain(ladxr_dir, work_root, rom, case_dir, seed, assignments):
+    """LADXR's own main.main on the case, in a new directory under work_root (removed after),
+    os.urandom handing it the seed once: plain.txt's lines."""
+    cwd = os.getcwd()
+    work = ladx_oracle.enter_checkout(ladxr_dir, os.path.abspath(work_root))
+    try:
+        return _plain(rom, case_dir, seed, assignments)
+    finally:
+        os.chdir(cwd)
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def _plain(rom, case_dir, seed, assignments):
+    out_rom, spoiler = os.path.join(case_dir, "out.gbc"), os.path.join(case_dir, "spoiler.json")
+    calls = []
+
+    def urandom(n):
+        calls.append(n)
+        if len(calls) > 1:
+            raise _Retry()
+        return seed
+    import main as ladxr_main
+    argv = [rom, "-o", out_rom, "--spoilerformat", "json", "--spoilerfilename", spoiler]
+    for assignment in assignments:
+        argv += ["-s", assignment]
+    real_urandom, os.urandom = os.urandom, urandom
+    outcome = "outcome ok"
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            ladxr_main.main(argv)
+    except _Retry:
+        outcome = "outcome retry"
+    except SystemExit as e:
+        outcome = "outcome exit %s" % (e.code,)
+    except Exception as e:
+        outcome = "outcome crash %s %s" % (type(e).__name__, ladx_oracle.field(str(e)))
+    finally:
+        os.urandom = real_urandom
+    return file_records(out_rom, spoiler, outcome == "outcome ok") + [outcome]
 
 
 def parse_seed(text):
     return b"" if text == "-" else bytes.fromhex(text)
 
 
+def write_lines(path, lines):
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.writelines(line + "\n" for line in lines)
+
+
 def main(argv):
     parser = argparse.ArgumentParser(usage=__doc__.splitlines()[0][len("Usage: "):])
     parser.add_argument("--out")
     parser.add_argument("--meta")
+    parser.add_argument("--work", default=WORK_ROOT)
+    parser.add_argument("--rom")
+    parser.add_argument("--dir")
+    parser.add_argument("--plain", action="store_true")
     parser.add_argument("ladxr_dir")
     parser.add_argument("seed")
     parser.add_argument("settings", nargs="*")
     args = parser.parse_args(argv)
-    out = os.path.abspath(args.out) if args.out else None
-    meta_out = os.path.abspath(args.meta) if args.meta else None
-    driver = Driver(args.ladxr_dir)
+    if (args.rom is None) != (args.dir is None) or (args.plain and args.rom is None) or \
+            (args.rom is not None and (args.out or args.meta)):
+        parser.error("--rom and --dir go together, --plain needs them, and they replace --out and --meta")
+    work = os.path.abspath(args.work)
+    if args.rom is not None:
+        rom, case_dir = os.path.abspath(args.rom), os.path.abspath(args.dir)
+        os.makedirs(case_dir, exist_ok=True)
+        if args.plain:
+            write_lines(os.path.join(case_dir, "plain.txt"),
+                        run_plain(args.ladxr_dir, work, rom, case_dir, parse_seed(args.seed), args.settings))
+            return 0
+        out = os.path.join(case_dir, "run.txt")
+        meta_out = os.path.join(case_dir, "meta.txt")
+    else:
+        rom = case_dir = None
+        out = os.path.abspath(args.out) if args.out else None
+        meta_out = os.path.abspath(args.meta) if args.meta else None
+    driver = Driver(args.ladxr_dir, work)
     try:
-        lines = driver.run(parse_seed(args.seed), args.settings)
+        lines = driver.run(parse_seed(args.seed), args.settings, rom=rom, case_dir=case_dir)
         meta = driver.meta()
     finally:
         driver.close()
-    text = "".join(line + "\n" for line in lines)
     if out:
-        with open(out, "w", encoding="utf-8", newline="\n") as f:
-            f.write(text)
+        write_lines(out, lines)
     else:
-        sys.stdout.write(text)
+        sys.stdout.write("".join(line + "\n" for line in lines))
     if meta_out:
-        with open(meta_out, "w", encoding="utf-8", newline="\n") as f:
-            f.writelines(line + "\n" for line in meta)
+        write_lines(meta_out, meta)
     return 0
 
 
