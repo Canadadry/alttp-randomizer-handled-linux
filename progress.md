@@ -1,7 +1,7 @@
 - [ ] Phase 1 — Rename and game choice, ROM-free work
   - [x] Step 1.1 Rename rando/ to alttp/ and tests/rando/ to tests/alttp/
     - [x] Move both trees and update every path token
-  - [ ] Step 1.2 Additive SDL golden write
+  - [x] Step 1.2 Additive SDL golden write
     - [x] goldens.sh --add and make sdl-goldens-add, self-proven
   - [ ] Step 1.3 Rename the app to Zelda Randomizer
   - [ ] Step 1.4 Per-game SD layout for ALttP
