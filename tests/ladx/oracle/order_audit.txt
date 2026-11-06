@@ -36,6 +36,7 @@ mapgen/tileset.py	self.all: Set[int] = set()	unreached	mapgen/ runs only for ove
 mapgen/wfc.py	new_options = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
 mapgen/wfc.py	propegation_set = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
 patches/bingo.py	has_group = set()	order-free	membership only over group names; goals keep their shuffled list order
+patches/endscreen.py	cats = sorted(f for f in os.listdir(os.path.join(os.path.dirname(__file__), "cats")) if f.endswith(".bin"))	patched	ladxr.patch sorts the cat pictures before random.choice, so the pick no longer depends on the filesystem's listing order
 patches/maze.py	all_options = set(ALL_SIGN_OPTION_TILES)	order-free	membership and removal only; get_options_from walks coordinates in range order
 patches/music.py	song_files = os.listdir(directory)	unreached	importMusic runs only for music=ffa (tier 3)
 randomizer.py	for loc in e.getAccessableLocations():	order-free	hasNewPlacesToExplore() returns a boolean

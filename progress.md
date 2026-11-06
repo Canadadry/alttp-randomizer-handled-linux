@@ -21,7 +21,7 @@
     - [x] Chunk 1: oracle scaffolding and RNG vectors
     - [ ] Chunk 2: order audit and known ladxr.patch fixes
       - [x] Order audit tool and table
-      - [ ] Fix: sort endscreen.py's cats listing
+      - [x] Fix: sort endscreen.py's cats listing
       - [ ] Fix: spoiler accessibleItems in location_list order
     - [ ] Chunk 3: settings fixtures
     - [ ] Chunk 4: double run, item pools, determinism
