@@ -18,6 +18,11 @@
   - [x] Step 1.7 ROM guard
     - [x] tests/rom_guard.py in make test, self-proven
   - [ ] Step 1.8 ROM-free oracle work
+    - [x] Chunk 1: oracle scaffolding and RNG vectors
+    - [ ] Chunk 2: order audit and known ladxr.patch fixes
+    - [ ] Chunk 3: settings fixtures
+    - [ ] Chunk 4: double run, item pools, determinism
+    - [ ] Chunk 5: logic fixtures and docs
   - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven
   - [ ] Step 1.10 check-net
 - [ ] Phase 2 — LADXR oracle, with the ROM

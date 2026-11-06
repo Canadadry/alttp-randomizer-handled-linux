@@ -20,6 +20,9 @@ build/
 # The oracle's default VT checkout (gen_golden.sh)
 tests/alttp/oracle/vt/
 
+# The LADX oracle's default LADXR checkout (setup.sh)
+tests/ladx/oracle/ladxr/
+
 # Nintendo ROMs never enter the repository
 *.sfc
 *.smc
