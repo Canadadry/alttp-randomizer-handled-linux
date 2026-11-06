@@ -23,8 +23,9 @@ headerless Japanese 1.0 ROM (1,048,576 bytes, MD5
 `03a63945398191337e896e5771f77173`). The game you play is in English. No
 Nintendo ROM is in this repository.
 
-1. Get `ALttPR.zip`: GitHub → Actions → **check** → **Run workflow**, then
-   download the artifact `alttpr-miyoo` and unzip it once.
+1. Download `ALttPR.zip` from the
+   [Releases](https://github.com/Canadadry/alttp-randomizer-handled-linux/releases)
+   page.
 2. Unzip `ALttPR.zip` at the root of the SD card.
 3. Copy your ROM to `App/ALttPR/base.sfc`.
 4. Start **ALttPR** from Onion's Apps list.
@@ -61,5 +62,6 @@ make sdl-pc
 tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
 ```
 
-Everything else (cross build, release zip, themes, screenshots) is in
+`make package` builds the release zip `tests/rando/build/package/ALttPR.zip`
+(needs docker). Everything else (cross build, themes, screenshots) is in
 [`CLAUDE.md`](CLAUDE.md) and `make help`.
