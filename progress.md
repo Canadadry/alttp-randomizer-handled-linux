@@ -39,7 +39,7 @@
     - [x] Chunk 2: push gate on the policy
     - [x] Chunk 3: calibration on real data
     - [x] Chunk 4: arm and prove the gate
-  - [ ] Step 2.2 Oracle and full-generation determinism
+  - [x] Step 2.2 Oracle and full-generation determinism
     - [x] Chunk 1: comparators, tmp guard, environment audit
     - [x] Chunk 2: full-generation driver and gen_golden.sh
     - [x] Chunk 3: determinism.sh --full
