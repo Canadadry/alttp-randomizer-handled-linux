@@ -1,0 +1,42 @@
+- [ ] Phase 1 — Rename and game choice, ROM-free work
+  - [ ] Step 1.1 Rename rando/ to alttp/ and tests/rando/ to tests/alttp/
+  - [ ] Step 1.2 Additive SDL golden write
+  - [ ] Step 1.3 Rename the app to Zelda Randomizer
+  - [ ] Step 1.4 Per-game SD layout for ALttP
+  - [ ] Step 1.5 Onion facts for GBC
+  - [ ] Step 1.6 Game-choice screen in the UI core
+  - [ ] Step 1.7 ROM guard
+  - [ ] Step 1.8 ROM-free oracle work
+  - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven
+  - [ ] Step 1.10 check-net
+- [ ] Phase 2 — LADXR oracle, with the ROM
+  - [ ] Step 2.1 Fetch and check the ROM
+  - [ ] Step 2.2 Oracle and full-generation determinism
+  - [ ] Step 2.3 Inventory
+  - [ ] Step 2.4 Cases
+  - [ ] Step 2.5 Golden format and goldens
+  - [ ] Step 2.6 Patch tables
+  - [ ] Step 2.7 Extraction fixtures
+  - [ ] Step 2.8 Nintendo-bytes check over everything committed
+  - [ ] Step 2.9 Full-ROM check target
+  - [ ] Step 2.10 Split Phase 3 step 6
+- [ ] Phase 3 — LADX library, host only
+  - [ ] Step 3.1 Python RNG in C
+  - [ ] Step 3.2 Settings table
+  - [ ] Step 3.3 Logic and locations
+  - [ ] Step 3.4 Item pool and fill
+  - [ ] Step 3.5 Table application
+  - [ ] Step 3.6 Seed-dependent writes
+  - [ ] Step 3.7 Assembly pipeline
+  - [ ] Step 3.8 LADX-aware debugging skills
+  - [ ] Step 3.9 check-e2e on tests/ladx
+  - [ ] Step 3.10 Measure
+- [ ] Phase 4 — LADX in the app
+  - [ ] Step 4.1 LADX SD side
+  - [ ] Step 4.2 LADX Generate tab
+  - [ ] Step 4.3 SDL
+  - [ ] Step 4.4 Package
+  - [ ] Step 4.5 README and screenshots
+  - [ ] Step 4.6 check-net
+  - [ ] Step 4.7 rework-comments
+  - [ ] Step 4.8 Close the ROM window
