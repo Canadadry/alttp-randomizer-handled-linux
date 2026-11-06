@@ -557,3 +557,20 @@ position.
   `ui_cli` equal to `alttpr` on the 8 pairings at the theme's page (00
   plays at page 11, so it has no such check). `make test`, `make sdl-pc`
   and `make -k check` green.
+
+### Step 2.10
+
+- Done in 2 chunks (`ec6bc2a` and the driver commit):
+  `tests/rando/sdl/theme_compare.py` (standard-library PNG/BMP reader,
+  score `100·Σ|a−b|/(W·H·3·255)`, deterministic 1936×480 mockup | app |
+  diff PNG, self-test) and `theme_compare.sh` behind `make theme-compare
+  [THEME=<dir>]` (default `themes/alttp`), outside the net; it exits 1 only
+  when an image cannot be produced. The setup and pairing checks moved to
+  `mockup_common.sh`, shared with `make mockups` (output unchanged).
+- Verified: nine images and nine scores per theme, two runs byte-identical,
+  each mockup self-scores 0; `make mockups`, `make sdl-pc` and `make -k
+  check` green.
+- First scores (alttp / classic): 00 14.724 / 22.938, 01 8.596 / 20.180,
+  02 8.265 / 14.929, 03 8.205 / 16.259, 04 8.089 / 15.601, 05 8.255 /
+  19.645, 06 8.268 / 15.036, 07 8.524 / 18.712, 08 8.344 / 16.148. 00 is
+  high by construction (a 16 px mockup against the theme's 12 px page).

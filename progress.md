@@ -43,7 +43,7 @@
       - [x] Edit 05 — the real seed names and date
       - [x] Edit 07 — a real window of the spoiler detail
       - [x] Edit 07 — the scroll-down marker
-  - [ ] Step 2.10 — `make theme-compare`
+  - [x] Step 2.10 — `make theme-compare`
     - [x] Chunk 1 — The image tool
     - [x] Chunk 2 — The driver and make targets
   - [ ] Step 2.11 — Help text per value
