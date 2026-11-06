@@ -149,6 +149,9 @@ PLANTED = textwrap.dedent('''\
         if which == "rewrite":
             write_byte(rom)
             rom.banks[1][0x40] = 8
+        if which == "empty":
+            rom.banks[1][0x20:0x20]
+            rom.banks[1][0x30:0x10]
     ''')
 
 SECTIONS = [("planted.py", "generate"), ("standins.py", "ROMWithTables.__init__")]
@@ -307,6 +310,9 @@ class Exclusions(Fixture):
     def test_reads_inside_rom_patch_are_not_recorded(self):
         trace = self.trace("patch")
         self.assertEqual(self.generated(trace), [])
+
+    def test_an_empty_slice_reads_no_byte_and_is_not_recorded(self):
+        self.assertEqual(self.generated(self.trace("empty")), [])
 
     def test_writes_are_not_recorded(self):
         self.assertEqual(self.generated(self.trace("write")), [])

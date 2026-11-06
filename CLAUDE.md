@@ -64,14 +64,20 @@ in `docs/`, then `README.md`.
   `test_oracle.py`); Phase 2's ROM-free tools, each unit-tested by its
   `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check;
   `push_gate.py`, Phase 2's push gate; `read_trace.py`, the ROM read
-  trace; `inventory_check.py`, the grep-diff of `notes/ladx-inventory.md`,
-  the static draft of Phase 2's inventory of `generateRom`), and
-  `fetch_rom.sh`, the ROM fetcher, proved by its own run; the
+  and write trace; `inventory_check.py`, the grep-diff and table check of
+  `notes/ladx-inventory.md`, Phase 2's inventory of `generateRom` settled
+  on real data; `read_check.py`, the check of real read traces against it),
+  `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
+  `inventory_trace.sh`, the inventory's real-data driver; the
   hand-written inputs `tier1.txt`,
-  `determinism_cases.txt` and `order_audit.txt`; and the six fixtures they
+  `determinism_cases.txt`, `side_seeds.txt` and `order_audit.txt`; and the six fixtures they
   write for the C port (`pyrandom_vectors.txt`, `settings.txt`,
   `settings_validate.txt`, `logic_graphs.txt`, `logic_vectors.txt`,
   `item_pools.txt`), each describing its format in its `#` header.
+  `notes/plan3-scope-cuts.md` lists every tier-1 value cut from plan 3
+  with its reason. `tests/ladx/extract/` will hold the extraction fixtures
+  the inventory's Extractions table names (Phase 2 step 7), under the
+  Nintendo-bytes check's strict scope.
 
 ## Checks
 
@@ -136,6 +142,16 @@ in `docs/`, then `README.md`.
   then `rom_sha1`, `spoiler_sha1` and the outcome), `meta.txt`, and
   `out.gbc` and `spoiler.json` when LADXR wrote them; it refuses a `<dir>`
   outside `tmp/` (exit 2): ROM-derived outputs stay there.
+  `oracle_run.py --rom --dir <dir> --reads [--inventory <file>]` (off by
+  default; `run.txt`, `out.gbc` and `spoiler.json` unchanged by it) also
+  traces the whole run with `read_trace.py` and writes `reads.txt` and
+  `writes.txt` into `<dir>`, whatever the outcome.
+  `inventory_trace.sh [--out <dir>] [--cases <file>] [--seeds <file>]
+  [<case>...]` runs every case (default `determinism_cases.txt`) that way
+  under its own seed into `tmp/ladx-inventory/<case>/seed-0/` and under each
+  seed of `side_seeds.txt` into `seed-<k>/` (one `<case> seed-<k>: outcome
+  <ok|error|crash>` line each; about 7 min for 57 runs), refuses a `<dir>`
+  outside `tmp/`, then runs `read_check.py` on it and exits with its code.
   `determinism.sh --full` proves its comparators on planted case
   directories, runs `gen_golden.sh` twice (A: `PYTHONHASHSEED=0`, the setup
   checkout, inside this repository; B: `=1`, a fresh clone, its work root a
@@ -169,8 +185,8 @@ in `docs/`, then `README.md`.
   files, rom <sha1>, ladxr <short>, <k> literal runs, cleared <t> trivial,
   <l> low-info, <p> ladxr-public`; exit 1 when `k > 0`. Scope by
   repository-relative path: `strict` under `data/ladx/`,
-  `tests/ladx/cases/`, `tests/ladx/combos/` (the ROM-derived artifacts;
-  step 7 adds its fixture paths to `STRICT_PREFIXES`), `general` for any
+  `tests/ladx/cases/`, `tests/ladx/combos/`, `tests/ladx/extract/` (the
+  ROM-derived artifacts), `general` for any
   other path or a file outside the repository (`--scope` overrides). Views:
   `raw`; `hex` (maximal hex-digit runs, both nibble alignments); `bytelist`
   (lists of `0xNN`/`$NN` tokens separated by commas and whitespace).
@@ -235,15 +251,21 @@ in `docs/`, then `README.md`.
   tests/ladx/oracle/setup.sh`, exit 2; no ROM): `read_trace.py`'s
   `install(modules, sections, inventory)` makes LADXR's `ROM` banks and
   `ROMWithTables` tables record every read outside `ROM.patch` (channels
-  `index`, `slice`, `iter`, `search`, `compare`, `convert`, `table`; writes
-  never) as `<group>\t<site>\t<caller>\t<channel>\t<target>\t<detail>`,
-  the site `<file> <function>\t<line>[ #<k>]` of the innermost section frame
-  (`#<k>` on the k-th occurrence of that line text in the function).
+  `index`, `slice`, `iter`, `search`, `compare`, `convert`, `table`; an
+  empty slice reads no byte and is not recorded) as
+  `<group>\t<site>\t<caller>\t<channel>\t<target>\t<detail>\t<provenance>`
+  (`source`, `written:<groups>` or `mixed:<groups>`: who wrote the bytes
+  read since parsing), and every bank byte and table entry written
+  (`ROM.patch` included), the site `<file> <function>\t<line>[ #<k>]` of the
+  innermost section frame (`#<k>` on the k-th occurrence of that line text
+  in the function); writes are summed per site as a count and a SHA-1 of
+  the net values.
   `python3 -I tests/ladx/oracle/read_trace.py --self-test [--ladxr <dir>]`
-  runs one planted read per channel, a planted parse, `rom.patch` and writes
-  through LADXR's real `ROM` and `PointerTable` on 64 synthetic banks
-  (`read-trace: self-test, 7 channels traced, patch and writes excluded`,
-  else one `self-test failed: <case>` line each, exit 1); `--blind-spots`
+  runs one planted read per channel and per provenance, a planted parse,
+  `rom.patch` and writes through LADXR's real `ROM` and `PointerTable` on
+  64 synthetic banks (`read-trace: self-test, 7 channels, 4 provenances and
+  4 writes traced, patch reads excluded`, else one `self-test failed:
+  <case>` line each, exit 1); `--blind-spots`
   lists the buffer-protocol lines a Python trace cannot see (`BLIND
   <file>\t<line>`, then `read-trace: <n> buffer-protocol sites to review`).
 - The inventory check, outside the net (python3 and the LADXR checkout, else
@@ -251,7 +273,7 @@ in `docs/`, then `README.md`.
   tests/ladx/oracle/setup.sh`, exit 2; no ROM): `python3 -I
   tests/ladx/oracle/inventory_check.py [--ladxr <dir>] [--inventory <file>]
   [--print]` proves itself first on a planted tree and inventory
-  (`inventory: self-test, 7 planted inventories as expected`, else one
+  (`inventory: self-test, 14 planted inventories as expected`, else one
   `self-test failed: <case>` line each, exit 1), then extracts every
   statement of `generator.py generateRom`, `randomizer.py
   Randomizer.__init__` after the fill, `romTables.py ROMWithTables.__init__`
@@ -260,10 +282,30 @@ in `docs/`, then `README.md`.
   `args`, RNG and placement each names, and diffs them against
   `notes/ladx-inventory.md`'s tables (default): one `MISSING`, `STALE`,
   `MISMATCH <section>: <call>: <column> inventory <a>, source <b>` or `BAD`
-  (bad `Side (draft)`, empty `Group (draft)`, malformed table) line each,
-  exit 1, else `inventory: <rows> rows in 6 sections match <commit>`.
-  `--print` writes the extracted tables, draft columns kept, to refresh the
-  draft by hand.
+  (a `Side` other than `table`, `C`, `none`, `unused`, an empty `Group`, a
+  malformed table) line each, then checks the Groups, Read coverage,
+  Extractions and Blind spots tables (every row's group listed with its
+  side, a `C` group's Evidence naming itself, every `extract:<name>`
+  listed, the blind spots equal to `read_trace.py --blind-spots`), exit 1
+  on a finding, else `inventory: <rows> rows in 6 sections match <commit>`.
+  `--print` writes the extracted tables, hand-written columns kept, to
+  refresh the file by hand.
+- The read check, outside the net (python3, the LADXR checkout and the
+  traces of `inventory_trace.sh`, else a `setup:` line, exit 2; no ROM):
+  `python3 -I tests/ladx/oracle/read_check.py [--ladxr <dir>] [--inventory
+  <file>] [--traces <dir>] [--scope-cuts <file>] [--print]` proves itself
+  first on planted traces and inventories (`read-check: self-test, <n>
+  planted trace sets as expected`), then keys every traced read and write
+  to its inventory row (a loop or condition header to the first row of its
+  body) and prints one `UNTAGGED`, `UNCOVERED` (a `C` group's read no Read
+  coverage entry matches), `BAD-COVER`, `NONE-ACCESS`, `UNUSED-REACHED`,
+  `SEED-VARIES` (a `table` row's writes differ between seeds),
+  `TABLE-READS-SEED`, `DEPENDS` or `READS-COLUMN` line per finding, the
+  information lines `STABLE <row>` and `UNREACHED <row>`, then
+  `read-check: <cases> cases, <reads> reads, <groups> groups covered`, else
+  `read-check: <n> findings`, exit 1. A `cut:<id>` coverage needs its id in
+  `notes/plan3-scope-cuts.md`. `--print` writes the inventory with its
+  `Reads (trace)` cells and Depends on column taken from the traces.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -413,9 +455,10 @@ in `docs/`, then `README.md`.
   `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh` and `audit_order.py`
   run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
-  guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
-  `inventory_check.py` diffs the inventory against LADXR (their tests run in
-  `make test`). The SDL build (`make sdl`,
+  guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads,
+  `inventory_check.py` diffs the inventory against LADXR, and
+  `inventory_trace.sh` and `read_check.py` check it on real reads (their
+  tests run in `make test`). The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and

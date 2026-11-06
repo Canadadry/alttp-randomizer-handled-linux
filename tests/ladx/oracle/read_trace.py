@@ -17,7 +17,8 @@ Writes: index and slice assignments to a bank (inside `ROM.patch` too), a bank r
 (every byte written), and a table entry assigned through `__setitem__` after parsing.
 Provenance of a read: `source` when none of its bytes or entries was written since parsing,
 `written:<g1,g2>` when all were (by those groups), `mixed:<g1,g2>` otherwise; `iter`, `search`,
-`compare`, `convert` and `__len__` cover the whole bank or table.
+`compare`, `convert` and `__len__` cover the whole bank or table. An empty slice reads no byte
+and is not recorded.
 
 Site: `<file> <function>\\t<stripped line>` of the innermost frame in one of `sections` (pairs
 (file, function), the file relative to the first root), with ` #<k>` on the k-th occurrence of
@@ -286,6 +287,8 @@ def _make_bank_class(trace):
                 start, stop, _ = item.indices(length)
                 span = (start, max(start, stop))
                 channel = "slice"
+                if span[0] == span[1]:
+                    return bytearray.__getitem__(self, item)
             else:
                 channel = "index"
                 span = None
