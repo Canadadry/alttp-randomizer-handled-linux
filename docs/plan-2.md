@@ -630,3 +630,23 @@ position.
 - `make test`, `make sdl-pc`, `make theme-art`, `make mockups` and `make -k
   check` green. The nine images are in `tests/rando/build/theme-compare/`,
   listed in `notes/owner-todo.md` §8 for the owner.
+
+### Step 2.13
+
+- Done in 2 commits (`f72f4e3`, `2d9cd43`): `PKG_THEME` is `themes/alttp`;
+  the zip's `App/ALttPR/themes/default/` holds alttp's 17 files;
+  `test_package.py` reads `PKG_THEME` from the Makefile and pins it to
+  alttp (the expected default moved from classic on purpose); `make
+  package` gives the same 293639-byte zip twice (sha256 `1e3620df…f36f`;
+  classic's was 447607). Docs, owner-todo and `targets/mac/` use
+  `--theme themes/alttp`; classic stays the SDL tests' and goldens' theme.
+- The plan's goal, shown once: `make sdl-pc` built `alttpr` (sha256
+  `0c846c80…12b3`), then no `make` until the end. Three one-line edits of
+  the real `themes/alttp/theme.ini`, each drawn with `goldens.sh --draw`
+  (13 states, `--shot` and `--shot-text`) and reverted with `git
+  checkout`: `[title] colour` → `#ff00ff`: 11 BMPs differ (all but the
+  two alert titles), 0 texts; `[font.ps2p_14] size` 14 → 16: 13 BMPs, 0
+  texts; `[list] row_height` 24 → 32: 8 list-state BMPs and all 13 texts
+  (page 12 → 9). Reverted: all 26 files byte-identical to the first pass.
+  The binary's sha256 and mtime were unchanged; `git status` and `git
+  diff` empty; `make -k check` green.

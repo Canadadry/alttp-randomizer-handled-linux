@@ -55,7 +55,7 @@
     - [x] Chunk 2 — Measures in make theme-compare
     - [x] Chunk 3 — The art in the theme, first pass
     - [x] Chunk 4 — Tuning passes and the record
-  - [ ] Step 2.13 — Default theme switched
+  - [x] Step 2.13 — Default theme switched
     - [x] Chunk 1 — Ship alttp as the default theme
     - [x] Chunk 2 — Docs follow
   - [ ] Step 2.14 — skill: check-net
