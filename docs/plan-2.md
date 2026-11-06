@@ -534,3 +534,26 @@ position.
 - `make sdl-pc` (classic 13 byte-identical, alttp 13 drawn) and `make -k
   check` green. The 13 captures were looked at: zones where the mockups
   put them, "Master Sword Pedestal" whole, no theme fix needed.
+
+### Step 2.9
+
+- Done in 4 chunks: `tests/rando/sdl/mockup_text.py` (mockup text vs app
+  text by zone and row, help line excepted, self-test on 11 planted pairs);
+  `mockup_render.js` (offline Chromium render, no non-`file:` request,
+  Press Start 2P loaded, every text at its width; self-proof on 4 planted
+  SVGs); `make mockups` (outside the net, `setup:` without node, Playwright
+  or Chromium); `mockup_states.txt` (the nine pairings, 00 at page 11);
+  `goldens.sh --draw DIR --states FILE`. The `ui_cli` grid is derived from
+  the captures, written nowhere: 50×16 (page 12, width 48).
+- Font edit (`90f6d48`): local `@font-face` and `font-variant-ligatures:
+  none` in all nine mockups: Chromium drew Press Start 2P's fi/fl
+  ligatures, SDL_ttf none.
+- Content edits, one commit each: 01 (the real end of the settings list,
+  Goal and World State greyed), 03 (seed `1CA10A`), 05 (six real names,
+  14:03), 07 text (real title and detail window, two-space indents), 07 ▼
+  (mirror of its ▲). No content edit: 00, 02, 04, 06, 08. Where the app
+  could show a mockup's values, the key sequence sets them instead.
+- `make mockups` ends with all 9 texts matching (help line excepted) and
+  `ui_cli` equal to `alttpr` on the 8 pairings at the theme's page (00
+  plays at page 11, so it has no such check). `make test`, `make sdl-pc`
+  and `make -k check` green.

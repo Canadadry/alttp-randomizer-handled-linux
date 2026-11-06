@@ -32,7 +32,7 @@
     - [x] Chunk 1 — The [help] section
     - [x] Chunk 2 — Press Start 2P and themes/alttp
     - [x] Chunk 3 — The SDL side
-  - [ ] Step 2.9 — Mockups made true and comparable
+  - [x] Step 2.9 — Mockups made true and comparable
     - [x] Chunk 1 — The text comparator
     - [x] Chunk 2 — Render check, make mockups, font edit
     - [x] Chunk 2 mockups — local font, no ligatures
