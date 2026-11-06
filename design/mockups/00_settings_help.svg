@@ -2,8 +2,8 @@
   <title>ALTTP Randomizer - Generate screen (640x480, Miyoo Mini Flip)</title>
   <defs>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap');
-      text { font-family: 'Press Start 2P', monospace; }
+      @font-face { font-family: 'Press Start 2P'; src: url('../../data/PressStart2P.ttf') format('truetype'); }
+      text { font-family: 'Press Start 2P', monospace; font-variant-ligatures: none; }
       .label { font-size: 16px; fill: #f8f8f8; }
       .value { font-size: 16px; fill: #b8e8f8; text-anchor: end; }
       .sel   { font-size: 16px; fill: #f8d038; }

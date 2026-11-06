@@ -2,8 +2,8 @@
   <title>Seed detail - spoiler</title>
   <defs>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap');
-      text { font-family: 'Press Start 2P', monospace; }
+      @font-face { font-family: 'Press Start 2P'; src: url('../../data/PressStart2P.ttf') format('truetype'); }
+      text { font-family: 'Press Start 2P', monospace; font-variant-ligatures: none; }
     </style>
     <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10106c"/><stop offset="1" stop-color="#04043c"/></linearGradient>
     <g id="triforce"><polygon points="8,0 12,6 4,6"/><polygon points="4,8 8,14 0,14"/><polygon points="12,8 16,14 8,14"/></g>
