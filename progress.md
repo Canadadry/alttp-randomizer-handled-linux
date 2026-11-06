@@ -41,7 +41,7 @@
       - [x] Edit 01 — the real end of the settings list
       - [x] Edit 03 — the real seed name
       - [x] Edit 05 — the real seed names and date
-      - [ ] Edit 07 — a real window of the spoiler detail
+      - [x] Edit 07 — a real window of the spoiler detail
       - [ ] Edit 07 — the scroll-down marker
   - [ ] Step 2.10 — `make theme-compare`
   - [ ] Step 2.11 — Help text per value
