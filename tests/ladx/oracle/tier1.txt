@@ -4,7 +4,9 @@
 #   <key> all              every value LADXR defines (0 1 for a boolean)
 #   <key> <value> ...      only these values, space-separated; "" is the empty string
 # Not listed: seed (always random) and forwardfactor (fixed at 0.0, hidden), and every Entrances,
-# overworld, dungeonchainlength, shopsanity and gfxmod setting (unsupported); music=ffa unsupported.
+# overworld, dungeonchainlength, shopsanity and gfxmod setting (unsupported); music=ffa unsupported;
+# goal=bingo, bingo-double, bingo-triple and bingo-full excluded by the scope cut goal-bingo
+# (notes/plan3-scope-cuts.md).
 logic all
 accessibility all
 race all
@@ -23,7 +25,7 @@ dungeon_maps all
 boss all
 miniboss all
 enemies all
-goal all
+goal vanilla instruments specific open open-4 5-8 seashells maze
 goalcount all
 itempool all
 hpmode all

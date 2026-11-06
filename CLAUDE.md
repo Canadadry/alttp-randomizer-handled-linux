@@ -75,7 +75,8 @@ in `docs/`, then `README.md`.
   `settings_validate.txt`, `logic_graphs.txt`, `logic_vectors.txt`,
   `item_pools.txt`), each describing its format in its `#` header.
   `notes/plan3-scope-cuts.md` lists every tier-1 value cut from plan 3
-  with its reason. `tests/ladx/extract/` will hold the extraction fixtures
+  with its reason; `tier1.txt`'s header names the cut values it leaves
+  out (`goal=bingo*`, cut `goal-bingo`). `tests/ladx/extract/` will hold the extraction fixtures
   the inventory's Extractions table names (Phase 2 step 7), under the
   Nintendo-bytes check's strict scope.
 
