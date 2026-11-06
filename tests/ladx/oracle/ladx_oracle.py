@@ -1,4 +1,4 @@
-"""Shared helpers of the LADX oracle: the RNG tracer and the fixtures' line encoders.
+"""Shared helpers of the LADX oracle: the RNG tracer, the fixtures' line encoders and the order audit.
 
 Imports only the standard library and stays importable on Python older than 3.11, so that
 make test runs everywhere; the oracle scripts themselves need 3.11 (co_qualname).
@@ -236,3 +236,57 @@ def _uncovered(name):
 for _name in dir(random.Random):
     if not _name.startswith("_") and _name not in COVERED and callable(getattr(random.Random, _name)):
         setattr(TracingRandom, _name, _uncovered(_name))
+
+
+AUDIT_SITE = re.compile(r"os\.listdir\(|os\.scandir\(|os\.walk\(|\bglob\b|\.iterdir\("
+                        r"|(?<![.\w])(?<!def )(?:frozen)?set\(|\bfor\s+[\w\s,()]+?\s+in\s*\{"
+                        r"|getAccessableLocations\(")
+AUDIT_VERDICTS = ("patched", "unreached", "order-free")
+
+
+def audit_sites(root):
+    """Every order-sensitive site of the .py files under root, www/ excepted, as
+    (file, line number, stripped text), in file then line order."""
+    sites = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = sorted(d for d in dirnames if not (dirpath == root and d in ("www", ".git")))
+        for name in sorted(filenames):
+            if name.endswith(".py"):
+                path = os.path.join(dirpath, name)
+                rel = os.path.relpath(path, root).replace(os.sep, "/")
+                with open(path, encoding="utf-8") as f:
+                    for n, line in enumerate(f, 1):
+                        if AUDIT_SITE.search(line):
+                            sites.append((rel, n, line.strip()))
+    return sorted(sites)
+
+
+def read_audit(text):
+    """order_audit.txt as {(file, stripped text): (verdict, reason)}; "#" lines are comments."""
+    table = {}
+    for line in text.splitlines():
+        if not line or line.startswith("#"):
+            continue
+        fields = line.split("\t")
+        if len(fields) != 4 or fields[2] not in AUDIT_VERDICTS or not fields[3].strip():
+            raise OracleError("oracle: bad audit line %r: want <file>\\t<text>\\t<%s>\\t<reason>"
+                              % (line, "|".join(AUDIT_VERDICTS)))
+        key = (fields[0], fields[1])
+        if key in table:
+            raise OracleError("oracle: audit entry %s %s given twice" % key)
+        table[key] = (fields[2], fields[3])
+    return table
+
+
+def audit_order(root, table_text):
+    """Checks the sites under root against the audit table. Returns (ok, report lines): one
+    UNAUDITED line per site without an entry and one STALE line per entry without a site, else
+    the summary line."""
+    table = read_audit(table_text)
+    sites = audit_sites(root)
+    keys = {(rel, text) for rel, _, text in sites}
+    lines = ["UNAUDITED %s:%d %s" % site for site in sites if (site[0], site[2]) not in table]
+    lines += ["STALE %s %s" % key for key in sorted(table) if key not in keys]
+    if lines:
+        return False, lines
+    return True, ["order audit: %d sites, all audited" % len(sites)]

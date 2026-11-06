@@ -189,5 +189,59 @@ class RunTest(unittest.TestCase):
                 sys.path[:] = path
 
 
+def plant(root, files):
+    for path, text in files.items():
+        full = os.path.join(root, path)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "w") as f:
+            f.write(text)
+
+
+class AuditTest(unittest.TestCase):
+    def audit(self, files, table):
+        with tempfile.TemporaryDirectory() as tmp:
+            plant(tmp, files)
+            return ladx_oracle.audit_order(tmp, table)
+
+    def test_audited_site_passes(self):
+        ok, lines = self.audit({"patches/a.py": "import os\n    names = sorted(os.listdir(d))\n"},
+                               "# header\npatches/a.py\tnames = sorted(os.listdir(d))\tpatched\tsorted\n")
+        self.assertTrue(ok)
+        self.assertEqual(lines, ["order audit: 1 sites, all audited"])
+
+    def test_unaudited_site_is_caught(self):
+        ok, lines = self.audit({"a.py": "x = 1\nfor f in os.listdir(d):\n"}, "")
+        self.assertFalse(ok)
+        self.assertEqual(lines, ["UNAUDITED a.py:2 for f in os.listdir(d):"])
+
+    def test_stale_entry_is_caught(self):
+        ok, lines = self.audit({"a.py": "x = 1\n"}, "a.py\tfor f in os.listdir(d):\torder-free\tgone\n")
+        self.assertFalse(ok)
+        self.assertEqual(lines, ["STALE a.py for f in os.listdir(d):"])
+
+    def test_every_pattern_is_a_site(self):
+        source = "".join(line + "\n" for line in (
+            "os.listdir(d)", "os.scandir(d)", "os.walk(d)", "import glob", "p.iterdir()",
+            "s = set()", "t = frozenset(x)", "for k in {1: 2}.items():", "e.getAccessableLocations()",
+            "def set(self, v):", "global flag", "x.set(1)", "reset(1)", "if a in {1, 2}:",
+            "ri.getTileset(1)"))
+        ok, lines = self.audit({"a.py": source}, "")
+        self.assertEqual([line.split(" ", 1)[1].split(" ", 1)[0] for line in lines],
+                         ["a.py:%d" % n for n in range(1, 10)])
+
+    def test_identical_lines_share_one_entry_and_www_is_skipped(self):
+        ok, lines = self.audit({"a.py": "s = set()\ns = set()\n", "www/b.py": "os.listdir(d)\n",
+                                "c.txt": "os.listdir(d)\n"},
+                               "a.py\ts = set()\torder-free\tmembership only\n")
+        self.assertEqual((ok, lines), (True, ["order audit: 2 sites, all audited"]))
+
+    def test_bad_table_is_refused(self):
+        for table in ("a.py\ts = set()\tmaybe\twhy\n", "a.py\ts = set()\tpatched\n",
+                      "a.py\ts = set()\tpatched\t\n",
+                      "a.py\ts = set()\tpatched\tx\na.py\ts = set()\tunreached\ty\n"):
+            with self.assertRaises(ladx_oracle.OracleError):
+                self.audit({"a.py": "s = set()\n"}, table)
+
+
 if __name__ == "__main__":
     unittest.main()
