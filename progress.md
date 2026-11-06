@@ -42,7 +42,7 @@
   - [ ] Step 2.2 Oracle and full-generation determinism
     - [x] Chunk 1: comparators, tmp guard, environment audit
     - [x] Chunk 2: full-generation driver and gen_golden.sh
-    - [ ] Chunk 3: determinism.sh --full
+    - [x] Chunk 3: determinism.sh --full
     - [ ] Chunk 4: ladxr.patch fixes
   - [ ] Step 2.3 Inventory
   - [ ] Step 2.4 Cases
