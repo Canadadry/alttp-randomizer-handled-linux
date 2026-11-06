@@ -910,8 +910,8 @@ class OracleRunReadsTest(unittest.TestCase):
         plain = self.files(self.run_case("plain"))
         traced = self.files(self.run_case("traced", "--reads"))
         self.assertEqual(sorted(plain), ["out.gbc", "run.txt", "spoiler.json"])
-        self.assertEqual(sorted(traced), ["out.gbc", "reads.txt", "run.txt", "spoiler.json",
-                                          "writes.txt"])
+        self.assertEqual(sorted(traced), ["events.txt", "out.gbc", "reads.txt", "run.txt",
+                                          "spoiler.json", "writes.txt"])
         for name in plain:
             self.assertEqual(traced[name], plain[name], name)
         self.assertTrue(plain["run.txt"].endswith(b"outcome ok\n"))
@@ -929,6 +929,15 @@ class OracleRunReadsTest(unittest.TestCase):
         self.assertEqual([l.rsplit("\t", 1)[0] for l in writes],
                          ["-\tgenerator.py generateRom\trom.texts[0] = rom.texts[1]\tn=1",
                           "g-copy\t%s\tn=1" % site])
+
+    def test_the_event_stream_holds_every_write_in_order_with_its_origins(self):
+        traced = self.files(self.run_case("traced", "--reads"))
+        lines = traced["events.txt"].decode().splitlines()
+        self.assertEqual(lines[0], "ladx-events 1")
+        self.assertEqual(lines[2:], [
+            "tables texts", "I\ttexts\t0\tp10\t-", "I\ttexts\t1\tp11\t-",
+            "B\tg-copy\t110\t20\t220+1\tgenerator.py generateRom\t" + COPY_LINE,
+            "T\t-\ttexts\t0\tp11\t-\tgenerator.py generateRom\trom.texts[0] = rom.texts[1]"])
 
     def test_a_crash_still_writes_the_trace_up_to_where_it_stopped(self):
         case = self.run_case("crash", "--reads", settings=["crash=1"])

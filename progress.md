@@ -57,6 +57,12 @@
     - [x] Chunk 3: seeds picked with the ROM, case folders
     - [x] Chunk 4: runners over every case
   - [ ] Step 2.5 Golden format and goldens
+    - [x] Chunk 1: write events with byte origins
+    - [ ] Chunk 2: write-log encoder and known-source map
+    - [ ] Chunk 3: bytes policy for case folders
+    - [ ] Chunk 4: inventory read ranges over all cases
+    - [ ] Chunk 5: gen_golden into case folders and verifier
+    - [ ] Chunk 6: goldens generated and committed
   - [ ] Step 2.6 Patch tables
   - [ ] Step 2.7 Extraction fixtures
   - [ ] Step 2.8 Nintendo-bytes check over everything committed

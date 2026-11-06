@@ -33,8 +33,10 @@ then generateRom and the JSON spoiler, written into the case directory --dir:
 included, with inventory_check.py's sections and the groups of --inventory (default
 notes/ladx-inventory.md), and writes into --dir, whatever the outcome: reads.txt (aggregated
 reads: group, site, caller, channel, target, provenance, n= and range) and writes.txt (per
-writing site: group, site, n= positions, sha1= of its net writes). The other files are the same
-with or without it.
+writing site: group, site, n= positions, sha1= of its net writes) and events.txt (the event
+stream of read_trace.py's Trace.event_lines: every write in order with its values, group, site
+and each byte's origin, a source offset or known, after the parsed entries). The other files are
+the same with or without it.
 --plain (with --rom) runs LADXR's own main.main instead, with no hook and no tracer, os.urandom
 handing it the seed on its first call; it writes out.gbc, spoiler.json and plain.txt:
 rom_sha1 | rom none, spoiler_sha1 | spoiler none, then outcome ok | outcome retry (a second
@@ -171,7 +173,7 @@ class Driver:
         """One case: the output lines (without the trace when pool_only, which stops once
         readItemPool returned and then has outcome ok). With rom, a full generation writing
         out.gbc and spoiler.json into case_dir, their SHA-1 lines before the outcome; with
-        reads too ({site: group}), reads.txt and writes.txt as well."""
+        reads too ({site: group}), reads.txt, writes.txt and events.txt as well."""
         self.case = {"ws": [], "pool": [], "placer_pool": [], "place": [], "pool_only": pool_only}
         del self.tracer.lines[:]
         settings = self.settings.Settings()
@@ -203,6 +205,7 @@ class Driver:
                 trace.uninstall()
                 trace.write(os.path.join(case_dir, "reads.txt"))
                 trace.write_writes(os.path.join(case_dir, "writes.txt"))
+                trace.write_events(os.path.join(case_dir, "events.txt"))
         lines = ["seed %s" % ladx_oracle.seed_hex(seed),
                  "settings %s" % ladx_oracle.field(settings.getShortString())]
         for section in ("ws", "pool", "placer_pool", "place"):

@@ -8,6 +8,15 @@ of a parsed table, outside `ROM.patch`, is recorded as
 `(group, site, caller, channel, target, detail, provenance)`, and every write as
 `(group, site, caller, target, detail)`; `Trace.records()`, `Trace.writes()`,
 `Trace.write(path, raw=False)` (reads), `Trace.write_writes(path)`, `Trace.uninstall()`.
+`Trace.events()` is the ordered write record with values, `Trace.initial()` the parsed entries,
+`Trace.tables()` the table order, `Trace.write_events(path)` the event stream (`event_lines`).
+
+Origins: every ROM position starts as its own source offset. A bank slice comes back as an
+`OBytes` (a bytearray with per-byte `origins`), an index read as an `OInt` (`origin`); slicing,
+bytes() (`OFrozen`), concatenation, in-place changes and assignment to a bank or a table keep
+them, so a parsed entry and PointerTable.store's moves and de-duplication do too. Arithmetic and
+re-encoding give KNOWN. A written origin whose source byte differs from the value becomes KNOWN,
+so a missed path only ever turns a reference into a literal.
 
 Channels: `index` (bank[i]), `slice` (bank[a:b]), `iter`, `search` (find, rfind, index, rindex,
 count, startswith, endswith, in), `compare` (==, !=, ordering), `convert` (hex, decode, bytes())
@@ -33,7 +42,9 @@ wrote there).
 
 `--self-test` instruments LADXR's real `rom.ROM` and `pointerTable.PointerTable` (from `--ladxr`,
 default tests/ladx/oracle/ladxr) on 64 synthetic banks with planted reads, one per channel and
-per provenance, a header-line read, and planted writes (bank, `patch`, table).
+per provenance, a header-line read, and planted writes (bank, `patch`, table), then planted
+copies (slice, index, concatenation, table entry, `store`'s move and suffix de-duplication) and a
+computed write, checked event by event with their origins.
 """
 
 import argparse
@@ -94,6 +105,11 @@ class Trace:
         self._roots = [os.path.realpath(r) for r in roots]
         self._records = []
         self._writes = []
+        self._events = []
+        self._initial = []
+        self._tables = []
+        self._source = None
+        self._bases = []
         self._net = {}
         self._group_ids = {}
         self._group_names = [None]
@@ -112,6 +128,44 @@ class Trace:
 
     def writes(self):
         return list(self._writes)
+
+    def tables(self):
+        """The parsed tables' attribute names, in ROMWithTables.__init__'s order."""
+        return list(self._tables)
+
+    def initial(self):
+        """Every parsed entry right after the parse, tables in order then indices then alt keys:
+        (table, key, value, origins) as in events()."""
+        return list(self._initial)
+
+    def write_events(self, path):
+        _save(path, self.event_lines())
+
+    def event_lines(self):
+        """The event stream: `ladx-events 1`, `source <sha1>`, `tables <names>`, one `I` line
+        per parsed entry, then one `B` or `T` line per event, tab-separated, site last."""
+        source = hashlib.sha1(self._source or b"").hexdigest()
+        out = ["ladx-events 1", "source " + source, " ".join(["tables"] + self._tables)]
+        for table, key, value, origins in self._initial:
+            out.append("\t".join(["I", table, _key_text(key), _value_text(value),
+                                   origin_text(origins or ())]))
+        for event in self._events:
+            if event[0] == "B":
+                kind, group, site, offset, values, origins = event
+                fields = ["B", group, "%x" % offset, _value_text(values), origin_text(origins)]
+            else:
+                kind, group, site, table, key, value, origins = event
+                fields = ["T", group, table, _key_text(key), _value_text(value),
+                          origin_text(origins or ())]
+            out.append("\t".join(fields + [site]))
+        return out
+
+    def events(self):
+        """Every write in order: ("B", group, site, absolute offset, values, origins) for a run
+        of bank bytes, ("T", group, site, table, key, value, origins) for a table entry, value
+        bytes with a tuple of origins or an int pointer with None. An origin is the source offset
+        of an unchanged copy of a source byte, else KNOWN."""
+        return list(self._events)
 
     def write(self, path, raw=False):
         _save(path, self.lines(raw))
@@ -209,13 +263,16 @@ class Trace:
         if where is not None:
             self._records.append(where + (channel, target, detail, provenance()))
 
-    def record_write(self, target, detail, positions):
-        """positions: [(offset or index key, value now there)]; returns the writer's group id
-        for the caller's provenance mask, None when inactive."""
+    def record_write(self, target, detail, positions, events=()):
+        """positions: [(offset or index key, value now there)]; events: the write's event
+        payloads, tagged here with group and site; returns the writer's group id for the
+        caller's provenance mask, None when inactive."""
         if not self.active:
             return None
         group, site, caller = self._locate(2, True)
         self._writes.append((group, site, caller, target, detail))
+        for event in events:
+            self._events.append((event[0], group, site) + tuple(event[1:]))
         net = self._net.setdefault((group, site), {})
         for where, value in positions:
             net[(target, where)] = value
@@ -225,6 +282,15 @@ class Trace:
             gid = self._group_ids[group] = len(self._group_names)
             self._group_names.append(group)
         return gid
+
+    def checked(self, origins, values):
+        """origins with every source offset whose source byte differs from the value made
+        KNOWN: a change no traced path saw (the buffer protocol) never stays a reference."""
+        source = self._source
+        if source is None:
+            return list(origins)
+        return [q if q == KNOWN or (q < len(source) and source[q] == v) else KNOWN
+                for q, v in zip(origins, values)]
 
     def provenance(self, ids):
         """`source`, `written:<groups>` or `mixed:<groups>` of a set of group ids, 0 the
@@ -249,6 +315,178 @@ def _value(value):
     return repr(value)
 
 
+KNOWN = -1
+
+
+def _origins_of(value):
+    """The per-byte origins of a value assigned to a bank or a table: its own when it carries
+    them, KNOWN for every byte otherwise. value: an int, a bytes-like or a list of ints."""
+    origins = getattr(value, "origins", None)
+    if origins is not None:
+        return list(origins)
+    if isinstance(value, int):
+        return [getattr(value, "origin", KNOWN)]
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return [KNOWN] * len(value)
+    return [getattr(v, "origin", KNOWN) for v in value]
+
+
+def _assignable(value):
+    """value as bank or entry assignment accepts it, a one-shot iterable made a list."""
+    if isinstance(value, (int, bytes, bytearray, memoryview)):
+        return value
+    return list(value)
+
+
+class OInt(int):
+    """A byte read from a bank or an origin-carrying value: `origin` is its source offset."""
+
+
+def _oint(value, origin):
+    if origin == KNOWN:
+        return int(value)
+    result = OInt(value)
+    result.origin = origin
+    return result
+
+
+class OBytes(bytearray):
+    """A bytearray whose `origins` list holds, per byte, its source offset or KNOWN. Slicing,
+    index reads, bytes(), concatenation and every in-place change keep it aligned; any other
+    method returns a plain bytearray (all KNOWN)."""
+    __slots__ = ("origins",)
+    __hash__ = None
+
+    def __getitem__(self, item):
+        value = bytearray.__getitem__(self, item)
+        if isinstance(item, slice):
+            return _obytes(value, self.origins[item])
+        return _oint(value, self.origins[item])
+
+    def __setitem__(self, item, value):
+        value = _assignable(value)
+        origins = _origins_of(value)
+        bytearray.__setitem__(self, item, value)
+        if isinstance(item, slice):
+            self.origins[item] = origins
+        else:
+            self.origins[item] = origins[0]
+
+    def __delitem__(self, item):
+        bytearray.__delitem__(self, item)
+        del self.origins[item]
+
+    def append(self, value):
+        bytearray.append(self, value)
+        self.origins.append(getattr(value, "origin", KNOWN))
+
+    def extend(self, values):
+        values = _assignable(values)
+        bytearray.extend(self, values)
+        self.origins.extend(_origins_of(values))
+
+    def insert(self, index, value):
+        bytearray.insert(self, index, value)
+        self.origins.insert(index, getattr(value, "origin", KNOWN))
+
+    def pop(self, index=-1):
+        value = bytearray.pop(self, index)
+        return _oint(value, self.origins.pop(index))
+
+    def remove(self, value):
+        del self[bytearray.index(self, value)]
+
+    def reverse(self):
+        bytearray.reverse(self)
+        self.origins.reverse()
+
+    def clear(self):
+        bytearray.clear(self)
+        self.origins = []
+
+    def __iadd__(self, other):
+        self.extend(other)
+        return self
+
+    def __imul__(self, n):
+        bytearray.__imul__(self, n)
+        self.origins = self.origins * max(n, 0)
+        return self
+
+    def __add__(self, other):
+        value = bytearray.__add__(self, other)
+        if value is NotImplemented:
+            return value
+        return _obytes(value, self.origins + _origins_of(other))
+
+    def __mul__(self, n):
+        return _obytes(bytearray.__mul__(self, n), self.origins * max(n, 0))
+
+    __rmul__ = __mul__
+
+    def __bytes__(self):
+        return _ofrozen(bytes(memoryview(self)), self.origins)
+
+    def copy(self):
+        return _obytes(bytearray(memoryview(self)), self.origins)
+
+    def __copy__(self):
+        return self.copy()
+
+    def __deepcopy__(self, memo):
+        return self.copy()
+
+
+def _obytes(value, origins):
+    result = OBytes(value)
+    result.origins = list(origins)
+    assert len(result.origins) == len(result), "origins out of step with the bytes"
+    return result
+
+
+class OFrozen(bytes):
+    """The bytes() of an origin-carrying value: `origins` as OBytes; a slice shares its parent's
+    list until read, so the suffix keys of PointerTable.store stay cheap."""
+
+    @property
+    def origins(self):
+        return self._parent[self._slice] if self._slice is not None else self._parent
+
+    def __getitem__(self, item):
+        value = bytes.__getitem__(self, item)
+        if isinstance(item, slice):
+            result = OFrozen(value)
+            result._parent, result._slice = self.origins, item
+            return result
+        return _oint(value, self.origins[item])
+
+    def __add__(self, other):
+        value = bytes.__add__(self, other)
+        if value is NotImplemented:
+            return value
+        return _ofrozen(value, self.origins + _origins_of(other))
+
+    def __radd__(self, other):
+        if not isinstance(other, (bytes, bytearray, memoryview)):
+            return NotImplemented
+        return _ofrozen(bytes(other) + bytes(memoryview(self)), _origins_of(other) + self.origins)
+
+    def __mul__(self, n):
+        return _ofrozen(bytes.__mul__(self, n), self.origins * max(n, 0))
+
+    __rmul__ = __mul__
+
+    def __bytes__(self):
+        return self
+
+
+def _ofrozen(value, origins):
+    result = OFrozen(value)
+    result._parent, result._slice = list(origins), None
+    assert len(result._parent) == len(result), "origins out of step with the bytes"
+    return result
+
+
 def _span(detail):
     """(low, high) inclusive offsets of a record's detail, None when it names no offset."""
     m = re.fullmatch(r"0x([0-9A-F]+)(?::0x([0-9A-F]+))?", detail)
@@ -258,6 +496,52 @@ def _span(detail):
     if m.group(2) is None:
         return low, low
     return low, max(low, int(m.group(2), 16) - 1)
+
+
+def origin_text(origins):
+    """Origins as comma-separated runs, hex: `<q>+<n>` for n source offsets from q on, `k<n>`
+    for n KNOWN bytes; `-` when empty."""
+    out, n = [], 0
+    while n < len(origins):
+        q, m = origins[n], n + 1
+        if q == KNOWN:
+            while m < len(origins) and origins[m] == KNOWN:
+                m += 1
+            out.append("k%x" % (m - n))
+        else:
+            while m < len(origins) and origins[m] == q + m - n:
+                m += 1
+            out.append("%x+%x" % (q, m - n))
+        n = m
+    return ",".join(out) or "-"
+
+
+def _key_text(key):
+    if isinstance(key, int):
+        return "%x" % key
+    assert not re.fullmatch(r"[0-9a-f]+", key), "an alt key that reads as an index: %r" % key
+    return key
+
+
+def _value_text(value):
+    if isinstance(value, int):
+        return "p%x" % value
+    return bytes(memoryview(value)).hex() or "-"
+
+
+def _runs(positions):
+    """The maximal runs of consecutive positions, as ranges, in order."""
+    runs, start, last = [], None, None
+    for n in positions:
+        if start is not None and n == last + 1:
+            last = n
+            continue
+        if start is not None:
+            runs.append(range(start, last + 1))
+        start = last = n
+    if start is not None:
+        runs.append(range(start, last + 1))
+    return runs
 
 
 def _key_detail(item, length):
@@ -272,7 +556,7 @@ def _key_detail(item, length):
 
 def _make_bank_class(trace):
     class TracedBank(bytearray):
-        __slots__ = ("_nr",)
+        __slots__ = ("_nr", "_base", "_orig")
         __hash__ = None
 
         def _from(self, start, stop):
@@ -288,7 +572,7 @@ def _make_bank_class(trace):
                 span = (start, max(start, stop))
                 channel = "slice"
                 if span[0] == span[1]:
-                    return bytearray.__getitem__(self, item)
+                    return _obytes(bytearray.__getitem__(self, item), [])
             else:
                 channel = "index"
                 span = None
@@ -297,13 +581,19 @@ def _make_bank_class(trace):
                     span = (n, n + 1)
             trace.record(channel, "bank 0x%02X" % self._nr, _key_detail(item, lambda: length),
                          self._from(*span) if span else self._from(0, length))
-            return bytearray.__getitem__(self, item)
+            value = bytearray.__getitem__(self, item)
+            if isinstance(item, slice):
+                return _obytes(value, self._orig[item])
+            return _oint(value, self._orig[item])
 
         def __setitem__(self, item, value):
             old = len(self)
+            value = _assignable(value)
+            origins = _origins_of(value)
             if isinstance(item, slice):
                 start, stop, step = item.indices(old)
                 bytearray.__setitem__(self, item, value)
+                self._orig[item] = origins
                 if step == 1:
                     count = max(start, stop) - start + len(self) - old
                     positions = range(start, start + count)
@@ -312,14 +602,22 @@ def _make_bank_class(trace):
             else:
                 start = item + old if item < 0 else item
                 bytearray.__setitem__(self, item, value)
+                self._orig[start] = origins[0]
                 positions = range(start, start + 1)
             if isinstance(item, slice):
                 detail = "%s:%s" % (_offset(start), _offset(start + len(positions)))
             else:
                 detail = _offset(start)
+            events = []
+            for run in _runs(positions):
+                values = bytes(bytearray.__getitem__(self, slice(run.start, run.stop)))
+                checked = trace.checked([self._orig[n] for n in run], values)
+                for n, q in zip(run, checked):
+                    self._orig[n] = q
+                events.append(("B", self._base + run.start, values, tuple(checked)))
             gid = trace.record_write("bank 0x%02X" % self._nr, detail,
                                      [(_offset(n), bytearray.__getitem__(self, n))
-                                      for n in positions])
+                                      for n in positions], events)
             if gid is None:
                 return
             mask = trace._masks.get(self._nr)
@@ -338,7 +636,7 @@ def _make_bank_class(trace):
         def __bytes__(self):
             trace.record("convert", "bank 0x%02X" % self._nr, "__bytes__",
                          self._from(0, len(self)))
-            return bytes(memoryview(self))
+            return _ofrozen(bytes(memoryview(self)), self._orig)
 
     def method(channel, name):
         base = getattr(bytearray, name)
@@ -359,23 +657,51 @@ def _make_bank_class(trace):
             if isinstance(item, slice):
                 value = list(value)
                 start = item.indices(len(self))[0]
-                value = [_wrap(v, start + n) for n, v in enumerate(value)]
+                pairs = [(start + n, v) for n, v in enumerate(value)]
             else:
-                value = _wrap(value, item + len(self) if item < 0 else item)
-            list.__setitem__(self, item, value)
-            for bank in value if isinstance(item, slice) else [value]:
-                if isinstance(bank, TracedBank):
+                pairs = [(item + len(self) if item < 0 else item, value)]
+            wrapped = []
+            for nr, bank in pairs:
+                origins = (_origins_of(bank) if isinstance(bank, (bytes, bytearray))
+                           and not isinstance(bank, TracedBank) else None)
+                wrapped.append((_wrap(bank, nr, _base(nr)), origins))
+            list.__setitem__(self, item, [b for b, _ in wrapped] if isinstance(item, slice)
+                             else wrapped[0][0])
+            for bank, origins in wrapped:
+                if isinstance(bank, TracedBank) and origins is not None:
                     trace._masks.pop(bank._nr, None)
-                    TracedBank.__setitem__(bank, slice(None), bytes(memoryview(bank)))
+                    TracedBank.__setitem__(bank, slice(None),
+                                           _ofrozen(bytes(memoryview(bank)), origins))
 
-    def _wrap(bank, nr):
+    def _base(nr):
+        return trace._bases[nr] if nr < len(trace._bases) else nr * 0x4000
+
+    def _wrap(bank, nr, base):
         if isinstance(bank, TracedBank) or not isinstance(bank, (bytes, bytearray)):
             return bank
         traced = TracedBank(bank)
         traced._nr = nr
+        traced._base = base
+        traced._orig = list(range(base, base + len(bank)))
         return traced
 
     return TracedBanks, _wrap
+
+
+def _entry(trace, key, value):
+    """(key, value, origins) of a table entry as events() gives it."""
+    if isinstance(value, int):
+        return key, int(value), None
+    data = bytes(memoryview(value)) if isinstance(value, (bytes, bytearray)) else bytes(value)
+    return key, data, tuple(trace.checked(_origins_of(value), data))
+
+
+def _alt_keys(table):
+    for klass in type(table).__mro__:
+        alt = vars(table).get("_%s__alt_data" % klass.__name__.lstrip("_"))
+        if isinstance(alt, dict):
+            return list(alt)
+    return []
 
 
 def _table_class(trace, cls):
@@ -409,9 +735,12 @@ def _table_class(trace, cls):
         return cls.__len__(self)
 
     def __setitem__(self, item, value):
+        value = value if isinstance(value, int) else _assignable(value)
         cls.__setitem__(self, item, value)
         detail = _key_detail(item, lambda: cls.__len__(self))
-        gid = trace.record_write("table " + name(self), detail, [(detail, value)])
+        key = item + cls.__len__(self) if isinstance(item, int) and item < 0 else item
+        gid = trace.record_write("table " + name(self), detail, [(detail, value)],
+                                 [("T", name(self)) + _entry(trace, key, value)])
         if gid is not None:
             trace._entries.setdefault(name(self), {})[detail] = gid
 
@@ -439,15 +768,28 @@ def install(modules, sections, inventory=None, roots=None):
 
     def traced_rom_init(self, *args, **kwargs):
         rom_init(self, *args, **kwargs)
-        self.banks = banks_cls(wrap(b, n) for n, b in enumerate(self.banks))
+        bases, base = [], 0
+        for bank in self.banks:
+            bases.append(base)
+            base += len(bank)
+        if trace._source is None:
+            trace._source = b"".join(bytes(memoryview(b)) for b in self.banks)
+            trace._bases = bases
+        self.banks = banks_cls(wrap(b, n, bases[n]) for n, b in enumerate(self.banks))
 
     tables_init = tables_cls.__dict__["__init__"]
 
     def traced_tables_init(self, *args, **kwargs):
         tables_init(self, *args, **kwargs)
-        for name, value in sorted(vars(self).items()):
+        for name, value in vars(self).items():
             if isinstance(value, table_cls) and id(value) not in trace._table_names:
                 trace._table_names[id(value)] = (name, value)
+                if name not in trace._tables:
+                    trace._tables.append(name)
+                    base = type(value)
+                    keys = list(range(base.__len__(value))) + _alt_keys(value)
+                    trace._initial += [(name,) + _entry(trace, k, base.__getitem__(value, k))
+                                       for k in keys]
                 value.__class__ = _table_class(trace, type(value))
 
     for owner, name, value in ((rom_cls, "__init__", traced_rom_init),
@@ -553,6 +895,16 @@ def read_mixed(rom):
 
 def read_entry(rom):
     return rom.texts[0]
+
+def run_copies(stream):
+    rom = ROMWithTables(stream)
+    rom.banks[0x08][0x0100:0x0104] = rom.banks[0x09][0x0200:0x0204]
+    rom.banks[0x08][0x0104] = rom.banks[0x09][0x0300]
+    rom.banks[0x08][0x0105:0x0108] = rom.banks[0x09][0x0010:0x0011] + bytes(rom.banks[0x09][0x0020:0x0022])
+    rom.banks[0x08][0x0108] = rom.banks[0x09][0x0300] ^ 0xFF
+    rom.texts[1] = rom.texts[0][1:]
+    rom.texts.store(rom)
+    return rom
 
 def run_channels(stream):
     rom = ROMWithTables(stream)
@@ -692,13 +1044,69 @@ def self_test(ladxr):
                                                                             others[0]))
     if any(r[2] == "rom.py:ROM.patch" for r in records):
         failures.append("a read inside rom.patch is recorded")
+    failures += _self_test_origins(planted_dir_module(ladxr, rom_module, table_module, old),
+                                   data)
     for failure in failures:
         print("read-trace: self-test failed: " + failure)
     if failures:
         return 1
     print("read-trace: self-test, %d channels, %d provenances and %d writes traced, patch reads "
-          "excluded" % (len(SELF_TEST_EXPECTED), len(SELF_TEST_PROVENANCE), len(SELF_TEST_WRITES)))
+          "excluded, %d origin events" % (len(SELF_TEST_EXPECTED), len(SELF_TEST_PROVENANCE),
+                                          len(SELF_TEST_WRITES), len(_origin_expected(data))))
     return 0
+
+
+def planted_dir_module(ladxr, rom_module, table_module, old):
+    """A fresh load of the planted module over LADXR's real classes, in its own folder."""
+    folder = tempfile.mkdtemp(prefix="read-trace-origins-")
+    path = os.path.join(folder, "planted.py")
+    with open(path, "w") as f:
+        f.write(PLANTED_MODULE % {"old": old})
+    return _load(path, "planted_origins", {"ROM": rom_module.ROM,
+                                           "PointerTable": table_module.PointerTable}), folder
+
+
+def _origin_expected(data):
+    """The events run_copies must give, without group and site."""
+    at = lambda bank, addr: bank * 0x4000 + addr
+    src = lambda bank, addr, n: tuple(range(at(bank, addr), at(bank, addr) + n))
+    piece = lambda bank, addr, n: data[at(bank, addr):at(bank, addr) + n]
+    return [
+        ("B", at(8, 0x100), piece(9, 0x200, 4), src(9, 0x200, 4)),
+        ("B", at(8, 0x104), piece(9, 0x300, 1), src(9, 0x300, 1)),
+        ("B", at(8, 0x105), piece(9, 0x10, 1) + piece(9, 0x20, 2),
+         src(9, 0x10, 1) + src(9, 0x20, 2)),
+        ("B", at(8, 0x108), bytes([data[at(9, 0x300)] ^ 0xFF]), (KNOWN,)),
+        ("T", "texts", 1, bytes([2, 3, 0xFF]), src(2, 0x201, 3)),
+        ("B", at(2, 0x200), bytes([1, 2, 3, 0xFF]), src(2, 0x200, 4)),
+        ("B", at(1, 0x100), b"\x00", (KNOWN,)), ("B", at(1, 0x101), b"\x42", (KNOWN,)),
+        ("B", at(1, 0x102), b"\x01", (KNOWN,)), ("B", at(1, 0x103), b"\x42", (KNOWN,)),
+    ]
+
+
+def _self_test_origins(planted_and_folder, data):
+    """Planted copies (slice, index, concatenation, table entry, store's move and suffix
+    de-duplication) and a computed write through LADXR's real classes: failure lines."""
+    planted, folder = planted_and_folder
+    try:
+        modules = {"ROM": planted.ROM, "ROMWithTables": planted.ROMWithTables,
+                   "PointerTable": planted.PointerTable}
+        trace = install(modules, [], roots=[folder])
+        try:
+            planted.run_copies(io.BytesIO(data))
+        finally:
+            trace.uninstall()
+    finally:
+        import shutil
+        shutil.rmtree(folder, ignore_errors=True)
+    got = [e[:1] + e[3:] for e in trace.events()]
+    want = _origin_expected(data)
+    if got != want:
+        return ["origins: events %r, expected %r" % (got, want)]
+    if trace.initial() != [("texts", 0, bytes([1, 2, 3, 0xFF]), tuple(range(0x8200, 0x8204))),
+                           ("texts", 1, bytes([4, 5, 0xFF]), tuple(range(0x8210, 0x8213)))]:
+        return ["origins: parsed entries %r" % (trace.initial(),)]
+    return []
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ Unit tests of read_trace.py on stand-in ROM, ROMWithTables and PointerTable clas
 temporary directory, with no LADXR and no ROM.
 """
 
+import hashlib
 import importlib.util
 import io
 import os
@@ -152,6 +153,41 @@ PLANTED = textwrap.dedent('''\
         if which == "empty":
             rom.banks[1][0x20:0x20]
             rom.banks[1][0x30:0x10]
+        if which == "copy-slice":
+            rom.banks[2][0x10:0x14] = rom.banks[1][0x20:0x24]
+        if which == "copy-index":
+            rom.banks[2][0x30] = rom.banks[0][0x05]
+        if which == "computed":
+            rom.banks[2][0x31] = rom.banks[0][0x05] + 1
+            rom.banks[2][0x32:0x34] = bytes([rom.banks[0][0x06], 0x07])
+        if which == "concat":
+            rom.banks[2][0x50:0x55] = (rom.banks[1][0x00:0x02] + bytes(rom.banks[1][0x10:0x12])
+                                       + b"\x09")
+        if which == "mutate":
+            entry = rom.banks[1][0x90:0x94]
+            entry[1] = 0x77
+            entry.append(rom.banks[0][0x00])
+            entry[0:1] = rom.banks[0][0x08:0x0A]
+            del entry[3]
+            rom.banks[2][0x90:0x95] = entry
+        if which == "invisible":
+            entry = rom.banks[1][0xA0:0xA2]
+            memoryview(entry)[0] = 0xEE
+            rom.banks[2][0xA0:0xA2] = entry
+        if which == "whole":
+            rom.banks[2] = rom.banks[1][:]
+        if which == "dedup":
+            stored = bytes(rom.banks[1][0x80:0x84])
+            done = {stored[skip:]: skip for skip in range(len(stored))}
+            key = next(k for k in done if k == stored[2:])
+            rom.banks[2][0x80:0x82] = key
+        if which == "entry-copy":
+            rom.texts[0] = rom.banks[1][0x60:0x63]
+            rom.banks[2][0x60:0x63] = rom.texts[0]
+            rom.texts[1] = 0x1234
+        if which == "concat-bytes":
+            rom.banks[2][0x50:0x55] = b"\x09" + bytes(rom.banks[1][0x10:0x12]) + bytes(
+                rom.banks[1][0x00:0x02])
     ''')
 
 SECTIONS = [("planted.py", "generate"), ("standins.py", "ROMWithTables.__init__")]
@@ -364,6 +400,84 @@ class Output(Fixture):
         trace = self.trace("slice")
         lines = [l for l in trace.lines() if "planted.py:read_slice" in l]
         self.assertEqual([l.split("\t")[-1] for l in lines], ["n=1 0x0020..0x0027"])
+
+
+KNOWN = read_trace.KNOWN
+
+
+class Origins(Fixture):
+    def bank_events(self, which):
+        return [e[3:] for e in self.trace(which).events() if e[0] == "B"]
+
+    def test_a_bank_slice_copied_into_a_bank_keeps_its_source_offsets(self):
+        self.assertEqual(self.bank_events("copy-slice"),
+                         [(0x210, bytes(range(0x20, 0x24)), (0x120, 0x121, 0x122, 0x123))])
+
+    def test_a_byte_read_by_index_and_written_keeps_its_source_offset(self):
+        self.assertEqual(self.bank_events("copy-index"), [(0x230, b"\x05", (0x005,))])
+
+    def test_arithmetic_and_rebuilt_bytes_are_known(self):
+        self.assertEqual(self.bank_events("computed"),
+                         [(0x231, b"\x06", (KNOWN,)), (0x232, b"\x06\x07", (KNOWN, KNOWN))])
+
+    def test_in_place_changes_keep_the_untouched_bytes_origins(self):
+        self.assertEqual(self.bank_events("mutate"),
+                         [(0x290, bytes([8, 9, 0x77, 0x93, 0]), (0x008, 0x009, KNOWN, 0x193, 0x000))])
+
+    def test_a_change_no_traced_path_saw_makes_the_byte_known(self):
+        self.assertEqual(self.bank_events("invisible"),
+                         [(0x2A0, bytes([0xEE, 0xA1]), (KNOWN, 0x1A1))])
+
+    def test_a_bank_replaced_by_a_copy_keeps_the_copy_s_origins(self):
+        self.assertEqual(self.bank_events("whole"),
+                         [(0x200, bytes(range(256)), tuple(range(0x100, 0x200)))])
+
+    def test_a_suffix_used_as_a_dictionary_key_keeps_its_origins(self):
+        self.assertEqual(self.bank_events("dedup"), [(0x280, bytes([0x82, 0x83]), (0x182, 0x183))])
+
+    def test_a_table_entry_write_is_an_event_and_an_entry_copy_keeps_its_origins(self):
+        trace = self.trace("entry-copy")
+        self.assertEqual([e[:2] + e[3:] for e in trace.events()], [
+            ("T", "-", "texts", 0, b"\x60\x61\x62", (0x160, 0x161, 0x162)),
+            ("B", "-", 0x260, b"\x60\x61\x62", (0x160, 0x161, 0x162)),
+            ("T", "-", "texts", 1, 0x1234, None)])
+        self.assertEqual(trace.events()[0][2],
+                         "planted.py generate\trom.texts[0] = rom.banks[1][0x60:0x63]")
+
+    def test_the_parsed_entries_and_the_table_order_are_kept(self):
+        trace = self.trace("none")
+        self.assertEqual(trace.tables(), ["texts"])
+        self.assertEqual(trace.initial(), [("texts", 0, 0x10, None), ("texts", 1, 0x11, None)])
+
+    def test_write_events_saves_the_stream(self):
+        trace = self.trace("entry-copy")
+        path = os.path.join(self.dir, "events.txt")
+        trace.write_events(path)
+        with open(path) as f:
+            lines = f.read().splitlines()
+        site = "planted.py generate\t"
+        self.assertEqual(lines, [
+            "ladx-events 1",
+            "source " + hashlib.sha1(bytes(range(256)) * 4).hexdigest(),
+            "tables texts",
+            "I\ttexts\t0\tp10\t-",
+            "I\ttexts\t1\tp11\t-",
+            "T\t-\ttexts\t0\t606162\t160+3\t" + site + "rom.texts[0] = rom.banks[1][0x60:0x63]",
+            "B\t-\t260\t606162\t160+3\t" + site + "rom.banks[2][0x60:0x63] = rom.texts[0]",
+            "T\t-\ttexts\t1\tp1234\t-\t" + site + "rom.texts[1] = 0x1234"])
+
+    def test_origin_runs_are_written_compactly(self):
+        self.assertEqual(read_trace.origin_text((5, 6, 7, KNOWN, KNOWN, 0x20, 9)),
+                         "5+3,k2,20+1,9+1")
+        self.assertEqual(read_trace.origin_text(()), "-")
+
+    def test_concatenation_and_bytes_keep_each_part_s_origins(self):
+        want = (0x100, 0x101, 0x110, 0x111, KNOWN)
+        self.assertEqual(self.bank_events("concat"),
+                         [(0x250, bytes([0, 1, 0x10, 0x11, 9]), want)])
+        self.assertEqual(self.bank_events("concat-bytes"),
+                         [(0x250, bytes([9, 0x10, 0x11, 0, 1]),
+                           (KNOWN, 0x110, 0x111, 0x100, 0x101))])
 
 
 def _run(*args):
