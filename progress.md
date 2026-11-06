@@ -3,7 +3,7 @@
     - [x] Move both trees and update every path token
   - [x] Step 1.2 Additive SDL golden write
     - [x] goldens.sh --add and make sdl-goldens-add, self-proven
-  - [ ] Step 1.3 Rename the app to Zelda Randomizer
+  - [x] Step 1.3 Rename the app to Zelda Randomizer
     - [x] App folder App/ZeldaRando and its strings
     - [x] Binary zrando, package ZeldaRando.zip and CI
     - [x] Docs follow the new name
