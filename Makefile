@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -16,6 +16,7 @@ help:
 	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
 	@echo "make sdl-pc         the SDL PC build, its SDL tests, headless smoke test and golden comparison (needs libsdl1.2-dev, libsdl-ttf2.0-dev, libsdl-image1.2-dev)"
 	@echo "make sdl-goldens    writes the SDL goldens once into tests/rando/sdl/goldens/, refused if any exist, kept out of check"
+	@echo "make screenshots    the README's pictures: 4 states drawn with themes/alttp twice, byte-identical, written to docs/screenshots/ (needs sdl-pc's packages)"
 	@echo "make mockups        the mockups of design/mockups/ checked: rendered offline by Chromium with the local font, kept out of check (needs sdl-pc's packages, node, Playwright's Chromium)"
 	@echo "make theme-compare  the mockups beside the app's captures with a diff, a score and the measures (offsets.txt, outside px, text offsets) per mockup, into tests/rando/build/theme-compare/ (THEME=<dir>, default themes/alttp; needs Playwright's Chromium and sdl-pc's packages; no threshold)"
 	@echo "make theme-art      the art of themes/alttp re-rendered from design/mockups/ by Chromium and compared pixel by pixel (THEME=<dir>; needs node and Playwright's Chromium)"
@@ -84,6 +85,10 @@ sdl-arm:
 # Outside the net, run once: refused when the goldens folder already holds goldens.
 sdl-goldens:
 	$(MAKE) -C tests/rando sdl-goldens
+
+# Outside the net: needs sdl-pc's packages. Rewrites docs/screenshots/; commit them after a theme change.
+screenshots:
+	$(MAKE) -C tests/rando screenshots
 
 # Outside the net: needs sdl-pc's packages, node and Playwright's Chromium.
 mockups:
