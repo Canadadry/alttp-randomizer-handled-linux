@@ -63,7 +63,8 @@ in `docs/`, then `README.md`.
   it without a ROM (shared helpers `ladx_oracle.py`, unit-tested by
   `test_oracle.py`); Phase 2's ROM-free tools, each unit-tested by its
   `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check;
-  `push_gate.py`, Phase 2's push gate), and
+  `push_gate.py`, Phase 2's push gate; `read_trace.py`, the ROM read
+  trace), and
   `fetch_rom.sh`, the ROM fetcher, proved by its own run; the
   hand-written inputs `tier1.txt`,
   `determinism_cases.txt` and `order_audit.txt`; and the six fixtures they
@@ -176,6 +177,22 @@ in `docs/`, then `README.md`.
   `no_claude_branch.sh`'s own or the chain (else `the gate is NOT armed`,
   exit 1), never touching `prepare-commit-msg`; `--uninstall` removes the
   chain and runs `no_claude_branch.sh --install`.
+- The ROM read trace, outside the net (python3 and the LADXR checkout, else
+  `setup: read-trace: no LADXR checkout in <dir>, run
+  tests/ladx/oracle/setup.sh`, exit 2; no ROM): `read_trace.py`'s
+  `install(modules, sections, inventory)` makes LADXR's `ROM` banks and
+  `ROMWithTables` tables record every read outside `ROM.patch` (channels
+  `index`, `slice`, `iter`, `search`, `compare`, `convert`, `table`; writes
+  never) as `<group>\t<site>\t<caller>\t<channel>\t<target>\t<detail>`,
+  the site `<file> <function>\t<line>[ #<k>]` of the innermost section frame
+  (`#<k>` on the k-th occurrence of that line text in the function).
+  `python3 -I tests/ladx/oracle/read_trace.py --self-test [--ladxr <dir>]`
+  runs one planted read per channel, a planted parse, `rom.patch` and writes
+  through LADXR's real `ROM` and `PointerTable` on 64 synthetic banks
+  (`read-trace: self-test, 7 channels traced, patch and writes excluded`,
+  else one `self-test failed: <case>` line each, exit 1); `--blind-spots`
+  lists the buffer-protocol lines a Python trace cannot see (`BLIND
+  <file>\t<line>`, then `read-trace: <n> buffer-protocol sites to review`).
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -325,7 +342,8 @@ in `docs/`, then `README.md`.
   `gen_fixtures.sh`, `determinism.sh` and `audit_order.py` run only to
   regenerate or re-prove its fixtures; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, `fetch_rom.sh` fetches it, and `push_gate.py`
-  guards Phase 2's pushes (its tests run in `make test`). The SDL build (`make sdl`,
+  guards Phase 2's pushes and `read_trace.py` traces LADXR's ROM reads (their
+  tests run in `make test`). The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and
