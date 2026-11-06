@@ -490,3 +490,22 @@ position.
   SDL_image yet (step 6).
 - The container restarted mid-step (chunk 3): the working tree survived;
   docker had to be started again (`dockerd`).
+
+### Step 1.6
+
+- Done in 4 chunks (`4743bff`, `4dbf983`, `b5931a2`, and the mac commit):
+  classic's palette and fit size (26 pt in a 16×32 cell) frozen as test
+  constants; `sdl_view`, `test_sdl_view`, the equivalence harness and
+  `--font` deleted; without `--theme`, `alttpr` reads `themes/default/` in
+  `argv[0]`'s directory; `goldens.sh ALTTPR THEME SD_FIXTURE …` and
+  `smoke_sdl.sh ALTTPR THEME`; the golden fingerprint reads the theme's
+  fonts (unchanged for classic). `build_zip.py` takes a `THEME_DIR`
+  (`PKG_THEME`, classic for now) shipped as `App/ALttPR/themes/default/`;
+  the loose font left `App/ALttPR/`; NEEDED adds `libSDL_image-1.2.so.0`.
+  `targets/mac/` builds SDL_image 1.2 PNG-only from source.
+- Verified: `make check`, `make sdl` (goldens 13 byte-identical, sdl-arm
+  links) and `make package` (447607-byte zip, same bytes twice) green.
+- The mac recipe was proven on Linux only (a static SDL_image built the
+  same way, linked into the PC app, passed the smoke test and the goldens);
+  an owner item asks for a Mac run. The CI `sdl` artifact uploads the
+  binary alone, which now needs `--theme` or a `themes/default/` beside it.
