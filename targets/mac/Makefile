@@ -12,7 +12,7 @@ IMG_LIB := $(PREFIX)/lib/libSDL_image.a
 IMG_PC := $(PREFIX)/lib/pkgconfig/SDL_image.pc
 SD := $(ROOT)/tmp/sd
 SD_APP := $(SD)/App/ALttPR
-APP := $(ROOT)/tests/rando/build/sdl/alttpr
+APP := $(ROOT)/tests/alttp/build/sdl/alttpr
 ROM_SIZE := 1048576
 HEADERED_SIZE := 1049088
 
@@ -56,7 +56,7 @@ $(IMG_PC): | deps
 # <SDL/SDL.h> needs the parent include dirs; Apple clang flags an intentional
 # string concatenation in text_strings.c that gcc accepts.
 build: $(TTF_PC) $(IMG_PC) sd
-	$(MAKE) -C $(ROOT)/tests/rando build/sdl/alttpr \
+	$(MAKE) -C $(ROOT)/tests/alttp build/sdl/alttpr \
 		CFLAGS="-std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS -Wno-string-concatenation" \
 		SDL_CFLAGS="$$(pkg-config --cflags sdl SDL_ttf SDL_image) -I$(PREFIX)/include -I$$(brew --prefix)/include" \
 		SDL_LIBS="$$(pkg-config --libs sdl SDL_ttf SDL_image)"

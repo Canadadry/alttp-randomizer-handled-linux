@@ -18,7 +18,7 @@ build/
 *.a
 
 # The oracle's default VT checkout (gen_golden.sh)
-tests/rando/oracle/vt/
+tests/alttp/oracle/vt/
 
 # Nintendo ROMs never enter the repository
 *.sfc

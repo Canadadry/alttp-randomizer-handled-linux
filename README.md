@@ -58,9 +58,9 @@ make sdl-pc
 ```
 
 ```bash
-tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
+tests/alttp/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
 ```
 
-`make package` builds the release zip `tests/rando/build/package/ALttPR.zip`
+`make package` builds the release zip `tests/alttp/build/package/ALttPR.zip`
 (needs docker). Everything else (cross build, themes, screenshots) is in
 [`CLAUDE.md`](CLAUDE.md) and `make help`.

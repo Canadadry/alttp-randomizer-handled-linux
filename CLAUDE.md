@@ -11,21 +11,21 @@ in `docs/`, then `README.md`.
 
 ## Layout
 
-- `rando/` is the randomizer library: `include/` its public headers, `src/`
+- `alttp/` is the randomizer library: `include/` its public headers, `src/`
   its sources. The generator, the oracle and their tests are taken over from
   `Canadadry/alttp-ds` (`rando/`, `tests/rando/`).
-- `rando/host/` is host-side code on top of the library: the case reader, the
+- `alttp/host/` is host-side code on top of the library: the case reader, the
   spoiler JSON, the playthrough, the output, and the generator's `main`
   (`host/main/rando_gen.c`).
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
-  like the library, built with only `rando/include` and itself on the include
+  like the library, built with only `alttp/include` and itself on the include
   path, no SDL. `app/sd/` is the SD-card layer (`record.c`, `seed_save.c`).
   `app/sdl/` is the SDL 1.2 renderer and input layer (key map, grid view,
   theme renderer `sdl_render.c`, frame loop). `app/core` uses the library;
-  `app/sd` the library, `rando/host` and `app/core` (it hands the core its
+  `app/sd` the library, `alttp/host` and `app/core` (it hands the core its
   runners and stores); `app/sdl` the library, `app/core` and `app/theme`;
-  nothing in `rando/` includes `app/`. Its tests live
-  in `tests/rando/unit/`, the SDL ones in `tests/rando/sdl/`.
+  nothing in `alttp/` includes `app/`. Its tests live
+  in `tests/alttp/unit/`, the SDL ones in `tests/alttp/sdl/`.
   `app/theme/` is the theme loader (`theme.ini` into a `Theme` struct):
   pure C99, no SDL, built with only itself on the include path.
   `app/main/` holds the mains: `ui_cli.c`, the host tool that plays a
@@ -33,7 +33,7 @@ in `docs/`, then `README.md`.
   the text screen; and `sdl_main.c`, the SDL app for the device and the PC.
   `app/package/` holds the Onion app folder's files (`launch.sh`,
   `config.json`, `icon.png`) and `build_zip.py`, which writes the release zip
-  (self-test `tests/rando/test_package.py`).
+  (self-test `tests/alttp/test_package.py`).
 - `themes/` holds one flat folder per theme (`themes/classic/`: the phase-1
   grid look, kept as the SDL tests' theme; `themes/alttp/`: the shipped look,
   the mockups' look at 12 px in Press Start 2P,
@@ -43,11 +43,11 @@ in `docs/`, then `README.md`.
   with its licence; the themes ship byte copies, checked by `test_theme`) and
   the base patch `base.bps`. Press Start 2P is `google/fonts`
   `ofl/pressstart2p/` at `24ddc1f324cac5d9f5aedca126d298f56e3f1640`, renamed.
-- `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
-  module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
+- `tests/alttp/` holds its tests: `unit/test_<module>.c`, one binary per
+  module, registered in `tests/alttp/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
-- `tests/rando/cases/` holds the e2e cases, one directory each with its VT
-  golden; `tests/rando/oracle/` the PHP VT oracle (`gen_golden.sh`, `vt.patch`)
+- `tests/alttp/cases/` holds the e2e cases, one directory each with its VT
+  golden; `tests/alttp/oracle/` the PHP VT oracle (`gen_golden.sh`, `vt.patch`)
   and the fixtures it writes.
 
 ## Checks
@@ -66,26 +66,26 @@ in `docs/`, then `README.md`.
 - Throwaway files go in `tmp/` (git-ignored).
 - Install: nothing (`make install` says so). The checks need only host `gcc`,
   `make` and `python3`.
-- `make test` = `make -C tests/rando test` (the randomizer's and the app's
+- `make test` = `make -C tests/alttp test` (the randomizer's and the app's
   unit tests, linked with the app archive `librando_app.a`; the UI snapshots
-  in `tests/rando/unit/snapshots/`, edited by hand only; and
-  `tests/rando/no_sdl.sh`, which fails on any SDL include under `app/core/`,
+  in `tests/alttp/unit/snapshots/`, edited by hand only; and
+  `tests/alttp/no_sdl.sh`, which fails on any SDL include under `app/core/`,
   `app/sd/`, `app/theme/` or `app/main/` (`sdl_main.c` exempt by exact path) after proving
-  itself on planted ones; and `tests/rando/no_literals.py`, which fails on
+  itself on planted ones; and `tests/alttp/no_literals.py`, which fails on
   any string literal with a letter under `app/core/` outside the English
   table `ui_strings_en.c`, or under `app/sdl/`, after proving itself on
   planted sources; and `ui_cli`, built from `make test`'s
   own objects, with its smoke test `unit/smoke_ui_cli.c`) plus
   `test-template` (the tooling under `.claude/`).
 - `make ui-cli` builds `ui_cli` alone; look at the app with
-  `tests/rando/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
+  `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
   `--base-md5` fix a run; `--unsupported <setting>=<value>,...` is a
   test-only override of the library's unsupported pairs. The SDL app
   `alttpr` takes the same keys and flags (one shared module,
   `app/sd/rando_fixed_run.c`), plus `--shot-text <file>`; with keys, its run
   ends after the last one.
-- `make check` = `test` plus `lint` (`rando/` and `app/` built with
+- `make check` = `test` plus `lint` (`alttp/` and `app/` built with
   `-std=c99 -pedantic-errors`, except `app/sdl/` and `sdl_main.c`, which
   `make sdl` builds that way), `logic` (unit tests replaying the oracle fixtures),
   `selftest` (the e2e driver's own self-test), `e2e` (every case diffed
@@ -93,11 +93,11 @@ in `docs/`, then `README.md`.
   `e2e-combos` (every combination case diffed against its golden, kept out
   of `e2e`). Run
   `make -k check` to see every failure at once.
-- `make -C tests/rando measure`, outside the net, gives the per-case times
+- `make -C tests/alttp measure`, outside the net, gives the per-case times
   every later budget is measured against, the whole pipeline's time
   (`rando_assemble` on the synthetic base) and its Cortex-A7 projection
   against the ~10 s line.
-- `make -C tests/rando measure-compare`, outside the net, times the current
+- `make -C tests/alttp measure-compare`, outside the net, times the current
   generator against a throwaway worktree of `40314c3`
   (`tmp/measure-ref-40314c3`), interleaved per case, full and stopped after
   `fill`, with ±10% verdicts; a reference that does not build is a `setup:`
@@ -106,30 +106,30 @@ in `docs/`, then `README.md`.
   toolchain (`onion-toolchain.sh`, `docs/toolchain.md`) and runs the e2e
   cases on it under `qemu-arm`. `make unit-arm`, outside the net too, builds
   every unit test the same way and runs it under `qemu-arm` from
-  `tests/rando`, `--fixtures` included for `LOGIC_TESTS`. Both need docker
+  `tests/alttp`, `--fixtures` included for `LOGIC_TESTS`. Both need docker
   and qemu-user; a missing one fails with a `setup:` line, a setup problem,
   not a bug.
 - `make sdl` = `sdl-pc` + `sdl-arm`, outside the net. `make sdl-pc` needs
   `libsdl1.2-dev` (sdl12-compat on SDL2), `libsdl-ttf2.0-dev` and
   `libsdl-image1.2-dev`, else a
   `setup:` line: it builds the SDL layer and `sdl_main.c`, runs the SDL tests
-  of `tests/rando/sdl/` and the smoke test `sdl/smoke_sdl.sh`, all with the
+  of `tests/alttp/sdl/` and the smoke test `sdl/smoke_sdl.sh`, all with the
   dummy video driver. `make sdl-arm` needs docker: it compiles and links the
   same code with Onion's toolchain against its SDL 1.2, SDL_ttf and
   SDL_image, and runs nothing. The owner looks at the PC build with
-  `make sdl-pc`, then `tests/rando/build/sdl/alttpr --sd tmp/sd --theme
+  `make sdl-pc`, then `tests/alttp/build/sdl/alttpr --sd tmp/sd --theme
   themes/alttp` (the theme draws every frame; without `--theme` the app
   reads `themes/default/` next to its binary; `--font` is an unknown
   option).
 - `make sdl-pc` also runs the golden comparison
-  (`tests/rando/sdl/goldens.sh --compare`): it proves itself on a planted
+  (`tests/alttp/sdl/goldens.sh --compare`): it proves itself on a planted
   flipped pixel, a removed golden and an extra one, then plays the 13 states of
   `sdl/golden_states.txt` (each on a fresh SD from `sd_fixture`, drawn
   through `--theme themes/classic`) and prints
   one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch (each BMP
   capture's decoded pixels against its lossless PNG golden), else
   `goldens: 13 states pixel-identical`. The goldens in
-  `tests/rando/sdl/goldens/` (PNGs) are pinned to the Claude Code cloud container
+  `tests/alttp/sdl/goldens/` (PNGs) are pinned to the Claude Code cloud container
   (Ubuntu 24.04.5, sdl12-compat 1.2.68 on SDL2 2.30.0, SDL_ttf 2.0.11,
   FreeType 2.13.2), fingerprinted in `goldens/environment.txt`; on another
   host it fails with `setup: goldens pinned to <fp>, this host is <fp>`, a
@@ -137,37 +137,37 @@ in `docs/`, then `README.md`.
   states with `themes/alttp` (`goldens.sh --draw`, the theme in the
   Makefile's `DRAW_THEME`): no comparison and no state strings, each capture
   must be a 640×480 picture of more than one colour; it writes them to
-  `tests/rando/build/sdl/theme-states/alttp/` and prints
+  `tests/alttp/build/sdl/theme-states/alttp/` and prints
   `goldens: 13 states drawn with alttp in <dir>`.
 - `make sdl-goldens`, outside the net, writes the goldens once (every state
   rendered twice, refused unless byte-identical, written as PNGs) and
   refuses a folder that already holds any: goldens are never regenerated to get green.
 - `make screenshots`, outside the net, with `make sdl-pc`'s packages (else
-  its `setup:` line; `tests/rando/sdl/screenshots.sh`): draws the README's
-  states (`SHOT_STATES` in `tests/rando/Makefile`, from
+  its `setup:` line; `tests/alttp/sdl/screenshots.sh`): draws the README's
+  states (`SHOT_STATES` in `tests/alttp/Makefile`, from
   `sdl/golden_states.txt`) with `themes/alttp` twice, refuses unless
   byte-identical, and overwrites `docs/screenshots/<state>.png`. No check:
   they are pictures, rewritten and committed after a theme change.
 - `make mockups`, outside the net, checks `design/mockups/` against the app
-  (`tests/rando/sdl/mockups.sh`): the comparator's self-test
+  (`tests/alttp/sdl/mockups.sh`): the comparator's self-test
   (`mockup_text.py --self-test`), the render check's self-proof and its
   offline Chromium render of every mockup with the local Press Start 2P and
   no ligature (`mockup_render.js`), every mockup paired in
-  `tests/rando/sdl/mockup_states.txt` (seed 1, the golden runs' date),
+  `tests/alttp/sdl/mockup_states.txt` (seed 1, the golden runs' date),
   `alttpr` with `themes/alttp` playing every pairing (`goldens.sh --draw
   --states`), the `ui_cli` grid read from those captures, `ui_cli`
   byte-identical to `alttpr` on the theme's page, and each mockup's text
   compared with `ui_cli`'s, help line included (one `MISMATCH` line per
   difference; the rules are in `mockup_text.py`'s docstring); it writes
-  `tests/rando/build/mockups/` and ends with one summary line. Without
+  `tests/alttp/build/mockups/` and ends with one summary line. Without
   python3, node, npm, Playwright or its Chromium (`NODE_PATH=$(npm root
   -g)`, browsers in `/opt/pw-browsers`) or `make sdl-pc`'s packages it
   prints a `setup:` line, a setup problem that verifies nothing.
 - `make theme-compare`, outside the net, with the same needs and `setup:`
-  lines as `make mockups` (`tests/rando/sdl/theme_compare.sh`, image tool
+  lines as `make mockups` (`tests/alttp/sdl/theme_compare.sh`, image tool
   `theme_compare.py`): it renders the mockups like `make mockups`, captures
   the app in each pairing with `THEME` (default `themes/alttp`, e.g.
-  `THEME=themes/classic`), and writes `tests/rando/build/theme-compare/`:
+  `THEME=themes/classic`), and writes `tests/alttp/build/theme-compare/`:
   one `<mockup>.png` per mockup, panels **mockup | app | diff** (diff: the
   mockup in dim grey where equal, magenta where not), and `scores.txt`,
   one `theme-compare: <mockup>: score <s>` line each. The score is
@@ -182,7 +182,7 @@ in `docs/`, then `README.md`.
   text window), informational like the score.
 - `make theme-art` and `make theme-art-write`, outside the net, need python3,
   node, npm, Playwright and its Chromium (else the `setup:` lines of
-  `make mockups`; `tests/rando/sdl/theme_art.sh`, table `theme_art.txt`,
+  `make mockups`; `tests/alttp/sdl/theme_art.sh`, table `theme_art.txt`,
   renderer `theme_art.js`, normaliser `theme_art.py`, each self-proved
   first). They render the 14 PNGs of `themes/alttp/` from the mockups' own
   shapes (`frame.png` checked equal in all nine mockups). `theme-art`
@@ -198,7 +198,7 @@ in `docs/`, then `README.md`.
   stripped, `hard-float ABI`, NEEDED `libSDL-1.2.so.0`,
   `libSDL_ttf-2.0.so.0` and `libSDL_image-1.2.so.0`), re-runs
   `test_patch_header --file` on `data/base.bps`, and writes
-  `tests/rando/build/package/ALttPR.zip`, whose only top-level folder is
+  `tests/alttp/build/package/ALttPR.zip`, whose only top-level folder is
   `App/ALttPR/`, with the theme folder `PKG_THEME` (`themes/alttp`)
   shipped as `App/ALttPR/themes/default/`; the same commit gives the same
   zip bytes.
@@ -206,7 +206,7 @@ in `docs/`, then `README.md`.
   net, macOS only (`targets/mac/`): the SDL app on sdl12-compat with a
   locally built SDL_ttf and SDL_image, and a fake SD card in `tmp/sd`; the owner runs
   `mac-run`, never an agent.
-- Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
+- Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`,
@@ -227,7 +227,7 @@ in `docs/`, then `README.md`.
   get green: `gen_golden.sh` runs only when VT, its patch or the case list
   changes on purpose, in its own commit. *Goal: an agent cannot play the game;
   matching VT byte for byte is the proof that the ROM is right.*
-- **`rando/` stays pure C99**: no `malloc`, no platform library, built by host
+- **`alttp/` stays pure C99**: no `malloc`, no platform library, built by host
   gcc and by any cross compiler. *Goal: the same code runs on the host, on the
   Miyoo and under qemu.*
 - **No Nintendo ROM in the repository or in CI**; only the base patch

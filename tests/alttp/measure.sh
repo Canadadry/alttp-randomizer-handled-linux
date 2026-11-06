@@ -7,7 +7,7 @@ export LC_ALL=C
 
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
-rando="$root/rando"
+rando="$root/alttp"
 cc="${CC:-gcc}"
 dir="${MEASURE_DIR:-$here/build/measure}"
 case "$dir" in

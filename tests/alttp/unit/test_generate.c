@@ -150,7 +150,7 @@ static const struct {
 	{RANDO_LOC_TURTLE_ROCK_PRIZE, RANDO_ITEM_Crystal2},
 };
 
-/* tests/rando/cases/baseline: its trace through prepareWorld, its ten "- Prize:1" entries and two bottles;
+/* tests/alttp/cases/baseline: its trace through prepareWorld, its ten "- Prize:1" entries and two bottles;
  * packs 0 and 5 are VT's rows 2 and 0 (VT dump behind test_prepare's golden case). */
 static void check_baseline(void)
 {
@@ -182,7 +182,7 @@ static void check_baseline(void)
 		CHECK(rando_world_item(&gen.world, baseline_prizes[p].location) == baseline_prizes[p].prize);
 }
 
-/* tests/rando/cases/crystals_ganon-random/trace.txt. */
+/* tests/alttp/cases/crystals_ganon-random/trace.txt. */
 static void check_random_ganon(void)
 {
 	Trace trace;
@@ -192,7 +192,7 @@ static void check_random_ganon(void)
 	check_golden_prefix("crystals_ganon-random", &trace);
 }
 
-/* tests/rando/cases/crystals_tower-random/trace.txt. */
+/* tests/alttp/cases/crystals_tower-random/trace.txt. */
 static void check_random_crystals(void)
 {
 	Trace trace;
@@ -286,7 +286,7 @@ static void check_reseed(uint32_t seed)
 	CHECK(gen.draw == 232);
 }
 
-/* tests/rando/cases/baseline: the fill makes lines 233-805, the golden's last fill line; setTexts 806-1060;
+/* tests/alttp/cases/baseline: the fill makes lines 233-805, the golden's last fill line; setTexts 806-1060;
  * randomizeCredits 1061-1138; applyHints 1139-1417. */
 static void check_baseline_fill(void)
 {
@@ -314,7 +314,7 @@ static void check_baseline_fill(void)
 	CHECK(gen.post.hints.on);
 }
 
-/* tests/rando/cases/dungeon_items-full: rom.mapOnPickup draws writeItem's prize music, lines 1550-1571, two
+/* tests/alttp/cases/dungeon_items-full: rom.mapOnPickup draws writeItem's prize music, lines 1550-1571, two
  * per prize location; a stop there carries the winning attempt's number. */
 static void check_write_item_stop(void)
 {
@@ -371,7 +371,7 @@ static void check_golden_write(const char *name, const char *address, const uint
 		test_fail(TEST, "%s: the write at %s is not the C bytes %s", path, address, hex);
 }
 
-/* tests/rando/cases/baseline: attempts 0 and the whole golden trace. */
+/* tests/alttp/cases/baseline: attempts 0 and the whole golden trace. */
 static void check_baseline_complete(void)
 {
 	RandoOptions options;
@@ -395,7 +395,7 @@ static void check_baseline_complete(void)
 }
 
 /* Attempt k of seed s is attempt 0 of seed s + k: seed 0 with attempt 0 failed at point must replay
- * tests/rando/cases/baseline (seed 1) at attempt 1, its whole golden trace.
+ * tests/alttp/cases/baseline (seed 1) at attempt 1, its whole golden trace.
  * Attempt 0 ends in the fill when it fails there, in applyHints when it fails at isWinnable. */
 static void check_retry_identity(RandoFault point)
 {
@@ -453,7 +453,7 @@ static int count_item(RandoPoolList list, RandoItemId item)
 }
 
 /* A stop after getAdvancementItems leaves the getter's lists; one after shufflePrizePacks holds VT's Boots
- * edit (tests/rando/oracle/pool_lists.txt's glitches-overworld_glitches record holds one PegasusBoots). */
+ * edit (tests/alttp/oracle/pool_lists.txt's glitches-overworld_glitches record holds one PegasusBoots). */
 static void check_stop_stage(void)
 {
 	RandoOptions options;

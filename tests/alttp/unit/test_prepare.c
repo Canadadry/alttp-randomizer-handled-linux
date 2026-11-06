@@ -1398,7 +1398,7 @@ static void record_max(void *ctx, int64_t min, int64_t max, int64_t r)
 
 static RandoGen gen;
 
-/* tests/rando/cases/baseline seed 1: prepareWorld's 153 draws are three countdowns, 0..42, 0..39, 0..69. */
+/* tests/alttp/cases/baseline seed 1: prepareWorld's 153 draws are three countdowns, 0..42, 0..39, 0..69. */
 static void check_pools_baseline_draws(void)
 {
 	static const int sizes[] = {43, 40, 70};

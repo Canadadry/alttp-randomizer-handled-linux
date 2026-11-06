@@ -508,7 +508,7 @@ Each path or layout of `docs/plan-1.md` §2, against sections 1–9. The two SD
 directories are spelled once in code, as `RANDO_SD_ROM_DIR` and
 `RANDO_SD_HISTORY_DIR` (`app/sd/rando_seed_save.h`, relative to the SD
 root; `git grep` finds no other spelling outside `docs/`). The ROM name is
-`<Mode>-<Goal>-<code>[-<n>].sfc` (`rando/src/name.c`): ASCII letters, digits
+`<Mode>-<Goal>-<code>[-<n>].sfc` (`alttp/src/name.c`): ASCII letters, digits
 and `-`, lower-case `.sfc`, at most 36 characters
 (`Inverted-Completionist-XXXXXX-99.sfc`) against `RANDO_NAME_ROM_MAX` 48.
 Every fact used below is the same at `07505ea5` and `2bab767e` (section

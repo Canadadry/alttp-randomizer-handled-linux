@@ -36,7 +36,7 @@ static void baseline_world(RandoWorld *world)
 	world_from_options(world, &options);
 }
 
-/* tests/rando/cases/baseline/trace.txt draws 3, 4, 6, 1 in getAdvancementItems. */
+/* tests/alttp/cases/baseline/trace.txt draws 3, 4, 6, 1 in getAdvancementItems. */
 static void check_baseline_bottles(void)
 {
 	static RandoWorld world;

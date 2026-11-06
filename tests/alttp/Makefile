@@ -1,6 +1,6 @@
 CC ?= gcc
 CFLAGS := -std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS
-RANDO := ../../rando
+RANDO := ../../alttp
 APP := ../../app
 BUILD := build
 
@@ -24,7 +24,7 @@ APP_SRC := $(APP_CORE_SRC) $(APP_SD_SRC) $(APP_THEME_SRC)
 APP_HDR := $(wildcard $(APP)/core/*.h $(APP)/sd/*.h $(APP)/theme/*.h)
 APP_OBJ := $(patsubst $(APP)/%.c,$(BUILD)/app/%.o,$(APP_SRC))
 APP_LIB := $(BUILD)/librando_app.a
-# app/core sees only the library and itself, so an include of app/sd or rando/host fails to build.
+# app/core sees only the library and itself, so an include of app/sd or alttp/host fails to build.
 CORE_INCLUDES := -I$(RANDO)/include -I$(APP)/core
 # app/theme sees only itself.
 THEME_INCLUDES := -I$(APP)/theme
@@ -119,7 +119,7 @@ test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@echo "test: $(words $(UNIT_TESTS)) unit tests, the ui_cli smoke test, the discovery self-test, the app SDL check, the UI-core and SDL-layer literal checks and the package self-test ran"
 
 lint: $(LINT_OBJ) $(LINT_APP_OBJ)
-	@echo "lint: $(words $(RANDO_SRC)) rando/ and $(words $(APP_SRC) $(APP_MAIN_SRC)) app/ sources build with -pedantic-errors"
+	@echo "lint: $(words $(RANDO_SRC)) alttp/ and $(words $(APP_SRC) $(APP_MAIN_SRC)) app/ sources build with -pedantic-errors"
 
 ui-cli: $(UI_CLI)
 
@@ -233,7 +233,7 @@ package: sdl-arm $(BUILD)/test_patch_header
 	@python3 -I ../../app/package/build_zip.py $(PKG_BIN) ../../app/package ../../data $(PKG_THEME) $(PKG_ZIP)
 	@file $(PKG_BIN)
 	@readelf -h $(PKG_BIN) | grep 'Flags:'
-	@echo "package: tests/rando/$(PKG_ZIP), $$(wc -c < $(PKG_ZIP)) bytes"
+	@echo "package: tests/alttp/$(PKG_ZIP), $$(wc -c < $(PKG_ZIP)) bytes"
 
 # unit-arm: every unit test built like e2e-arm's generator, run under qemu-arm
 # from here (fixture paths are relative), LOGIC_TESTS with --fixtures too.
