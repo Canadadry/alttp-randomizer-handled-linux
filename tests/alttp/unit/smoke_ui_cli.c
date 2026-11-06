@@ -172,10 +172,11 @@ static void run_fixed(const char *keys)
 
 static void test_generate_and_find(void)
 {
-	run_fixed("--every start a r1");
+	run_fixed("--every a start a r1");
 	CHECK(status == 0);
 	CHECK(err[0] == '\0');
 	test_snapshot(TEST, SNAPSHOTS "ui_cli_generate_and_find.txt", out);
+	CHECK(exists(RANDO_SD_LAST_GAME_FILE));
 	CHECK(exists(RANDO_SD_ROM_DIR "/Open-Ganon-1CA10A.sfc"));
 	CHECK(exists(RANDO_SD_HISTORY_DIR "/1CA10A.json"));
 	CHECK(exists(RANDO_SD_SETTINGS_FILE));
@@ -186,7 +187,7 @@ static void test_next_start(void)
 	char args[1024];
 
 	snprintf(args, sizeof args, "%s -", fixed);
-	run(" r1\n", args);
+	run(" a r1\n", args);
 	CHECK(status == 0);
 	CHECK(err[0] == '\0');
 	test_snapshot(TEST, SNAPSHOTS "app_shell_generated.txt", out);
@@ -194,7 +195,7 @@ static void test_next_start(void)
 
 static void test_delete(void)
 {
-	run_fixed("r1 x a");
+	run_fixed("a r1 x a");
 	CHECK(status == 0);
 	test_snapshot(TEST, SNAPSHOTS "ui_cli_deleted.txt", out);
 	CHECK(!exists(RANDO_SD_ROM_DIR "/Open-Ganon-1CA10A.sfc"));
@@ -223,7 +224,7 @@ static bool one_screen(const char *text)
 
 static void test_every_key_name(void)
 {
-	run_fixed("up down left right x y l1 l2 r2*2 select r1 start b a menu");
+	run_fixed("a up down left right x y l1 l2 r2*2 select r1 start b a menu");
 	CHECK(status == 0);
 	CHECK(err[0] == '\0');
 	CHECK(one_screen(out));
@@ -232,10 +233,29 @@ static void test_every_key_name(void)
 
 static void test_early_quit(void)
 {
-	run_fixed("menu down*3");
+	run_fixed("a menu down*3");
 	CHECK(status == 0);
-	CHECK(strcmp(err, "ui_cli: quit at key 1 of 4, 3 ignored\n") == 0);
+	CHECK(strcmp(err, "ui_cli: quit at key 2 of 5, 3 ignored\n") == 0);
 	test_snapshot(TEST, SNAPSHOTS "generate_initial.txt", out);
+}
+
+static void test_games_quit(void)
+{
+	run_fixed("--every a b b");
+	CHECK(status == 0);
+	CHECK(err[0] == '\0');
+	test_snapshot(TEST, SNAPSHOTS "ui_cli_games_quit.txt", out);
+}
+
+static void test_ladx_remembered(void)
+{
+	static const char ladx[] = "{\"last_game\":\"ladx\"}\n";
+
+	write_bytes(RANDO_SD_LAST_GAME_FILE, (const uint8_t *)ladx, sizeof ladx - 1);
+	run_fixed("--every a b menu");
+	CHECK(status == 0);
+	CHECK(err[0] == '\0');
+	test_snapshot(TEST, SNAPSHOTS "ui_cli_ladx_remembered.txt", out);
 }
 
 static void test_usage(void)
@@ -306,8 +326,10 @@ int main(int argc, char **argv)
 	test_delete();
 	test_every_key_name();
 	test_early_quit();
+	test_games_quit();
 	test_usage();
 	test_bad_root();
+	test_ladx_remembered();
 	printf(TEST ": passed\n");
 	return EXIT_SUCCESS;
 }

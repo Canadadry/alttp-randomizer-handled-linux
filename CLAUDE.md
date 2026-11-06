@@ -20,10 +20,14 @@ in `docs/`, then `README.md`.
   (`host/main/rando_gen.c`).
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
   like the library, built with only `alttp/include` and itself on the include
-  path, no SDL. `app/sd/` is the SD-card layer (`record.c`, `seed_save.c`);
-  its paths live in `rando_seed_save.h`, per game: ALttP's `base.sfc`,
-  `base.bps`, `history/` and `settings.json` in `App/ZeldaRando/alttp/`, its
-  ROMs in `Roms/SFC/ZeldaRando/`.
+  path, no SDL; the app opens on its game-choice screen (`ui_games.c`), A
+  opens a game (ALttP's Generate and History tabs, or LADX's placeholder),
+  B goes back to it, and B there quits, so every key sequence of a test
+  that means ALttP starts with `a`. `app/sd/` is the SD-card layer
+  (`record.c`, `seed_save.c`); its paths live in `rando_seed_save.h`: the
+  last game opened in `App/ZeldaRando/settings.json` (`last_game.c`), and
+  per game ALttP's `base.sfc`, `base.bps`, `history/` and `settings.json` in
+  `App/ZeldaRando/alttp/`, its ROMs in `Roms/SFC/ZeldaRando/`.
   `app/sdl/` is the SDL 1.2 renderer and input layer (key map, grid view,
   theme renderer `sdl_render.c`, frame loop). `app/core` uses the library;
   `app/sd` the library, `alttp/host` and `app/core` (it hands the core its
@@ -127,22 +131,22 @@ in `docs/`, then `README.md`.
   option).
 - `make sdl-pc` also runs the golden comparison
   (`tests/alttp/sdl/goldens.sh --compare`): it proves itself on a planted
-  flipped pixel, a removed golden and an extra one, then plays the 13 states of
+  flipped pixel, a removed golden and an extra one, then plays the 14 states of
   `sdl/golden_states.txt` (each on a fresh SD from `sd_fixture`, drawn
   through `--theme themes/classic`) and prints
   one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch (each BMP
   capture's decoded pixels against its lossless PNG golden), else
-  `goldens: 13 states pixel-identical`. The goldens in
+  `goldens: 14 states pixel-identical`. The goldens in
   `tests/alttp/sdl/goldens/` (PNGs) are pinned to the Claude Code cloud container
   (Ubuntu 24.04.5, sdl12-compat 1.2.68 on SDL2 2.30.0, SDL_ttf 2.0.11,
   FreeType 2.13.2), fingerprinted in `goldens/environment.txt`; on another
   host it fails with `setup: goldens pinned to <fp>, this host is <fp>`, a
-  setup problem that verifies nothing, not a bug. Then it draws the same 13
+  setup problem that verifies nothing, not a bug. Then it draws the same 14
   states with `themes/alttp` (`goldens.sh --draw`, the theme in the
   Makefile's `DRAW_THEME`): no comparison and no state strings, each capture
   must be a 640×480 picture of more than one colour; it writes them to
   `tests/alttp/build/sdl/theme-states/alttp/` and prints
-  `goldens: 13 states drawn with alttp in <dir>`.
+  `goldens: 14 states drawn with alttp in <dir>`.
 - `make sdl-goldens`, outside the net, writes the goldens once (every state
   rendered twice, refused unless byte-identical, written as PNGs) and
   refuses a folder that already holds any: goldens are never regenerated to get green.

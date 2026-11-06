@@ -1,5 +1,23 @@
 @ init
  +----------------------------------------+
+ |                                        |
+#| Choose a Game                          |
+>| A Link to the Past                     |
+ | Link's Awakening DX                    |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+_| A Open  B Quit                         |
+ +----------------------------------------+
+@ a
+ +----------------------------------------+
 =|[Generate]  History                     |
 #| Seed Settings                          |
 >| Glitches                      < None > |

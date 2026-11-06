@@ -22,7 +22,8 @@
 
 /* The fake SD side: counts every call, scans the scripted lists in turn, replies as scripted. */
 typedef struct Fake {
-	int run_calls, scan_calls, spoiler_calls, delete_calls;
+	int run_calls, scan_calls, spoiler_calls, delete_calls, remember_calls;
+	UiGame remembered;
 	UiGenRequest request;
 	UiGenOutcome reply;
 	UiHistoryList scans[2];
@@ -74,6 +75,14 @@ static void fake_delete(void *ctx, const UiHistoryEntry *entry, UiHistoryDeleteO
 	outcome->ok = true;
 	outcome->list_stale = false;
 	outcome->status = UI_STR_NONE;
+}
+
+static void fake_remember(void *ctx, UiGame game)
+{
+	Fake *f = ctx;
+
+	f->remember_calls++;
+	f->remembered = game;
 }
 
 static UiHistoryEntry entry_of(const char *code, const char *rom, int day, int hour, int minute, uint32_t seed)
@@ -154,7 +163,23 @@ static void start(void)
 	init.spoiler_fn = fake_spoiler;
 	init.delete_fn = fake_delete;
 	init.history_ctx = &fake;
+	init.game = UI_GAME_ALTTP;
+	init.remember = fake_remember;
+	init.remember_ctx = &fake;
 	ui_app_init(&app, &init);
+}
+
+static UiAppEvent key(UiButton button)
+{
+	return ui_app_key(&app, button);
+}
+
+/* The app with ALttP opened from the choice screen, as every launch reaches it. */
+static void start_alttp(void)
+{
+	start();
+	CHECK(key(UI_BUTTON_A) == UI_APP_NONE);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
 }
 
 /* The reference tabs, initialised as the app's are, driven alongside it by the tests. */
@@ -227,19 +252,35 @@ static bool shows_ref_flow(const UiGenRequest *request)
 	return strcmp(render(), render_screen(&screen, ref, sizeof ref)) == 0;
 }
 
-static UiAppEvent key(UiButton button)
-{
-	return ui_app_key(&app, button);
-}
-
 static void test_init(void)
 {
 	start();
-	start_refs(0);
 	CHECK(fake.scan_calls == 1);
-	CHECK(fake.run_calls == 0);
-	CHECK(ui_app_tab(&app) == UI_APP_TAB_GENERATE);
+	CHECK(fake.run_calls == 0 && fake.remember_calls == 0);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
 	CHECK(!ui_app_pending(&app));
+	test_snapshot(TEST, SNAPSHOTS "games_first_launch.txt", render());
+	init.game = UI_GAME_LADX;
+	ui_app_init(&app, &init);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
+	test_snapshot(TEST, SNAPSHOTS "games_ladx_remembered.txt", render());
+}
+
+static void test_open_alttp(void)
+{
+	start();
+	start_refs(0);
+	CHECK(key(UI_BUTTON_A) == UI_APP_NONE);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
+	CHECK(ui_app_tab(&app) == UI_APP_TAB_GENERATE);
+	CHECK(fake.remember_calls == 1 && fake.remembered == UI_GAME_ALTTP);
+	CHECK(fake.scan_calls == 1);
+	CHECK(shows_ref_generate());
+	init.remember = NULL;
+	ui_app_init(&app, &init);
+	CHECK(key(UI_BUTTON_A) == UI_APP_NONE);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
+	CHECK(fake.remember_calls == 1);
 	CHECK(shows_ref_generate());
 }
 
@@ -268,7 +309,7 @@ static void test_tabs_switch_both_ways(void)
 	int i;
 
 	for (i = 0; i < 2; i++) {
-		start();
+		start_alttp();
 		start_refs(0);
 		keys(b[i], 1);
 		CHECK(ui_app_tab(&app) == UI_APP_TAB_HISTORY);
@@ -282,7 +323,7 @@ static void test_tabs_switch_both_ways(void)
 
 static void test_tabs_keep_their_view(void)
 {
-	start();
+	start_alttp();
 	start_refs(0);
 	keys(UI_BUTTON_DOWN, 3);
 	CHECK(ui_generate_key(&ref_generate, UI_BUTTON_DOWN) == UI_GENERATE_NONE);
@@ -317,7 +358,7 @@ static void test_generation(void)
 	UiGenRequest expected;
 	UiButton b;
 
-	start();
+	start_alttp();
 	start_refs(0);
 	keys(UI_BUTTON_DOWN, 1);
 	keys(UI_BUTTON_RIGHT, 1);
@@ -351,7 +392,7 @@ static void test_generation(void)
 
 static void test_rescan_after_ok(void)
 {
-	start();
+	start_alttp();
 	keys(UI_BUTTON_START, 1);
 	ui_app_run(&app);
 	CHECK(fake.scan_calls == 2);
@@ -365,7 +406,7 @@ static void test_rescan_after_ok(void)
 
 static void test_no_rescan_after_failure(void)
 {
-	start();
+	start_alttp();
 	start_refs(0);
 	keys(UI_BUTTON_R1, 1);
 	keys(UI_BUTTON_DOWN, 1);
@@ -386,20 +427,33 @@ static void test_quit(void)
 	CHECK(key(UI_BUTTON_B) == UI_APP_QUIT);
 	start();
 	CHECK(key(UI_BUTTON_MENU) == UI_APP_QUIT);
-	start();
+	start_alttp();
+	CHECK(key(UI_BUTTON_MENU) == UI_APP_QUIT);
+	start_alttp();
 	keys(UI_BUTTON_R1, 1);
 	keys(UI_BUTTON_A, 1);
 	CHECK(key(UI_BUTTON_MENU) == UI_APP_QUIT);
+	start_alttp();
+	keys(UI_BUTTON_R1, 1);
+	keys(UI_BUTTON_X, 1);
+	CHECK(key(UI_BUTTON_MENU) == UI_APP_QUIT);
+	CHECK(fake.delete_calls == 0);
 	start();
+	keys(UI_BUTTON_DOWN, 1);
+	keys(UI_BUTTON_A, 1);
+	CHECK(key(UI_BUTTON_MENU) == UI_APP_QUIT);
+	start_alttp();
 	keys(UI_BUTTON_R1, 1);
 	CHECK(key(UI_BUTTON_MENU) == UI_APP_QUIT);
 	remember();
 	CHECK(key(UI_BUTTON_DOWN) == UI_APP_QUIT);
 	CHECK(key(UI_BUTTON_L1) == UI_APP_QUIT);
+	CHECK(key(UI_BUTTON_B) == UI_APP_QUIT);
 	CHECK(ui_app_input(&app, UI_BUTTON_A, true) == UI_APP_QUIT);
 	CHECK(ui_app_tab(&app) == UI_APP_TAB_HISTORY);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
 	CHECK(unchanged());
-	start();
+	start_alttp();
 	keys(UI_BUTTON_START, 1);
 	ui_app_run(&app);
 	CHECK(key(UI_BUTTON_MENU) == UI_APP_QUIT);
@@ -411,13 +465,117 @@ static void test_quit(void)
 	CHECK(fake.run_calls == 1);
 }
 
+static void test_back_to_games(void)
+{
+	start_alttp();
+	CHECK(key(UI_BUTTON_B) == UI_APP_NONE);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
+	test_snapshot(TEST, SNAPSHOTS "app_back_to_games.txt", render());
+	start_alttp();
+	keys(UI_BUTTON_R1, 1);
+	CHECK(key(UI_BUTTON_B) == UI_APP_NONE);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
+	test_snapshot(TEST, SNAPSHOTS "app_back_to_games.txt", render());
+	CHECK(key(UI_BUTTON_B) == UI_APP_QUIT);
+}
+
+static void test_back_inside_history(void)
+{
+	start_alttp();
+	start_refs(0);
+	keys(UI_BUTTON_R1, 1);
+	keys(UI_BUTTON_A, 1);
+	CHECK(ui_history_key(&ref_history, UI_BUTTON_A) == UI_HISTORY_NONE);
+	CHECK(shows_ref_history());
+	keys(UI_BUTTON_B, 1);
+	CHECK(ui_history_key(&ref_history, UI_BUTTON_B) == UI_HISTORY_NONE);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
+	CHECK(shows_ref_history());
+	keys(UI_BUTTON_X, 1);
+	CHECK(ui_history_key(&ref_history, UI_BUTTON_X) == UI_HISTORY_NONE);
+	keys(UI_BUTTON_B, 1);
+	CHECK(ui_history_key(&ref_history, UI_BUTTON_B) == UI_HISTORY_NONE);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
+	CHECK(shows_ref_history());
+	CHECK(fake.delete_calls == 0);
+	keys(UI_BUTTON_B, 1);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
+}
+
+static void test_round_trip_keeps_alttp(void)
+{
+	start_alttp();
+	keys(UI_BUTTON_DOWN, 4);
+	keys(UI_BUTTON_RIGHT, 2);
+	remember();
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_A, 1);
+	CHECK(ui_app_tab(&app) == UI_APP_TAB_GENERATE);
+	CHECK(unchanged());
+	CHECK(fake.remember_calls == 2 && fake.remembered == UI_GAME_ALTTP);
+	keys(UI_BUTTON_R1, 1);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_A, 1);
+	CHECK(ui_app_tab(&app) == UI_APP_TAB_GENERATE);
+	CHECK(unchanged());
+	CHECK(fake.scan_calls == 1);
+}
+
+static void test_history_fresh_after_round_trip(void)
+{
+	start_alttp();
+	keys(UI_BUTTON_START, 1);
+	ui_app_run(&app);
+	keys(UI_BUTTON_A, 1);
+	keys(UI_BUTTON_B, 1);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
+	keys(UI_BUTTON_A, 1);
+	keys(UI_BUTTON_R1, 1);
+	start_refs(1);
+	CHECK(shows_ref_history());
+	CHECK(fake.scan_calls == 2);
+}
+
+static void test_ladx_placeholder(void)
+{
+	static const UiButton ignored[] = {UI_BUTTON_UP, UI_BUTTON_DOWN, UI_BUTTON_LEFT, UI_BUTTON_RIGHT,
+					   UI_BUTTON_A, UI_BUTTON_X, UI_BUTTON_Y, UI_BUTTON_L1, UI_BUTTON_R1,
+					   UI_BUTTON_L2, UI_BUTTON_R2, UI_BUTTON_SELECT, UI_BUTTON_START};
+	static UiScreen screen;
+	size_t i;
+
+	start();
+	keys(UI_BUTTON_DOWN, 1);
+	keys(UI_BUTTON_A, 1);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_LADX);
+	CHECK(fake.remember_calls == 1 && fake.remembered == UI_GAME_LADX);
+	ui_app_screen(&app, &screen);
+	CHECK(ui_screen_valid(&screen));
+	test_snapshot(TEST, SNAPSHOTS "app_ladx_unavailable.txt", render());
+	for (i = 0; i < sizeof ignored / sizeof ignored[0]; i++) {
+		keys(ignored[i], 1);
+		CHECK(ui_app_view(&app) == UI_APP_VIEW_LADX);
+	}
+	test_snapshot(TEST, SNAPSHOTS "app_ladx_unavailable.txt", render());
+	CHECK(!ui_app_pending(&app));
+	CHECK(fake.run_calls == 0 && fake.remember_calls == 1);
+	keys(UI_BUTTON_B, 1);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
+	test_snapshot(TEST, SNAPSHOTS "games_ladx_remembered.txt", render());
+	keys(UI_BUTTON_UP, 1);
+	keys(UI_BUTTON_A, 1);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
+	CHECK(ui_app_tab(&app) == UI_APP_TAB_GENERATE);
+	CHECK(fake.remember_calls == 2 && fake.remembered == UI_GAME_ALTTP);
+}
+
 static void test_raw_input_is_filtered(void)
 {
-	start();
+	start_alttp();
 	start_refs(0);
 	CHECK(ui_app_input(&app, UI_BUTTON_MENU, true) == UI_APP_NONE);
 	CHECK(ui_app_input(&app, UI_BUTTON_MENU, false) == UI_APP_QUIT);
-	start();
+	start_alttp();
 	CHECK(ui_app_input(&app, UI_BUTTON_MENU, true) == UI_APP_NONE);
 	CHECK(ui_app_input(&app, UI_BUTTON_DOWN, true) == UI_APP_NONE);
 	CHECK(ui_app_input(&app, UI_BUTTON_DOWN, false) == UI_APP_NONE);
@@ -434,12 +592,18 @@ int main(int argc, char **argv)
 {
 	(void)test_fixtures_mode(TEST, argc, argv);
 	test_init();
+	test_open_alttp();
 	test_tabs_switch_both_ways();
 	test_tabs_keep_their_view();
 	test_generation();
 	test_rescan_after_ok();
 	test_no_rescan_after_failure();
 	test_quit();
+	test_back_to_games();
+	test_back_inside_history();
+	test_round_trip_keeps_alttp();
+	test_history_fresh_after_round_trip();
+	test_ladx_placeholder();
 	test_raw_input_is_filtered();
 	printf(TEST ": passed\n");
 	return EXIT_SUCCESS;

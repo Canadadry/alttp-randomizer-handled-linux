@@ -277,7 +277,7 @@ static UiHistoryEvent list_key(UiHistory *state, UiButton button)
 		if (count > 0)
 			confirm(state);
 		break;
-	case UI_BUTTON_B:
+	case UI_BUTTON_B: return UI_HISTORY_BACK;
 	case UI_BUTTON_MENU: return UI_HISTORY_QUIT;
 	case UI_BUTTON_L1:
 	case UI_BUTTON_R1: return tab_event(button);

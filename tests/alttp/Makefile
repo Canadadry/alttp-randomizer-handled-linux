@@ -4,9 +4,9 @@ RANDO := ../../alttp
 APP := ../../app
 BUILD := build
 
-UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme
+UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_last_game test_ui_input test_ui_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme
 # No fixture mode: test_prng already replays its vectors in `test`, the others have no fixture.
-LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme,$(UNIT_TESTS))
+LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_last_game test_ui_input test_ui_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme,$(UNIT_TESTS))
 
 RANDO_SRC := $(wildcard $(RANDO)/src/*.c $(RANDO)/src/*/*.c)
 RANDO_HDR := $(wildcard $(RANDO)/include/*.h $(RANDO)/src/*.h)
@@ -75,7 +75,7 @@ SDL_APP := $(SDL_DIR)/zrando
 SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf SDL_image)
 SD_FIXTURE := $(BUILD)/sd_fixture
 GOLDENS_DIR ?= sdl/goldens
-# The theme whose 13 states sdl-pc draws, after the classic comparison.
+# The theme whose 14 states sdl-pc draws, after the classic comparison.
 DRAW_THEME := ../../themes/alttp
 MOCKUP_THEME = ../../themes/alttp
 MOCKUP_OUT := $(BUILD)/mockups

@@ -226,6 +226,12 @@ static const UiStrTable english = { {
 	[UI_STR_HINT_DETAILS] = "Details",
 	[UI_STR_HINT_DELETE] = "Delete",
 	[UI_STR_HINT_KEEP] = "Keep",
+	[UI_STR_HINT_OPEN] = "Open",
+	[UI_STR_HINT_QUIT] = "Quit",
+	[UI_STR_GAMES_TITLE] = "Choose a Game",
+	[UI_STR_GAME_ALTTP] = "A Link to the Past",
+	[UI_STR_GAME_LADX] = "Link's Awakening DX",
+	[UI_STR_GAME_UNAVAILABLE] = "Not available yet",
 } };
 
 const UiStrTable *ui_str_english(void)

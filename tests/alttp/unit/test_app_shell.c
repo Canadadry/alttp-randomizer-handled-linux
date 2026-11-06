@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "rando_app_shell.h"
+#include "rando_last_game.h"
 #include "rando_last_settings.h"
 #include "rando_name.h"
 #include "rando_record.h"
@@ -86,6 +87,24 @@ static void write_text(const char *rel, const char *s)
 {
 	write_bytes(rel, s, strlen(s));
 }
+
+/* True when rel holds exactly s. */
+static bool holds(const char *rel, const char *s)
+{
+	static char buf[1024];
+	FILE *f = fopen(at(rel), "rb");
+	size_t n;
+
+	if (f == NULL)
+		return false;
+	n = fread(buf, 1, sizeof buf - 1, f);
+	fclose(f);
+	buf[n] = '\0';
+	return strcmp(buf, s) == 0;
+}
+
+#define ALTTP_TEXT "{\"last_game\":\"alttp\"}\n"
+#define LADX_TEXT "{\"last_game\":\"ladx\"}\n"
 
 static void remove_all(const char *path)
 {
@@ -199,12 +218,27 @@ static void key(UiButton button)
 	CHECK(ui_app_key(&shell.app, button) == UI_APP_NONE);
 }
 
+/* The shell with ALttP opened from the choice screen, its cursor on ALttP. */
+static void start_alttp(void)
+{
+	start();
+	CHECK(ui_app_view(&shell.app) == UI_APP_VIEW_GAMES);
+	key(UI_BUTTON_A);
+	CHECK(ui_app_view(&shell.app) == UI_APP_VIEW_ALTTP);
+}
+
 static void test_fresh_root(void)
 {
 	UiGenerateInit init = defaults();
 
 	make_root();
 	start();
+	test_snapshot(TEST, SNAPSHOTS "games_first_launch.txt", render());
+	CHECK(!exists(RANDO_SD_LAST_GAME_FILE));
+	CHECK(ui_app_key(&shell.app, UI_BUTTON_B) == UI_APP_QUIT);
+	CHECK(!exists(RANDO_SD_LAST_GAME_FILE));
+	start_alttp();
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, ALTTP_TEXT));
 	CHECK(ui_app_tab(&shell.app) == UI_APP_TAB_GENERATE);
 	CHECK(shows_generate(&init));
 	key(UI_BUTTON_R1);
@@ -213,6 +247,83 @@ static void test_fresh_root(void)
 	CHECK(!exists("Roms"));
 	CHECK(!exists(RANDO_SD_HISTORY_DIR));
 	CHECK(!exists(RANDO_SD_SETTINGS_FILE));
+}
+
+static void test_remembered_game(void)
+{
+	static const char spaced[] = " { \"last_game\" : \"ladx\" }\n";
+
+	make_root();
+	write_text(RANDO_SD_LAST_GAME_FILE, spaced);
+	start();
+	test_snapshot(TEST, SNAPSHOTS "games_ladx_remembered.txt", render());
+	key(UI_BUTTON_A);
+	CHECK(ui_app_view(&shell.app) == UI_APP_VIEW_LADX);
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, spaced));
+	key(UI_BUTTON_B);
+	key(UI_BUTTON_UP);
+	key(UI_BUTTON_A);
+	CHECK(ui_app_view(&shell.app) == UI_APP_VIEW_ALTTP);
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, ALTTP_TEXT));
+	key(UI_BUTTON_B);
+	key(UI_BUTTON_DOWN);
+	key(UI_BUTTON_A);
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, LADX_TEXT));
+	write_text(RANDO_SD_LAST_GAME_FILE, spaced);
+	key(UI_BUTTON_B);
+	key(UI_BUTTON_A);
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, spaced));
+	CHECK(!exists(RANDO_SD_SETTINGS_FILE));
+	CHECK(!exists(RANDO_SD_APP_DIR "/ladx"));
+}
+
+static void test_invalid_memory_replaced(void)
+{
+	make_root();
+	write_text(RANDO_SD_LAST_GAME_FILE, "{\"last_game\":\"zelda1\"}\n");
+	start();
+	test_snapshot(TEST, SNAPSHOTS "games_first_launch.txt", render());
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, "{\"last_game\":\"zelda1\"}\n"));
+	key(UI_BUTTON_A);
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, ALTTP_TEXT));
+}
+
+static void test_failed_memory_write(void)
+{
+	make_root();
+	make_dir(RANDO_SD_LAST_GAME_FILE);
+	start();
+	key(UI_BUTTON_A);
+	CHECK(ui_app_view(&shell.app) == UI_APP_VIEW_ALTTP);
+	key(UI_BUTTON_B);
+	CHECK(rmdir(at(RANDO_SD_LAST_GAME_FILE)) == 0);
+	key(UI_BUTTON_A);
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, ALTTP_TEXT));
+}
+
+static void test_alttp_settings_untouched(void)
+{
+	UiGenerateInit init = defaults();
+	static char before[2048];
+	FILE *f;
+	size_t n;
+
+	make_root();
+	init.heart_beep = RANDO_HEART_BEEP_QUARTER;
+	CHECK(rando_last_settings_save(at(RANDO_SD_SETTINGS_FILE), &init.options, init.heart_beep));
+	f = fopen(at(RANDO_SD_SETTINGS_FILE), "rb");
+	CHECK(f != NULL);
+	n = fread(before, 1, sizeof before - 1, f);
+	fclose(f);
+	before[n] = '\0';
+	start();
+	key(UI_BUTTON_DOWN);
+	key(UI_BUTTON_A);
+	key(UI_BUTTON_B);
+	key(UI_BUTTON_UP);
+	key(UI_BUTTON_A);
+	CHECK(holds(RANDO_SD_LAST_GAME_FILE, ALTTP_TEXT));
+	CHECK(holds(RANDO_SD_SETTINGS_FILE, before));
 }
 
 static void test_saved_settings(void)
@@ -226,7 +337,7 @@ static void test_saved_settings(void)
 			  rando_setting_value_find(RANDO_SETTING_STATE, "inverted"));
 	init.heart_beep = RANDO_HEART_BEEP_QUARTER;
 	CHECK(rando_last_settings_save(at(RANDO_SD_SETTINGS_FILE), &init.options, init.heart_beep));
-	start();
+	start_alttp();
 	CHECK(shows_generate(&init));
 	CHECK(strstr(render(), "Inverted") != NULL);
 }
@@ -237,7 +348,7 @@ static void test_unreadable_settings(void)
 
 	make_root();
 	write_text(RANDO_SD_SETTINGS_FILE, "{ not json");
-	start();
+	start_alttp();
 	init.settings_unreadable = true;
 	CHECK(shows_generate(&init));
 	init.settings_unreadable = false;
@@ -273,7 +384,7 @@ static void test_seed_on_card(void)
 	CHECK(fclose(f) == 0);
 	snprintf(text, sizeof text, "%s/%s", RANDO_SD_ROM_DIR, r.name.rom);
 	write_text(text, "rom");
-	start();
+	start_alttp();
 	key(UI_BUTTON_R1);
 	CHECK(rando_history_init(&ref_store, root));
 	rando_history_scan(&ref_store, &ref_list);
@@ -296,7 +407,7 @@ static void test_generate_then_history(void)
 	make_root();
 	write_bytes(RANDO_SD_BASE_ROM_FILE, synth_source, SYNTH_SOURCE_SIZE);
 	write_bytes(RANDO_SD_BASE_PATCH_FILE, synth_good_patch.bytes, synth_good_patch.size);
-	start();
+	start_alttp();
 	memcpy(shell.gen.source_md5, synth_source_md5, RANDO_MD5_SIZE);
 	memcpy(shell.gen.base_md5, synth_base_md5, RANDO_MD5_SIZE);
 	shell.gen.seed = fixed_seed;
@@ -324,6 +435,10 @@ int main(int argc, char **argv)
 	test_unreadable_settings();
 	test_seed_on_card();
 	test_root_too_long();
+	test_remembered_game();
+	test_invalid_memory_replaced();
+	test_failed_memory_write();
+	test_alttp_settings_untouched();
 	test_generate_then_history();
 	printf(TEST ": passed\n");
 	return EXIT_SUCCESS;

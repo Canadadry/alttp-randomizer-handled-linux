@@ -327,7 +327,7 @@ static void test_empty(void)
 		CHECK(key(ignored[i]) == UI_HISTORY_NONE);
 	snapshot("history_empty.txt");
 	CHECK(fake.spoiler_calls == 0 && fake.delete_calls == 0);
-	CHECK(key(UI_BUTTON_B) == UI_HISTORY_QUIT);
+	CHECK(key(UI_BUTTON_B) == UI_HISTORY_BACK);
 	CHECK(key(UI_BUTTON_L1) == UI_HISTORY_TAB_PREV);
 }
 
@@ -367,7 +367,7 @@ static void test_list_keys(void)
 		CHECK(key(ignored[i]) == UI_HISTORY_NONE);
 		CHECK(unchanged());
 	}
-	CHECK(key(UI_BUTTON_B) == UI_HISTORY_QUIT);
+	CHECK(key(UI_BUTTON_B) == UI_HISTORY_BACK);
 	CHECK(key(UI_BUTTON_MENU) == UI_HISTORY_QUIT);
 	CHECK(key(UI_BUTTON_L1) == UI_HISTORY_TAB_PREV);
 	CHECK(key(UI_BUTTON_R1) == UI_HISTORY_TAB_NEXT);

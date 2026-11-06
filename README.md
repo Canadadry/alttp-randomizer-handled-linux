@@ -33,6 +33,9 @@ An `App/ALttPR/` folder left by an older release can be deleted.
 
 ## Use
 
+- **Choose a Game**: at launch, A opens the game under the cursor (the one
+  you opened last time); B in a game comes back here, B here quits.
+  *Link's Awakening DX* is not available yet.
 - **Generate**: Up / Down picks a setting, Left / Right changes it, Start
   generates. The ROM lands in Onion's SNES list, folder `ZeldaRando`; each seed
   keeps its own save.

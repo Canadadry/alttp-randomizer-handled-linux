@@ -169,7 +169,7 @@ static UiGenerateEvent act(UiGenerate *state, UiButton button)
 			reset_row(state);
 		break;
 	case UI_BUTTON_START: return generate(state);
-	case UI_BUTTON_B:
+	case UI_BUTTON_B: return UI_GENERATE_BACK;
 	case UI_BUTTON_MENU: return UI_GENERATE_QUIT;
 	case UI_BUTTON_L1: return UI_GENERATE_TAB_PREV;
 	case UI_BUTTON_R1: return UI_GENERATE_TAB_NEXT;

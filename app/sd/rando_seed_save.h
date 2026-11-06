@@ -9,6 +9,7 @@
 #include <stdbool.h>
 
 #define RANDO_SD_APP_DIR "App/ZeldaRando"
+#define RANDO_SD_LAST_GAME_FILE RANDO_SD_APP_DIR "/settings.json"
 #define RANDO_SD_ALTTP_DIR RANDO_SD_APP_DIR "/alttp"
 #define RANDO_SD_ROM_DIR "Roms/SFC/ZeldaRando"
 #define RANDO_SD_HISTORY_DIR RANDO_SD_ALTTP_DIR "/history"

@@ -3,6 +3,7 @@
 
 #include "rando_app_gen.h"
 #include "rando_history.h"
+#include "rando_seed_save.h"
 #include "ui_app.h"
 #include "ui_strings.h"
 
@@ -12,6 +13,9 @@ typedef struct RandoAppShell {
 	RandoAppGen gen;
 	RandoHistory history;
 	UiApp app;
+	char last_game[RANDO_SEED_PATH_MAX];
+	/* The game the memory file holds, UI_GAME_COUNT when it is missing, invalid or unwritten. */
+	UiGame remembered;
 } RandoAppShell;
 
 /* unsupported NULL: the library's list; otherwise its unsupported_count pairs, kept by pointer, so

@@ -149,7 +149,7 @@ static void drain(void)
 		;
 }
 
-static void start(void)
+static void start_games(void)
 {
 	drain();
 	memset(&fake, 0, sizeof(fake));
@@ -164,10 +164,21 @@ static void start(void)
 	init.spoiler_fn = fake_spoiler;
 	init.delete_fn = fake_delete;
 	init.history_ctx = &fake;
+	init.game = UI_GAME_ALTTP;
+	init.remember = NULL;
+	init.remember_ctx = NULL;
 	ui_app_init(&app, &init);
 	CHECK(ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
 	frame_count = 0;
 	fail_from = -1;
+}
+
+/* The app on ALttP's Generate tab, opened from the choice screen. */
+static void start_alttp(void)
+{
+	start_games();
+	CHECK(ui_app_key(&app, UI_BUTTON_A) == UI_APP_NONE);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
 }
 
 typedef struct Script {
@@ -206,7 +217,7 @@ static void test_one_frame(void)
 {
 	SDL_Event e;
 
-	start();
+	start_alttp();
 	current(expected);
 	tap(SDLK_DOWN);
 	CHECK(run(1) == SDLLOOP_FRAMES);
@@ -216,7 +227,7 @@ static void test_one_frame(void)
 
 static void test_generating_before_run(void)
 {
-	start();
+	start_alttp();
 	tap(SDLK_RETURN);
 	push_type(SDL_QUIT);
 	CHECK(run(0) == SDLLOOP_QUIT);
@@ -231,7 +242,7 @@ static void test_keys_during_run_dropped(void)
 {
 	char result[UI_GRID_TEXT_MAX];
 
-	start();
+	start_alttp();
 	fake.push_during_run = true;
 	tap(SDLK_RETURN);
 	CHECK(run(0) == SDLLOOP_QUIT);
@@ -244,16 +255,35 @@ static void test_keys_during_run_dropped(void)
 
 static void test_quit(void)
 {
-	start();
+	start_alttp();
 	tap(SDLK_ESCAPE);
 	CHECK(run(0) == SDLLOOP_QUIT);
 	CHECK(ui_app_key(&app, UI_BUTTON_DOWN) == UI_APP_QUIT);
 
-	start();
+	start_alttp();
 	push_type(SDL_QUIT);
 	CHECK(run(0) == SDLLOOP_QUIT);
 	CHECK(frame_count == 1);
 	CHECK(ui_app_key(&app, UI_BUTTON_DOWN) == UI_APP_NONE);
+}
+
+static void test_games_view(void)
+{
+	start_games();
+	tap(SDLK_SPACE);
+	push_type(SDL_QUIT);
+	CHECK(run(0) == SDLLOOP_QUIT);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
+	current(expected);
+	CHECK(frame_count == 3 && strcmp(frames[2], expected) == 0);
+
+	start_alttp();
+	tap(SDLK_b);
+	tap(SDLK_b);
+	CHECK(run(0) == SDLLOOP_QUIT);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
+	CHECK(frame_count == 3 && strstr(frames[2], "Choose a Game") != NULL);
+	CHECK(ui_app_key(&app, UI_BUTTON_DOWN) == UI_APP_QUIT);
 }
 
 static void test_tab_and_noise(void)
@@ -261,7 +291,7 @@ static void test_tab_and_noise(void)
 	char first[UI_GRID_TEXT_MAX];
 	int i;
 
-	start();
+	start_alttp();
 	current(first);
 	for (i = 0; i < 16; i++)
 		push_type(SDL_ACTIVEEVENT);
@@ -270,7 +300,7 @@ static void test_tab_and_noise(void)
 	CHECK(run(0) == SDLLOOP_QUIT);
 	CHECK(frame_count == 1 && strcmp(frames[0], first) == 0);
 
-	start();
+	start_alttp();
 	tap(SDLK_t);
 	push_type(SDL_QUIT);
 	CHECK(run(0) == SDLLOOP_QUIT);
@@ -281,7 +311,7 @@ static void test_tab_and_noise(void)
 
 static void test_expose(void)
 {
-	start();
+	start_alttp();
 	push_type(SDL_VIDEOEXPOSE);
 	push_type(SDL_QUIT);
 	CHECK(run(0) == SDLLOOP_QUIT);
@@ -292,7 +322,7 @@ static void test_chord(void)
 {
 	char first[UI_GRID_TEXT_MAX];
 
-	start();
+	start_alttp();
 	current(first);
 	push_key(SDL_KEYDOWN, SDLK_ESCAPE);
 	push_key(SDL_KEYDOWN, SDLK_DOWN);
@@ -306,7 +336,7 @@ static void test_chord(void)
 
 static void test_frame_limit(void)
 {
-	start();
+	start_alttp();
 	tap(SDLK_DOWN);
 	tap(SDLK_DOWN);
 	push_type(SDL_QUIT);
@@ -323,7 +353,7 @@ static void test_script_as_pushed(void)
 	Script s;
 	SDL_Event e;
 
-	start();
+	start_alttp();
 	for (i = 0; i < 4; i++)
 		tap(keys[i]);
 	push_type(SDL_QUIT);
@@ -332,7 +362,7 @@ static void test_script_as_pushed(void)
 	memcpy(pushed, frames, sizeof(pushed));
 	CHECK(pushed_count == 9);
 
-	start();
+	start_alttp();
 	push_type(SDL_QUIT);
 	CHECK(run_script(buttons, 4, 0, &s) == SDLLOOP_SCRIPT_END);
 	CHECK(frame_count == pushed_count);
@@ -346,7 +376,7 @@ static void test_script_after_run(void)
 	static const UiButton buttons[] = { UI_BUTTON_START, UI_BUTTON_A, UI_BUTTON_R1 };
 	Script s;
 
-	start();
+	start_alttp();
 	fake.push_during_run = true;
 	CHECK(run_script(buttons, 3, 0, &s) == SDLLOOP_SCRIPT_END);
 	CHECK(fake.run_calls == 1 && s.next == 3);
@@ -361,7 +391,7 @@ static void test_script_frame_cap(void)
 	static const UiButton buttons[] = { UI_BUTTON_DOWN, UI_BUTTON_START, UI_BUTTON_A };
 	Script s;
 
-	start();
+	start_alttp();
 	CHECK(run_script(buttons, 3, 5, &s) == SDLLOOP_FRAMES);
 	CHECK(fake.run_calls == 0 && frame_count == 5);
 	CHECK(strstr(frames[4], "Generating Seed") != NULL);
@@ -372,7 +402,7 @@ static void test_script_menu(void)
 	static const UiButton buttons[] = { UI_BUTTON_DOWN, UI_BUTTON_MENU, UI_BUTTON_DOWN };
 	Script s;
 
-	start();
+	start_alttp();
 	CHECK(run_script(buttons, 3, 0, &s) == SDLLOOP_QUIT);
 	CHECK(s.next == 2 && frame_count == 4);
 	CHECK(ui_app_key(&app, UI_BUTTON_DOWN) == UI_APP_QUIT);
@@ -383,13 +413,13 @@ static void test_present_failed(void)
 	static const UiButton buttons[] = { UI_BUTTON_DOWN, UI_BUTTON_DOWN, UI_BUTTON_DOWN };
 	Script s;
 
-	start();
+	start_alttp();
 	fail_from = 0;
 	tap(SDLK_DOWN);
 	CHECK(run(0) == SDLLOOP_PRESENT_FAILED);
 	CHECK(frame_count == 1);
 
-	start();
+	start_alttp();
 	fail_from = 2;
 	tap(SDLK_DOWN);
 	tap(SDLK_DOWN);
@@ -398,12 +428,12 @@ static void test_present_failed(void)
 	CHECK(run(0) == SDLLOOP_PRESENT_FAILED);
 	CHECK(frame_count == 3);
 
-	start();
+	start_alttp();
 	fail_from = 2;
 	CHECK(run_script(buttons, 3, 0, &s) == SDLLOOP_PRESENT_FAILED);
 	CHECK(frame_count == 3 && s.next == 1);
 
-	start();
+	start_alttp();
 	fail_from = 1;
 	tap(SDLK_RETURN);
 	CHECK(run(0) == SDLLOOP_PRESENT_FAILED);
@@ -420,6 +450,7 @@ int main(void)
 	test_generating_before_run();
 	test_keys_during_run_dropped();
 	test_quit();
+	test_games_view();
 	test_tab_and_noise();
 	test_expose();
 	test_chord();

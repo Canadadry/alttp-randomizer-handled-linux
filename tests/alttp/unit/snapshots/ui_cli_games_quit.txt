@@ -1,0 +1,72 @@
+@ init
+ +----------------------------------------+
+ |                                        |
+#| Choose a Game                          |
+>| A Link to the Past                     |
+ | Link's Awakening DX                    |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+_| A Open  B Quit                         |
+ +----------------------------------------+
+@ a
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+>| Glitches                      < None > |
+ | Item Placement              Advanced   |
+ | Dungeon Items               Standard   |
+ | Accessibility         100% Inventory   |
+ | Goal                    Defeat Ganon   |
+ | Tower Crystals                     7   |
+ | Ganon Crystals                     7   |
+ | World State                     Open   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal  v|
+h| No glitches required. Standard logic ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ b
+ +----------------------------------------+
+ |                                        |
+#| Choose a Game                          |
+>| A Link to the Past                     |
+ | Link's Awakening DX                    |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+_| A Open  B Quit                         |
+ +----------------------------------------+
+@ b
+ +----------------------------------------+
+ |                                        |
+#| Choose a Game                          |
+>| A Link to the Past                     |
+ | Link's Awakening DX                    |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+_| A Open  B Quit                         |
+ +----------------------------------------+

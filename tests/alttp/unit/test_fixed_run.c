@@ -296,10 +296,12 @@ static void test_unsupported(void)
 	CHECK(rando_fixed_run_unsupported(&run) == NULL);
 }
 
+/* Opens ALttP from the choice screen, then reads its Generate action. */
 static bool action_disabled(RandoAppShell *s)
 {
 	static UiScreen screen;
 
+	CHECK(ui_app_key(&s->app, UI_BUTTON_A) == UI_APP_NONE);
 	ui_app_screen(&s->app, &screen);
 	return screen.rows[screen.row_count - 1].disabled;
 }

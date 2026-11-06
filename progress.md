@@ -12,6 +12,9 @@
   - [x] Step 1.5 Onion facts for GBC
     - [x] docs/onion.md section 11: GBC list, saves and states
   - [ ] Step 1.6 Game-choice screen in the UI core
+    - [x] Choice screen and app views in the UI core
+    - [x] Last-game memory on the SD card
+    - [x] SDL side: key sequences and the game_choice golden
   - [ ] Step 1.7 ROM guard
   - [ ] Step 1.8 ROM-free oracle work
   - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven

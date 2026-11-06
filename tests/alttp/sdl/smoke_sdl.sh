@@ -60,7 +60,7 @@ PY
 }
 
 before="$(listing)"
-expect 0 --sd "$tree" --theme "$theme" --frames 1 --shot "$tmp/frame.bmp"
+expect 0 --sd "$tree" --theme "$theme" --frames 1 --shot "$tmp/frame.bmp" --shot-text "$tmp/frame.txt"
 [ "$(listing)" = "$before" ] || fail "starting changed the SD tree"
 picture "$tmp/frame.bmp"
 
@@ -82,25 +82,29 @@ shown() {
 	done
 }
 
+shown "$tmp/frame.txt" "Choose a Game" "A Open  B Quit"
 play="$tmp/play"
 mkdir -p "$play/App/ZeldaRando/alttp"
 # shellcheck disable=SC2086
-expect 0 --sd "$play" --theme "$theme" $fixed --shot "$tmp/history.bmp" --shot-text "$tmp/history.txt" -- start a r1
+expect 0 --sd "$play" --theme "$theme" $fixed --shot "$tmp/history.bmp" --shot-text "$tmp/history.txt" -- a start a r1
 shown "$tmp/history.txt" "[History]" "No seeds yet"
 cmp -s "$tmp/history.bmp" "$tmp/frame.bmp" && fail "the scripted frame is the first frame"
 # shellcheck disable=SC2086
-expect 0 --sd "$play" --theme "$theme" $fixed --shot-text "$tmp/failed.txt" start
+expect 0 --sd "$play" --theme "$theme" $fixed --shot-text "$tmp/failed.txt" a start
 shown "$tmp/failed.txt" "Generation Failed" "Base ROM not found"
-expect 0 --sd "$play" --theme "$theme" --frames 5 --shot-text "$tmp/generating.txt" down start
+expect 0 --sd "$play" --theme "$theme" --frames 7 --shot-text "$tmp/generating.txt" a down start
 shown "$tmp/generating.txt" "Generating Seed" "Please wait..."
-printf 'r1\n' | expect 0 --sd "$play" --theme "$theme" --shot-text "$tmp/stdin.txt" -
+printf 'a r1\n' | expect 0 --sd "$play" --theme "$theme" --shot-text "$tmp/stdin.txt" -
 shown "$tmp/stdin.txt" "No seeds yet"
-expect 0 --sd "$play" --theme "$theme" --shot "$tmp/quit.bmp" --shot-text "$tmp/quit.txt" r1 menu down
+expect 0 --sd "$play" --theme "$theme" --shot "$tmp/quit.bmp" --shot-text "$tmp/quit.txt" a r1 menu down
 shown "$tmp/quit.txt" "No seeds yet"
 [ -s "$tmp/quit.bmp" ] || fail "a quit wrote no --shot"
+expect 0 --sd "$play" --theme "$theme" --shot-text "$tmp/games.txt" a b b
+shown "$tmp/games.txt" "Choose a Game" "A Link to the Past" "Link's Awakening DX" "A Open  B Quit"
+[ "$(cat "$play/App/ZeldaRando/settings.json")" = '{"last_game":"alttp"}' ] || fail "opening ALttP did not remember it"
 
 # shellcheck disable=SC2086
-expect 0 --sd "$play" --theme "$theme" $fixed --unsupported goal=ganon,state=open --shot-text "$tmp/greyed.txt" up
+expect 0 --sd "$play" --theme "$theme" $fixed --unsupported goal=ganon,state=open --shot-text "$tmp/greyed.txt" a up
 shown "$tmp/greyed.txt" "X| Generate Seed" "Not supported with"
 
 expect 2 --sd "$play" --theme "$theme" bogus
@@ -189,7 +193,11 @@ size="$(python3 -I -c 'import struct, sys; print("%dx%d" % struct.unpack(">II", 
 refused "$tmp/small" "zrando: $tmp/small/background.png: screen.image: $size, the screen is 640x480"
 variant onetab
 awk '/^\[/ { skip = ($0 == "[tab.2]") } !skip' "$theme/theme.ini" >"$tmp/onetab/theme.ini"
-refused "$tmp/onetab" "zrando: $tmp/onetab/theme.ini: the screen has 2 tabs, the theme 1 tab slots"
+nomemory="$tmp/nomemory"
+mkdir -p "$nomemory"
+expect 1 --sd "$nomemory" --theme "$tmp/onetab" a
+one_line "zrando: $tmp/onetab/theme.ini: the screen has 2 tabs, the theme 1 tab slots"
+[ "$(listing "$nomemory")" = . ] || fail "--theme $tmp/onetab changed the SD tree"
 
 expect 2 --font x --frames 1
 grep -q "unknown option: --font" "$tmp/err" || fail "--font is not refused as an unknown option"
