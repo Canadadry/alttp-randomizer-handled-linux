@@ -46,6 +46,7 @@ patches/bingo.py	has_group = set()	order-free	membership only over group names; 
 patches/endscreen.py	cats = sorted(f for f in os.listdir(os.path.join(os.path.dirname(__file__), "cats")) if f.endswith(".bin"))	patched	ladxr.patch sorts the cat pictures before random.choice, so the pick no longer depends on the filesystem's listing order
 patches/maze.py	all_options = set(ALL_SIGN_OPTION_TILES)	order-free	membership and removal only; get_options_from walks coordinates in range order
 patches/music.py	song_files = os.listdir(directory)	unreached	importMusic runs only for music=ffa (tier 3)
+patches/titleScreen.py	version = ""  # ladxr.patch: was subprocess.run(['git', 'describe', '--tags', '--dirty=-D']) in the working directory	patched	the title screen's version was the working directory's git describe (a tag, -D when dirty); pinned to the empty string every untagged run wrote
 patches/witch.py	ld  e, $09 ; give powder every time after the first time.	inert	assembly text inside a string, not a read of the clock
 randomizer.py	for loc in e.getAccessableLocations():	order-free	hasNewPlacesToExplore() returns a boolean
 randomizer.py	options = set(spot.getOptions())	order-free	membership only; items are tried in item_priority_order

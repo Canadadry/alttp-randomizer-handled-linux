@@ -11,6 +11,22 @@ index abaebb7..097e2af 100644
      filename = random.choice(cats)
      data = open(os.path.join(os.path.dirname(__file__), "cats", filename), "rb").read()
      assert len(data) < 0x2400, filename
+diff --git a/patches/titleScreen.py b/patches/titleScreen.py
+index 9972202..319425c 100644
+--- a/patches/titleScreen.py
++++ b/patches/titleScreen.py
+@@ -21,10 +21,7 @@ def _encode(s):
+ 
+ 
+ def setRomInfo(rom, seed, settings):
+-    try:
+-        version = subprocess.run(['git', 'describe', '--tags', '--dirty=-D'], stdout=subprocess.PIPE).stdout.strip().decode("ascii", "replace")
+-    except:
+-        version = ""
++    version = ""  # ladxr.patch: was subprocess.run(['git', 'describe', '--tags', '--dirty=-D']) in the working directory
+ 
+     try:
+         seednr = int(seed, 16)
 diff --git a/spoilerLog.py b/spoilerLog.py
 index 723097d..41dd292 100644
 --- a/spoilerLog.py

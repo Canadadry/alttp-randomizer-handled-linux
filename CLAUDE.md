@@ -59,8 +59,8 @@ in `docs/`, then `README.md`.
   and the fixtures it writes.
 - `tests/ladx/oracle/` holds the LADX oracle: LADXR pinned at `4325207e`,
   cloned (never vendored) into `tests/ladx/oracle/ladxr/` (git-ignored) and
-  patched with `ladxr.patch` (order fixes only); the Python scripts that run
-  it without a ROM (shared helpers `ladx_oracle.py`, unit-tested by
+  patched with `ladxr.patch` (order fixes and environment fixes, one commit
+  each); the Python scripts that run it (shared helpers `ladx_oracle.py`, unit-tested by
   `test_oracle.py`); Phase 2's ROM-free tools, each unit-tested by its
   `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check;
   `push_gate.py`, Phase 2's push gate; `read_trace.py`, the ROM read
@@ -126,10 +126,34 @@ in `docs/`, then `README.md`.
   two conditions, after proving its comparator, and prints `same <case>` or
   `DIFFERENT <case>: line <n>: ...` per case, then `determinism: <n> cases
   identical (...)`, or fails when the two runs did not vary.
+  With the ROM (`tmp/ladx/base.gbc`, SHA-1 `d90ac17e…`, else a `setup:`
+  line): `gen_golden.sh --out <dir> [--cases <file>] [--ladxr <dir>]
+  [--hashseed <n>] [--rom <file>] [--work <dir>] [<case>...]`, LADX's case
+  runner, runs each case (default list `determinism_cases.txt`) through the
+  whole generator (`oracle_run.py --rom`, one process per case, LADXR in a
+  new directory under the work root) and writes `<dir>/<case>/`: `run.txt`
+  (the sections above, the trace covering `generateRom` and the spoiler,
+  then `rom_sha1`, `spoiler_sha1` and the outcome), `meta.txt`, and
+  `out.gbc` and `spoiler.json` when LADXR wrote them; it refuses a `<dir>`
+  outside `tmp/` (exit 2): ROM-derived outputs stay there.
+  `determinism.sh --full` proves its comparators on planted case
+  directories, runs `gen_golden.sh` twice (A: `PYTHONHASHSEED=0`, the setup
+  checkout, inside this repository; B: `=1`, a fresh clone, its work root a
+  throwaway git repository holding a tag) and LADXR's own CLI once per case
+  (`oracle_run.py --plain`: `main.main`, no hook, `os.urandom` handing it
+  the seed; its retry is the driver's `error`), compares every file (sizes,
+  differing-byte counts and offsets, never a byte value) and prints `same
+  <case>`, `DIFFERENT <case>: <file>: ...` or `DIFFERENT <case> (plain):
+  ...` per mismatch, then `determinism: <n> cases identical with the ROM
+  (...), driver equal to LADXR's CLI`; it fails when the runs did not vary
+  in hash seed, checkout and the work root's `git describe`, and on a new
+  untracked file (`STRAY <path>`).
   `python3 tests/ladx/oracle/audit_order.py <ladxr dir>` checks every
-  directory listing and set of LADXR's sources against `order_audit.txt`
-  (one `UNAUDITED` or `STALE` line each, else `order audit: <n> sites, all
-  audited`). `extract_logic.py --graph <config> --out <dir> <ladxr dir>`
+  directory listing, set and environment read (subprocess, environment
+  variables, clock, working directory, `os.urandom`, platform and Python
+  version) of LADXR's sources against `order_audit.txt` (verdicts
+  `patched`, `unreached`, `order-free`, `inert`; one `UNAUDITED` or `STALE`
+  line each, else `order audit: <n> sites, all audited`). `extract_logic.py --graph <config> --out <dir> <ladxr dir>`
   writes one configuration's full logic graph, to diff against a
   `logic_vectors.txt` digest. Run every script with `python3` without `-I`
   or `-E` (both drop `PYTHONHASHSEED`).
@@ -386,8 +410,8 @@ in `docs/`, then `README.md`.
   `mac-run`, never an agent.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
-  `gen_fixtures.sh`, `determinism.sh` and `audit_order.py` run only to
-  regenerate or re-prove its fixtures; `nintendo_bytes.py` needs the ROM,
+  `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh` and `audit_order.py`
+  run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
   `inventory_check.py` diffs the inventory against LADXR (their tests run in

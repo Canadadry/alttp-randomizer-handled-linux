@@ -43,7 +43,7 @@
     - [x] Chunk 1: comparators, tmp guard, environment audit
     - [x] Chunk 2: full-generation driver and gen_golden.sh
     - [x] Chunk 3: determinism.sh --full
-    - [ ] Chunk 4: ladxr.patch fixes
+    - [x] Chunk 4: ladxr.patch fixes
   - [ ] Step 2.3 Inventory
   - [ ] Step 2.4 Cases
   - [ ] Step 2.5 Golden format and goldens
