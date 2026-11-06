@@ -650,3 +650,8 @@ position.
   (page 12 → 9). Reverted: all 26 files byte-identical to the first pass.
   The binary's sha256 and mtime were unchanged; `git status` and `git
   diff` empty; `make -k check` green.
+
+### Step 2.14
+
+- check-net: `make -k check` green on the first run (e2e 50 pass,
+  e2e-combos 23 pass); no `fix:` commit.

@@ -58,4 +58,4 @@
   - [x] Step 2.13 — Default theme switched
     - [x] Chunk 1 — Ship alttp as the default theme
     - [x] Chunk 2 — Docs follow
-  - [ ] Step 2.14 — skill: check-net
+  - [x] Step 2.14 — skill: check-net
