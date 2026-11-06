@@ -466,3 +466,27 @@ position.
 - A list font with no cell is refused for now (the advance needs a font's
   metrics, which step 5 can measure). `goldens.sh` passes the theme path
   unquoted: no repository path has a space.
+
+### Step 1.5
+
+- Done in 4 chunks (`225f522`, `5d018d0`, `c87487f`, and the app commit):
+  `app/sdl/sdl_render` opens a theme's assets (`theme_assets`: fonts
+  through SDL_ttf, fixed size or the old fit search; images through
+  SDL_image, the screen image 640×480) and draws every zone of `UiScreen`
+  from it; `alttpr --theme <dir>` draws through it; `make sdl-pc` runs the
+  13 goldens through `--theme themes/classic`, byte-identical. `classic`
+  gained `background.png` (solid `#14161a`) and byte copies of DejaVu and
+  its licence. SDL_image is in `sdl-pc`, `sdl-arm` (NEEDED
+  `libSDL_image-1.2.so.0`, no `-rpath-link`) and the CI `sdl` job.
+- `test_sdl_render` holds an equivalence harness (old grid renderer vs
+  classic, pixel for pixel, every row variant and scroll-mark case) and
+  feature tests on `tests/rando/sdl/themes/features/` (committed PNGs) for
+  what classic cannot show. Notices are compared only when they fit a page:
+  the grid draws scroll marks on notices, the theme renderer does not (the
+  app's notices hold at most 3 rows).
+- `--font` and `--theme` are exclusive (exit 2); without `--theme` the old
+  renderer still runs until step 6. Step 4's no-cell refusal is gone: its
+  smoke case now succeeds, as announced. `targets/mac/` does not link
+  SDL_image yet (step 6).
+- The container restarted mid-step (chunk 3): the working tree survived;
+  docker had to be started again (`dockerd`).

@@ -16,7 +16,7 @@
   - [x] Step 1.4 — Page and width from the theme
     - [x] Chunk 1 — The derivation
     - [x] Chunk 2 — The SDL app reads a theme
-  - [ ] Step 1.5 — SDL renderer from `UiScreen`
+  - [x] Step 1.5 — SDL renderer from `UiScreen`
     - [x] Chunk 1 — SDL_image, theme assets, classic files, renderer open/close
     - [x] Chunk 2 — Text layer and single-line zones
     - [x] Chunk 3 — Body zones
