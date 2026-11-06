@@ -28,7 +28,7 @@
     - [x] Chunk 4 — targets/mac follows
   - [x] Step 1.7 — skill: check-net
 - [ ] Phase 2 — The new theme from the mockups
-  - [ ] Step 2.8 — The new theme's geometry
+  - [x] Step 2.8 — The new theme's geometry
     - [x] Chunk 1 — The [help] section
     - [x] Chunk 2 — Press Start 2P and themes/alttp
     - [x] Chunk 3 — The SDL side

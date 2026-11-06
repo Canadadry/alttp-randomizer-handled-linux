@@ -514,3 +514,23 @@ position.
 
 - check-net: `make -k check` green on the first run (test, lint, logic 12,
   selftest, e2e 50 pass, e2e-combos 23 pass); no `fix:` commit.
+
+### Step 2.8
+
+- Done in 3 chunks (`01bb42a`, `e369a39`, and the draw commit): an
+  optional `[help]` section (font, x, baseline y, right, colour) and
+  `theme_help_columns`; Press Start 2P in `data/` (google/fonts
+  `24ddc1f324cac5d9f5aedca126d298f56e3f1640` `ofl/pressstart2p/`, sha256
+  ttf `034c77f1…017d`, OFL `705960c3…44b0`); `themes/alttp/` (the inventory
+  fixture's zones with plain colours, no image, text markers and key text
+  standing in for the frame and sprites; list right 606, `value_max` 264;
+  help ps2p 10 px at x 30, baseline 412, right 610); `test_sdl_alttp`
+  (monospace fonts, no setting label or value cut); `goldens.sh --draw`,
+  run by `make sdl-pc` with `DRAW_THEME = themes/alttp` into
+  `tests/rando/build/sdl/theme-states/alttp/`.
+- The numbers, not pinned by any test: page 12, wrap width 48, help line
+  58 characters (the plan's "about 57" was measured on the 16 px mockup);
+  the matching `ui_cli` grid is `--cols 50 --lines 16`.
+- `make sdl-pc` (classic 13 byte-identical, alttp 13 drawn) and `make -k
+  check` green. The 13 captures were looked at: zones where the mockups
+  put them, "Master Sword Pedestal" whole, no theme fix needed.
