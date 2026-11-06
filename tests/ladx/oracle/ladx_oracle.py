@@ -383,12 +383,16 @@ def validate_fixture(settings_class):
 AUDIT_SITE = re.compile(r"os\.listdir\(|os\.scandir\(|os\.walk\(|\bglob\b|\.iterdir\("
                         r"|(?<![.\w])(?<!def )(?:frozen)?set\(|\bfor\s+[\w\s,()]+?\s+in\s*\{"
                         r"|getAccessableLocations\(")
-AUDIT_VERDICTS = ("patched", "unreached", "order-free")
+AUDIT_ENV_SITE = re.compile(r"\b(?:subprocess|datetime|time|platform|uuid|socket|socketserver)\."
+                            r"|\bos\.(?:environ|getenv|urandom|getcwd)\b|\bsys\.(?:version|platform)"
+                            r"|^\s*from\s+(?:subprocess|datetime|time|platform|uuid|socket|socketserver)\s+import\b")
+AUDIT_VERDICTS = ("patched", "unreached", "order-free", "inert")
 
 
 def audit_sites(root):
-    """Every order-sensitive site of the .py files under root, www/ excepted, as
-    (file, line number, stripped text), in file then line order."""
+    """Every order-sensitive site and every environment read (subprocess, environment variables,
+    clock, working directory, os.urandom, platform and Python version) of the .py files under root,
+    www/ excepted, as (file, line number, stripped text), in file then line order."""
     sites = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if not (dirpath == root and d in ("www", ".git")))
@@ -398,7 +402,7 @@ def audit_sites(root):
                 rel = os.path.relpath(path, root).replace(os.sep, "/")
                 with open(path, encoding="utf-8") as f:
                     for n, line in enumerate(f, 1):
-                        if AUDIT_SITE.search(line):
+                        if AUDIT_SITE.search(line) or AUDIT_ENV_SITE.search(line):
                             sites.append((rel, n, line.strip()))
     return sorted(sites)
 
@@ -506,6 +510,87 @@ def compare_runs(name, a_text, b_text):
     return "same %s" % name
 
 
+def compare_bytes(name, label, a, b):
+    """Two files' bytes: `same <name>`, else `DIFFERENT <name>: <label>: sizes <a> vs <b>` or
+    `... <k> bytes differ, first at 0x<offset>`. Never a byte value: the files may be ROM-derived."""
+    if a == b:
+        return "same %s" % name
+    if len(a) != len(b):
+        return "DIFFERENT %s: %s: sizes %d vs %d" % (name, label, len(a), len(b))
+    offsets = [i for i, (x, y) in enumerate(zip(a, b)) if x != y]
+    return "DIFFERENT %s: %s: %d bytes differ, first at 0x%x" % (name, label, len(offsets), offsets[0])
+
+
+def _read_bytes(path):
+    with open(path, "rb") as f:
+        return f.read()
+
+
+def compare_dirs(name, a_dir, b_dir):
+    """Two case directories, meta.txt left out: `only in A|B: <file>` lines, then run.txt through
+    compare_runs, then every other file through compare_bytes, each line `DIFFERENT <name>: ...`;
+    ["same <name>"] when nothing differs."""
+    a_files, b_files = (set(os.listdir(d)) - {"meta.txt"} for d in (a_dir, b_dir))
+    lines = ["DIFFERENT %s: only in A: %s" % (name, f) for f in sorted(a_files - b_files)]
+    lines += ["DIFFERENT %s: only in B: %s" % (name, f) for f in sorted(b_files - a_files)]
+    for f in sorted(a_files & b_files, key=lambda f: (f != "run.txt", f)):
+        a, b = _read_bytes(os.path.join(a_dir, f)), _read_bytes(os.path.join(b_dir, f))
+        if f == "run.txt":
+            verdict = compare_runs("%s: run.txt" % name, a.decode("utf-8"), b.decode("utf-8"))
+        else:
+            verdict = compare_bytes(name, f, a, b)
+        if verdict.startswith("DIFFERENT "):
+            lines.append(verdict)
+    return lines or ["same %s" % name]
+
+
+def _outcome(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = [line for line in f.read().splitlines() if line.startswith("outcome ")]
+    except FileNotFoundError:
+        return None
+    return lines[-1][len("outcome "):] if lines else None
+
+
+def _outcomes_match(driver, plain):
+    if driver == "ok" or plain == "ok":
+        return driver == plain
+    if driver.startswith("error ") and plain == "retry":
+        return True
+    return driver.startswith("crash ") and plain.startswith("crash ") and \
+        driver.split(" ")[1] == plain.split(" ")[1]
+
+
+def compare_plain(name, driver_dir, plain_dir):
+    """The driver's case directory (run.txt) against the plain run's (plain.txt): out.gbc and
+    spoiler.json present on both sides or neither, and byte-equal; outcomes ok with ok, error with
+    retry, crash T with crash T. Lines `DIFFERENT <name> (plain): ...`, else ["same <name> (plain)"]."""
+    label = "%s (plain)" % name
+    lines = []
+    for f in ("out.gbc", "spoiler.json"):
+        a, b = os.path.join(driver_dir, f), os.path.join(plain_dir, f)
+        if os.path.exists(a) != os.path.exists(b):
+            lines.append("DIFFERENT %s: %s only in the %s run" % (label, f, "driver" if os.path.exists(a) else "plain"))
+        elif os.path.exists(a):
+            verdict = compare_bytes(label, f, _read_bytes(a), _read_bytes(b))
+            if verdict.startswith("DIFFERENT "):
+                lines.append(verdict)
+    driver = _outcome(os.path.join(driver_dir, "run.txt"))
+    plain = _outcome(os.path.join(plain_dir, "plain.txt"))
+    if driver is None or plain is None:
+        lines.append("DIFFERENT %s: no outcome in %s" % (label, "run.txt" if driver is None else "plain.txt"))
+    elif not _outcomes_match(driver, plain):
+        lines.append("DIFFERENT %s: outcome %s vs %s" % (label, driver, plain))
+    return lines or ["same %s" % label]
+
+
+def inside_tmp(path, repo):
+    """Whether path, symlinks and .. resolved, lies strictly below the repository's tmp/."""
+    tmp = os.path.realpath(os.path.join(repo, "tmp"))
+    return os.path.realpath(path).startswith(tmp + os.sep)
+
+
 def _ws_scalar(value):
     if value is None:
         return "-"
@@ -565,28 +650,86 @@ def place_lines(spots):
                                      "-" if spot.item is None else item_name(spot.item))
 
 
-def runs_varied(a_meta, b_meta):
-    """Whether the double run's two meta files show another hash("ladxr") and another checkout."""
+def runs_varied(a_meta, b_meta, describe=False):
+    """Whether the double run's two meta files show another hash("ladxr") and another checkout,
+    and, with describe, another `git describe --tags` answer of the working directory."""
     def read(text):
         return dict(line.split(" ", 1) for line in text.splitlines() if " " in line)
     a, b = read(a_meta), read(b_meta)
-    return all(key in a and key in b and a[key] != b[key] for key in ("hash_ladxr", "checkout"))
+    keys = ("hash_ladxr", "checkout") + (("describe",) if describe else ())
+    return all(key in a and key in b and a[key] != b[key] for key in keys)
+
+
+_CASE_LINE = re.compile(r"([A-Za-z0-9_.-]+) ((?:[0-9a-fA-F]{2})+)((?: [A-Za-z0-9_]+=\S*)*)")
+
+
+def read_cases(text, names=None):
+    """A case list (`<name> <seed hex> <k=v ...>` per line, "#" lines and blank lines skipped) as
+    [(name, seed bytes, [k=v, ...])] in file order, only the named cases when `names` is given.
+    Refuses a malformed line, a seed that is not even-length hex, a repeated name and an unknown
+    name."""
+    cases = []
+    for line in text.splitlines():
+        if not line or line.startswith("#"):
+            continue
+        match = _CASE_LINE.fullmatch(line)
+        if match is None:
+            raise OracleError("oracle: bad case line %r: want <name> <seed hex> <k=v ...>" % line)
+        name, seed, settings = match.groups()
+        if any(name == case[0] for case in cases):
+            raise OracleError("oracle: case %s given twice" % name)
+        cases.append((name, bytes.fromhex(seed), settings.split()))
+    if names is None:
+        return cases
+    known = {case[0] for case in cases}
+    for name in names:
+        if name not in known:
+            raise OracleError("oracle: no case %s in the case list" % name)
+    return [case for case in cases if case[0] in names]
+
+
+USAGE = """usage: ladx_oracle.py <command> ...
+  compare <name> <run A> <run B>               compare_runs' verdict, exit 1 when DIFFERENT
+  compare-bytes <name> <label> <file A> <file B>   compare_bytes' verdict, exit 1 when DIFFERENT
+  compare-dirs <name> <dir A> <dir B>          compare_dirs' lines, exit 1 when DIFFERENT
+  compare-plain <name> <driver dir> <plain dir>    compare_plain's lines, exit 1 when DIFFERENT
+  varied [--describe] <meta A> <meta B>        exit 1 unless runs_varied
+  cases <case list> [<name>...]                the cases as `<name> <seed hex> <k=v ...>`, exit 2
+                                               on a bad list or an unknown name
+  inside-tmp <repo> <path>                     exit 1 unless inside_tmp"""
 
 
 def main(argv):
-    """`compare <name> <run A> <run B>`: prints compare_runs' verdict, exits 1 when DIFFERENT.
-    `varied <meta A> <meta B>`: exits 1 unless runs_varied."""
     def text(path):
         with open(path, encoding="utf-8") as f:
             return f.read()
-    if len(argv) == 4 and argv[0] == "compare":
-        verdict = compare_runs(argv[1], text(argv[2]), text(argv[3]))
-        print(verdict)
-        return 0 if verdict.startswith("same ") else 1
-    if len(argv) == 3 and argv[0] == "varied":
-        return 0 if runs_varied(text(argv[1]), text(argv[2])) else 1
-    print("usage: ladx_oracle.py compare <name> <run A> <run B> | varied <meta A> <meta B>",
-          file=sys.stderr)
+
+    def verdicts(lines):
+        print("\n".join(lines))
+        return 0 if all(line.startswith("same ") for line in lines) else 1
+    command, args = (argv[0], argv[1:]) if argv else (None, [])
+    if command == "compare" and len(args) == 3:
+        return verdicts([compare_runs(args[0], text(args[1]), text(args[2]))])
+    if command == "compare-bytes" and len(args) == 4:
+        return verdicts([compare_bytes(args[0], args[1], _read_bytes(args[2]), _read_bytes(args[3]))])
+    if command == "compare-dirs" and len(args) == 3:
+        return verdicts(compare_dirs(*args))
+    if command == "compare-plain" and len(args) == 3:
+        return verdicts(compare_plain(*args))
+    if command == "varied" and len(args) in (2, 3) and args[:-2] in ([], ["--describe"]):
+        return 0 if runs_varied(text(args[-2]), text(args[-1]), describe=len(args) == 3) else 1
+    if command == "cases" and args:
+        try:
+            cases = read_cases(text(args[0]), args[1:] or None)
+        except OracleError as e:
+            print(e, file=sys.stderr)
+            return 2
+        for name, seed, settings in cases:
+            print(" ".join([name, seed.hex()] + settings))
+        return 0
+    if command == "inside-tmp" and len(args) == 2:
+        return 0 if inside_tmp(args[1], args[0]) else 1
+    print(USAGE, file=sys.stderr)
     return 2
 
 

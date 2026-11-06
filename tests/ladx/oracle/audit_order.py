@@ -1,7 +1,8 @@
 """Usage: python3 audit_order.py <ladxr dir> [--table <file>]
 
-Lists every directory listing, set construction, dict-literal loop and explorer visited-set read
-in the LADXR checkout's .py files (www/ excepted) and fails unless each one has a verdict in the
+Lists every directory listing, set construction, dict-literal loop, explorer visited-set read and
+environment read (subprocess, environment variables, clock, working directory, os.urandom,
+platform and Python version) in the LADXR checkout's .py files (www/ excepted) and fails unless each one has a verdict in the
 audit table (default order_audit.txt next to this script): one UNAUDITED or STALE line per
 mismatch, else `order audit: <n> sites, all audited`. It first proves itself on a planted tree.
 """
@@ -20,10 +21,12 @@ _spec.loader.exec_module(ladx_oracle)
 PLANTED = {
     "patches/audited.py": "names = sorted(os.listdir(d))\n",
     "patches/new.py": "import os\nnames = os.listdir(d)\n",
+    "patches/clock.py": "import time\nstamp = time.time()\n",
 }
 PLANTED_TABLE = ("patches/audited.py\tnames = sorted(os.listdir(d))\tpatched\tsorted\n"
                  "patches/gone.py\tfor f in os.walk(d):\torder-free\tremoved\n")
-PLANTED_EXPECTED = (False, ["UNAUDITED patches/new.py:2 names = os.listdir(d)",
+PLANTED_EXPECTED = (False, ["UNAUDITED patches/clock.py:2 stamp = time.time()",
+                            "UNAUDITED patches/new.py:2 names = os.listdir(d)",
                             "STALE patches/gone.py for f in os.walk(d):"])
 
 

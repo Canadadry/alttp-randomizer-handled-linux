@@ -232,6 +232,27 @@ class AuditTest(unittest.TestCase):
         self.assertEqual([line.split(" ", 1)[1].split(" ", 1)[0] for line in lines],
                          ["a.py:%d" % n for n in range(1, 10)])
 
+    def test_every_environment_read_is_a_site(self):
+        source = "".join(line + "\n" for line in (
+            "v = subprocess.run(['git'])", "os.environ['X']", "os.getenv('X')", "datetime.now()",
+            "time.sleep(1)", "os.urandom(16)", "os.getcwd()", "platform.system()", "sys.version_info",
+            "sys.platform", "uuid.uuid4()", "socket.gethostname()", "socketserver.TCPServer(a)",
+            "from datetime import datetime", "from time import time",
+            "import subprocess", "import time", "# into the socket", "the second platform",
+            "very time consuming.", "self.runtime.x", "x = mytime.now()"))
+        ok, lines = self.audit({"a.py": source}, "")
+        self.assertEqual([line.split(" ", 1)[1].split(" ", 1)[0] for line in lines],
+                         ["a.py:%d" % n for n in range(1, 16)])
+
+    def test_environment_sites_take_the_inert_verdict_and_go_stale(self):
+        source = "x = 1\nfilename = datetime.now()\n"
+        table = "a.py\tfilename = datetime.now()\tinert\tonly with --logdirectory\n"
+        self.assertEqual(self.audit({"a.py": source}, table), (True, ["order audit: 1 sites, all audited"]))
+        self.assertEqual(self.audit({"a.py": source}, ""),
+                         (False, ["UNAUDITED a.py:2 filename = datetime.now()"]))
+        self.assertEqual(self.audit({"a.py": "x = 1\n"}, table),
+                         (False, ["STALE a.py filename = datetime.now()"]))
+
     def test_identical_lines_share_one_entry_and_www_is_skipped(self):
         ok, lines = self.audit({"a.py": "s = set()\ns = set()\n", "www/b.py": "os.listdir(d)\n",
                                 "c.txt": "os.listdir(d)\n"},
@@ -517,6 +538,224 @@ class CompareTest(unittest.TestCase):
         self.assertFalse(ladx_oracle.runs_varied(a, b.replace("-7", "12")))
         self.assertFalse(ladx_oracle.runs_varied(a, b.replace("/b/", "/a/")))
         self.assertFalse(ladx_oracle.runs_varied(a, "hashseed 1\n"))
+
+    def test_runs_varied_with_the_describe_key(self):
+        a = "hashseed 0\nhash_ladxr 12\ncheckout /a/ladxr\npython 3.13.1\ndescribe -\n"
+        b = "hashseed 1\nhash_ladxr -7\ncheckout /b/ladxr\npython 3.13.1\ndescribe planted-tag\n"
+        self.assertTrue(ladx_oracle.runs_varied(a, b, describe=True))
+        self.assertTrue(ladx_oracle.runs_varied(a, b.replace("planted-tag", "-")))
+        self.assertFalse(ladx_oracle.runs_varied(a, b.replace("planted-tag", "-"), describe=True))
+        self.assertFalse(ladx_oracle.runs_varied(a.replace("describe -\n", ""), b, describe=True))
+
+
+class CaseListTest(unittest.TestCase):
+    LIST = ("# header\n\nbaseline 000102\n"
+            "race 4c41 race=1\n"
+            "hell 0123 logic=hell dungeon_keys=keysanity\n")
+
+    def test_valid_lines_comments_and_blank_lines(self):
+        self.assertEqual(ladx_oracle.read_cases(self.LIST), [
+            ("baseline", bytes.fromhex("000102"), []),
+            ("race", bytes.fromhex("4c41"), ["race=1"]),
+            ("hell", bytes.fromhex("0123"), ["logic=hell", "dungeon_keys=keysanity"])])
+
+    def test_name_selection_keeps_the_list_order(self):
+        self.assertEqual([c[0] for c in ladx_oracle.read_cases(self.LIST, ["hell", "baseline"])],
+                         ["baseline", "hell"])
+
+    def test_an_unknown_name_is_refused(self):
+        with self.assertRaisesRegex(ladx_oracle.OracleError, "no case nope"):
+            ladx_oracle.read_cases(self.LIST, ["baseline", "nope"])
+
+    def test_bad_lines_are_refused(self):
+        for text in ("a 00\na 01\n", "a 001\n", "a 0g\n", "a\n", "a - x=1\n", "a 00 race\n",
+                     "a 00 =1\n", " a 00\n", "a  00\n", "a/b 00\n"):
+            with self.assertRaises(ladx_oracle.OracleError, msg=text):
+                ladx_oracle.read_cases(text)
+
+
+class CompareBytesTest(unittest.TestCase):
+    def test_equal(self):
+        self.assertEqual(ladx_oracle.compare_bytes("x", "out.gbc", b"abc", b"abc"), "same x")
+
+    def test_sizes(self):
+        self.assertEqual(ladx_oracle.compare_bytes("x", "out.gbc", b"abc", b"ab"),
+                         "DIFFERENT x: out.gbc: sizes 3 vs 2")
+
+    def test_one_flipped_byte(self):
+        a = bytes(0x200)
+        b = bytearray(a)
+        b[0x123] ^= 1
+        self.assertEqual(ladx_oracle.compare_bytes("x", "out.gbc", a, bytes(b)),
+                         "DIFFERENT x: out.gbc: 1 bytes differ, first at 0x123")
+
+    def test_several_differences_and_no_byte_value(self):
+        a = bytes([0x11] * 0x40)
+        b = bytearray(a)
+        for i, value in ((0x30, 0xd7), (0x08, 0xe5), (0x3f, 0xc9)):
+            b[i] = value
+        verdict = ladx_oracle.compare_bytes("x", "spoiler.json", a, bytes(b))
+        self.assertEqual(verdict, "DIFFERENT x: spoiler.json: 3 bytes differ, first at 0x8")
+        for value in ("11", "d7", "e5", "c9", "D7", "E5", "C9", "215", "229", "201"):
+            self.assertNotIn(value, verdict)
+
+
+def plant_bytes(root, files):
+    for path, data in files.items():
+        full = os.path.join(root, path)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "wb") as f:
+            f.write(data)
+
+
+RUN_TXT = b"seed 00\ntrace 0 rnd x:y choice 3 -> 1 [1]\nrom_sha1 ab\nspoiler_sha1 cd\noutcome ok\n"
+CASE_DIR = {"run.txt": RUN_TXT, "out.gbc": bytes(64), "spoiler.json": b'{"a": 1}', "meta.txt": b"hashseed 0\n"}
+
+
+class CompareDirsTest(unittest.TestCase):
+    def compare(self, a, b):
+        with tempfile.TemporaryDirectory() as tmp:
+            plant_bytes(os.path.join(tmp, "a"), a)
+            plant_bytes(os.path.join(tmp, "b"), b)
+            return ladx_oracle.compare_dirs("x", os.path.join(tmp, "a"), os.path.join(tmp, "b"))
+
+    def changed(self, **files):
+        out = dict(CASE_DIR)
+        for name, data in files.items():
+            name = name.replace("_", ".")
+            if data is None:
+                del out[name]
+            else:
+                out[name] = data
+        return out
+
+    def test_all_equal_and_meta_is_never_compared(self):
+        self.assertEqual(self.compare(CASE_DIR, self.changed(meta_txt=b"hashseed 1\n")), ["same x"])
+
+    def test_a_file_only_in_a_or_in_b(self):
+        self.assertEqual(self.compare(CASE_DIR, self.changed(spoiler_json=None)),
+                         ["DIFFERENT x: only in A: spoiler.json"])
+        self.assertEqual(self.compare(self.changed(spoiler_json=None), self.changed(extra=b"")),
+                         ["DIFFERENT x: only in B: extra", "DIFFERENT x: only in B: spoiler.json"])
+
+    def test_run_txt_through_compare_runs(self):
+        self.assertEqual(self.compare(CASE_DIR, self.changed(run_txt=RUN_TXT.replace(b"-> 1", b"-> 2"))),
+                         ["DIFFERENT x: run.txt: line 2: trace 0 rnd x:y choice 3 -> 1 [1]"
+                          " | trace 0 rnd x:y choice 3 -> 2 [1]"])
+
+    def test_binary_differences_one_line_per_file(self):
+        rom = bytearray(64)
+        rom[9] = 1
+        self.assertEqual(self.compare(CASE_DIR, self.changed(out_gbc=bytes(rom), spoiler_json=b'{"a": 2}')),
+                         ["DIFFERENT x: out.gbc: 1 bytes differ, first at 0x9",
+                          "DIFFERENT x: spoiler.json: 1 bytes differ, first at 0x6"])
+
+
+class ComparePlainTest(unittest.TestCase):
+    def compare(self, driver_outcome, plain_outcome, driver_files=None, plain_files=None):
+        files = {"out.gbc": bytes(64), "spoiler.json": b"{}"}
+        driver = dict(files if driver_files is None else driver_files)
+        driver["run.txt"] = b"seed 00\nrom none\nspoiler none\noutcome " + driver_outcome.encode() + b"\n"
+        driver["meta.txt"] = b"hashseed 0\n"
+        plain = dict(files if plain_files is None else plain_files)
+        plain["plain.txt"] = b"rom none\nspoiler none\noutcome " + plain_outcome.encode() + b"\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            plant_bytes(os.path.join(tmp, "d"), driver)
+            plant_bytes(os.path.join(tmp, "p"), plain)
+            return ladx_oracle.compare_plain("x", os.path.join(tmp, "d"), os.path.join(tmp, "p"))
+
+    def test_equivalent_outcomes(self):
+        self.assertEqual(self.compare("ok", "ok"), ["same x (plain)"])
+        self.assertEqual(self.compare("ok", "ok", {"out.gbc": b"r"}, {"out.gbc": b"r"}), ["same x (plain)"])
+        self.assertEqual(self.compare("error Item placement failed", "retry", {}, {}), ["same x (plain)"])
+        self.assertEqual(self.compare("crash IndexError list index out of range",
+                                      "crash IndexError list index out of range", {}, {}), ["same x (plain)"])
+
+    def test_outcome_mismatches(self):
+        for driver, plain in (("ok", "retry"), ("error Failed", "ok"), ("crash IndexError a", "crash KeyError a"),
+                              ("ok", "exit 1"), ("error Failed", "exit 1"), ("crash IndexError a", "retry")):
+            self.assertEqual(self.compare(driver, plain, {}, {}),
+                             ["DIFFERENT x (plain): outcome %s vs %s" % (driver, plain)])
+
+    def test_file_mismatches(self):
+        self.assertEqual(self.compare("ok", "ok", {"out.gbc": b"ab"}, {"out.gbc": b"ac"}),
+                         ["DIFFERENT x (plain): out.gbc: 1 bytes differ, first at 0x1"])
+        self.assertEqual(self.compare("ok", "ok", {"out.gbc": b"a", "spoiler.json": b"{}"}, {"out.gbc": b"a"}),
+                         ["DIFFERENT x (plain): spoiler.json only in the driver run"])
+        self.assertEqual(self.compare("error Failed", "retry", {}, {"out.gbc": b"a"}),
+                         ["DIFFERENT x (plain): out.gbc only in the plain run"])
+
+    def test_a_record_without_an_outcome(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            plant_bytes(os.path.join(tmp, "d"), {"run.txt": b"seed 00\noutcome ok\n"})
+            plant_bytes(os.path.join(tmp, "p"), {"plain.txt": b"rom none\n"})
+            self.assertEqual(ladx_oracle.compare_plain("x", os.path.join(tmp, "d"), os.path.join(tmp, "p")),
+                             ["DIFFERENT x (plain): no outcome in plain.txt"])
+
+
+class InsideTmpTest(unittest.TestCase):
+    def test_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = os.path.join(tmp, "repo")
+            os.makedirs(os.path.join(repo, "tmp", "a"))
+            os.makedirs(os.path.join(tmp, "elsewhere"))
+            os.symlink(os.path.join(tmp, "elsewhere"), os.path.join(repo, "tmp", "out"))
+            os.symlink(os.path.join(repo, "tmp", "a"), os.path.join(tmp, "via"))
+            cases = {
+                os.path.join(repo, "tmp", "a"): True,
+                os.path.join(repo, "tmp", "new", "deeper"): True,
+                os.path.join(tmp, "via", "x"): True,
+                os.path.join(repo, "tmp"): False,
+                os.path.join(repo, "tmp2"): False,
+                os.path.join(repo, "docs"): False,
+                os.path.join(repo, "tmp", "..", "docs"): False,
+                os.path.join(repo, "tmp", "a", "..", "..", "x"): False,
+                os.path.join(repo, "tmp", "out"): False,
+                os.path.join(repo, "tmp", "out", "x"): False,
+            }
+            for path, inside in cases.items():
+                self.assertEqual(ladx_oracle.inside_tmp(path, repo), inside, msg=path)
+
+
+class MainTest(unittest.TestCase):
+    def main(self, *argv):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = ladx_oracle.main(list(argv))
+        return code, out.getvalue()
+
+    def test_compare_subcommands(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            plant_bytes(tmp, {"a/run.txt": b"seed 00\noutcome ok\n", "a/out.gbc": b"ab",
+                              "b/run.txt": b"seed 00\noutcome ok\n", "b/out.gbc": b"ac",
+                              "p/plain.txt": b"rom none\noutcome ok\n", "p/out.gbc": b"ab"})
+            a, b, p = (os.path.join(tmp, d) for d in "abp")
+            self.assertEqual(self.main("compare-bytes", "x", "out.gbc", a + "/out.gbc", a + "/out.gbc"),
+                             (0, "same x\n"))
+            self.assertEqual(self.main("compare-bytes", "x", "out.gbc", a + "/out.gbc", b + "/out.gbc"),
+                             (1, "DIFFERENT x: out.gbc: 1 bytes differ, first at 0x1\n"))
+            self.assertEqual(self.main("compare-dirs", "x", a, a), (0, "same x\n"))
+            self.assertEqual(self.main("compare-dirs", "x", a, b),
+                             (1, "DIFFERENT x: out.gbc: 1 bytes differ, first at 0x1\n"))
+            self.assertEqual(self.main("compare-plain", "x", a, p), (0, "same x (plain)\n"))
+            self.assertEqual(self.main("compare-plain", "x", b, p),
+                             (1, "DIFFERENT x (plain): out.gbc: 1 bytes differ, first at 0x1\n"))
+
+    def test_varied_cases_and_inside_tmp(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            plant(tmp, {"a.meta": "hash_ladxr 1\ncheckout /a\ndescribe -\n",
+                        "b.meta": "hash_ladxr 2\ncheckout /b\ndescribe -\n",
+                        "cases.txt": "# c\nbase 0001\nrace 0a0B race=1 goal=bingo\n",
+                        "repo/tmp/.keep": ""})
+            meta = (os.path.join(tmp, "a.meta"), os.path.join(tmp, "b.meta"))
+            self.assertEqual(self.main("varied", *meta), (0, ""))
+            self.assertEqual(self.main("varied", "--describe", *meta), (1, ""))
+            cases = os.path.join(tmp, "cases.txt")
+            self.assertEqual(self.main("cases", cases), (0, "base 0001\nrace 0a0b race=1 goal=bingo\n"))
+            self.assertEqual(self.main("cases", cases, "race"), (0, "race 0a0b race=1 goal=bingo\n"))
+            repo = os.path.join(tmp, "repo")
+            self.assertEqual(self.main("inside-tmp", repo, os.path.join(repo, "tmp", "x")), (0, ""))
+            self.assertEqual(self.main("inside-tmp", repo, os.path.join(repo, "x")), (1, ""))
 
 
 if __name__ == "__main__":
