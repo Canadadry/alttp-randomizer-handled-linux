@@ -34,7 +34,8 @@ DEFAULT_LADXR = os.path.join(TOP, "tests", "ladx", "oracle", "ladxr")
 LADXR_PIN = "4325207e4e55076e05f209fbdf16b860a90e42ef"
 
 
-STRICT_PREFIXES = ("data/ladx/", "tests/ladx/cases/", "tests/ladx/combos/")
+STRICT_PREFIXES = ("data/ladx/", "tests/ladx/cases/", "tests/ladx/combos/",
+                   "tests/ladx/extract/")
 THRESHOLDS = {
     ("strict", "raw"): 4, ("strict", "hex"): 4, ("strict", "bytelist"): 4,
     ("general", "raw"): 16, ("general", "hex"): 8, ("general", "bytelist"): 8,

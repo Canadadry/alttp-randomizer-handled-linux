@@ -1,12 +1,22 @@
 """Usage: python3 -I tests/ladx/oracle/inventory_check.py [--ladxr <dir>] [--inventory <file>] [--print]
 
-The grep-diff of notes/ladx-inventory.md against LADXR's frozen (patched) sources (--ladxr,
-default tests/ladx/oracle/ladxr). It extracts every statement of the sections below and diffs
-them, row by row, against the inventory's table under `## <file> <function>`; prints one
+The check of notes/ladx-inventory.md against LADXR's frozen (patched) sources (--ladxr, default
+tests/ladx/oracle/ladxr). It extracts every statement of the sections below and diffs them, row
+by row, against the inventory's table under `## <file> <function>`, then validates the tables
+under `## Groups`, `## Read coverage`, `## Extractions` and `## Blind spots`; prints one
 `MISSING`, `STALE`, `MISMATCH` or `BAD` line per finding, else
 `inventory: <rows> rows in <n> sections match <commit>`. Exit 1 on a finding, 2 on `setup:`.
-`--print` writes the extracted tables instead (draft columns kept from the inventory when it
-has the row, else `?`). Proves itself first, on every run, on a planted tree and inventory.
+`--print` writes the extracted section tables instead (Reads (trace), Notes, Side and Group kept
+from the inventory when it has the row, else `-`, empty, `?`, `?`). Proves itself first, on
+every run, on a planted tree and inventory.
+
+Section columns: COLUMNS; Side one of SIDES. Validation: every row's group is listed under Groups
+with the row's side, and every listed group is used by a row; a `C` group's Evidence (comma
+separated) names the group itself (its write-log group); every `extract:<name>` of an Evidence or
+a coverage Kind is a Name under Extractions; a coverage Kind is one of COVERAGE_KINDS,
+`extract:<name>` or `cut:<id>`, and its group is listed; an extraction's group is listed; the
+Blind spots rows (File, `Line`) equal read_trace.py's `blind_spots` one to one (`MISSING`,
+`STALE`), each with a Verdict.
 
 Sections: generator.py generateRom; randomizer.py Randomizer.__init__ after
 `item_placer.run(self.rnd)`; romTables.py ROMWithTables.__init__ and ROMWithTables.save; rom.py
@@ -49,10 +59,18 @@ SECTIONS = [
     ("rom.py", "ROM.save", None),
     ("rom.py", "ROM.fixHeader", None),
 ]
-COLUMNS = ["Call", "Settings", "Args", "RNG (grep)", "Reads (grep)", "Notes", "Side (draft)",
-           "Group (draft)"]
+COLUMNS = ["Call", "Settings", "Args", "RNG (grep)", "Reads (grep)", "Reads (trace)", "Notes",
+           "Side", "Group"]
 GREP_COLUMNS = COLUMNS[1:5]
-SIDES = ("table", "C", "none", "unused", "?")
+KEPT_COLUMNS = COLUMNS[5:]
+SIDES = ("table", "C", "none", "unused")
+GROUP_COLUMNS = ["Group", "Side", "Settings key", "Depends on", "Evidence"]
+COVERAGE_COLUMNS = ["Group", "Row", "Target", "Range", "Kind", "Reason"]
+EXTRACTION_COLUMNS = ["Name", "Group", "Holds", "Derived from", "Format"]
+BLIND_COLUMNS = ["File", "Line", "Verdict"]
+NAMED_TABLES = {"Groups": GROUP_COLUMNS, "Read coverage": COVERAGE_COLUMNS,
+                "Extractions": EXTRACTION_COLUMNS, "Blind spots": BLIND_COLUMNS}
+COVERAGE_KINDS = ("copy", "written", "computed", "table")
 
 HEADER = re.compile(r"(if|elif|else|for|while|try|except)\b")
 SKIPPED = re.compile(r"(#|return\b|import\b|from\s+\S+\s+import\b|print\()")
@@ -280,10 +298,9 @@ def _escape(text):
     return text.replace("|", "\\|")
 
 
-def parse_inventory(text):
-    """({section name: [row dict keyed by COLUMNS, plus "key"]}, [BAD lines]) of the tables under
-    a section heading; text elsewhere is free."""
-    names = {section_name(f, fn) for f, fn, _ in SECTIONS}
+def _tables(text, columns_of):
+    """({heading: [[cell]]}, [BAD lines]) of the first table under each `## <heading>` of
+    columns_of, rows of the wrong width left out."""
     tables, bad = {}, []
     heading = None
     lines = text.replace("\r", "").split("\n")
@@ -294,36 +311,64 @@ def parse_inventory(text):
             heading = line[3:].strip()
             n += 1
             continue
-        if heading not in names or not line.startswith("|"):
+        if heading not in columns_of or not line.startswith("|"):
             n += 1
             continue
-        section, heading = heading, None
-        if section in tables:
-            bad.append("BAD %s: a second table" % section)
+        name, heading = heading, None
+        columns = columns_of[name]
+        if name in tables:
+            bad.append("BAD %s: a second table" % name)
         table = []
-        tables[section] = table
+        tables[name] = table
         header = _split_cells(line)
-        if header != COLUMNS:
-            bad.append("BAD %s: columns %s, expected %s" % (section, " | ".join(header),
-                                                            " | ".join(COLUMNS)))
+        if header != columns:
+            bad.append("BAD %s: columns %s, expected %s" % (name, " | ".join(header),
+                                                            " | ".join(columns)))
         n += 2
         while n < len(lines) and lines[n].startswith("|"):
             cells = _split_cells(lines[n])
             n += 1
-            m = re.fullmatch(r"`(.+)`(?: #(\d+))?", cells[0]) if cells else None
-            if len(cells) != len(COLUMNS) or not m:
-                bad.append("BAD %s: malformed row %s" % (section, lines[n - 1]))
+            if len(cells) != len(columns):
+                bad.append("BAD %s: malformed row %s" % (name, lines[n - 1]))
+                continue
+            table.append(cells)
+    return tables, bad
+
+
+def parse_inventory(text):
+    """({section name: [row dict keyed by COLUMNS, plus "key"]}, [BAD lines]) of the tables under
+    a section heading; text elsewhere is free."""
+    raw, bad = _tables(text, {section_name(f, fn): COLUMNS for f, fn, _ in SECTIONS})
+    tables = {}
+    for section, rows in raw.items():
+        tables[section] = []
+        for cells in rows:
+            m = re.fullmatch(r"`(.+)`(?: #(\d+))?", cells[0])
+            if not m:
+                bad.append("BAD %s: malformed row | %s |" % (section, " | ".join(cells)))
                 continue
             row = dict(zip(COLUMNS, cells))
             row["key"] = m.group(1) if m.group(2) is None else "%s #%s" % m.groups()
-            table.append(row)
+            tables[section].append(row)
     return tables, bad
+
+
+def parse_named(text):
+    """({table name: [row dict]}, [BAD lines]) of the Groups, Read coverage, Extractions and
+    Blind spots tables; a missing one is a BAD line."""
+    raw, bad = _tables(text, NAMED_TABLES)
+    named = {}
+    for name, columns in NAMED_TABLES.items():
+        if name not in raw:
+            bad.append("BAD %s: no table under ## %s" % (name, name))
+        named[name] = [dict(zip(columns, cells)) for cells in raw.get(name, [])]
+    return named, bad
 
 
 def site_groups(text):
     """{read_trace site: group} of every row of an inventory text's section tables."""
     tables, _ = parse_inventory(text)
-    return {"%s\t%s" % (section, row["key"]): row[COLUMNS[-1]]
+    return {"%s\t%s" % (section, row["key"]): row["Group"]
             for section, rows in tables.items() for row in rows}
 
 
@@ -333,11 +378,11 @@ def diff(extracted, tables):
     for section, rows in extracted:
         inventory = tables.get(section, [])
         for row in inventory:
-            if row["Side (draft)"] not in SIDES:
-                findings.append("BAD %s: %s: Side (draft) %r is not one of %s"
-                                % (section, row["key"], row["Side (draft)"], ", ".join(SIDES)))
-            if not row["Group (draft)"]:
-                findings.append("BAD %s: %s: empty Group (draft)" % (section, row["key"]))
+            if row["Side"] not in SIDES:
+                findings.append("BAD %s: %s: Side %r is not one of %s"
+                                % (section, row["key"], row["Side"], ", ".join(SIDES)))
+            if not row["Group"]:
+                findings.append("BAD %s: %s: empty Group" % (section, row["key"]))
         source_keys = [row_key(r) for r in rows]
         inventory_keys = [r["key"] for r in inventory]
         matcher = difflib.SequenceMatcher(None, inventory_keys, source_keys, autojunk=False)
@@ -356,10 +401,106 @@ def diff(extracted, tables):
     return findings
 
 
+def _items(cell):
+    return [item.strip() for item in cell.split(",") if item.strip() not in ("", "-")]
+
+
+def _unquote(cell):
+    m = re.fullmatch(r"`(.*)`", cell)
+    return m.group(1) if m else cell
+
+
+def validate(tables, named, blind):
+    """Finding lines of the Groups, Read coverage, Extractions and Blind spots tables against the
+    section rows and `blind` ([(file, stripped line)] of read_trace.py --blind-spots)."""
+    findings = []
+    groups = {}
+    for row in named["Groups"]:
+        name = row["Group"]
+        if name in groups:
+            findings.append("BAD Groups: %s: listed twice" % name)
+            continue
+        groups[name] = row
+        if row["Side"] not in SIDES:
+            findings.append("BAD Groups: %s: Side %r is not one of %s"
+                            % (name, row["Side"], ", ".join(SIDES)))
+    used = set()
+    for section, rows in tables.items():
+        for row in rows:
+            group = groups.get(row["Group"])
+            used.add(row["Group"])
+            if not row["Group"] or row["Side"] not in SIDES:
+                continue
+            if group is None:
+                findings.append("BAD %s: %s: group %s is not in Groups"
+                                % (section, row["key"], row["Group"]))
+            elif group["Side"] != row["Side"]:
+                findings.append("BAD %s: %s: Side %s, its group %s is %s"
+                                % (section, row["key"], row["Side"], row["Group"],
+                                   group["Side"]))
+    extractions = set()
+    for row in named["Extractions"]:
+        if row["Name"] in extractions:
+            findings.append("BAD Extractions: %s: listed twice" % row["Name"])
+        extractions.add(row["Name"])
+        if row["Group"] not in groups:
+            findings.append("BAD Extractions: %s: group %s is not in Groups"
+                            % (row["Name"], row["Group"]))
+    for name, row in groups.items():
+        if name not in used:
+            findings.append("BAD Groups: %s: no row uses it" % name)
+        evidence = _items(row["Evidence"])
+        if row["Side"] == "C" and name not in evidence:
+            findings.append("BAD Groups: %s: a C group whose Evidence does not name its "
+                            "write-log group %s" % (name, name))
+        for item in evidence:
+            if item.startswith("extract:") and item[len("extract:"):] not in extractions:
+                findings.append("BAD Groups: %s: extraction %s is not in Extractions"
+                                % (name, item[len("extract:"):]))
+    for row in named["Read coverage"]:
+        where = "BAD Read coverage: %s %s: " % (row["Group"], row["Row"])
+        kind = row["Kind"]
+        if row["Group"] not in groups:
+            findings.append(where + "group %s is not in Groups" % row["Group"])
+        if kind.startswith("extract:") and len(kind) > len("extract:"):
+            if kind[len("extract:"):] not in extractions:
+                findings.append(where + "extraction %s is not in Extractions"
+                                % kind[len("extract:"):])
+        elif not (kind in COVERAGE_KINDS or kind.startswith("cut:") and len(kind) > 4):
+            findings.append(where + "kind %r is not one of %s, extract:<name>, cut:<id>"
+                            % (kind, ", ".join(COVERAGE_KINDS)))
+    listed = []
+    for row in named["Blind spots"]:
+        spot = (row["File"], _unquote(row["Line"]))
+        listed.append(spot)
+        if not row["Verdict"]:
+            findings.append("BAD Blind spots: %s: %s: empty Verdict" % spot)
+    want = list(blind)
+    for spot in listed:
+        if spot in want:
+            want.remove(spot)
+        else:
+            findings.append("STALE Blind spots: %s: %s" % spot)
+    for spot in want:
+        findings.append("MISSING Blind spots: %s: %s" % spot)
+    return findings
+
+
+def _blind_spots(root):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("read_trace",
+                                                  os.path.join(HERE, "read_trace.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.blind_spots(root)
+
+
 def check(root, text):
     """Finding lines of an inventory text against the sources under root."""
     tables, bad = parse_inventory(text)
-    return bad + diff(extract(root), tables)
+    named, named_bad = parse_named(text)
+    return (bad + named_bad + diff(extract(root), tables) +
+            validate(tables, named, _blind_spots(root)))
 
 
 def render(extracted, tables=None):
@@ -374,8 +515,8 @@ def render(extracted, tables=None):
             old = known.get(row_key(row), {})
             call = "`%s`" % row["text"] + ("" if row["k"] == 1 else " #%d" % row["k"])
             cells = [call] + [row[c] for c in GREP_COLUMNS] + [
-                old.get("Notes", ""), old.get("Side (draft)", "?"),
-                old.get("Group (draft)", "?")]
+                old.get(c, {"Reads (trace)": "-", "Notes": ""}.get(c, "?"))
+                for c in KEPT_COLUMNS]
             out.append("| " + " | ".join(_escape(c) for c in cells) + " |")
         out.append("")
     return "\n".join(out)
@@ -425,6 +566,7 @@ import random
 
 def fixed(rom):
     rom.banks[0][0] = 1
+    view = memoryview(rom.banks[0])
 
 
 def shuffle(rom):
@@ -439,59 +581,92 @@ ld a, 2
 
 PLANTED_COLUMNS = "| " + " | ".join(COLUMNS) + " |\n|" + "---|" * len(COLUMNS) + "\n"
 
+
+def _planted_table(name, columns, rows):
+    return ("## %s\n\n| %s |\n|%s\n" % (name, " | ".join(columns), "---|" * len(columns))
+            + "".join(rows))
+
+
 PLANTED_INVENTORY = ("""\
 # Planted inventory
 
 ## generator.py generateRom
 
 """ + PLANTED_COLUMNS + """\
-| `rom = ROMWithTables(open(args.input_filename, 'rb'))` | - | input_filename | - | - |  | table | parse |
-| `patches.planted.fixed(rom)` | - | - | - | - |  | table | fixed |
-| `patches.planted.shuffle(rom)` | music | - | global | - |  | C | music |
-| `patches.planted.fixed(rom)` #2 | music | - | - | - |  | table | music |
-| `spot.patch(rom, spot.item)` | - | - | - | placement |  | C | items |
+| `rom = ROMWithTables(open(args.input_filename, 'rb'))` | - | input_filename | - | - | - |  | table | parse |
+| `patches.planted.fixed(rom)` | - | - | - | - | - |  | table | fixed |
+| `patches.planted.shuffle(rom)` | music | - | global | - | - |  | C | music |
+| `patches.planted.fixed(rom)` #2 | music | - | - | - | - |  | table | music-off |
+| `spot.patch(rom, spot.item)` | - | - | - | placement | - |  | C | items |
 
 ## randomizer.py Randomizer.__init__
 
 """ + PLANTED_COLUMNS + """\
-| `rom = generator.generateRom(args, settings, self.seed, self.__logic, rnd=self.rnd)` | * | * | rnd, seed | logic |  | none | generate |
+| `rom = generator.generateRom(args, settings, self.seed, self.__logic, rnd=self.rnd)` | * | * | rnd, seed | logic | - |  | none | generate |
 
 ## romTables.py ROMWithTables.__init__
 
 """ + PLANTED_COLUMNS + """\
-| `self.texts = Texts(self)` | - | - | - | - |  | table | parse |
+| `self.texts = Texts(self)` | - | - | - | - | - |  | table | parse |
 
 ## romTables.py ROMWithTables.save
 
 """ + PLANTED_COLUMNS + """\
-| `self.texts.store(self)` | - | - | - | - |  | C | save |
+| `self.texts.store(self)` | - | - | - | - | - |  | C | save |
 
 ## rom.py ROM.save
 
 """ + PLANTED_COLUMNS + """\
-| `self.fixHeader(name=name)` | - | - | - | - |  | C | save |
+| `self.fixHeader(name=name)` | - | - | - | - | - |  | C | save |
 
 ## rom.py ROM.fixHeader
 
 """ + PLANTED_COLUMNS + """\
-| `self.banks[0][0x14D] = 0` | - | - | - | - |  | C | save |
-""")
+| `self.banks[0][0x14D] = 0` | - | - | - | - | - |  | C | save |
 
-_SHUFFLE = "| `patches.planted.shuffle(rom)` | music | - | global | - |  | C | music |\n"
-_FIXED_2 = "| `patches.planted.fixed(rom)` #2 | music | - | - | - |  | table | music |\n"
-_SPOT = "| `spot.patch(rom, spot.item)` | - | - | - | placement |  | C | items |\n"
+""" + _planted_table("Groups", GROUP_COLUMNS, [
+    "| parse | table | - | - | - |\n",
+    "| fixed | table | - | - | - |\n",
+    "| music | C | music | - | music |\n",
+    "| music-off | table | music | - | - |\n",
+    "| items | C | - | music | items |\n",
+    "| generate | none | - | - | - |\n",
+    "| save | C | - | items | save |\n"]) + "\n"
+    + _planted_table("Read coverage", COVERAGE_COLUMNS, [
+        "| items | `spot.patch(rom, spot.item)` | bank 0x00 | 0x0000..0x0001 | copy | moved |\n"])
+    + "\n" + _planted_table("Extractions", EXTRACTION_COLUMNS, []) + "\n"
+    + _planted_table("Blind spots", BLIND_COLUMNS, [
+        "| patches/planted.py | `view = memoryview(rom.banks[0])` | not a ROM read |\n"]))
+
+_SHUFFLE = "| `patches.planted.shuffle(rom)` | music | - | global | - | - |  | C | music |\n"
+_FIXED_2 = "| `patches.planted.fixed(rom)` #2 | music | - | - | - | - |  | table | music-off |\n"
+_SPOT = "| `spot.patch(rom, spot.item)` | - | - | - | placement | - |  | C | items |\n"
 SELF_TEST_CASES = [
     ("matching", lambda t: t, []),
-    ("dropped row", lambda t: t.replace(_SHUFFLE, ""), ["MISSING"]),
-    ("extra row", lambda t: t.replace(_SPOT, _SPOT + "| `gone(rom)` | - | - | - | - |  | C | x |\n"),
-     ["STALE"]),
+    ("dropped row", lambda t: t.replace(_SHUFFLE, ""), ["MISSING", "BAD"]),
+    ("extra row", lambda t: t.replace(_SPOT, _SPOT + "| `gone(rom)` | - | - | - | - | - |  | C "
+                                      "| items |\n"), ["STALE"]),
     ("wrong Settings", lambda t: t.replace("| music | - | global", "| witch | - | global"),
      ["MISMATCH"]),
     ("wrong RNG of a global-random callee", lambda t: t.replace("| global |", "| - |"),
      ["MISMATCH"]),
     ("swapped rows", lambda t: t.replace(_SHUFFLE + _FIXED_2, _FIXED_2 + _SHUFFLE),
      ["MISSING", "STALE"]),
-    ("bad Side", lambda t: t.replace("| C | music |", "| D | music |"), ["BAD"]),
+    ("bad Side", lambda t: t.replace("|  | C | music |", "|  | D | music |"), ["BAD"]),
+    ("row group not in Groups", lambda t: t.replace("| music-off | table | music | - | - |\n", ""),
+     ["BAD"]),
+    ("row side unlike its group", lambda t: t.replace("|  | C | music |", "|  | table | music |"),
+     ["BAD"]),
+    ("C group without evidence", lambda t: t.replace("| - | music |\n", "| - | - |\n"),
+     ["BAD"]),
+    ("unlisted extraction", lambda t: t.replace("| music | items |\n",
+                                                   "| music | items, extract:x |\n"),
+     ["BAD"]),
+    ("unknown coverage kind", lambda t: t.replace("| copy | moved |", "| guess | moved |"),
+     ["BAD"]),
+    ("missing blind spot", lambda t: t.replace("| not a ROM read |", "|  |"), ["BAD"]),
+    ("dropped blind spot", lambda t: t.replace("| patches/planted.py |", "| planted.py |"),
+     ["MISSING", "STALE"]),
 ]
 
 

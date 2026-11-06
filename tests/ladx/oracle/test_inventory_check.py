@@ -106,9 +106,9 @@ HINTS = textwrap.dedent('''\
     ''')
 
 
-def _row(call, settings="-", args="-", rng="-", reads="-", side="table", group="g"):
-    return "| %s | %s | %s | %s | %s |  | %s | %s |" % (call, settings, args, rng, reads, side,
-                                                       group)
+def _row(call, settings="-", args="-", rng="-", reads="-", side="table", group="g", trace="-"):
+    return "| %s | %s | %s | %s | %s | %s |  | %s | %s |" % (call, settings, args, rng, reads,
+                                                            trace, side, group)
 
 
 def _table(section, rows):
@@ -125,8 +125,9 @@ GENERATE_ROWS = [
     _row("`patches.planted.fixed(rom)` #2", settings="music"),
     _row("`patches.planted.seeded(rom, seed, settings)`", settings="music, *", rng="seed"),
     _row("`hints.addHints(rom, rnd, logic.iteminfo_list)`", rng="rnd", reads="placement"),
-    _row("`spot.patch(rom, spot.item)`", reads="placement"),
-    _row('`rom.patch(0, 0x0003, "00", "01")`', args="romdebugmode", side="unused"),
+    _row("`spot.patch(rom, spot.item)`", reads="placement", side="C", group="items"),
+    _row('`rom.patch(0, 0x0003, "00", "01")`', args="romdebugmode", side="unused",
+         group="debug"),
 ]
 
 OTHER_TABLES = [
@@ -151,10 +152,29 @@ OTHER_TABLES = [
 ]
 
 
-def _inventory(generate_rows=None):
+GROUPS = [
+    "| parse | table | - | - | - |",
+    "| g | table | music | - | - |",
+    "| items | C | - | g | items |",
+    "| debug | unused | - | - | - |",
+]
+BLIND = ["| utils.py | `data = memoryview(b)` | not a ROM read: a planted line |"]
+
+
+def _named(name, columns, rows):
+    return "\n".join(["## " + name, "", "| " + " | ".join(columns) + " |",
+                      "|" + "---|" * len(columns)] + rows + [""])
+
+
+def _inventory(generate_rows=None, groups=None, coverage=(), extractions=(), blind=None):
     rows = GENERATE_ROWS if generate_rows is None else generate_rows
     return "# Inventory\n\nFree text.\n\n" + "\n".join(
-        [_table("generator.py generateRom", rows)] + OTHER_TABLES)
+        [_table("generator.py generateRom", rows)] + OTHER_TABLES + [
+            _named("Groups", inventory_check.GROUP_COLUMNS, GROUPS if groups is None else groups),
+            _named("Read coverage", inventory_check.COVERAGE_COLUMNS, list(coverage)),
+            _named("Extractions", inventory_check.EXTRACTION_COLUMNS, list(extractions)),
+            _named("Blind spots", inventory_check.BLIND_COLUMNS, BLIND if blind is None else blind),
+            "## ROMWithTables.save\n\nProse.\n"])
 
 
 class Fixture(unittest.TestCase):
@@ -165,7 +185,8 @@ class Fixture(unittest.TestCase):
         os.makedirs(os.path.join(self.ladxr, "patches"))
         for name, text in (("randomizer.py", RANDOMIZER), ("romTables.py", ROM_TABLES),
                            ("rom.py", ROM), ("hints.py", HINTS),
-                           ("patches/planted.py", PATCHES)):
+                           ("patches/planted.py", PATCHES),
+                           ("utils.py", "data = memoryview(b)\n")):
             with open(os.path.join(self.ladxr, name), "w") as f:
                 f.write(text)
         with open(os.path.join(self.ladxr, "generator.py"), "wb") as f:
@@ -234,7 +255,11 @@ class Extraction(Fixture):
     def test_pipe_in_a_source_line_round_trips_escaped(self):
         rendered = inventory_check.render(inventory_check.extract(self.ladxr))
         self.assertIn("(start \\| 0x4000)", rendered)
-        self.assertEqual(self.check(rendered), [])
+        tables, bad = inventory_check.parse_inventory(rendered)
+        self.assertEqual(bad, [])
+        self.assertEqual(inventory_check.diff(inventory_check.extract(self.ladxr), tables),
+                         ["BAD %s: %s: Side '?' is not one of table, C, none, unused" % (s, r["key"])
+                          for s, rows in tables.items() for r in rows])
 
 
 class Diff(Fixture):
@@ -268,23 +293,109 @@ class Diff(Fixture):
                          ["MISSING", "STALE"])
         self.assertEqual(len({line.split(": ", 1)[1] for line in found}), 1)
 
-    def test_bad_side_is_refused(self):
-        rows = [r.replace("| table | g |", "| maybe | g |", 1) if "fixed(rom)` |" in r else r
-                for r in GENERATE_ROWS]
-        self.assertEqual(self.check(_inventory(rows)), [
-            "BAD generator.py generateRom: patches.planted.fixed(rom): Side (draft) 'maybe' is "
-            "not one of table, C, none, unused, ?"])
+    def test_bad_side_is_refused_and_a_question_mark_is_no_longer_a_side(self):
+        for side in ("maybe", "?"):
+            rows = [r.replace("| table | g |", "| %s | g |" % side, 1)
+                    if "fixed(rom)` |" in r else r for r in GENERATE_ROWS]
+            self.assertEqual(self.check(_inventory(rows)), [
+                "BAD generator.py generateRom: patches.planted.fixed(rom): Side %r is not one of "
+                "table, C, none, unused" % side])
 
     def test_empty_group_is_refused(self):
         rows = [r.replace("| table | g |", "| table |  |") if "fixed(rom)` |" in r else r
                 for r in GENERATE_ROWS]
         self.assertEqual(self.check(_inventory(rows)), [
-            "BAD generator.py generateRom: patches.planted.fixed(rom): empty Group (draft)"])
+            "BAD generator.py generateRom: patches.planted.fixed(rom): empty Group"])
+
+    def test_the_old_draft_columns_are_refused(self):
+        text = _inventory().replace("| Side | Group |", "| Side (draft) | Group (draft) |", 1)
+        self.assertEqual([l.split(":")[0] for l in self.check(text)],
+                         ["BAD generator.py generateRom"])
 
     def test_missing_section_lists_every_row(self):
         text = _inventory().replace("## rom.py ROM.fixHeader", "## rom.py ROM.fixHeaders")
         self.assertEqual(self.check(text), [
             "MISSING rom.py ROM.fixHeader: self.banks[0][0x14D] = 0"])
+
+
+class Tables(Fixture):
+    def test_a_row_group_missing_from_groups(self):
+        groups = [g for g in GROUPS if not g.startswith("| debug ")]
+        self.assertEqual(self.check(_inventory(groups=groups)), [
+            'BAD generator.py generateRom: rom.patch(0, 0x0003, "00", "01"): group debug is not '
+            'in Groups'])
+
+    def test_a_row_side_unlike_its_group_side(self):
+        rows = [r.replace("| table | g |", "| C | g |") if "fixed(rom)` |" in r else r
+                for r in GENERATE_ROWS]
+        self.assertEqual(self.check(_inventory(rows)), [
+            "BAD generator.py generateRom: patches.planted.fixed(rom): Side C, its group g is "
+            "table"])
+
+    def test_a_group_no_row_uses_and_a_group_listed_twice(self):
+        groups = GROUPS + ["| gone | table | - | - | - |", "| g | table | - | - | - |"]
+        self.assertEqual(self.check(_inventory(groups=groups)), [
+            "BAD Groups: g: listed twice", "BAD Groups: gone: no row uses it"])
+
+    def test_a_bad_group_side(self):
+        groups = GROUPS + ["| odd | ? | - | - | - |"]
+        found = self.check(_inventory(groups=groups))
+        self.assertIn("BAD Groups: odd: Side '?' is not one of table, C, none, unused", found)
+
+    def test_a_c_group_needs_evidence_naming_its_write_log_group(self):
+        for evidence in ("-", "", "fixture.txt"):
+            groups = [g.replace("| g | items |", "| g | %s |" % evidence) for g in GROUPS]
+            self.assertEqual(self.check(_inventory(groups=groups)), [
+                "BAD Groups: items: a C group whose Evidence does not name its write-log group "
+                "items"], evidence)
+
+    def test_every_extraction_named_must_be_listed(self):
+        groups = [g.replace("| g | items |", "| g | items, extract:rooms |") for g in GROUPS]
+        coverage = ["| items | `spot.patch(rom, spot.item)` | bank 0x01 | * | extract:types | "
+                    "decides the item |"]
+        self.assertEqual(self.check(_inventory(groups=groups, coverage=coverage)), [
+            "BAD Groups: items: extraction rooms is not in Extractions",
+            "BAD Read coverage: items `spot.patch(rom, spot.item)`: extraction types is not in "
+            "Extractions"])
+        extractions = ["| rooms | items | room types | the source rooms | decimal lines |",
+                       "| types | items | entity types | the source rooms | decimal lines |"]
+        self.assertEqual(self.check(_inventory(groups=groups, coverage=coverage,
+                                               extractions=extractions)), [])
+
+    def test_coverage_kinds_and_groups(self):
+        coverage = ["| items | * | bank 0x01 | 0x0010..0x0012 | %s | r |" % kind
+                    for kind in ("copy", "written", "computed", "table", "cut:entrances")]
+        self.assertEqual(self.check(_inventory(coverage=coverage)), [])
+        bad = ["| items | * | bank 0x01 | * | guessed | r |",
+               "| nowhere | * | bank 0x01 | * | copy | r |"]
+        self.assertEqual(self.check(_inventory(coverage=bad)), [
+            "BAD Read coverage: items *: kind 'guessed' is not one of copy, written, computed, "
+            "table, extract:<name>, cut:<id>",
+            "BAD Read coverage: nowhere *: group nowhere is not in Groups"])
+
+    def test_an_extraction_of_an_unknown_group(self):
+        extractions = ["| rooms | nowhere | room types | the source rooms | decimal lines |"]
+        self.assertEqual(self.check(_inventory(extractions=extractions)), [
+            "BAD Extractions: rooms: group nowhere is not in Groups"])
+
+    def test_blind_spots_match_read_trace_one_to_one(self):
+        self.assertEqual(self.check(_inventory(blind=[])), [
+            "MISSING Blind spots: utils.py: data = memoryview(b)"])
+        extra = BLIND + ["| rom.py | `f.write(bank)` | output |"]
+        self.assertEqual(self.check(_inventory(blind=extra)), [
+            "STALE Blind spots: rom.py: f.write(bank)"])
+        twice = BLIND + BLIND
+        self.assertEqual(self.check(_inventory(blind=twice)), [
+            "STALE Blind spots: utils.py: data = memoryview(b)"])
+
+    def test_a_blind_spot_needs_a_verdict(self):
+        blind = ["| utils.py | `data = memoryview(b)` |  |"]
+        self.assertEqual(self.check(_inventory(blind=blind)), [
+            "BAD Blind spots: utils.py: data = memoryview(b): empty Verdict"])
+
+    def test_a_missing_table(self):
+        text = _inventory().replace("## Extractions", "## Extraction")
+        self.assertEqual(self.check(text), ["BAD Extractions: no table under ## Extractions"])
 
 
 class Main(Fixture):
@@ -314,8 +425,9 @@ class Main(Fixture):
     def test_print_keeps_the_draft_columns(self):
         code, out = self.run_main(_inventory(), "--print")
         self.assertEqual(code, 0)
-        self.assertEqual(self.check(out), [])
-        self.assertIn("| unused | g |", out)
+        self.assertEqual(inventory_check.parse_inventory(out),
+                         inventory_check.parse_inventory(_inventory()))
+        self.assertIn("| unused | debug |", out)
 
     def test_self_test_passes(self):
         out = io.StringIO()

@@ -79,10 +79,16 @@ class Thresholds(unittest.TestCase):
                          [("bytelist", 10, 8, "general")])
 
     def test_every_strict_prefix_is_strict_and_other_paths_general(self):
-        for path in ("data/ladx/a.bin", "tests/ladx/cases/c/g.txt", "tests/ladx/combos/k.txt"):
+        for path in ("data/ladx/a.bin", "tests/ladx/cases/c/g.txt", "tests/ladx/combos/k.txt",
+                     "tests/ladx/extract/rooms.txt"):
             self.assertEqual(nintendo_bytes.scope_of(path), "strict", path)
         for path in ("data/base.bps", "tests/ladx/oracle/x.txt", "data/ladxr.txt", "README.md"):
             self.assertEqual(nintendo_bytes.scope_of(path), "general", path)
+
+    def test_an_extraction_fixture_is_held_to_the_strict_4_bytes(self):
+        path = "tests/ladx/extract/rooms.txt"
+        self.assertEqual(check(path, b"<" + ROM[100:103] + b">"), ([], []))
+        self.assertEqual(check(path, b"<" + ROM[100:104] + b">"), ([("raw", 1, 4, "strict")], []))
 
     def test_an_explicit_scope_overrides_the_path(self):
         self.assertEqual(check(GENERAL, ROM[100:104], scope="strict")[0],

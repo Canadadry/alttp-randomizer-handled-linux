@@ -46,7 +46,7 @@
     - [x] Chunk 4: ladxr.patch fixes
   - [ ] Step 2.3 Inventory
     - [x] Chunk 1: trace writes and read provenance
-    - [ ] Chunk 2: inventory format and checker
+    - [x] Chunk 2: inventory format and checker
     - [ ] Chunk 3: coverage checker and driver
     - [ ] Chunk 4: inventory on real data
   - [ ] Step 2.4 Cases
