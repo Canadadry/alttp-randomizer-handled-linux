@@ -34,11 +34,11 @@
     - [x] Chunk 5: inventory checker and draft
   - [x] Step 1.10 check-net
 - [ ] Phase 2 — LADXR oracle, with the ROM
-  - [ ] Step 2.1 Fetch and check the ROM
+  - [x] Step 2.1 Fetch and check the ROM
     - [x] Chunk 1: scoped Nintendo-bytes policy
     - [x] Chunk 2: push gate on the policy
-    - [ ] Chunk 3: calibration on real data
-    - [ ] Chunk 4: arm and prove the gate
+    - [x] Chunk 3: calibration on real data
+    - [x] Chunk 4: arm and prove the gate
   - [ ] Step 2.2 Oracle and full-generation determinism
   - [ ] Step 2.3 Inventory
   - [ ] Step 2.4 Cases
