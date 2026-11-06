@@ -23,7 +23,7 @@
       - [x] Order audit tool and table
       - [x] Fix: sort endscreen.py's cats listing
       - [x] Fix: spoiler accessibleItems in location_list order
-    - [ ] Chunk 3: settings fixtures
+    - [x] Chunk 3: settings fixtures
     - [ ] Chunk 4: double run, item pools, determinism
     - [ ] Chunk 5: logic fixtures and docs
   - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven

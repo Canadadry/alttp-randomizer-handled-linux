@@ -3,11 +3,14 @@
 Unit tests of ladx_oracle.py, the LADX oracle's shared helpers, with no LADXR and no network.
 """
 
+import contextlib
 import importlib.util
+import io
 import os
 import random
 import sys
 import tempfile
+import types
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -241,6 +244,122 @@ class AuditTest(unittest.TestCase):
                       "a.py\ts = set()\tpatched\tx\na.py\ts = set()\tunreached\ty\n"):
             with self.assertRaises(ladx_oracle.OracleError):
                 self.audit({"a.py": "s = set()\n"}, table)
+
+
+def stand_in(key, default, options=None, short="s", label="Label", category="Main", aesthetic=False,
+             visible_if=None):
+    return types.SimpleNamespace(key=key, category=category, short_key=short, label=label,
+                                 aesthetic=aesthetic, options=options, default=default,
+                                 visible_if=visible_if, value=default)
+
+
+class SettingsTest(unittest.TestCase):
+    def test_settings_lines(self):
+        settings = [
+            stand_in("race", False, short="V", label="Race mode"),
+            stand_in("gfx", "", [("", "", "Default"), ("A.bin", "A.bin>", "A|Ann Name")], short="c",
+                     category="User options", label="Graphics", aesthetic=True),
+            stand_in("ff", 0.5, short="F", label="Forward Factor"),
+            stand_in("count", "4", [("4", "4", "4 things"), ("x", "R", "Random")], short="i",
+                     visible_if=["goal", "instruments", "specific"]),
+        ]
+        self.assertEqual(list(ladx_oracle.settings_lines(settings)), [
+            "setting race\tMain\tV\tbool\t0\tRace mode\t0\t-",
+            "setting gfx\tUser options\tc\tstr\t\"\"\tGraphics\t1\t-",
+            "option gfx\t\"\"\t\"\"\tDefault\t-",
+            "option gfx\tA.bin\tA.bin>\tA\tAnn Name",
+            "setting ff\tMain\tF\tfloat\t0x1.0000000000000p-1\tForward Factor\t0\t-",
+            "setting count\tMain\ti\tstr\t4\tLabel\t0\tgoal,instruments,specific",
+            "option count\t4\t4\t4 things\t-",
+            "option count\tx\tR\tRandom\t-",
+        ])
+
+    def test_settings_lines_refuse_bad_text(self):
+        for bad in (stand_in("a", False, label="tab\there"), stand_in("a", None),
+                    stand_in("a", "", [("", "", "x")], visible_if=["goal", "a,b"])):
+            with self.assertRaises(ladx_oracle.OracleError):
+                list(ladx_oracle.settings_lines([bad]))
+
+    TIER1_SETTINGS = [
+        stand_in("seed", ""),
+        stand_in("logic", "", [("casual", "c", "Casual"), ("", "", "Normal"), ("hard", "h", "Hard")]),
+        stand_in("ff", 0.0),
+        stand_in("race", False),
+        stand_in("music", "", [("", "", "Default"), ("random", "r", "Random"), ("ffa", "f", "FFA")]),
+    ]
+
+    def test_read_tier1(self):
+        text = "# header\nlogic all\nrace all\nmusic \"\" random\n"
+        self.assertEqual(ladx_oracle.read_tier1(text, self.TIER1_SETTINGS),
+                         [("logic", ["casual", '""', "hard"]), ("race", ["0", "1"]),
+                          ("music", ['""', "random"])])
+
+    def test_read_tier1_refuses_what_ladxr_does_not_define(self):
+        for text in ("overworld all\n", "music random nope\n", "ff all\n", "seed \"\"\n",
+                     "race all\nrace all\n", "music random random\n", "race all\nlogic all\n",
+                     "logic\n"):
+            with self.assertRaises(ladx_oracle.OracleError, msg=text):
+                ladx_oracle.read_tier1(text, self.TIER1_SETTINGS)
+
+
+class FakeSettings:
+    """LADXR's Settings in miniature: values behind __getattr__/__setattr__, validate printing."""
+    deep_read = False
+
+    def __init__(self):
+        self._by_key = {s.key: s for s in (
+            stand_in("goal", "vanilla", [("vanilla", "", "V"), ("bingo", "b", "B")], short="G"),
+            stand_in("race", False, short="V"),
+            stand_in("steal", "default", [("default", "", "D"), ("never", "n", "N")], short="t"))}
+
+    def __getattr__(self, item):
+        return self.__dict__["_by_key"][item].value
+
+    def __setattr__(self, key, value):
+        if not key.startswith("_") and key in self._by_key:
+            self._by_key[key].value = value
+        else:
+            super().__setattr__(key, value)
+
+    def __iter__(self):
+        return iter(self._by_key.values())
+
+    def getShortString(self):
+        return "".join(s.short_key + ("" if s.default is False else
+                                      dict((k, sh) for k, sh, _ in s.options)[s.value])
+                       for s in self if s.value != s.default)
+
+    def validate(self):
+        if self.goal == "bingo":
+            print("Warning: bingo")
+            if self.steal == "never":
+                if self.deep_read and self.race:
+                    pass
+                self.steal = "default"
+
+
+class ValidateTest(unittest.TestCase):
+    def test_validate_fixture(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            keys, lines = ladx_oracle.validate_fixture(FakeSettings)
+        self.assertEqual(out.getvalue(), "")
+        self.assertEqual(keys, ["goal", "steal"])
+        self.assertEqual(lines, [
+            'validate goal=vanilla -> =\t""',
+            "validate goal=bingo -> =\tGb",
+            'validate steal=default -> =\t""',
+            "validate steal=never -> =\ttn",
+            'validate goal=vanilla,steal=default -> =\t""',
+            "validate goal=vanilla,steal=never -> =\ttn",
+            "validate goal=bingo,steal=default -> =\tGb",
+            "validate goal=bingo,steal=never -> steal=default\tGb",
+        ])
+
+    def test_a_pair_reading_outside_the_singles_set_is_refused(self):
+        deep = type("DeepSettings", (FakeSettings,), {"deep_read": True})
+        with self.assertRaisesRegex(ladx_oracle.OracleError, "race"):
+            ladx_oracle.validate_fixture(deep)
 
 
 if __name__ == "__main__":

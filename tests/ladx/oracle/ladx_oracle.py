@@ -5,6 +5,7 @@ make test runs everywhere; the oracle scripts themselves need 3.11 (co_qualname)
 """
 
 import contextlib
+import io
 import os
 import random
 import re
@@ -236,6 +237,146 @@ def _uncovered(name):
 for _name in dir(random.Random):
     if not _name.startswith("_") and _name not in COVERED and callable(getattr(random.Random, _name)):
         setattr(TracingRandom, _name, _uncovered(_name))
+
+
+def setting_kind(default):
+    """A setting's type in settings.txt: bool, str or float, from its default as LADXR types it."""
+    for kind in (bool, str, float):
+        if isinstance(default, kind):
+            return kind.__name__
+    raise OracleError("oracle: setting default %r is not a bool, a str or a float" % (default,))
+
+
+def setting_value(value):
+    """A setting's value as a fixture field: 0/1 for a bool, float.hex for a float, else field()."""
+    kind = setting_kind(value)
+    if kind == "bool":
+        return "1" if value else "0"
+    if kind == "float":
+        return render(value)
+    if " " in value or "," in value or "=" in value:
+        raise OracleError("oracle: setting value %r holds a space, a comma or an =" % (value,))
+    return field(value)
+
+
+def settings_lines(settings):
+    """settings.txt's lines for LADXR's Setting objects (or stand-ins with the same attributes):
+    one setting line each, then its option lines, the label's |meta split as toJson does."""
+    for s in settings:
+        visible = s.visible_if or []
+        if any("," in v for v in visible):
+            raise OracleError("oracle: visible_if %r holds a comma" % (visible,))
+        yield "setting %s\t%s\t%s\t%s\t%s\t%s\t%d\t%s" % (
+            field(s.key), field(s.category), field(s.short_key), setting_kind(s.default),
+            setting_value(s.default), field(s.label), 1 if s.aesthetic else 0,
+            ",".join(field(v) for v in visible) or "-")
+        for key, short, label in s.options or []:
+            label, bar, meta = label.partition("|")
+            yield "option %s\t%s\t%s\t%s\t%s" % (field(s.key), setting_value(key), field(short),
+                                                   field(label), field(meta) if bar else "-")
+
+
+def setting_values(s):
+    """Every value a setting can take, rendered: its options, 0 1 for a bool, else its default."""
+    if s.options:
+        return [setting_value(key) for key, _, _ in s.options]
+    if setting_kind(s.default) == "bool":
+        return ["0", "1"]
+    return [setting_value(s.default)]
+
+
+def read_tier1(text, settings):
+    """tier1.txt as [(key, [rendered value, ...])], in file order. Refuses a key or a value that
+    the settings do not define, a setting with free values, a repeat, and an order not LADXR's."""
+    order = [s.key for s in settings]
+    by_key = {s.key: s for s in settings}
+    tier1 = []
+    for line in text.splitlines():
+        if not line or line.startswith("#"):
+            continue
+        key, *values = line.split(" ")
+        s = by_key.get(key)
+        if s is None or not values:
+            raise OracleError("oracle: tier1 line %r: no such setting, or no value" % line)
+        if not s.options and setting_kind(s.default) != "bool":
+            raise OracleError("oracle: tier1 setting %s has free values" % key)
+        known = setting_values(s)
+        if values == ["all"]:
+            values = known
+        if len(set(values)) != len(values) or any(v not in known for v in values):
+            raise OracleError("oracle: tier1 line %r: a value repeated or not one of %s"
+                              % (line, " ".join(known)))
+        if tier1 and order.index(key) <= order.index(tier1[-1][0]):
+            raise OracleError("oracle: tier1 setting %s repeated or out of LADXR's order" % key)
+        tier1.append((key, values))
+    return tier1
+
+
+def _python_values(s):
+    if s.options:
+        return [key for key, _, _ in s.options]
+    if setting_kind(s.default) == "bool":
+        return [False, True]
+    return [s.default]
+
+
+def validate_fixture(settings_class):
+    """settings_validate.txt's vectors for LADXR's Settings class (or a stand-in): the keys that
+    validate reads or writes when one setting is set alone (in LADXR's order), and one line
+    `validate <k=v,...> -> <changed k=v,... or => >\t<short string after>` per value of each of
+    them alone, then per pair of values of two of them. validate's prints are dropped. Refuses a
+    pair whose validate touches a key outside the singles' set."""
+    touched = set()
+
+    class Recording(settings_class):
+        def __getattr__(self, item):
+            if not item.startswith("_"):
+                touched.add(item)
+            return settings_class.__getattr__(self, item)
+
+        def __setattr__(self, key, value):
+            if not key.startswith("_"):
+                touched.add(key)
+            settings_class.__setattr__(self, key, value)
+
+    def snapshot(settings):
+        return [(s.key, s.value) for s in settings]
+
+    def run(inputs):
+        settings = Recording()
+        for key, value in inputs:
+            setattr(settings, key, value)
+        before = snapshot(settings)
+        touched.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            settings.validate()
+        reached = set(touched)
+        changed = ["%s=%s" % (key, setting_value(value))
+                   for (key, value), (_, old) in zip(snapshot(settings), before) if value != old]
+        line = "validate %s -> %s\t%s" % (
+            ",".join("%s=%s" % (key, setting_value(value)) for key, value in inputs),
+            ",".join(changed) or "=", field(settings.getShortString()))
+        return line, reached
+
+    values = [(s.key, _python_values(s)) for s in settings_class()]
+    union = set()
+    for key, vals in values:
+        for value in vals:
+            union |= run([(key, value)])[1]
+    values = [(key, vals) for key, vals in values if key in union]
+    keys = [key for key, _ in values]
+    lines = [run([(key, value)])[0] for key, vals in values for value in vals]
+    for i, (key_a, vals_a) in enumerate(values):
+        for key_b, vals_b in values[i + 1:]:
+            for a in vals_a:
+                for b in vals_b:
+                    line, reached = run([(key_a, a), (key_b, b)])
+                    if not reached <= union:
+                        raise OracleError("oracle: validate with %s=%r, %s=%r touches %s, outside %s"
+                                          % (key_a, a, key_b, b, " ".join(sorted(reached - union)),
+                                             " ".join(keys)))
+                    lines.append(line)
+    return keys, lines
 
 
 AUDIT_SITE = re.compile(r"os\.listdir\(|os\.scandir\(|os\.walk\(|\bglob\b|\.iterdir\("

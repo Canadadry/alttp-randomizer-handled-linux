@@ -7,7 +7,7 @@
 set -eu
 export LC_ALL=C
 
-FIXTURES="pyrandom_vectors.txt"
+FIXTURES="pyrandom_vectors.txt settings.txt settings_validate.txt"
 
 oracle_dir="$(cd "$(dirname "$0")" && pwd)"
 repo_dir="$(cd "$oracle_dir/../../.." && pwd)"
@@ -32,13 +32,19 @@ while [ "$#" -gt 0 ]; do
 	esac
 	shift
 done
+if [ -n "$out" ]; then
+	mkdir -p "$out"
+	out="$(cd "$out" && pwd)"
+fi
 
 # render <ladxr dir> <hash seed> <out dir>: python3 without -I or -E, which would drop PYTHONHASHSEED.
 render() {
 	mkdir -p "$3" "$work_root"
 	work="$(mktemp -d "$work_root/run.XXXXXX")"
-	(cd "$work" && PYTHONHASHSEED="$2" PYTHONDONTWRITEBYTECODE=1 \
-		python3 "$oracle_dir/gen_pyrandom.py" "$1" "$3")
+	for generator in gen_pyrandom.py gen_settings.py; do
+		(cd "$work" && PYTHONHASHSEED="$2" PYTHONDONTWRITEBYTECODE=1 \
+			python3 "$oracle_dir/$generator" "$1" "$3")
+	done
 	rm -rf "$work"
 }
 
