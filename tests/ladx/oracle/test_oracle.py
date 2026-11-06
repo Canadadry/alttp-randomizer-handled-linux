@@ -415,6 +415,84 @@ class PoolTest(unittest.TestCase):
                          ["place 0 Chest 0x011 SWORD", "place 1 SimpleNamespace None -"])
 
 
+class AND:
+    def __init__(self, items, children):
+        self.__items, self.__children = items, children
+
+
+class OR:
+    def __init__(self, items, children):
+        self.__items, self.__children = items, children
+
+
+class COUNT:
+    def __init__(self, item, amount):
+        self.__item, self.__amount = item, amount
+
+
+class COUNTS:
+    def __init__(self, items, amount):
+        self.__items, self.__amount = items, amount
+
+
+class FOUND:
+    def __init__(self, item, amount):
+        self.__item, self.__amount = item, amount
+
+
+class RequirementTest(unittest.TestCase):
+    def test_every_requirement_type(self):
+        req = OR(["SWORD", "BOW"], [AND(["FEATHER"], [COUNT("SHIELD", 2)]), COUNTS(["INSTRUMENT1", "INSTRUMENT2"], 1),
+                                    FOUND("SEASHELL", 20)])
+        self.assertEqual(ladx_oracle.requirement_text(req),
+                         "or(SWORD,BOW,and(FEATHER,count(SHIELD,2)),counts(1,INSTRUMENT1,INSTRUMENT2),"
+                         "found(SEASHELL,20))")
+        for value, text in ((None, "-"), (True, "T"), (False, "F"), ("MEDICINE2", "MEDICINE2")):
+            self.assertEqual(ladx_oracle.requirement_text(value), text)
+
+    def test_unknown_types_and_bad_names_are_refused(self):
+        class XOR:
+            pass
+        for req in (XOR(), 3, "sword", AND(["SWORD"], [XOR()]), COUNT("SWORD", True)):
+            with self.assertRaises(ladx_oracle.OracleError, msg=req):
+                ladx_oracle.requirement_text(req)
+
+
+class Chest:
+    def __init__(self, room, location, options):
+        self.nameId, self._location, self.options = room, location, options
+        self.metadata = types.SimpleNamespace(name="Tarin's Gift", area="Mabe Village")
+
+    def getOptions(self):
+        return self.options
+
+
+class GraphTest(unittest.TestCase):
+    def logic(self):
+        start = types.SimpleNamespace(name="Start House", dungeon=None, items=[], connections=[])
+        room = types.SimpleNamespace(name=None, dungeon=1, items=[], connections=[])
+        start.connections = [(room, AND(["SWORD"], [])), (start, None)]
+        room.connections = [(start, True)]
+        room.items = [Chest("0x2A3", room, ["SWORD", "KEY1"])]
+        return types.SimpleNamespace(location_list=[start, room], iteminfo_list=room.items)
+
+    def test_graph_lines(self):
+        self.assertEqual(list(ladx_oracle.graph_lines(self.logic())), [
+            "loc 0 -\tStart House", "loc 1 1\t-",
+            "spot 1 Chest 0x2A3 SWORD,KEY1\tTarin's Gift\tMabe Village",
+            "edge 0 1 and(SWORD)", "edge 0 0 -", "edge 1 0 T"])
+
+    def test_a_location_outside_the_list_is_refused(self):
+        logic = self.logic()
+        logic.location_list[1].connections = [(types.SimpleNamespace(), None)]
+        with self.assertRaises(ladx_oracle.OracleError):
+            list(ladx_oracle.graph_lines(logic))
+
+    def test_index_ranges(self):
+        self.assertEqual(ladx_oracle.index_ranges([5, 0, 1, 2, 7, 8, 10]), "0-2,5,7-8,10")
+        self.assertEqual(ladx_oracle.index_ranges([]), "-")
+
+
 class CompareTest(unittest.TestCase):
     RUN = "seed 00\nplace 0 Chest 0x011 SWORD\ntrace 0 rnd randomizer:Randomizer.__init__ choice 3 -> 1 [1]\n"
 

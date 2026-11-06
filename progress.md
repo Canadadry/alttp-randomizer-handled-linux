@@ -25,7 +25,7 @@
       - [x] Fix: spoiler accessibleItems in location_list order
     - [x] Chunk 3: settings fixtures
     - [x] Chunk 4: double run, item pools, determinism
-    - [ ] Chunk 5: logic fixtures and docs
+    - [x] Chunk 5: logic fixtures and docs
   - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven
   - [ ] Step 1.10 check-net
 - [ ] Phase 2 — LADXR oracle, with the ROM

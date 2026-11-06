@@ -7,7 +7,7 @@
 set -eu
 export LC_ALL=C
 
-FIXTURES="pyrandom_vectors.txt settings.txt settings_validate.txt item_pools.txt"
+FIXTURES="pyrandom_vectors.txt settings.txt settings_validate.txt logic_graphs.txt logic_vectors.txt item_pools.txt"
 
 oracle_dir="$(cd "$(dirname "$0")" && pwd)"
 repo_dir="$(cd "$oracle_dir/../../.." && pwd)"
@@ -41,7 +41,7 @@ fi
 render() {
 	mkdir -p "$3" "$work_root"
 	work="$(mktemp -d "$work_root/run.XXXXXX")"
-	for generator in gen_pyrandom.py gen_settings.py gen_pools.py; do
+	for generator in gen_pyrandom.py gen_settings.py extract_logic.py gen_pools.py; do
 		(cd "$work" && PYTHONHASHSEED="$2" PYTHONDONTWRITEBYTECODE=1 \
 			python3 "$oracle_dir/$generator" "$1" "$3")
 	done

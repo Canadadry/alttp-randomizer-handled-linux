@@ -434,6 +434,66 @@ def audit_order(root, table_text):
     return True, ["order audit: %d sites, all audited" % len(sites)]
 
 
+def requirement_text(req):
+    """A LADXR requirement as an S-expression keeping its stored order: - (None), T, F, an item,
+    and(...)/or(...) (items, then children), count(ITEM,n), counts(n,A,...), found(ITEM,n). Reads
+    the private attributes of LADXR's classes, matched by class name; another type is refused."""
+    if req is None:
+        return "-"
+    if isinstance(req, bool):
+        return "T" if req else "F"
+    if isinstance(req, str):
+        return item_name(req)
+    kind = type(req).__name__
+
+    def attr(name):
+        return getattr(req, "_%s__%s" % (kind, name))
+    if kind in ("AND", "OR"):
+        parts = [item_name(i) for i in attr("items")] + [requirement_text(c) for c in attr("children")]
+        return "%s(%s)" % (kind.lower(), ",".join(parts))
+    if kind in ("COUNT", "FOUND"):
+        return "%s(%s,%s)" % (kind.lower(), item_name(attr("item")), render(attr("amount")))
+    if kind == "COUNTS":
+        return "counts(%s)" % ",".join([render(attr("amount"))] + [item_name(i) for i in attr("items")])
+    raise OracleError("oracle: requirement %r of type %s is not covered" % (req, kind))
+
+
+def graph_lines(logic):
+    """A Logic's canonical text: `loc <i> <dungeon or ->\t<name or ->` in location_list order,
+    `spot <loc> <class> <nameId> <options>\t<metadata name>\t<metadata area>` in iteminfo_list
+    order, then `edge <from> <to> <requirement_text>` in each location's connections order."""
+    index = {id(loc): i for i, loc in enumerate(logic.location_list)}
+
+    def where(loc):
+        if id(loc) not in index:
+            raise OracleError("oracle: location %r is not in location_list" % (loc,))
+        return index[id(loc)]
+    for i, loc in enumerate(logic.location_list):
+        if loc.name == "-":
+            raise OracleError("oracle: a location is named -")
+        yield "loc %d %s\t%s" % (i, "-" if loc.dungeon is None else render(loc.dungeon),
+                                 "-" if loc.name is None else field(loc.name))
+    for spot in logic.iteminfo_list:
+        yield "spot %d %s %s %s\t%s\t%s" % (
+            where(spot._location), type(spot).__name__, field(spot.nameId),
+            ",".join(item_name(o) for o in spot.getOptions()) or "-",
+            field(spot.metadata.name), field(spot.metadata.area))
+    for i, loc in enumerate(logic.location_list):
+        for target, req in loc.connections:
+            yield "edge %d %d %s" % (i, where(target), requirement_text(req))
+
+
+def index_ranges(indexes):
+    """Sorted integers as ranges, `0-2,5,7-8`; - when empty."""
+    parts = []
+    for i in sorted(indexes):
+        if parts and parts[-1][1] == i - 1:
+            parts[-1][1] = i
+        else:
+            parts.append([i, i])
+    return ",".join(str(a) if a == b else "%d-%d" % (a, b) for a, b in parts) or "-"
+
+
 def compare_runs(name, a_text, b_text):
     """The double run's verdict on one case: `same <name>`, or `DIFFERENT <name>: line <n>: <A line>
     | <B line>` at the first differing line, `<end of file>` standing for a missing one."""

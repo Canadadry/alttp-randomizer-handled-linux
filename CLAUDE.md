@@ -57,6 +57,15 @@ in `docs/`, then `README.md`.
 - `tests/alttp/cases/` holds the e2e cases, one directory each with its VT
   golden; `tests/alttp/oracle/` the PHP VT oracle (`gen_golden.sh`, `vt.patch`)
   and the fixtures it writes.
+- `tests/ladx/oracle/` holds the LADX oracle: LADXR pinned at `4325207e`,
+  cloned (never vendored) into `tests/ladx/oracle/ladxr/` (git-ignored) and
+  patched with `ladxr.patch` (order fixes only); the Python scripts that run
+  it without a ROM (shared helpers `ladx_oracle.py`, unit-tested by
+  `test_oracle.py`); the hand-written inputs `tier1.txt`,
+  `determinism_cases.txt` and `order_audit.txt`; and the six fixtures they
+  write for the C port (`pyrandom_vectors.txt`, `settings.txt`,
+  `settings_validate.txt`, `logic_graphs.txt`, `logic_vectors.txt`,
+  `item_pools.txt`), each describing its format in its `#` header.
 
 ## Checks
 
@@ -92,7 +101,31 @@ in `docs/`, then `README.md`.
   JP 1.0 ROM (MD5, with or without a copier header), whatever its name; it
   proves itself first on planted files in throwaway repositories; no git or
   no work tree gives a `setup:` line; else `rom_guard: <n> tracked files, no
-  ROM`.
+  ROM`; plus `test-ladx-oracle` (`python3 -I tests/ladx/oracle/test_oracle.py`:
+  the LADX oracle's helpers, no LADXR, no network).
+- The LADX oracle, outside the net (it needs git, the network for GitHub and
+  python3 >= 3.11, else a `setup:` line; no ROM): `tests/ladx/oracle/setup.sh
+  [--fresh]` clones LADXR at its pin into `LADXR_DIR` (default
+  `tests/ladx/oracle/ladxr`), applies `ladxr.patch` and prints `setup: ladxr
+  <commit>, python <x.y.z>[, ladxr.patch applied]`, warning when Python's
+  minor version is not the fixtures' one. `gen_fixtures.sh [--out <dir>]`
+  rewrites the six fixtures; `gen_fixtures.sh --check` renders them twice
+  (`PYTHONHASHSEED=0` on the setup checkout, `=1` on a fresh clone under
+  `tmp/ladx-oracle/`) and prints one `DIFFERENT`, `MISSING` or `EXTRA` line
+  per file unlike the other run or the committed one, else `fixtures: 6 files
+  byte-identical on two runs and to tests/ladx/oracle`. `determinism.sh`
+  runs `determinism_cases.txt` through LADXR in `SKIP_ROM_GENERATION` mode
+  (`oracle_run.py`: world setup, pools, placement, RNG trace) under the same
+  two conditions, after proving its comparator, and prints `same <case>` or
+  `DIFFERENT <case>: line <n>: ...` per case, then `determinism: <n> cases
+  identical (...)`, or fails when the two runs did not vary.
+  `python3 tests/ladx/oracle/audit_order.py <ladxr dir>` checks every
+  directory listing and set of LADXR's sources against `order_audit.txt`
+  (one `UNAUDITED` or `STALE` line each, else `order audit: <n> sites, all
+  audited`). `extract_logic.py --graph <config> --out <dir> <ladxr dir>`
+  writes one configuration's full logic graph, to diff against a
+  `logic_vectors.txt` digest. Run every script with `python3` without `-I`
+  or `-E` (both drop `PYTHONHASHSEED`).
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -238,7 +271,9 @@ in `docs/`, then `README.md`.
   locally built SDL_ttf and SDL_image, and a fake SD card in `tmp/sd`; the owner runs
   `mac-run`, never an agent.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
-  oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
+  oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
+  `gen_fixtures.sh`, `determinism.sh` and `audit_order.py` run only to
+  regenerate or re-prove its fixtures. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and
