@@ -62,7 +62,11 @@ when you press Generate, and `App/ALttPR/alttpr.log` at each launch.
 
 Unzip a newer `ALttPR.zip` at the root of the card again, over the old
 `App/ALttPR/`. The zip holds no `base.sfc`, `history/` or `settings.json`,
-so your ROM, your History and your last settings stay.
+so your ROM, your History and your last settings stay. Files of the
+previous theme (for example `DejaVuSansMono.ttf` and `background.png`) may
+stay in `App/ALttPR/themes/default/`: the new `theme.ini` replaces the old
+one and names only its own files, so the old ones are unused and may be
+deleted.
 
 ### Remove
 
@@ -312,8 +316,9 @@ ARM EABI5, hard-float, dynamically linked against `libSDL-1.2.so.0`,
 bytes. It needs docker and is not part of `make check`. The zip's
 `App/ALttPR/` holds `alttpr`, `launch.sh`, `config.json` and `icon.png`
 (from `app/package/`), `base.bps` (from `data/`), and `themes/default/`, a
-copy of every file of `themes/classic/` (its `theme.ini`, background image,
-font and font licence): the app reads its look from there. How `data/base.bps` was built
+copy of every file of `themes/alttp/` (its `theme.ini`, `frame.png`, the
+thirteen sprites, Press Start 2P and its licence): the app reads its look
+from there. How `data/base.bps` was built
 is in step 0.1's note of `docs/plan-1.md`.
 
 CI (`.github/workflows/check.yml`) runs only by hand (**Run workflow**): its
@@ -327,7 +332,7 @@ To try the app on a PC before copying it (needs `libsdl1.2-dev`,
 
 ```bash
 make sdl-pc
-tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/classic
+tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
 ```
 
 `tmp/sd` stands for the SD card. To generate there, put your ROM at
@@ -347,7 +352,7 @@ save the last frame, as a picture and as text:
 
 ```bash
 SDL_VIDEODRIVER=dummy tests/rando/build/sdl/alttpr --sd tmp/sd \
-  --theme themes/classic --shot tmp/shot.bmp --shot-text tmp/shot.txt \
+  --theme themes/alttp --shot tmp/shot.bmp --shot-text tmp/shot.txt \
   --seed 1 --date 2026-11-01T14:03:27 down*3 r1
 ```
 
@@ -360,11 +365,11 @@ ROM's expected digests. A bad option, key or value exits with status 2 and
 the usage.
 
 The app's whole look comes from a theme folder. `--theme <dir>` reads
-`<dir>/theme.ini` (for example `themes/classic`) and draws every frame from
+`<dir>/theme.ini` (for example `themes/alttp`) and draws every frame from
 it: its colours, background image, sprites and fonts, all read from
 `<dir>`. Without `--theme`, the app reads `themes/default/` in the folder
 that holds the `alttpr` binary, wherever it is started from; on the PC,
-pass `--theme themes/classic`. The page is the number of list rows (the list
+pass `--theme themes/alttp`. The page is the number of list rows (the list
 body's height over its row height) and the wrap width the list's label x to
 its right edge, in the list font's cells (or its `M` advance when it has no
 cell). There is no `--font`: it is an unknown option (status 2). A missing
@@ -374,8 +379,9 @@ no size in its cell, a background that is not 640×480, or a page outside
 (and the theme key) and exits with status 1, before anything touches the SD
 card; so does a screen with more tabs than the theme has tab slots.
 
-Two themes are in `themes/`: `classic`, the 40×15 grid look the zip ships,
-and `alttp`, the mockups' (`design/mockups/`) look at 12 px in Press Start
+Two themes are in `themes/`: `alttp`, the look the zip ships, and
+`classic`, the 40×15 grid look of phase 1, kept as the SDL tests' theme
+(the goldens are drawn with it). `alttp` is the mockups' (`design/mockups/`) look at 12 px in Press Start
 2P: their zones, rows, help line and footer band, drawn over `frame.png`
 (the notched white and blue frame, the gradient panel, the tab separator
 and the three hearts), with sprites for the tab and row triforces, the
@@ -394,6 +400,12 @@ Chromium may report `DIFFERENT`. Look at the theme with:
 ```bash
 tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
 ```
+
+The shipped theme lives in `themes/alttp/` in the repository and is shipped
+as `App/ALttPR/themes/default/` on the card. Changing the look is editing
+`themes/alttp/theme.ini` (or its PNGs, through `make theme-art-write`) and
+relaunching the app, with no rebuild; compare it with the mockups with
+`make theme-compare` (below).
 
 `make sdl-pc` also draws the 13 states of `tests/rando/sdl/golden_states.txt`
 with it, into `tests/rando/build/sdl/theme-states/alttp/` (a `.bmp` and a

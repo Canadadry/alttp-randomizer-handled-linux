@@ -57,5 +57,5 @@
     - [x] Chunk 4 — Tuning passes and the record
   - [ ] Step 2.13 — Default theme switched
     - [x] Chunk 1 — Ship alttp as the default theme
-    - [ ] Chunk 2 — Docs follow
+    - [x] Chunk 2 — Docs follow
   - [ ] Step 2.14 — skill: check-net

@@ -26,7 +26,7 @@ header if the ROM has one, and checks that it is the Japanese 1.0.
 make -C targets/mac run
 ```
 
-It runs the app with `--theme themes/classic`: its whole look, font
+It runs the app with `--theme themes/alttp`: its whole look, font
 included, comes from that theme folder.
 
 Seeds go to `tmp/sd/Roms/SFC/ALttPR/`, History records to

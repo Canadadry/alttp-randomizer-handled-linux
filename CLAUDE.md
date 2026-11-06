@@ -34,8 +34,9 @@ in `docs/`, then `README.md`.
   `app/package/` holds the Onion app folder's files (`launch.sh`,
   `config.json`, `icon.png`) and `build_zip.py`, which writes the release zip
   (self-test `tests/rando/test_package.py`).
-- `themes/` holds one flat folder per theme (`themes/classic/`: today's look
-  as a theme; `themes/alttp/`: the mockups' look at 12 px in Press Start 2P,
+- `themes/` holds one flat folder per theme (`themes/classic/`: the phase-1
+  grid look, kept as the SDL tests' theme; `themes/alttp/`: the shipped look,
+  the mockups' look at 12 px in Press Start 2P,
   `frame.png` and thirteen sprite PNGs made from the mockups by
   `make theme-art-write`).
 - `data/` holds the fonts' source (DejaVu Sans Mono and Press Start 2P, each
@@ -117,7 +118,7 @@ in `docs/`, then `README.md`.
   same code with Onion's toolchain against its SDL 1.2, SDL_ttf and
   SDL_image, and runs nothing. The owner looks at the PC build with
   `make sdl-pc`, then `tests/rando/build/sdl/alttpr --sd tmp/sd --theme
-  themes/classic` (the theme draws every frame; without `--theme` the app
+  themes/alttp` (the theme draws every frame; without `--theme` the app
   reads `themes/default/` next to its binary; `--font` is an unknown
   option).
 - `make sdl-pc` also runs the golden comparison
@@ -191,7 +192,7 @@ in `docs/`, then `README.md`.
   `libSDL_ttf-2.0.so.0` and `libSDL_image-1.2.so.0`), re-runs
   `test_patch_header --file` on `data/base.bps`, and writes
   `tests/rando/build/package/ALttPR.zip`, whose only top-level folder is
-  `App/ALttPR/`, with the theme folder `PKG_THEME` (`themes/classic`)
+  `App/ALttPR/`, with the theme folder `PKG_THEME` (`themes/alttp`)
   shipped as `App/ALttPR/themes/default/`; the same commit gives the same
   zip bytes.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT

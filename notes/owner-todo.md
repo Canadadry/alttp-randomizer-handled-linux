@@ -62,7 +62,10 @@ Flip, `main` does not.
 - Two seeds keep separate saves.
 - Deleting a seed from History removes the ROM, its save and its states.
 - The PC build looks right: `make sdl-pc`, then
-  `tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/classic`.
+  `tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp`.
+- The app on the Mini Flip draws the alttp look: the notched frame, the
+  sprites (triforces, arrows, buttons), Press Start 2P and the help line under
+  the list. Nothing in the net runs the SDL app on the device.
 - On the Mac: run `make -C targets/mac run` and report whether it builds
   (SDL_image is now built from source there, a recipe the agent checked on
   Linux only) and whether it draws the app.

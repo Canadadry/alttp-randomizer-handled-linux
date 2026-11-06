@@ -80,7 +80,7 @@ rom: sd
 		&& echo "rom: JP 1.0, ready" || echo "rom: not the JP 1.0 ROM (MD5 differs): the app will refuse it" >&2
 
 run: build
-	cd $(ROOT) && $(APP) --sd tmp/sd --theme themes/classic
+	cd $(ROOT) && $(APP) --sd tmp/sd --theme themes/alttp
 
 clean:
 	rm -rf $(DEPS)/prefix $(DEPS)/SDL_ttf.o $(DEPS)/img $(APP)
