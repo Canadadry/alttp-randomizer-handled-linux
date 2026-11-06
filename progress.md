@@ -44,7 +44,7 @@
     - [x] Chunk 2: full-generation driver and gen_golden.sh
     - [x] Chunk 3: determinism.sh --full
     - [x] Chunk 4: ladxr.patch fixes
-  - [ ] Step 2.3 Inventory
+  - [x] Step 2.3 Inventory
     - [x] Chunk 1: trace writes and read provenance
     - [x] Chunk 2: inventory format and checker
     - [x] Chunk 3: coverage checker and driver
