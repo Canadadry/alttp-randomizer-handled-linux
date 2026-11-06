@@ -33,6 +33,10 @@
     - [x] Chunk 2 — Press Start 2P and themes/alttp
     - [x] Chunk 3 — The SDL side
   - [ ] Step 2.9 — Mockups made true and comparable
+    - [x] Chunk 1 — The text comparator
+    - [ ] Chunk 2 — Render check, make mockups, font edit
+    - [ ] Chunk 3 — Pairing table and app-side checks
+    - [ ] Chunk 4 — Mockup content edits
   - [ ] Step 2.10 — `make theme-compare`
   - [ ] Step 2.11 — Help text per value
   - [ ] Step 2.12 — The new theme's look

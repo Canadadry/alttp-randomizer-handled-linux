@@ -1,0 +1,465 @@
+---
+title: "Mockups made true and comparable"
+description: "The owner's mockups load their font from Google Fonts, show settings, file names and values the app never shows, and are paired with no app state, so nothing can be compared with them."
+status: needs-triage
+---
+
+## Problem Statement
+
+The owner judges the new look on side-by-side images of a mockup and the
+app's capture of the same screen (plan 2, steps 10 and 12). Today the nine
+mockups in `design/mockups/` cannot serve as that reference:
+
+- each one loads Press Start 2P with `@import` from `fonts.googleapis.com`.
+  Offline (a container, CI, the agent's sandbox) Chromium falls back to a
+  generic monospace font, so the mockup that gets rendered is not the one
+  the owner drew;
+- even with the font, Chromium draws the `fi`, `fl`, `ffl` and `ffi`
+  ligatures of Press Start 2P (measured: "Shuffle" comes out 12 px short at
+  12 px). SDL_ttf draws no ligatures, so any string holding those letters
+  would never line up with the app;
+- several mockups show **filler**: settings the app does not have (Entrance
+  Shuffle, Boss Shuffle, Enemy Shuffle, Enemy Damage, Enemy Health in 01 and
+  07), seed names the app never makes (`E76BF9`, `Standard-Triforce`, …),
+  a date the fixed runs never use, a spoiler window that no scroll position
+  of the real detail shows;
+- no mockup is tied to the key sequence, seed, date and SD fixture that
+  bring the app to its screen, so step 10 has no app capture to set beside
+  it, and nobody can check that the mockup's words are the app's words.
+
+## Solution
+
+1. **Local font, no ligatures.** In every mockup the `@import` line becomes
+   an `@font-face` that loads `../../data/PressStart2P.ttf` (the file step 8
+   committed), and the `text` style rule gains `font-variant-ligatures:
+   none`. Nothing else in the style changes. One commit for the nine files.
+2. **A pairing table** `tests/rando/sdl/mockup_states.txt`, in
+   `golden_states.txt`'s tab-separated format, gives each mockup its SD
+   fixture (`good` or `bad-source` from `sd_fixture`), frame cap, extra
+   flags, key sequence and an optional page override. Every run uses the
+   golden runs' seed `1` and date `2026-11-01T14:03:27`.
+3. **The content made true**, by choosing key sequences first and editing
+   only what no real state can show. Five of the nine mockups need no
+   content edit; four do (01, 03, 05, 07), each in its own commit with its
+   reason, plus one commit that adds the ▼ scroll marker to 07, because
+   every real window of the detail that shows setting rows has more below.
+   Positions that the inventory derives from content (row y from the row
+   index, x from the indent) follow the new content; no colour, size,
+   sprite or other geometry changes.
+4. **`make mockups`**, outside the net, proves it all every time it runs:
+   - Chromium renders every mockup with no request leaving `file://`,
+     Press Start 2P loaded, and every `<text>` exactly as wide as its
+     characters times its font size (the local font is the one drawn, with
+     no ligature). It writes the nine PNGs.
+   - The SDL app, with the new theme (`themes/alttp`), plays every pairing
+     (`goldens.sh --draw` over the pairing table); from its capture the
+     script reads the grid that matches the theme's page and width and
+     prints it (`--cols 50 --lines 16`, page 12, width 48).
+   - `ui_cli`, given that grid, plays every pairing and must print text
+     byte-identical to the SDL app's `--shot-text` for the same state.
+   - Each mockup's text is compared with `ui_cli`'s screen, zone by zone and
+     row by row, help line excepted (step 11). One `MISMATCH` line per
+     difference; the run ends with one summary line.
+
+## User Stories
+
+1. As the owner, I want every mockup to render with Press Start 2P even with no network, so that the picture I judge is the one I drew.
+2. As the owner, I want the mockups to load the very font file the app ships, so that a difference between a mockup and the app is never a difference between two copies of a font.
+3. As the owner, I want the browser to draw the mockups without ligatures, so that text lines up with the app, which draws none.
+4. As the owner, I want the mockups to show the app's real settings, values and file names, so that I judge the look on the screens I will really see.
+5. As the owner, I want the mockups' look (colours, sizes, sprites, frame) untouched, so that my design stays the reference.
+6. As the owner, I want each mockup edit in its own commit with its reason, so that I can review or revert any of them alone.
+7. As the owner, I want to know which mockups needed no content edit, so that I see how close my drawings already were.
+8. As the owner, I want the settings mockup with greyed rows to show the real list end (Accessibility to Generate Seed) with both rows of the unsupported pair greyed, so that it shows what the app really greys.
+9. As the owner, I want the History mockup to keep six seeds with the second selected, generated by the app from different settings, so that the list I see is one the app makes.
+10. As the owner, I want the spoiler mockup to show a real window of a real spoiler (settings rows, the Spoiler heading, Bosses and indented entries), so that the indents are the app's.
+11. As the owner, I want the ▼ marker added only where the real screen has more rows below, drawn as the mirror of the mockup's own ▲, so that the marker follows the decided look.
+12. As the owner, I want the 16 px settings mockup (00) kept as drawn, with its values set by keys rather than edited, so that the help mockup stays mine.
+13. As the owner, I want one command that tells me whether the mockups are still true, so that I can trust them later.
+14. As the agent of step 10, I want every mockup paired with a key sequence, fixture, seed and date, so that `make theme-compare` can play each one into the app.
+15. As the agent of step 10, I want the pairing table in the golden states' format and played by `goldens.sh`, so that the app captures of the mockups come from the same loop as every other capture.
+16. As the agent of step 10, I want the nine mockup PNGs rendered offline by Chromium, so that I can start from them.
+17. As the agent of step 11, I want the help line of 00 excluded from the text check by a rule I can turn into a comparison, so that step 11 verifies the help line with the same tool.
+18. As the agent of step 12, I want the text check re-runnable after every tuning pass, so that a theme edit that changes the page or width is caught.
+19. As the agent of step 12, I want the grid derived from the SDL app's capture with the theme, not written in a file, so that a theme edit needs no edit of the check.
+20. As the plan pilot, I want the check to prove that `ui_cli` with the derived grid prints exactly what the SDL app prints, so that the text checked is the text the app shows.
+21. As the plan pilot, I want a mismatch reported as one line naming the mockup, the zone and the row, so that I know which edit is missing.
+22. As the plan pilot, I want the text comparator to prove itself on planted mismatches before it runs, so that a green result is not a comparator that compares nothing.
+23. As the plan pilot, I want the render check to prove itself on planted bad SVGs (an external import, a missing font file, a ligature), so that it is known to catch each failure it claims to.
+24. As the plan pilot, I want a missing Chromium, Playwright or SDL setup to print a `setup:` line, so that the setup problem is named, knowing that the plan says such a line verifies nothing.
+25. As the plan pilot, I want the check outside `make check`, so that the net stays free of Chromium and SDL.
+26. As a maintainer, I want the golden states and goldens untouched, so that phase 1's proof is not weakened.
+27. As a maintainer, I want the core, the strings, `ui_cli` and the SDL app unchanged, so that this step only changes the mockups and adds tooling.
+28. As a maintainer, I want `README.md` and `CLAUDE.md` to name `make mockups`, so that the next session finds it.
+29. As a maintainer, I want the comparison rules (zones, row index, indent, what is dropped from the app's text) stated in one place, so that a later mismatch can be understood without reading the code.
+
+## Implementation Decisions
+
+### What was measured when this PRD was written (HEAD `0d01bd9`)
+
+- `ui_cli --cols 50 --lines 16` and `alttpr --theme themes/alttp
+  --shot-text` gave byte-identical text for the eight pairings below that
+  use the theme's page (00 excluded), with the golden runs' seed and date.
+  The grid text is 18 lines of 53 characters: a border line, then a tag
+  column, `|`, 50 columns, `|` per line, then a border line. So `--cols` is
+  the line length less 3 and `--lines` the line count less 2.
+- Chromium (Playwright 1.63, `/opt/pw-browsers`) loads an `@font-face`
+  `url('../../data/…ttf')` from an SVG opened as `file://`, with
+  `document.fonts` reporting the face `loaded`. With Press Start 2P,
+  `getComputedTextLength()` equals characters × font size for every text of
+  the nine mockups, except texts holding `fi`, `fl`, `ffl`, `ffi` (the
+  "Shuffle" filler). `font-variant-ligatures: none` makes those exact too.
+
+### The font edit (all nine mockups, one commit)
+
+- The line
+  `@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap');`
+  becomes
+  `@font-face { font-family: 'Press Start 2P'; src: url('../../data/PressStart2P.ttf') format('truetype'); }`.
+- The existing `text { font-family: 'Press Start 2P', monospace; }` rule
+  gains `font-variant-ligatures: none;`. 00's class rules are untouched.
+- Reason in the commit message: render offline with the shipped font, and
+  draw text the way SDL_ttf does (no ligatures). It changes no colour, size
+  or position; Press Start 2P was already the drawn font.
+
+### The pairing table
+
+`tests/rando/sdl/mockup_states.txt`, tab-separated, one line per mockup, no
+comment line (the reader takes every non-empty line as a state, as
+`golden_states.txt`'s does). Columns, as `golden_states.txt`'s first five:
+name (the mockup's file name without `.svg`), fixture, frame cap (`-` or a
+number), extra flags (`-` or flags), keys; sixth column **page**: `-` for
+the theme's page, or a number. `goldens.sh --draw` ignores the sixth
+column, as it ignores `golden_states.txt`'s strings.
+
+| Mockup | Fixture | Cap | Flags | Keys | Page |
+|---|---|---|---|---|---|
+| `00_settings_help` | good | - | - | `down right down*2 right*2 down right*5 down*4 right*3 down right*3 up*9` | 11 |
+| `01_settings_greyed_error` | good | - | `--unsupported state=retro,goal=ganon` | `down*7 right*3 down right*3 down right*3 down*5 start` | - |
+| `02_generating` | good | 3 | - | `start` | - |
+| `03_seed_ready` | good | - | - | `up*2 right start` | - |
+| `04_generation_failed` | bad-source | - | - | `start` | - |
+| `05_history_list` | good | - | - | `start a down*7 right*2 start a left up*3 right*4 start a left down*3 left start a right*2 up*3 left start a left*2 down*3 left*2 start a r1 down` | - |
+| `06_history_empty` | good | - | - | `r1` | - |
+| `07_seed_detail_spoiler` | good | - | - | `up*2 right start a r1 a down*12` | - |
+| `08_confirm_delete` | good | - | - | `start a start a r1 x` | - |
+
+- **Seed and date** are not columns: every run gets `--seed 1 --date
+  2026-11-01T14:03:27`, like `goldens.sh`, so the table plays through
+  `goldens.sh` unchanged and step 10 needs no per-state date.
+- **Frame cap**: a cap stops the SDL app while the last key's generation
+  runs; on the `ui_cli` side that screen is the block printed under
+  `@ generating` for the last key by `ui_cli --every`. 02 is the only such
+  pairing, with the golden `generating` state's cap 3.
+- **Page override**: 00 is the 16 px variant (28 px rows, 11 rows), which
+  the plan keeps only for its help line and selected row. Its pairing is
+  played by `ui_cli` with `--lines` = page + 4 = 15 and the derived
+  `--cols`; no theme has that page, so it has no `ui_cli`-against-SDL
+  check. Editing 00 down to 11 or up to 12 rows would change its geometry,
+  which the rules forbid.
+- **Why these keys.** Where a mockup shows real values that are not the
+  defaults (00: Item Placement Basic, Accessibility Beatable, Goal
+  Ganonhunt, Swords Swordless, Item Pool Crowd Control; 01: Swords
+  Swordless, Item Pool Crowd Control; 03: "Spoiler kept in History"), the
+  keys set them, so the mockup keeps its words. 01 uses `goal=ganon` in the
+  unsupported pair (fewer keys than the goldens' `goal=pedestal`; the
+  message stays "Not supported with Goal"). 05 generates six seeds from five
+  settings (the defaults twice, giving `1CA10A` and `1CA10A-2`). 08's two generations give the `-2` suffix its title
+  already shows.
+
+### The content edits (one commit per line below)
+
+Rows are the 12 px list's: baseline 114 + 24 × row index; labels at x 60
+with a row cursor, x 30 without; values end-anchored at x 584; disabled
+label and value `#7078b0`. Nothing listed as unchanged moves.
+
+- **01** (reason: the five Enemizer rows are not app settings, and the real
+  list's end shows Accessibility to Generate Seed, with both rows of the
+  unsupported pair greyed). Rows 0–11: Accessibility · 100% Inventory;
+  Goal · Defeat Ganon (greyed); Tower Crystals · 7; Ganon Crystals · 7;
+  World State · Retro (greyed); Swords · Swordless; Item Pool · Crowd
+  Control; Item Functionality · Normal; Hints · On; Heart Beep · Half
+  Speed; Spoiler in History · Off; Generate Seed (selected and greyed,
+  unchanged). ▲ on row 0, band, cursor, message and footer unchanged.
+- **03** (reason: the app names this seed `1CA10A`): the emphasised row
+  `Open-Ganon-E76BF9.sfc` becomes `Open-Ganon-1CA10A.sfc` (same length,
+  same x).
+- **05** (reason: the six names the app gives these six seeds, newest first;
+  equal dates sort by code, descending; the date is the fixed runs').
+  Rows 0–5: `Inverted-Dungeons-CC3E2B.sfc`, `Inverted-Ganon-4E83F8.sfc`
+  (row 1, still the selected yellow row), `Standard-TriforceHunt-493E19.sfc`,
+  `Open-Pedestal-3B1C47.sfc`, `Open-Ganon-1CA10A-2.sfc`,
+  `Open-Ganon-1CA10A.sfc`. Message `Generated 2026-11-01 14:05` becomes
+  `Generated 2026-11-01 14:03`.
+- **07, text** (reason: the title is the app's name for the seed; the rows
+  are the real window of the detail at that scroll; spoiler entries are
+  indented by the core's two spaces, 12 px each). Title
+  `Open-Ganon-1CA10A.sfc` (same length, the dashed rule's x 336 unchanged).
+  Rows 0–11, cursorless: Item Functionality · Normal; Hints · On; Heart
+  Beep · Half Speed; Spoiler in History · On; row 4 blank (no text);
+  `Spoiler` (x 30); `Bosses` (x 30); then at x 54: `Desert Palace:
+  Lanmolas`, `Eastern Palace: Armos Knights`, `Ganon: Ganon`, `Ganons
+  Tower: Agahnim 2`, `Ganons Tower Basement: Armos Knights`. ▲ unchanged.
+- **07, ▼** (reason: every window of the detail that shows setting rows has
+  rows below, and the app draws ▼ there). One polygon
+  `606,371 616,371 611,377`, fill `#f8d038`: the vertical mirror of the
+  mockup's own ▲ (`606,113 616,113 611,107`, 9 and 15 px below its row's
+  top) on the last row (top 362), the place step 1.2 decided.
+- **No content edit**: 00, 02, 04, 06, 08 (00's help line is step 11's).
+- If the derived page is not 12 or the width not 48 (H-8-2), the edits
+  above are not adapted: the implementer stops and reports, since 01 and 07
+  draw 12 rows and 05's and 07's rows must fit 48 columns, and a look change
+  is not this step's.
+- The exact names and windows above were read from the app at `0d01bd9`;
+  the implementer reads them again from `make mockups`' `ui_cli` output,
+  and if they differ (a code change since), the app's text wins.
+
+### The text comparator (`tests/rando/sdl/mockup_text.py`)
+
+Pure Python, standard library only (`xml.etree`), run with `python3 -I`.
+Commands:
+
+- `compare SVG TEXT`: prints one `MISMATCH <mockup>: <zone>[ row <k>]: mockup "<…>" app "<…>"` line per difference, exit 1 if any;
+- `grid TEXT`: prints `<cols> <lines>` of a grid text (line length − 3,
+  line count − 2), exit 1 if the lines are not all the same length;
+- `generating EVERY_OUTPUT`: prints the last `@ generating` block of a
+  `ui_cli --every` output, exit 1 if there is none;
+- `--self-test`: the planted cases below, each from a small pair embedded
+  in the script (no app run, no mockup file).
+
+**Mockup side.** Every `<text>` element of the SVG (not `<title>`, not
+inside `<defs>`), with its `x`, `y`, `font-size` attribute (absent for 00's
+class-styled rows) and text content. Zones by baseline, in the mockups' own
+coordinates (valid for the 12 px and the 16 px sets): tabs `y < 60`, title
+`60 ≤ y < 90`, body `90 ≤ y < 400`, message `400 ≤ y < 422`, footer
+`y ≥ 422` (the footer's sprite letters at y 449 and labels at 448 are one
+line). In a zone, a line is its texts sorted by `x`, joined by one space.
+Body rows: the smallest body baseline is row 0; the row pitch is the
+smallest gap between distinct body baselines (none needed for one row);
+row index = (y − first) / pitch, which must be a whole number; an index
+with no text is a blank row.
+
+**App side**, from the grid text: line 1 tabs, line 2 title, lines 3 to
+`page + 2` body, then the message line, then the footer (the border lines
+dropped; the tag column and the two `|` dropped). Dropped before
+comparing, because the mockups draw them as sprites or styles, not text:
+the `[` `]` around the active tab; the `< ` and ` >` around the selected
+row's value; a `^` or `v` in the last column of a body row; the footer's
+`</>` key text (the d-pad sprite has no text; the other keys' letters are
+`<text>` in the mockups and are kept). Then runs of spaces become one
+space and the line is stripped, after counting a body row's leading spaces.
+
+**Rules.** Tabs, title, message and footer: the strings are equal. Body:
+row k's strings are equal for every k up to the larger of the mockup's last
+row and the app's last non-blank row. **Indent**: on a 12 px list body
+(body texts with `font-size="12"`), the leftmost text of a row starts at
+`base + 12 × <the app row's leading spaces>`, base x 60 when a row cursor
+(`<use href="#triforce">`) is drawn in the body zone, else x 30; other
+bodies (14 px notices, whose x 50 is the emphasis style; 00's 16 px rows)
+require the app row to have no leading space. **Help line**: a message-zone
+text with `font-size="10"` is the help line; it is left out, and the app's
+message line must then be empty (true until step 11, which turns this
+exception into a comparison). Colours, the scroll markers, the cursor row
+and the disabled state are not text and are not compared (steps 10, 12).
+
+**Self-test**, each planted case giving exactly its one line, and the clean
+pair none: a word changed in a body row; a row moved one pitch down; an
+indent off by one column; an app row the mockup lacks; a changed footer
+label; a 10 px help line with an empty app message (no line) and with a
+non-empty app message (one line).
+
+### The render check (`tests/rando/sdl/mockup_render.js`)
+
+Node with Playwright (`require('playwright')`, `NODE_PATH` = `npm root -g`,
+`PLAYWRIGHT_BROWSERS_PATH` defaulting to `/opt/pw-browsers` when unset and
+present), headless Chromium, a 640×480 viewport. Arguments: an output
+folder, then SVG files. For each SVG, opened as `file://`:
+
+- every request whose URL is not `file:` is aborted and recorded;
+- after `document.fonts.ready`, a face of family `Press Start 2P` must be
+  in `document.fonts` with status `loaded`;
+- every `<text>`: `getComputedTextLength()` within 0.5 px of characters ×
+  the computed `font-size`;
+- a 640×480 PNG screenshot `<out>/<name>.png`.
+
+One `mockups: <name>: <problem>` line per failure (external request with
+its URL, font not loaded, the text and its two widths), exit 1 if any.
+It proves itself first, in a temporary folder holding a byte copy of
+`data/PressStart2P.ttf`, on four planted SVGs: clean (no line), an
+external `@import` (its line), a font URL to a missing file (its line), a
+`fi` text without `font-variant-ligatures: none` (its line).
+
+### `goldens.sh --states`
+
+`--draw DIR` takes an optional trailing `--states FILE` (default
+`golden_states.txt` beside the script), only with `--draw`: `goldens.sh
+ALTTPR THEME SD_FIXTURE --draw DIR [--states FILE]`. `--write` and
+`--compare` refuse it (usage, exit 2), so the goldens can only ever be
+made from `golden_states.txt`. `make sdl-pc`'s lines and output are
+unchanged.
+
+### `make mockups`
+
+`tests/rando/sdl/mockups.sh ALTTPR UI_CLI SD_FIXTURE THEME OUT` (POSIX sh,
+the same style as `goldens.sh`), run by a `mockups` target in
+`tests/rando/Makefile` (after `sdl-pc`'s own `setup:` check, building
+`$(SDL_APP)`, `$(SD_FIXTURE)` and `$(UI_CLI)`; the theme in a variable
+`MOCKUP_THEME = ../../themes/alttp`) and by a root `make mockups` with a
+help line. Outside the net; not in CI. In order:
+
+1. `setup:` line (exit 1) when `python3`, `node`, `npm`, the `playwright`
+   module or a launchable Chromium is missing.
+2. `mockup_text.py --self-test`, then the render check's self-proof and its
+   run over `design/mockups/*.svg` into `OUT/render/`.
+3. A mockup with no pairing, or a pairing with no mockup → `mockups: <name>:
+   no pairing` / `no mockup`.
+4. `goldens.sh ALTTPR THEME SD_FIXTURE --draw OUT/app --states
+   mockup_states.txt`: the SDL app's BMP and text per pairing.
+5. The grid: `mockup_text.py grid` on every `OUT/app/*.txt` of a pairing
+   without page override; all equal, else a line. Printed: `mockups:
+   ui_cli grid --cols <c> --lines <l> (page <l-4>, width <c-2>) from
+   <theme>`.
+6. `ui_cli` per pairing into `OUT/text/<name>.txt` (fresh fixture copy,
+   seed and date as above, `--lines` from the override when given); for a
+   pairing without override, `cmp` with `OUT/app/<name>.txt`, else
+   `mockups: <name>: ui_cli and alttpr differ` (and the diff).
+7. `mockup_text.py compare` per mockup; then the summary
+   `mockups: 9 mockups render offline with the local font, ui_cli agrees
+   with alttpr on 8, 9 texts match (help line excepted)`, or exit 1.
+
+`OUT` is `tests/rando/build/mockups/`, emptied first.
+
+### Docs
+
+- `CLAUDE.md`, Checks: a `make mockups` bullet (what it runs, outside the
+  net, its `setup:` line, that it verifies nothing then), and it joins the
+  "Not in the net" list.
+- `README.md`, Development, after the `alttp` theme paragraph: the mockups
+  load `data/PressStart2P.ttf`, are paired in
+  `tests/rando/sdl/mockup_states.txt`, and `make mockups` checks them,
+  writing `tests/rando/build/mockups/`.
+
+## Implementation Chunks
+
+1. **The text comparator.** `mockup_text.py` with its four commands and its
+   self-test. Done: `python3 -I tests/rando/sdl/mockup_text.py --self-test`
+   passes; `make test` unchanged.
+2. **Render check, then the font edit.** `mockup_render.js` with its
+   self-proof and the `make mockups` target running steps 1–2 only (a
+   commit; on the current mockups it fails with a font line for each of
+   the nine, seen once). Then the font edit, alone in its own commit.
+   Done: steps 1–2 green on the nine mockups.
+3. **Pairings and the app side.** `mockup_states.txt`, `goldens.sh
+   --states`, steps 3–7 of `mockups.sh`, the docs. Done: `make sdl-pc`
+   output unchanged; `make mockups` prints the grid `--cols 50 --lines 16`,
+   `ui_cli` agrees with `alttpr` on all eight, and `MISMATCH` lines come for
+   01, 03, 05 and 07 only (the filler), none for the other five.
+4. **The content edits.** Five commits, in this order: 01, 03, 05, 07 text,
+   07 ▼; each removes its mockup's `MISMATCH` lines (the ▼ commit changes
+   no text line: it is checked by looking at its PNG once). Done: the
+   summary line of `make mockups`.
+
+Step verification (the plan's): `make mockups`, really run in the pinned
+environment (plan rule: a `setup:` line does not verify), ends with its
+summary line; `make sdl-pc` still prints `goldens: 13 states
+byte-identical` and the 13 alttp states drawn; `make check` green. The step
+notes record the grid, the five edits and their commits, the five mockups
+left without content edit, and that 00 is played with page 11.
+
+## Testing Decisions
+
+- A good test here drives the tools from the outside: the comparator on
+  planted SVG and grid pairs, the render check on planted SVGs, the whole
+  target on the real mockups and the real app. No test reads the scripts'
+  internals.
+- **Self-proving tools**, like `goldens.sh`'s planted goldens and
+  `no_literals.py`'s planted sources: the comparator's and the render
+  check's planted cases run at the start of every `make mockups`, each
+  required to give exactly its line.
+- **Agreement**, not trust: `ui_cli`'s text is required byte-identical to
+  the SDL app's capture for every pairing on the theme's page, so the text
+  the mockups are checked against is the text the app shows with the new
+  theme.
+- **Nothing in the net changes**, and nothing is weakened: no golden, no
+  golden state, no snapshot, no expected value. `goldens.sh`'s new option
+  is exercised by `make mockups`; its refusal with `--write`/`--compare` is
+  checked once by hand (usage, exit 2) and recorded in the commit message.
+- The comparator's self-test is not added to `make test`: the comparator is
+  only used outside the net, and starts every run with it.
+- Prior art: `tests/rando/sdl/goldens.sh` (state loop, self-proof, failure
+  lines), `tests/rando/no_literals.py` (planted sources),
+  `tests/rando/test_package.py` (a Python self-test).
+
+## Out of Scope
+
+- `make theme-compare`, the side-by-side images and scores (step 10).
+- The help text, and comparing 00's help line (step 11).
+- The frame, sprites and tuning of `themes/alttp` (step 12); any theme edit.
+- Any change to a mockup's look other than the ligature switch and 07's ▼;
+  any change to 00's content or geometry.
+- New golden states, new goldens, changes to `golden_states.txt` or
+  `sd_fixture` fixtures.
+- Changes to `ui_cli`, `alttpr`, the core, the strings, `rando/`.
+- A CI job for `make mockups` (CI has no Playwright and is manual).
+
+## Hypotheses about step 8
+
+Step 8 (PRD `docs/prd/triage/phase2-step8-new-theme-geometry.md`) was not
+done when this PRD was started. By the time it was finished, step 8's
+commits had landed (`01bb42a`..`0d01bd9`, "docs: note plan 2 step 2.8"), and
+each hypothesis below was checked against them and holds; they are kept so
+that a later reader sees what this PRD depends on.
+
+- **H-8-1**: `data/PressStart2P.ttf` is the unmodified google/fonts file
+  (sha256 `034c77f1…e017d`), so the mockups' `../../data/PressStart2P.ttf`
+  is the font the theme ships a byte copy of.
+- **H-8-2**: `themes/alttp/` loads in `alttpr --theme`, with page 12 and
+  wrap width 48, so its `--shot-text` grid is 50 × 16 and `ui_cli`'s
+  matching grid is `--cols 50 --lines 16`. The step derives the grid from
+  the capture, so another value would be followed by the tools, but not by
+  the edits (see "The content edits").
+- **H-8-3**: `goldens.sh ALTTPR THEME SD_FIXTURE --draw DIR` exists, plays
+  `golden_states.txt` with `--theme THEME`, writes `DIR/<state>.bmp` and
+  `.txt`, skips the strings column and checks each BMP is a 640×480 picture
+  of more than one colour; `--states` is added to that form.
+- **H-8-4**: `make sdl-pc` builds `alttpr` and `sd_fixture` and ends with
+  the classic comparison and the alttp draw; this step adds nothing to it.
+- **H-8-5**: step 8 changed nothing under `app/core/`, `app/sd/`,
+  `app/main/` or `rando/`, so the screens measured at `0d01bd9` above are
+  the app's.
+- **H-8-6**: Press Start 2P advances by exactly its size for 0x20–0x7E in
+  SDL_ttf (`test_sdl_alttp`), the same property the render check asserts in
+  Chromium, so a mockup text and the app's text have the same width.
+- **H-8-7**: `CLAUDE.md` and `README.md` hold step 8's lines on
+  `themes/alttp`, the fonts and `make sdl-pc`; this step adds its own lines
+  beside them and edits none of those.
+
+## Further Notes
+
+- **Why choose keys before editing.** The rules let the agent edit content,
+  not look. Every value the owner drew that the app can show is reached by
+  keys, so only true filler is edited: the Enemizer rows, the seed codes,
+  the date, the spoiler window. 00, 02, 04, 06 and 08 already match.
+- **Why ▼ is added to 07.** The detail lists 14 setting rows, a blank row,
+  the spoiler; any 12-row window with setting rows has rows below. The
+  other choice, the detail's last window, shows no setting row and loses
+  what 07 is in the inventory for (setting rows and spoiler rows in a
+  cursorless list). ▼'s place and shape were decided in step 1.2 (mirrored
+  on the last body row like ▲), so drawing it is not a look decision; it
+  is the one non-text edit, in its own commit.
+- **Why no ligatures.** SDL_ttf 2.0 lays out glyph by glyph; Chromium
+  applies Press Start 2P's `liga` table. Help strings (step 11) and
+  spoiler names will hold `fi` and `fl`; turning ligatures off in the
+  mockups makes every future string comparable, and the render check
+  catches a mockup that loses the switch.
+- **Why the grid comes from the capture.** The plan asks that `ui_cli`'s
+  grid be checked to report the SDL app's page and width. Reading it from
+  the SDL app's own `--shot-text` and requiring the two texts
+  byte-identical is that check, and it needs no number written anywhere,
+  so step 12's tuning re-runs it as is.
+- **00 in steps 10 and 12.** `goldens.sh --draw` plays 00's keys at the
+  theme's page (12 rows), so its capture will hold one row more than the
+  16 px mockup; that difference is the 16 px variant's, expected, and
+  belongs in step 12's notes for 00, not a defect.
+- `make mockups` needs `make sdl-pc`'s packages and Playwright's Chromium:
+  both are in the environment pinned in step 1.1, where it was probed.
