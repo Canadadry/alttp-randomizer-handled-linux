@@ -28,7 +28,7 @@
     - [x] Chunk 5: logic fixtures and docs
   - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven
     - [x] Chunk 1: Nintendo-bytes check
-    - [ ] Chunk 2: fetch_rom.sh and the ground rule
+    - [x] Chunk 2: fetch_rom.sh and the ground rule
     - [ ] Chunk 3: push gate hook
     - [ ] Chunk 4: read trace
     - [ ] Chunk 5: inventory checker and draft

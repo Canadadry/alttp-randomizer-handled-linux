@@ -62,7 +62,8 @@ in `docs/`, then `README.md`.
   patched with `ladxr.patch` (order fixes only); the Python scripts that run
   it without a ROM (shared helpers `ladx_oracle.py`, unit-tested by
   `test_oracle.py`); Phase 2's ROM-free tools, each unit-tested by its
-  `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check); the
+  `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check), and
+  `fetch_rom.sh`, the ROM fetcher, proved by its own run; the
   hand-written inputs `tier1.txt`,
   `determinism_cases.txt` and `order_audit.txt`; and the six fixtures they
   write for the C port (`pyrandom_vectors.txt`, `settings.txt`,
@@ -141,6 +142,19 @@ in `docs/`, then `README.md`.
   sorted, `.git` skipped, never the bytes themselves), then
   `nintendo-bytes: <n> files, rom <sha1>, min <m>, <k> literal runs`; exit 1
   when `k > 0`; a missing ROM or input is a `setup:` line, exit 2.
+- The ROM fetcher, outside the net (curl and `sha1sum` or `shasum`, else a
+  `setup:` line): `tests/ladx/oracle/fetch_rom.sh [<url>]` takes the URL
+  from its argument, else `LADX_ROM_URL`, never from a file, and never
+  writes or echoes it. It proves itself first, silently, on a planted 4 KiB
+  file served as `file://` (refused against the LADX SHA-1 with no target,
+  no part and no URL in its output; accepted against its own; else
+  `fetch_rom: self-test failed: <case>`, exit 1). Then a `tmp/ladx/base.gbc`
+  already of SHA-1 `d90ac17e…` is kept and its SHA-1 printed; else, with no
+  URL, `setup: fetch_rom: no URL (argument or LADX_ROM_URL) and no ROM in
+  tmp/ladx/`; else it downloads to `base.gbc.part` and prints only the
+  SHA-1 once moved into place. A dead link (`download failed (curl exit
+  <n>, HTTP <code>)`) or another SHA-1 (`refused, SHA-1 <x> ...`, the file
+  deleted) is a `setup:` line, exit 2.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -289,7 +303,7 @@ in `docs/`, then `README.md`.
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
   `gen_fixtures.sh`, `determinism.sh` and `audit_order.py` run only to
   regenerate or re-prove its fixtures; `nintendo_bytes.py` needs the ROM,
-  which only Phase 2 holds. The SDL build (`make sdl`,
+  which only Phase 2 holds, and `fetch_rom.sh` fetches it. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and
@@ -315,6 +329,12 @@ in `docs/`, then `README.md`.
 - **No Nintendo ROM in the repository or in CI**; only the base patch
   (`data/base.bps`) is committed. Tests use synthetic ROMs and write logs.
   `make test`'s ROM guard (`tests/rom_guard.py`) enforces it on the index.
+  The LADX oracle gets the real ROM from a temporary link held only in
+  `LADX_ROM_URL`, never in a file, a note, a commit message or a PR,
+  fetched by `fetch_rom.sh` into `tmp/ladx/` and refused unless SHA-1
+  `d90ac17e…`. Nothing committed holds a literal run of that ROM, checked
+  by `nintendo_bytes.py` and, while Phase 2's push gate is armed, before
+  every push.
   *Goal: a legal repository, verifiable without the ROM.*
 - **VT is frozen** at `219fcafd`, with no tracking of later alttpr.com
   updates. *Goal: a stable oracle.*
