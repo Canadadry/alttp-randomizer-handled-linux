@@ -19,10 +19,10 @@
     - [x] tests/rom_guard.py in make test, self-proven
   - [ ] Step 1.8 ROM-free oracle work
     - [x] Chunk 1: oracle scaffolding and RNG vectors
-    - [ ] Chunk 2: order audit and known ladxr.patch fixes
+    - [x] Chunk 2: order audit and known ladxr.patch fixes
       - [x] Order audit tool and table
       - [x] Fix: sort endscreen.py's cats listing
-      - [ ] Fix: spoiler accessibleItems in location_list order
+      - [x] Fix: spoiler accessibleItems in location_list order
     - [ ] Chunk 3: settings fixtures
     - [ ] Chunk 4: double run, item pools, determinism
     - [ ] Chunk 5: logic fixtures and docs

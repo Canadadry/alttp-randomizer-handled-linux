@@ -53,6 +53,7 @@ spoilerLog.py	remainingItems = set(self.logic.iteminfo_list)	order-free	each ele
 spoilerLog.py	lastAccessibleLocations = set()	order-free	used only in a set difference
 spoilerLog.py	newLocations = e.getAccessableLocations() - lastAccessibleLocations	order-free	each spot gets its sphere and item assigned; no output depends on the visiting order
 spoilerLog.py	lastAccessibleLocations = e.getAccessableLocations()	order-free	an assignment, used only in the next set difference
+spoilerLog.py	reached = e.getAccessableLocations()	patched	ladxr.patch builds accessibleItems by walking location_list and keeping the reached locations, not in the visited set's address order
 spoilerLog.py	if len(e.getAccessableLocations()) != len(self.logic.location_list):	order-free	a length comparison
 spoilerLog.py	if loc not in e.getAccessableLocations():	order-free	membership, walked in location_list order
 worldSetup.py	done = set()	unreached	_randomizeEntrances, entranceshuffle other than none only (tier 2); membership only

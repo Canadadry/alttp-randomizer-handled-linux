@@ -11,3 +11,17 @@ index abaebb7..097e2af 100644
      filename = random.choice(cats)
      data = open(os.path.join(os.path.dirname(__file__), "cats", filename), "rb").read()
      assert len(data) < 0x2400, filename
+diff --git a/spoilerLog.py b/spoilerLog.py
+index 723097d..41dd292 100644
+--- a/spoilerLog.py
++++ b/spoilerLog.py
+@@ -87,7 +87,8 @@ class SpoilerLog:
+         for ii in remainingItems:
+             ii.item = itemContents[ii]
+ 
+-        for location in e.getAccessableLocations():
++        reached = e.getAccessableLocations()
++        for location in [loc for loc in self.logic.location_list if loc in reached]:
+             for ii in location.items:
+                 self.accessibleItems.append(SpoilerItemInfo(ii, rom))
+ 
