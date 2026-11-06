@@ -306,13 +306,14 @@ need docker and `qemu-user`, and are not part of `make check`.
 
 `make package` builds the Miyoo release: it runs `make sdl-arm`, strips the
 binary with Onion's toolchain, checks it with `file` and `readelf` (32-bit
-ARM EABI5, hard-float, dynamically linked against `libSDL-1.2.so.0` and
-`libSDL_ttf-2.0.so.0`), re-checks `data/base.bps`, and writes
+ARM EABI5, hard-float, dynamically linked against `libSDL-1.2.so.0`,
+`libSDL_ttf-2.0.so.0` and `libSDL_image-1.2.so.0`), re-checks `data/base.bps`, and writes
 `tests/rando/build/package/ALttPR.zip`; the same commit gives the same zip
 bytes. It needs docker and is not part of `make check`. The zip's
 `App/ALttPR/` holds `alttpr`, `launch.sh`, `config.json` and `icon.png`
-(from `app/package/`), and `base.bps`, `DejaVuSansMono.ttf` and
-`DejaVuSansMono-LICENSE.txt` (from `data/`). How `data/base.bps` was built
+(from `app/package/`), `base.bps` (from `data/`), and `themes/default/`, a
+copy of every file of `themes/classic/` (its `theme.ini`, background image,
+font and font licence): the app reads its look from there. How `data/base.bps` was built
 is in step 0.1's note of `docs/plan-1.md`.
 
 CI (`.github/workflows/check.yml`) runs only by hand (**Run workflow**): its

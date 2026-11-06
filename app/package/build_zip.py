@@ -1,17 +1,22 @@
-"""Usage: python3 -I build_zip.py [--check] ALTTPR PACKAGE_DIR DATA_DIR ZIP
+"""Usage: python3 -I build_zip.py [--check] ALTTPR PACKAGE_DIR DATA_DIR THEME_DIR ZIP
 
 Writes ZIP, the release whose only top-level folder is App/ALttPR/: ALTTPR (the device binary),
-launch.sh, config.json and icon.png from PACKAGE_DIR, base.bps, DejaVuSansMono.ttf and
-DejaVuSansMono-LICENSE.txt from DATA_DIR. The same inputs give the same bytes. After writing, reads
-ZIP back and checks its entry list, every file's bytes against its source and the modes.
---check only reads an existing ZIP back against the inputs. Exits non-zero with one line on error.
+launch.sh, config.json and icon.png from PACKAGE_DIR, base.bps from DATA_DIR, and every file of
+THEME_DIR as App/ALttPR/themes/default/. THEME_DIR must hold theme.ini and only regular, non-hidden
+files: a subfolder, a symlink or a name starting with "." is refused. The same inputs give the same
+bytes. After writing, reads ZIP back and checks its entry list, every file's bytes against its
+source and the modes. --check only reads an existing ZIP back against the inputs. Exits non-zero
+with one line on error.
 """
 
 import os
+import stat
 import sys
 import zipfile
 
 ROOT = "App/ALttPR/"
+THEMES = ROOT + "themes/"
+THEME = THEMES + "default/"
 EPOCH = (1980, 1, 1, 0, 0, 0)
 UNIX = 3
 DIR_MODE = 0o40755
@@ -24,18 +29,39 @@ class PackageError(Exception):
     pass
 
 
-def sources(binary, package_dir, data_dir):
+def theme_sources(theme_dir):
+    """{entry name: (source path, mode)} for every file of theme_dir, refused unless the folder is a flat theme."""
+    if not os.path.isdir(theme_dir):
+        raise PackageError("theme folder not found: %s" % theme_dir)
+    files = {}
+    for name in sorted(os.listdir(theme_dir)):
+        path = os.path.join(theme_dir, name)
+        if name.startswith("."):
+            raise PackageError("hidden file in the theme: %s" % path)
+        st = os.lstat(path)
+        if stat.S_ISDIR(st.st_mode):
+            raise PackageError("subfolder in the theme (themes are flat): %s" % path)
+        if not stat.S_ISREG(st.st_mode):
+            raise PackageError("not a regular file in the theme: %s" % path)
+        files[THEME + name] = (path, FILE_MODE)
+    if THEME + "theme.ini" not in files:
+        raise PackageError("missing input: %s" % os.path.join(theme_dir, "theme.ini"))
+    return files
+
+
+def sources(binary, package_dir, data_dir, theme_dir):
     """{entry name: (source path, mode)} for every file entry."""
     files = {"alttpr": (binary, EXEC_MODE)}
     for name, mode in (("launch.sh", EXEC_MODE), ("config.json", FILE_MODE), ("icon.png", FILE_MODE)):
         files[name] = (os.path.join(package_dir, name), mode)
-    for name in ("base.bps", "DejaVuSansMono.ttf", "DejaVuSansMono-LICENSE.txt"):
-        files[name] = (os.path.join(data_dir, name), FILE_MODE)
-    return {ROOT + name: src for name, src in files.items()}
+    files["base.bps"] = (os.path.join(data_dir, "base.bps"), FILE_MODE)
+    files = {ROOT + name: src for name, src in files.items()}
+    files.update(theme_sources(theme_dir))
+    return files
 
 
 def expected_entries(files):
-    return sorted(["App/", ROOT] + list(files))
+    return sorted(["App/", ROOT, THEMES, THEME] + list(files))
 
 
 def entry(name, mode):
@@ -77,8 +103,15 @@ def check_zip(path, files, contents):
         raise PackageError("unreadable zip %s: %s" % (path, e))
     with z:
         names = z.namelist()
-        if names != expected_entries(files):
-            raise PackageError("%s: entries %s, expected %s" % (path, names, expected_entries(files)))
+        expected = expected_entries(files)
+        if names != expected:
+            extra = [n for n in names if n not in expected]
+            missing = [n for n in expected if n not in names]
+            if extra:
+                raise PackageError("%s: unexpected entry %s" % (path, extra[0]))
+            if missing:
+                raise PackageError("%s: missing entry %s" % (path, missing[0]))
+            raise PackageError("%s: entries %s, expected %s" % (path, names, expected))
         for info in z.infolist():
             mode = DIR_MODE if info.is_dir() else files[info.filename][1]
             if info.external_attr >> 16 != mode:
@@ -93,11 +126,11 @@ def main(argv):
     check_only = args[:1] == ["--check"]
     if check_only:
         args = args[1:]
-    if len(args) != 4:
+    if len(args) != 5:
         sys.exit(__doc__.strip())
-    binary, package_dir, data_dir, out = args
-    files = sources(binary, package_dir, data_dir)
+    binary, package_dir, data_dir, theme_dir, out = args
     try:
+        files = sources(binary, package_dir, data_dir, theme_dir)
         contents = read_inputs(files)
         if not check_only:
             write_zip(out, files, contents)

@@ -36,7 +36,8 @@ in `docs/`, then `README.md`.
   (self-test `tests/rando/test_package.py`).
 - `themes/` holds one folder per theme (`themes/classic/`: today's look as a
   theme).
-- `data/` holds the shipped font (DejaVu Sans Mono) and its licence.
+- `data/` holds the fonts' source (DejaVu Sans Mono and its licence; the
+  themes ship their own copies) and the base patch `base.bps`.
 - `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
@@ -133,11 +134,13 @@ in `docs/`, then `README.md`.
 - `make package`, outside the net, needs docker: it runs `sdl-arm`, strips
   the binary with Onion's toolchain, checks it with `file` and `readelf`
   (32-bit ARM EABI5, dynamically linked, `/lib/ld-linux-armhf.so.3`,
-  stripped, `hard-float ABI`, NEEDED `libSDL-1.2.so.0` and
-  `libSDL_ttf-2.0.so.0`), re-runs `test_patch_header --file` on
-  `data/base.bps`, and writes `tests/rando/build/package/ALttPR.zip`, whose
-  only top-level folder is `App/ALttPR/`; the same commit gives the same zip
-  bytes.
+  stripped, `hard-float ABI`, NEEDED `libSDL-1.2.so.0`,
+  `libSDL_ttf-2.0.so.0` and `libSDL_image-1.2.so.0`), re-runs
+  `test_patch_header --file` on `data/base.bps`, and writes
+  `tests/rando/build/package/ALttPR.zip`, whose only top-level folder is
+  `App/ALttPR/`, with the theme folder `PKG_THEME` (`themes/classic`)
+  shipped as `App/ALttPR/themes/default/`; the same commit gives the same
+  zip bytes.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross

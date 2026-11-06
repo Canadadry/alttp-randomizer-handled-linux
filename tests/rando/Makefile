@@ -89,11 +89,12 @@ ARM_SDL_DIR := $(ARM_DIR)/sdl
 ARM_SDL_APP := $(ARM_SDL_DIR)/alttpr
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
-# package: sdl-arm's binary stripped, checked and zipped with app/package/ and data/.
+# package: sdl-arm's binary stripped, checked and zipped with app/package/, data/'s base.bps and PKG_THEME as themes/default.
 PKG_DIR := $(BUILD)/package
 PKG_BIN := $(PKG_DIR)/alttpr
 PKG_ZIP := $(PKG_DIR)/ALttPR.zip
 PKG_BPS := ../../data/base.bps
+PKG_THEME := ../../themes/classic
 
 .PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-goldens sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
 
@@ -189,11 +190,11 @@ package: sdl-arm $(BUILD)/test_patch_header
 	@h="$$(readelf -h $(PKG_BIN) | grep 'Flags:')"; \
 		case "$$h" in *'hard-float ABI'*) ;; *) echo "$$h"; echo "package: $(PKG_BIN) is not hard-float ABI" >&2; exit 1 ;; esac
 	@d="$$(readelf -d $(PKG_BIN) | grep NEEDED)"; \
-		for l in libSDL-1.2.so.0 libSDL_ttf-2.0.so.0; do \
+		for l in libSDL-1.2.so.0 libSDL_ttf-2.0.so.0 libSDL_image-1.2.so.0; do \
 			case "$$d" in *"[$$l]"*) ;; *) echo "$$d"; echo "package: $(PKG_BIN) does not need $$l" >&2; exit 1 ;; esac; \
 		done
 	@./$(BUILD)/test_patch_header --file $(PKG_BPS)
-	@python3 -I ../../app/package/build_zip.py $(PKG_BIN) ../../app/package ../../data $(PKG_ZIP)
+	@python3 -I ../../app/package/build_zip.py $(PKG_BIN) ../../app/package ../../data $(PKG_THEME) $(PKG_ZIP)
 	@file $(PKG_BIN)
 	@readelf -h $(PKG_BIN) | grep 'Flags:'
 	@echo "package: tests/rando/$(PKG_ZIP), $$(wc -c < $(PKG_ZIP)) bytes"
