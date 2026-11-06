@@ -26,7 +26,7 @@
     - [x] Chunk 3: settings fixtures
     - [x] Chunk 4: double run, item pools, determinism
     - [x] Chunk 5: logic fixtures and docs
-  - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven
+  - [x] Step 1.9 Phase 2's ROM-free tooling, self-proven
     - [x] Chunk 1: Nintendo-bytes check
     - [x] Chunk 2: fetch_rom.sh and the ground rule
     - [x] Chunk 3: push gate hook
