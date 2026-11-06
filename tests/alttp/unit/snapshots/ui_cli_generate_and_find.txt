@@ -38,7 +38,7 @@ _| </> Change  Y Default  START Generate  |
  +----------------------------------------+
 =|[Generate]  History                     |
 #| Seed Ready                             |
- | Saved in Roms/SFC/ALttPR as:           |
+ | Saved in Roms/SFC/ZeldaRando as:       |
  | Open-Ganon-1CA10A.sfc                  |
  | Spoiler not kept                       |
  |                                        |

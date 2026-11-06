@@ -108,7 +108,8 @@ static void make_root(bool with_history)
 	make_dir("Roms/SFC");
 	make_dir(RANDO_SD_ROM_DIR);
 	make_dir("App");
-	make_dir("App/ZeldaRando");
+	make_dir(RANDO_SD_APP_DIR);
+	make_dir(RANDO_SD_ALTTP_DIR);
 	if (with_history)
 		make_dir(RANDO_SD_HISTORY_DIR);
 	CHECK(rando_history_init(&history, root));

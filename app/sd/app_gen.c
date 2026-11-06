@@ -167,7 +167,8 @@ static bool make_dir(const char *root, const char *rel)
 
 static bool make_folders(const char *root)
 {
-	static const char *const dirs[] = {"Roms", "Roms/SFC", RANDO_SD_ROM_DIR, "App", "App/ZeldaRando", RANDO_SD_HISTORY_DIR};
+	static const char *const dirs[] = {"Roms", "Roms/SFC", RANDO_SD_ROM_DIR, "App", RANDO_SD_APP_DIR, RANDO_SD_ALTTP_DIR,
+					     RANDO_SD_HISTORY_DIR};
 	size_t i;
 
 	for (i = 0; i < sizeof dirs / sizeof dirs[0]; i++)

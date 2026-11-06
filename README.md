@@ -26,7 +26,7 @@ Nintendo ROM is in this repository.
 1. Download `ZeldaRando.zip` from the
    [latest release](https://github.com/Canadadry/alttp-randomizer-handled-linux/releases/latest).
 2. Unzip `ZeldaRando.zip` at the root of the SD card.
-3. Copy your ROM to `App/ZeldaRando/base.sfc`.
+3. Copy your ROM to `App/ZeldaRando/alttp/base.sfc`.
 4. Start **Zelda Randomizer** from Onion's Apps list.
 
 An `App/ALttPR/` folder left by an older release can be deleted.
@@ -34,7 +34,7 @@ An `App/ALttPR/` folder left by an older release can be deleted.
 ## Use
 
 - **Generate**: Up / Down picks a setting, Left / Right changes it, Start
-  generates. The ROM lands in Onion's SNES list, folder `ALttPR`; each seed
+  generates. The ROM lands in Onion's SNES list, folder `ZeldaRando`; each seed
   keeps its own save.
 - **History** (L1 / R1): lists your seeds; A shows a seed's settings and
   spoiler, X deletes the seed with its save and states.

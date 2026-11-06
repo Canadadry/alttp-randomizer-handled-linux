@@ -79,6 +79,6 @@ same miyoomini flags (`src/common/config.mk` and `.github/workflows/` identical)
   with the offending line. It re-checks `data/base.bps` with
   `test_patch_header --file`, then `app/package/build_zip.py` writes
   `tests/alttp/build/package/ZeldaRando.zip` (`App/ZeldaRando/`: the binary,
-  `launch.sh`, `config.json`, `icon.png`, `base.bps`, the font and its
+  `launch.sh`, `config.json`, `icon.png`, `alttp/base.bps`, the font and its
   licence). The shipped binary has `sdl-arm`'s flags, the same as the code
   `e2e-arm` and `unit-arm` run under qemu; it is not run itself.

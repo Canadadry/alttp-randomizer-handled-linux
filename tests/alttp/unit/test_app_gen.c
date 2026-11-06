@@ -138,22 +138,28 @@ static int count_files(const char *rel)
 	return n;
 }
 
-/* A fresh SD root holding App/ZeldaRando/ with the synthetic base.sfc and base.bps; the runner configured on it
- * with the synthetic digests, a fixed seed and date. */
-static void make_root(void)
+/* A fresh SD root holding App/ZeldaRando/ and App/ZeldaRando/alttp/, with the synthetic base files at base_rom and
+ * base_patch; the runner configured on it with the synthetic digests, a fixed seed and date. */
+static void make_root_with(const char *base_rom, const char *base_patch)
 {
 	strcpy(root, "/tmp/test_app_gen_XXXXXX");
 	if (mkdtemp(root) == NULL)
 		test_fail(TEST, "mkdtemp failed");
 	make_dir("App");
-	make_dir("App/ZeldaRando");
-	write_bytes(RANDO_SD_BASE_ROM_FILE, synth_source, SYNTH_SOURCE_SIZE);
-	write_bytes(RANDO_SD_BASE_PATCH_FILE, synth_good_patch.bytes, synth_good_patch.size);
+	make_dir(RANDO_SD_APP_DIR);
+	make_dir(RANDO_SD_ALTTP_DIR);
+	write_bytes(base_rom, synth_source, SYNTH_SOURCE_SIZE);
+	write_bytes(base_patch, synth_good_patch.bytes, synth_good_patch.size);
 	CHECK(rando_app_gen_init(&gen, root));
 	memcpy(gen.source_md5, synth_source_md5, RANDO_MD5_SIZE);
 	memcpy(gen.base_md5, synth_base_md5, RANDO_MD5_SIZE);
 	gen.seed = fixed_seed;
 	gen.date = fixed_date_fn;
+}
+
+static void make_root(void)
+{
+	make_root_with(RANDO_SD_BASE_ROM_FILE, RANDO_SD_BASE_PATCH_FILE);
 }
 
 static void drop_root(void)
@@ -464,6 +470,41 @@ static void check_table(const char *name, const RandoAppText *entries, int count
 	}
 }
 
+static void test_layout_pin(void)
+{
+	CHECK(strcmp(RANDO_SD_ROM_DIR, "Roms/SFC/ZeldaRando") == 0);
+	CHECK(strcmp(RANDO_SD_GAME_CONFIG_DIR, "Roms/SFC/ZeldaRando/.game_config") == 0);
+	CHECK(strcmp(RANDO_SD_HISTORY_DIR, "App/ZeldaRando/alttp/history") == 0);
+	CHECK(strcmp(RANDO_SD_SETTINGS_FILE, "App/ZeldaRando/alttp/settings.json") == 0);
+	CHECK(strcmp(RANDO_SD_BASE_ROM_FILE, "App/ZeldaRando/alttp/base.sfc") == 0);
+	CHECK(strcmp(RANDO_SD_BASE_PATCH_FILE, "App/ZeldaRando/alttp/base.bps") == 0);
+}
+
+static void test_layout_on_the_sd_card(void)
+{
+	UiGenOutcome o;
+	char path[128];
+
+	make_root_with("App/ZeldaRando/alttp/base.sfc", "App/ZeldaRando/alttp/base.bps");
+	o = run(false);
+	CHECK(o.ok);
+	snprintf(path, sizeof path, "Roms/SFC/ZeldaRando/%s", o.rom);
+	CHECK(exists(path));
+	snprintf(path, sizeof path, "App/ZeldaRando/alttp/history/%.6s.json", o.rom + strlen(o.rom) - 10);
+	CHECK(exists(path));
+	CHECK(exists("App/ZeldaRando/alttp/settings.json"));
+	CHECK(!exists("App/ZeldaRando/history") && !exists("App/ZeldaRando/settings.json"));
+	CHECK(!exists("Roms/SFC/ALttPR"));
+	drop_root();
+
+	make_root_with("App/ZeldaRando/base.sfc", "App/ZeldaRando/base.bps");
+	o = run(false);
+	CHECK(!o.ok && o.status == UI_STR_GEN_BASE_MISSING && o.advice == UI_STR_ADVICE_BASE);
+	CHECK(strcmp(ui_str(ui_str_english(), o.advice), "Needs App/ZeldaRando/alttp/base.sfc") == 0);
+	CHECK(count_files("Roms/SFC/ZeldaRando") <= 0);
+	drop_root();
+}
+
 static void test_tables(void)
 {
 	RandoAppText gen_t[RANDO_APP_GEN_STATUS_COUNT], save_t[RANDO_SAVE_STATUS_COUNT],
@@ -494,7 +535,7 @@ static void test_tables(void)
 	CHECK(strcmp(ui_str(en, assemble_t[RANDO_ASSEMBLE_PATCH].status), "Patch refused: {}") == 0);
 	CHECK(strcmp(ui_str(en, bps_t[RANDO_BPS_PATCH_CRC].status), "bad patch checksum") == 0);
 	CHECK(strcmp(ui_str(en, gen_t[RANDO_APP_GEN_BASE_MISSING].status), "Base ROM not found") == 0);
-	CHECK(strcmp(ui_str(en, gen_t[RANDO_APP_GEN_BASE_MISSING].advice), "Needs App/ZeldaRando/base.sfc (JP 1.0)") == 0);
+	CHECK(strcmp(ui_str(en, gen_t[RANDO_APP_GEN_BASE_MISSING].advice), "Needs App/ZeldaRando/alttp/base.sfc") == 0);
 	CHECK(strcmp(ui_str(en, save_t[RANDO_SAVE_RECORD].status), "History record write failed") == 0);
 	CHECK(strcmp(ui_str(en, assemble_t[RANDO_ASSEMBLE_OUTPUT].status), "SD card write failed") == 0);
 	CHECK(strcmp(ui_str(en, assemble_t[RANDO_ASSEMBLE_OUTPUT].advice), "Check that the SD card is writable") == 0);
@@ -507,6 +548,8 @@ int main(int argc, char **argv)
 	test_sd_root();
 	test_init_defaults();
 	test_tables();
+	test_layout_pin();
+	test_layout_on_the_sd_card();
 	test_success_from_an_empty_root();
 	test_out_of_range_date();
 	test_caches();

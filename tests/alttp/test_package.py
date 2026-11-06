@@ -32,7 +32,8 @@ THEME = "App/ZeldaRando/themes/default/"
 EXPECTED = [
     "App/",
     "App/ZeldaRando/",
-    "App/ZeldaRando/base.bps",
+    "App/ZeldaRando/alttp/",
+    "App/ZeldaRando/alttp/base.bps",
     "App/ZeldaRando/config.json",
     "App/ZeldaRando/icon.png",
     "App/ZeldaRando/launch.sh",
@@ -119,9 +120,10 @@ class Builder(unittest.TestCase):
         self.build()
         with zipfile.ZipFile(self.zip) as z:
             self.assertEqual(z.read("App/ZeldaRando/zrando"), read(self.binary))
-            for d, names in ((self.package, PACKAGE_FILES), (self.data, DATA_FILES)):
-                for name in names:
-                    self.assertEqual(z.read("App/ZeldaRando/" + name), read(os.path.join(d, name)), name)
+            for name in PACKAGE_FILES:
+                self.assertEqual(z.read("App/ZeldaRando/" + name), read(os.path.join(self.package, name)), name)
+            for name in DATA_FILES:
+                self.assertEqual(z.read("App/ZeldaRando/alttp/" + name), read(os.path.join(self.data, name)), name)
             for name in THEME_FILES:
                 self.assertEqual(z.read(THEME + name), read(os.path.join(self.theme, name)), name)
 
@@ -218,7 +220,7 @@ class Builder(unittest.TestCase):
     def test_check_refuses_an_extra_entry(self):
         self.build()
         with zipfile.ZipFile(self.zip, "a") as z:
-            z.writestr("App/ZeldaRando/base.sfc", b"rom")
+            z.writestr("App/ZeldaRando/alttp/base.sfc", b"rom")
         r = self.run_builder("--check")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("base.sfc", r.stderr)

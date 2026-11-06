@@ -120,7 +120,7 @@ static void drop_root(void)
 	root[0] = '\0';
 }
 
-/* A fresh SD root holding only App/ZeldaRando/. */
+/* A fresh SD root holding only App/ZeldaRando/alttp/. */
 static void make_root(void)
 {
 	drop_root();
@@ -130,7 +130,8 @@ static void make_root(void)
 		test_fail(TEST, "mkdtemp failed");
 	}
 	make_dir("App");
-	make_dir("App/ZeldaRando");
+	make_dir(RANDO_SD_APP_DIR);
+	make_dir(RANDO_SD_ALTTP_DIR);
 }
 
 static void start(void)

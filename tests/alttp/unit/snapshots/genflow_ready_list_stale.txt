@@ -1,7 +1,7 @@
  +----------------------------------------+
 =|[Generate]  History                     |
 #| Seed Ready                             |
- | Saved in Roms/SFC/ALttPR as:           |
+ | Saved in Roms/SFC/ZeldaRando as:       |
  | Open-Ganon-2B3C4D.sfc                  |
  | Spoiler not kept                       |
  |                                        |

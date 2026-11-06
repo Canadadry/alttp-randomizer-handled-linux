@@ -20,7 +20,10 @@ in `docs/`, then `README.md`.
   (`host/main/rando_gen.c`).
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
   like the library, built with only `alttp/include` and itself on the include
-  path, no SDL. `app/sd/` is the SD-card layer (`record.c`, `seed_save.c`).
+  path, no SDL. `app/sd/` is the SD-card layer (`record.c`, `seed_save.c`);
+  its paths live in `rando_seed_save.h`, per game: ALttP's `base.sfc`,
+  `base.bps`, `history/` and `settings.json` in `App/ZeldaRando/alttp/`, its
+  ROMs in `Roms/SFC/ZeldaRando/`.
   `app/sdl/` is the SDL 1.2 renderer and input layer (key map, grid view,
   theme renderer `sdl_render.c`, frame loop). `app/core` uses the library;
   `app/sd` the library, `alttp/host` and `app/core` (it hands the core its
@@ -215,7 +218,8 @@ in `docs/`, then `README.md`.
   `tests/alttp/build/package/ZeldaRando.zip`, whose only top-level folder is
   `App/ZeldaRando/` (binary `zrando`, label "Zelda Randomizer"), with the
   theme folder `PKG_THEME` (`themes/alttp`) shipped as
-  `App/ZeldaRando/themes/default/`; the same commit gives the same
+  `App/ZeldaRando/themes/default/` and the base patch as
+  `App/ZeldaRando/alttp/base.bps`; the same commit gives the same
   zip bytes.
 - `make mac`, `mac-rom ROM=<file>`, `mac-run`, `mac-clean`, outside the
   net, macOS only (`targets/mac/`): the SDL app on sdl12-compat with a

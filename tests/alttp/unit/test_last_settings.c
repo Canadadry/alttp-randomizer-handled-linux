@@ -220,7 +220,7 @@ static void test_failed_save(void)
 int main(int argc, char **argv)
 {
 	test_fixtures_mode(TEST, argc, argv);
-	CHECK(strcmp(RANDO_SD_SETTINGS_FILE, "App/ZeldaRando/settings.json") == 0);
+	CHECK(strcmp(RANDO_SD_SETTINGS_FILE, "App/ZeldaRando/alttp/settings.json") == 0);
 	test_round_trip();
 	test_file_text();
 	test_missing_and_invalid();

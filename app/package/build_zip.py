@@ -1,12 +1,12 @@
 """Usage: python3 -I build_zip.py [--check] ZRANDO PACKAGE_DIR DATA_DIR THEME_DIR ZIP
 
 Writes ZIP, the release whose only top-level folder is App/ZeldaRando/: ZRANDO (the device binary),
-launch.sh, config.json and icon.png from PACKAGE_DIR, base.bps from DATA_DIR, and every file of
-THEME_DIR as App/ZeldaRando/themes/default/. THEME_DIR must hold theme.ini and only regular, non-hidden
-files: a subfolder, a symlink or a name starting with "." is refused. The same inputs give the same
-bytes. After writing, reads ZIP back and checks its entry list, every file's bytes against its
-source and the modes. --check only reads an existing ZIP back against the inputs. Exits non-zero
-with one line on error.
+launch.sh, config.json and icon.png from PACKAGE_DIR, base.bps from DATA_DIR as
+App/ZeldaRando/alttp/base.bps, and every file of THEME_DIR as App/ZeldaRando/themes/default/.
+THEME_DIR must hold theme.ini and only regular, non-hidden files: a subfolder, a symlink or a name
+starting with "." is refused. The same inputs give the same bytes. After writing, reads ZIP back and
+checks its entry list, every file's bytes against its source and the modes. --check only reads an
+existing ZIP back against the inputs. Exits non-zero with one line on error.
 """
 
 import os
@@ -17,6 +17,7 @@ import zipfile
 ROOT = "App/ZeldaRando/"
 THEMES = ROOT + "themes/"
 THEME = THEMES + "default/"
+ALTTP = ROOT + "alttp/"
 EPOCH = (1980, 1, 1, 0, 0, 0)
 UNIX = 3
 DIR_MODE = 0o40755
@@ -54,14 +55,14 @@ def sources(binary, package_dir, data_dir, theme_dir):
     files = {"zrando": (binary, EXEC_MODE)}
     for name, mode in (("launch.sh", EXEC_MODE), ("config.json", FILE_MODE), ("icon.png", FILE_MODE)):
         files[name] = (os.path.join(package_dir, name), mode)
-    files["base.bps"] = (os.path.join(data_dir, "base.bps"), FILE_MODE)
     files = {ROOT + name: src for name, src in files.items()}
+    files[ALTTP + "base.bps"] = (os.path.join(data_dir, "base.bps"), FILE_MODE)
     files.update(theme_sources(theme_dir))
     return files
 
 
 def expected_entries(files):
-    return sorted(["App/", ROOT, THEMES, THEME] + list(files))
+    return sorted(["App/", ROOT, ALTTP, THEMES, THEME] + list(files))
 
 
 def entry(name, mode):

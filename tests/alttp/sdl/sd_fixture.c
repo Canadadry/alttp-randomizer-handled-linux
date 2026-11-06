@@ -94,7 +94,8 @@ int main(int argc, char **argv)
 	synth_build();
 	make_dir(dir);
 	make_dir(at(dir, "App"));
-	make_dir(at(dir, "App/ZeldaRando"));
+	make_dir(at(dir, RANDO_SD_APP_DIR));
+	make_dir(at(dir, RANDO_SD_ALTTP_DIR));
 	if (bad_source)
 		synth_source[0] = (uint8_t)~synth_source[0];
 	write_bytes(at(dir, RANDO_SD_BASE_ROM_FILE), synth_source, SYNTH_SOURCE_SIZE);

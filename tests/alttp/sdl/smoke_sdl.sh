@@ -16,7 +16,7 @@ features="$(cd "$(dirname "$0")" && pwd)/themes/features"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 tree="$tmp/sd"
-mkdir -p "$tree/App/ZeldaRando"
+mkdir -p "$tree/App/ZeldaRando/alttp"
 
 fail() {
 	echo "smoke_sdl: $*" >&2
@@ -83,7 +83,7 @@ shown() {
 }
 
 play="$tmp/play"
-mkdir -p "$play/App/ZeldaRando"
+mkdir -p "$play/App/ZeldaRando/alttp"
 # shellcheck disable=SC2086
 expect 0 --sd "$play" --theme "$theme" $fixed --shot "$tmp/history.bmp" --shot-text "$tmp/history.txt" -- start a r1
 shown "$tmp/history.txt" "[History]" "No seeds yet"
@@ -151,7 +151,7 @@ PY
 }
 
 themed="$tmp/themed"
-mkdir -p "$themed/App/ZeldaRando"
+mkdir -p "$themed/App/ZeldaRando/alttp"
 expect 0 --sd "$themed" --theme "$theme" --frames 1 --shot "$tmp/classic.bmp" --shot-text "$tmp/classic.txt"
 grid_size "$tmp/classic.txt" 15 40
 picture "$tmp/classic.bmp"

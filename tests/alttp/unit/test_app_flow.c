@@ -110,7 +110,7 @@ static void remove_all(const char *path)
 	rmdir(path);
 }
 
-/* An SD root holding App/ZeldaRando/ with the synthetic base.sfc and base.bps; the runner on it with the synthetic
+/* An SD root holding App/ZeldaRando/alttp/ with the synthetic base.sfc and base.bps; the runner on it with the synthetic
  * digests, a fixed seed and date, and the flow on the runner. */
 static void make_root(void)
 {
@@ -118,7 +118,8 @@ static void make_root(void)
 	if (mkdtemp(root) == NULL)
 		test_fail(TEST, "mkdtemp failed");
 	make_dir("App");
-	make_dir("App/ZeldaRando");
+	make_dir(RANDO_SD_APP_DIR);
+	make_dir(RANDO_SD_ALTTP_DIR);
 	write_bytes(RANDO_SD_BASE_ROM_FILE, synth_source, SYNTH_SOURCE_SIZE);
 	write_bytes(RANDO_SD_BASE_PATCH_FILE, synth_good_patch.bytes, synth_good_patch.size);
 	CHECK(rando_app_gen_init(&gen, root));

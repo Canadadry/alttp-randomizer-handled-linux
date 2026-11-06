@@ -332,7 +332,7 @@ Sources:
   374–378 at `2bab767e`)
   ([`runtime.sh` lines 458–494](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/build/.tmp_update/runtime.sh#L458-L494);
   [lines 472–508 at `2bab767e`](https://github.com/OnionUI/Onion/blob/2bab767e4a17b1b489f02c9fb6af8dde310d4c3e/static/build/.tmp_update/runtime.sh#L472-L508)).
-  For `Roms/SFC/ALttPR/X.sfc` that file is `Roms/SFC/ALttPR/.game_config/X.cfg`;
+  For `Roms/SFC/ZeldaRando/X.sfc` that file is `Roms/SFC/ZeldaRando/.game_config/X.cfg`;
   it exists only if the user changes the core for that ROM.
 - **Subfolders: one level deep, no apostrophe, not with `miyoogamelist.xml`.**
   "Subfolders can be used inside your rom folders but ONLY one level deep
@@ -418,7 +418,7 @@ Sources:
   ([`libretro-common/file/file_path.c` lines 420–427, 665–673](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/libretro-common/file/file_path.c#L420-L427)).
   The content's subfolder is used only with `sort_*_by_content_enable`
   ([`runloop.c` lines 8205–8209, 8253–8258](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/runloop.c#L8205-L8258)),
-  off in Onion's config. So `ALttPR/` is ignored, and two ROMs with the same
+  off in Onion's config. So `ZeldaRando/` is ignored, and two ROMs with the same
   file name in different SNES folders would share one save. Before launch,
   `runtime.sh` resolves the ROM path with `realpath`
   ([`runtime.sh` lines 335–337](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/build/.tmp_update/runtime.sh#L335-L337);
@@ -449,7 +449,7 @@ Sources:
     off in Onion's config;
   - compression sets a flag on the same file, with no extra extension
     ([`tasks/task_save.c` lines 1181–1184](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/tasks/task_save.c#L1181-L1184)).
-- **Worked example: `Roms/SFC/ALttPR/Open-Ganon-1CA10A.sfc`**, base name
+- **Worked example: `Roms/SFC/ZeldaRando/Open-Ganon-1CA10A.sfc`**, base name
   `Open-Ganon-1CA10A`, with Onion's shipped config:
   - save: `/mnt/SDCARD/Saves/CurrentProfile/saves/Supafaust/Open-Ganon-1CA10A.srm`;
   - states, in `/mnt/SDCARD/Saves/CurrentProfile/states/Supafaust/`:
@@ -517,9 +517,9 @@ Every fact used below is the same at `07505ea5` and `2bab767e` (section
 | §2 path or layout | §2 text | Code | Facts | Verdict |
 |---|---|---|---|---|
 | `App/ZeldaRando/` as an Onion app (`config.json`, `launch.sh`, icon) | "An Onion app (`App/ZeldaRando/`)" | none yet (Phase 4 step 2's zip) | A folder under `App/` with a `config.json` is an app, named by `label`, started by `launch`, run from its own folder; the app sorter moves it whole; icon packs rewrite only a matching icon; an icon inside the app folder is not shown in a shipped app, an absolute path is a shipped form ([§2](#2-app-folder)) | MATCH, with a consequence (C1, C2) |
-| `App/ZeldaRando/base.sfc` | "placed once at `App/ZeldaRando/base.sfc`" | none yet (Phase 3 step 5 reads it) | App data inside the folder moves with it and is not per profile; nothing outside `Roms/` is listed as a game ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH |
-| `App/ZeldaRando/history/` | "History records go to `App/ZeldaRando/history/<code>.json`" | `RANDO_SD_HISTORY_DIR` `"App/ZeldaRando/history"` | Same as `base.sfc`; not per profile ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH, with a consequence (C3) |
-| `Roms/SFC/ALttPR/` as a folder of the SNES list, played by the default core | "Generated ROMs go to `Roms/SFC/ALttPR/…`, a subfolder of Onion's SNES list"; played "from Onion's SNES list with Onion's own SNES core" | `RANDO_SD_ROM_DIR` `"Roms/SFC/ALttPR"` | `Emu/SFC` has `rompath` `../../Roms/SFC` and starts `mednafen_supafaust_libretro.so`; subfolders one level deep, no apostrophe, flattened with `miyoogamelist.xml`; the list is cached in `Roms/SFC/SFC_cache6.db` and a new ROM shows only after a refresh, which Onion's scripts force by deleting that file ([§6](#6-snes-list)) | MATCH, with a consequence (C3, C4) |
+| `App/ZeldaRando/alttp/base.sfc` | "placed once at `App/ZeldaRando/alttp/base.sfc`" | none yet (Phase 3 step 5 reads it) | App data inside the folder moves with it and is not per profile; nothing outside `Roms/` is listed as a game ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH |
+| `App/ZeldaRando/alttp/history/` | "History records go to `App/ZeldaRando/alttp/history/<code>.json`" | `RANDO_SD_HISTORY_DIR` `"App/ZeldaRando/alttp/history"` | Same as `base.sfc`; not per profile ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH, with a consequence (C3) |
+| `Roms/SFC/ZeldaRando/` as a folder of the SNES list, played by the default core | "Generated ROMs go to `Roms/SFC/ZeldaRando/…`, a subfolder of Onion's SNES list"; played "from Onion's SNES list with Onion's own SNES core" | `RANDO_SD_ROM_DIR` `"Roms/SFC/ZeldaRando"` | `Emu/SFC` has `rompath` `../../Roms/SFC` and starts `mednafen_supafaust_libretro.so`; subfolders one level deep, no apostrophe, flattened with `miyoogamelist.xml`; the list is cached in `Roms/SFC/SFC_cache6.db` and a new ROM shows only after a refresh, which Onion's scripts force by deleting that file ([§6](#6-snes-list)) | MATCH, with a consequence (C3, C4) |
 | The ROM name as a content name | "`<Mode>-<Goal>-<code>.sfc` (e.g. `Open-FastGanon-4F2A9C.sfc`)" | `rando_name_make`, `RANDO_NAME_ROM_MAX` | `extlist` holds lower-case `sfc` and is case-sensitive; the card is FAT32; RetroArch's base name is the file name without its last extension, so `Open-Ganon-1CA10A.sfc` gives `Open-Ganon-1CA10A` unchanged ([§6](#6-snes-list), [§7](#7-saves-and-states)) | MATCH |
 | The `.srm` location | Delete "removes the ROM, its RetroArch `.srm` save" | none yet (Phase 3 step 6) | `Saves/CurrentProfile/saves/Supafaust/<base>.srm`: `savefile_directory`, sorted by the core's `library_name` `Supafaust`, not by content folder, not next to the content ([§7](#7-saves-and-states)); `CurrentProfile` is the active profile, the other one is `MainProfile` or `GuestProfile` ([§9](#9-profiles)) | MATCH, with a consequence (C5, C6, C7) |
 | The save-state location | Delete removes "its RetroArch save states" | none yet (Phase 3 step 6) | `Saves/CurrentProfile/states/Supafaust/`: `<base>.state`, `<base>.stateN` (0…10 by auto-index, any N by hand), `<base>.state.auto`, each with an optional `.png`; all start with `<base>.state`, which no `-<n>` sibling does; compression adds no extension ([§7](#7-saves-and-states)) | MATCH, with a consequence (C5, C6, C8) |
@@ -538,9 +538,9 @@ No row is a `MISMATCH`.
   `RANDO_SD_ROM_DIR` and `RANDO_SD_HISTORY_DIR`; `launch.sh` starts it in
   `App/ZeldaRando/`.
 - **C3 (Phase 3 step 5 or Phase 4 step 2).** `rando_seed_save` creates no
-  directory: `App/ZeldaRando/history/` ships in the zip or is created at start,
-  and `Roms/SFC/ALttPR/` is created before the first save (it is not in the
-  zip, which holds only `App/ZeldaRando/`).
+  directory: `App/ZeldaRando/alttp/history/` ships in the zip or is created
+  at start, and `Roms/SFC/ZeldaRando/` is created before the first save (it is
+  not in the zip, which holds only `App/ZeldaRando/`, with `alttp/base.bps`).
 - **C4 (Phase 3 steps 5 and 6).** After writing a ROM (step 5) and after
   deleting one (step 6), the app deletes `Roms/SFC/SFC_cache6.db` (and
   `SFC_cache2.db`), as `reset_list.sh` does, so the list is rebuilt; that a
@@ -595,7 +595,7 @@ What the sources do not settle, with what the app assumes meanwhile:
    `savefile_directory`, `savestate_directory`, `sort_*` and
    `*_in_content_dir` values of section 7, and
    `Saves/CurrentProfile/config/Supafaust/` holds no override of them.
-5. A ROM copied into `Roms/SFC/ALttPR/` shows in the SNES list only after
+5. A ROM copied into `Roms/SFC/ZeldaRando/` shows in the SNES list only after
    Refresh, and shows without it once `Roms/SFC/SFC_cache6.db` is deleted.
 6. An app icon given as `/mnt/SDCARD/App/ZeldaRando/<file>.png` (or a path
    relative to the app folder) is shown in the Apps list.

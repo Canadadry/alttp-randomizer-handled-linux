@@ -1,7 +1,7 @@
  +----------------------------------------+
 =|[Generate]  History                     |
 #| Seed Ready                             |
- | Saved in Roms/SFC/ALttPR as:           |
+ | Saved in Roms/SFC/ZeldaRando as:       |
  | Standard-Ganon-1CA10A.sfc              |
  | Spoiler kept in History                |
  |                                        |
