@@ -362,5 +362,84 @@ class ValidateTest(unittest.TestCase):
             ladx_oracle.validate_fixture(deep)
 
 
+class WorldSetupTest(unittest.TestCase):
+    IDENTITY = {"d1": "d1:inside", "d1:inside": "d1"}
+    GOALS = [object(), object(), object()]
+
+    def world(self, **fields):
+        ws = types.SimpleNamespace(entrance_mapping=dict(self.IDENTITY), boss_mapping=[0, 2, 1],
+                                   miniboss_mapping={0: "HINOX", "c1": "AVALAUNCH"}, goal="=1234",
+                                   goal_count=4, bingo_goals=None, sign_maze=None, multichest="BOMB",
+                                   map=None, inside_to_outside=True, one_on_one=False)
+        for key, value in fields.items():
+            setattr(ws, key, value)
+        return ws
+
+    def test_every_field_in_order(self):
+        self.assertEqual(list(ladx_oracle.ws_lines(self.world(), self.IDENTITY, self.GOALS)), [
+            "ws entrance_mapping identity", "ws boss_mapping 0,2,1", "ws miniboss_mapping 0=HINOX,c1=AVALAUNCH",
+            "ws goal =1234", "ws goal_count 4", "ws bingo_goals -", "ws sign_maze -", "ws multichest BOMB",
+            "ws map -", "ws inside_to_outside 1", "ws one_on_one 0"])
+
+    def test_bingo_goals_maze_and_a_shuffled_mapping(self):
+        ws = self.world(bingo_goals=[self.GOALS[2], self.GOALS[0]], sign_maze=([(27, 84), (30, 84)], [3, 0x82]),
+                        entrance_mapping={"d1": "d2:inside", "d2:inside": "d1"})
+        lines = list(ladx_oracle.ws_lines(ws, self.IDENTITY, self.GOALS))
+        self.assertEqual(lines[0], "ws entrance_mapping d1=d2:inside,d2:inside=d1")
+        self.assertIn("ws bingo_goals 2,0", lines)
+        self.assertIn("ws sign_maze 27:84,30:84;3,130", lines)
+
+    def test_unrenderable_fields_are_refused(self):
+        for fields in ({"map": object()}, {"bingo_goals": [object()]}, {"goal": "a b"}, {"boss_mapping": []},
+                       {"multichest": 0.5}):
+            with self.assertRaises(ladx_oracle.OracleError, msg=fields):
+                list(ladx_oracle.ws_lines(self.world(**fields), self.IDENTITY, self.GOALS))
+
+
+class PoolTest(unittest.TestCase):
+    def test_pool_line_keeps_order_and_zero_counts(self):
+        self.assertEqual(ladx_oracle.pool_line("pool", {"SWORD": 2, "BOMB": 0, "KEY1": 3}),
+                         "pool SWORD=2 BOMB=0 KEY1=3")
+
+    def test_pool_line_refuses_bad_names_and_counts(self):
+        for pool in ({"sword": 1}, {"SWORD": "1"}, {"SWORD": True}):
+            with self.assertRaises(ladx_oracle.OracleError, msg=pool):
+                ladx_oracle.pool_line("pool", pool)
+
+    def test_place_lines(self):
+        class Chest:
+            nameId, item = "0x011", "SWORD"
+        spot = Chest()
+        empty = types.SimpleNamespace(nameId="None", item=None)
+        self.assertEqual(list(ladx_oracle.place_lines([spot, empty])),
+                         ["place 0 Chest 0x011 SWORD", "place 1 SimpleNamespace None -"])
+
+
+class CompareTest(unittest.TestCase):
+    RUN = "seed 00\nplace 0 Chest 0x011 SWORD\ntrace 0 rnd randomizer:Randomizer.__init__ choice 3 -> 1 [1]\n"
+
+    def test_identical_runs_are_the_same(self):
+        self.assertEqual(ladx_oracle.compare_runs("baseline", self.RUN, self.RUN), "same baseline")
+
+    def test_first_differing_line_is_shown(self):
+        other = self.RUN.replace("-> 1 [1]", "-> 2 [1]")
+        self.assertEqual(ladx_oracle.compare_runs("race", self.RUN, other),
+                         "DIFFERENT race: line 3: trace 0 rnd randomizer:Randomizer.__init__ choice 3 -> 1 [1]"
+                         " | trace 0 rnd randomizer:Randomizer.__init__ choice 3 -> 2 [1]")
+
+    def test_a_shorter_run_differs_at_its_end(self):
+        self.assertEqual(ladx_oracle.compare_runs("x", self.RUN, "seed 00\n"),
+                         "DIFFERENT x: line 2: place 0 Chest 0x011 SWORD | <end of file>")
+
+
+    def test_runs_varied_needs_another_hash_and_another_checkout(self):
+        a = "hashseed 0\nhash_ladxr 12\ncheckout /a/ladxr\npython 3.13.1\n"
+        b = "hashseed 1\nhash_ladxr -7\ncheckout /b/ladxr\npython 3.13.1\n"
+        self.assertTrue(ladx_oracle.runs_varied(a, b))
+        self.assertFalse(ladx_oracle.runs_varied(a, b.replace("-7", "12")))
+        self.assertFalse(ladx_oracle.runs_varied(a, b.replace("/b/", "/a/")))
+        self.assertFalse(ladx_oracle.runs_varied(a, "hashseed 1\n"))
+
+
 if __name__ == "__main__":
     unittest.main()

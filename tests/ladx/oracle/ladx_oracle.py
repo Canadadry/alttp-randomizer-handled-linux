@@ -1,4 +1,5 @@
-"""Shared helpers of the LADX oracle: the RNG tracer, the fixtures' line encoders and the order audit.
+"""Shared helpers of the LADX oracle: the RNG tracer, the fixtures' line encoders, the double run's
+comparator and the order audit.
 
 Imports only the standard library and stays importable on Python older than 3.11, so that
 make test runs everywhere; the oracle scripts themselves need 3.11 (co_qualname).
@@ -431,3 +432,103 @@ def audit_order(root, table_text):
     if lines:
         return False, lines
     return True, ["order audit: %d sites, all audited" % len(sites)]
+
+
+def compare_runs(name, a_text, b_text):
+    """The double run's verdict on one case: `same <name>`, or `DIFFERENT <name>: line <n>: <A line>
+    | <B line>` at the first differing line, `<end of file>` standing for a missing one."""
+    a_lines, b_lines = a_text.splitlines(), b_text.splitlines()
+    for n in range(max(len(a_lines), len(b_lines))):
+        a = a_lines[n] if n < len(a_lines) else "<end of file>"
+        b = b_lines[n] if n < len(b_lines) else "<end of file>"
+        if a != b:
+            return "DIFFERENT %s: line %d: %s | %s" % (name, n + 1, a, b)
+    return "same %s" % name
+
+
+def _ws_scalar(value):
+    if value is None:
+        return "-"
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if isinstance(value, int):
+        return render(value)
+    if isinstance(value, str) and value and not any(c in value for c in " ,;"):
+        return field(value)
+    raise OracleError("oracle: world setup value %r cannot be rendered" % (value,))
+
+
+def _ws_list(values, render_one=_ws_scalar):
+    if not isinstance(values, list) or not values:
+        raise OracleError("oracle: world setup value %r is not a non-empty list" % (values,))
+    return ",".join(render_one(v) for v in values)
+
+
+def ws_lines(ws, identity, bingo_table):
+    """The world setup as `ws <field> <value>` lines, in its attribute order: entrance_mapping as
+    `identity` when it equals `identity`, else k=v,...; bingo_goals as indexes into bingo_table;
+    sign_maze as x:y,...;direction,...; lists comma-separated, dicts k=v,..., None as -."""
+    for name, value in vars(ws).items():
+        if name == "entrance_mapping" and value == identity:
+            shown = "identity"
+        elif value is None:
+            shown = "-"
+        elif name == "bingo_goals":
+            def index(goal):
+                for i, known in enumerate(bingo_table):
+                    if known is goal:
+                        return str(i)
+                raise OracleError("oracle: bingo goal %r is not in the goal table" % (goal,))
+            shown = _ws_list(value, index)
+        elif name == "sign_maze":
+            signs, directions = value
+            shown = "%s;%s" % (_ws_list(signs, lambda xy: "%s:%s" % tuple(map(_ws_scalar, xy))),
+                               _ws_list(directions))
+        elif isinstance(value, dict):
+            shown = ",".join("%s=%s" % (_ws_scalar(k), _ws_scalar(v)) for k, v in value.items())
+        elif isinstance(value, list):
+            shown = _ws_list(value)
+        else:
+            shown = _ws_scalar(value)
+        yield "ws %s %s" % (name, shown)
+
+
+def pool_line(tag, pool):
+    """`<tag> <item>=<count> ...` for an item pool dict, in its order, zero counts kept."""
+    return " ".join([tag] + ["%s=%s" % (item_name(item), render(count)) for item, count in pool.items()])
+
+
+def place_lines(spots):
+    """`place <i> <class> <nameId> <item or ->` for each spot of LADXR's iteminfo_list."""
+    for i, spot in enumerate(spots):
+        yield "place %d %s %s %s" % (i, type(spot).__name__, field(spot.nameId),
+                                     "-" if spot.item is None else item_name(spot.item))
+
+
+def runs_varied(a_meta, b_meta):
+    """Whether the double run's two meta files show another hash("ladxr") and another checkout."""
+    def read(text):
+        return dict(line.split(" ", 1) for line in text.splitlines() if " " in line)
+    a, b = read(a_meta), read(b_meta)
+    return all(key in a and key in b and a[key] != b[key] for key in ("hash_ladxr", "checkout"))
+
+
+def main(argv):
+    """`compare <name> <run A> <run B>`: prints compare_runs' verdict, exits 1 when DIFFERENT.
+    `varied <meta A> <meta B>`: exits 1 unless runs_varied."""
+    def text(path):
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    if len(argv) == 4 and argv[0] == "compare":
+        verdict = compare_runs(argv[1], text(argv[2]), text(argv[3]))
+        print(verdict)
+        return 0 if verdict.startswith("same ") else 1
+    if len(argv) == 3 and argv[0] == "varied":
+        return 0 if runs_varied(text(argv[1]), text(argv[2])) else 1
+    print("usage: ladx_oracle.py compare <name> <run A> <run B> | varied <meta A> <meta B>",
+          file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

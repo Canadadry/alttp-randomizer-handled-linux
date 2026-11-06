@@ -1,0 +1,17 @@
+# The double run's cases, hand-written; read by determinism.sh. One case per line:
+#   <name> <seed hex bytes> <k=v ...>
+# Each case runs oracle_run.py with its seed and settings (set in this order, then validated).
+# Every seed but pain's places its items; pain's fails the fill (outcome error, on which LADXR's
+# main.py retries), so the error path is double-run too.
+baseline 000102030405060708090a0b0c0d0e0f
+race 4c414458520000000000000000000020 race=1
+accessibility-goal 1f2e3d4c5b6a79881f2e3d4c5b6a7988 accessibility=goal
+hell-keysanity 0123456789abcdef0123456789abcdef logic=hell dungeon_keys=keysanity nightmare_keys=keysanity
+bosses-random 4c414458520000000000000000000021 boss=random miniboss=random
+bingo 4c41445852000000000000000000000a goal=bingo
+maze 4c414458520000000000000000000011 goal=maze
+specific-random 4c41445852000000000000000000000c goal=specific goalcount=random
+casual 4c414458520000000000000000000020 itempool=casual
+pain 4c41445852000000000000000000000e itempool=pain
+owls-beaks 4c41445852000000000000000000000f owlstatues=both dungeon_beaks=keysanity
+5hit 4c414458520000000000000000000010 hpmode=5hit heartpiece=1
