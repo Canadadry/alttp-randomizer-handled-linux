@@ -35,8 +35,9 @@ in `docs/`, then `README.md`.
   `config.json`, `icon.png`) and `build_zip.py`, which writes the release zip
   (self-test `tests/rando/test_package.py`).
 - `themes/` holds one flat folder per theme (`themes/classic/`: today's look
-  as a theme; `themes/alttp/`: the mockups' 12 px geometry in Press Start 2P,
-  with plain colours and text markers standing in for the frame and sprites).
+  as a theme; `themes/alttp/`: the mockups' look at 12 px in Press Start 2P,
+  `frame.png` and thirteen sprite PNGs made from the mockups by
+  `make theme-art-write`).
 - `data/` holds the fonts' source (DejaVu Sans Mono and Press Start 2P, each
   with its licence; the themes ship byte copies, checked by `test_theme`) and
   the base patch `base.bps`. Press Start 2P is `google/fonts`
@@ -165,7 +166,24 @@ in `docs/`, then `README.md`.
   100 × Σ|A−B| / (W×H×3×255) over every pixel and RGB channel. There is no
   threshold: it fails only when the images cannot be produced. Each run
   first proves the tool on planted images and checks that each mockup's
-  self-score is 0. Mockup 00 (16 px) scores high by construction.
+  self-score is 0. Mockup 00 (16 px) scores high by construction. It also
+  writes `offsets.txt` (per mockup text: dx, dy of its colour's ink in its
+  box grown by 4 px, or `not found`) and prints per mockup
+  `theme-compare: <mockup>: outside <n> px, <k> texts, worst |dx| <a> |dy|
+  <b>, <m> beyond 2 px, <z> not found` (`outside`: differing pixels in no
+  text window), informational like the score.
+- `make theme-art` and `make theme-art-write`, outside the net, need python3,
+  node, npm, Playwright and its Chromium (else the `setup:` lines of
+  `make mockups`; `tests/rando/sdl/theme_art.sh`, table `theme_art.txt`,
+  renderer `theme_art.js`, normaliser `theme_art.py`, each self-proved
+  first). They render the 14 PNGs of `themes/alttp/` from the mockups' own
+  shapes (`frame.png` checked equal in all nine mockups). `theme-art`
+  compares the pixels (not the bytes) with the committed PNGs: one
+  `DIFFERENT`, `MISSING` or `EXTRA <file>` line per mismatch, else
+  `theme-art: 14 images pixel-identical to themes/alttp (Chromium <v>)`.
+  `theme-art-write` renders twice, refuses unless byte-identical, then
+  writes them. The art is a build product of the mockups, regenerated when
+  they change (unlike the goldens), pinned to Playwright 1.63.0's Chromium.
 - `make package`, outside the net, needs docker: it runs `sdl-arm`, strips
   the binary with Onion's toolchain, checks it with `file` and `readelf`
   (32-bit ARM EABI5, dynamically linked, `/lib/ld-linux-armhf.so.3`,
@@ -180,7 +198,8 @@ in `docs/`, then `README.md`.
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`,
-  `make mockups` and `make theme-compare`.
+  `make mockups`, `make theme-compare`, `make theme-art` and
+  `make theme-art-write`.
   `make patch-header` (the base patch's header, source CRC32, size cap and
   pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
 - CI: `.github/workflows/check.yml` runs `make -k check`, in a job

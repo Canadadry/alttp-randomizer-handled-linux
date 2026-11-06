@@ -375,10 +375,21 @@ no size in its cell, a background that is not 640×480, or a page outside
 card; so does a screen with more tabs than the theme has tab slots.
 
 Two themes are in `themes/`: `classic`, the 40×15 grid look the zip ships,
-and `alttp`, the mockups' (`design/mockups/`) 12 px geometry in Press Start
-2P: zones, rows, the help line's place and the footer band, with plain
-colours and text markers (`>`, `<`, `^`, `v`, the buttons' key text)
-standing in until the frame and the sprites exist. Look at it with:
+and `alttp`, the mockups' (`design/mockups/`) look at 12 px in Press Start
+2P: their zones, rows, help line and footer band, drawn over `frame.png`
+(the notched white and blue frame, the gradient panel, the tab separator
+and the three hearts), with sprites for the tab and row triforces, the
+value arrows, the scroll markers and the footer's d-pad, A, B, X, Y and
+START buttons. The fourteen PNGs are made from the mockups' own shapes:
+`make theme-art-write` (outside the net; needs node and Playwright's
+Chromium) renders the shapes listed in `tests/rando/sdl/theme_art.txt` in
+headless Chromium twice, refuses to write unless both runs are
+byte-identical, and writes them into `themes/alttp/`; `make theme-art`
+renders them again and checks that the committed PNGs have the same pixels
+(one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch). Run
+`make theme-art-write` after a mockup's frame or sprite changes, and commit
+the PNGs with it. The art is pinned to Playwright 1.63.0's Chromium; another
+Chromium may report `DIFFERENT`. Look at the theme with:
 
 ```bash
 tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
@@ -415,6 +426,18 @@ image code on planted images and checks that each mockup scored against
 itself is exactly 0. Mockup 00 is drawn at 16 px, while its pairing plays at
 the theme's page (one more row, smaller text), so its score is high by
 construction; do not tune the theme to it.
+
+Each run also measures every mockup, in `offsets.txt` beside the images
+(one line per mockup text) and one summary line per mockup:
+`theme-compare: <mockup>: outside <n> px, <k> texts, worst |dx| <a> |dy|
+<b>, <m> beyond 2 px, <z> not found`. A text's window is its mockup box
+grown by 4 px; its offset is how far the app's ink of the text's colour
+(each channel within 48) sits from the mockup's in that window, and
+`not found` means the app has no such ink there. `outside` counts the
+pixels that differ in no text window: frame, bands, sprites and rules. The
+three criteria a theme is tuned to are: same zones (`outside` 0), same
+text positions (every |dx| and |dy| at most 2) and same colours (no text
+not found). These measures are informational, like the score.
 
 A theme may hold an optional `[help]` section (the help line's font, x,
 baseline, right edge and colour). The help line says what the selected

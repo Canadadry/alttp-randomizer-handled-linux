@@ -54,6 +54,6 @@
     - [x] Chunk 1 — The art generator
     - [x] Chunk 2 — Measures in make theme-compare
     - [x] Chunk 3 — The art in the theme, first pass
-    - [ ] Chunk 4 — Tuning passes and the record
+    - [x] Chunk 4 — Tuning passes and the record
   - [ ] Step 2.13 — Default theme switched
   - [ ] Step 2.14 — skill: check-net
