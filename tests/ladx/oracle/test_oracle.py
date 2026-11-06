@@ -8,6 +8,7 @@ import importlib.util
 import io
 import os
 import random
+import subprocess
 import sys
 import tempfile
 import types
@@ -756,6 +757,190 @@ class MainTest(unittest.TestCase):
             repo = os.path.join(tmp, "repo")
             self.assertEqual(self.main("inside-tmp", repo, os.path.join(repo, "tmp", "x")), (0, ""))
             self.assertEqual(self.main("inside-tmp", repo, os.path.join(repo, "x")), (1, ""))
+
+
+STUB_LADXR = {
+    "randomizer.py": """\
+import generator
+
+
+class Randomizer:
+    def __init__(self, args, settings, *, seed=None):
+        rom = generator.generateRom(args, settings, seed, None)
+        rom.save(args.output_filename, name="STUB")
+        with open(args.spoiler_filename, "w") as f:
+            f.write('{"first": %d}\\n' % rom.banks[0][0])
+
+    def readItemPool(self):
+        pass
+
+
+class RandomItemPlacer:
+    def run(self, rnd):
+        pass
+""",
+    "settings.py": """\
+class Settings:
+    def __init__(self):
+        self.values = {}
+
+    def set(self, text):
+        key, value = text.split("=")
+        self.values[key] = value
+
+    def validate(self):
+        pass
+
+    def getShortString(self):
+        return ""
+""",
+    "itempool.py": "class ItemPool:\n    def __init__(self, logic, settings, rnd, plando):\n"
+                   "        pass\n",
+    "worldSetup.py": "class WorldSetup:\n    def __init__(self):\n        self.entrance_mapping = {}\n"
+                     "\n    def randomize(self):\n        pass\n",
+    "utils.py": "class Error(Exception):\n    pass\n",
+    "patches/__init__.py": "",
+    "patches/bingo.py": "BINGO_GOALS = []\n",
+    "rom.py": """\
+class ROM:
+    def __init__(self, filestream):
+        self.banks = []
+        for n in range(4):
+            self.banks.append(bytearray(filestream.read(0x100)))
+
+    def patch(self, bank_nr, addr, old, new):
+        self.banks[bank_nr][addr:addr + len(new)] = new
+
+    def save(self, file, *, name=None):
+        with open(file, "wb") as f:
+            for bank in self.banks:
+                f.write(bank)
+""",
+    "pointerTable.py": """\
+class PointerTable:
+    def __init__(self, rom):
+        self.data = [rom.banks[3][0x10], rom.banks[3][0x11]]
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __setitem__(self, item, value):
+        self.data[item] = value
+
+    def __len__(self):
+        return len(self.data)
+""",
+    "romTables.py": """\
+from rom import ROM
+from pointerTable import PointerTable
+
+
+class ROMWithTables(ROM):
+    def __init__(self, filestream):
+        super().__init__(filestream)
+        self.texts = PointerTable(self)
+""",
+    "generator.py": """\
+from romTables import ROMWithTables
+
+
+def generateRom(args, settings, seed, logic, *, rnd=None):
+    rom = ROMWithTables(open(args.input_filename, "rb"))
+    rom.banks[1][0x10] = rom.banks[2][0x20]
+    if settings.values.get("crash") == "1":
+        raise KeyError("stub")
+    rom.texts[0] = rom.texts[1]
+    return rom
+""",
+}
+
+COPY_LINE = "rom.banks[1][0x10] = rom.banks[2][0x20]"
+
+
+def _stub_inventory():
+    spec = importlib.util.spec_from_file_location("inventory_check",
+                                                  os.path.join(HERE, "inventory_check.py"))
+    inventory_check = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(inventory_check)
+    columns = inventory_check.COLUMNS
+    cells = {c: "-" for c in columns}
+    cells.update({"Call": "`%s`" % COPY_LINE, "Notes": "", columns[-2]: "C",
+                  columns[-1]: "g-copy"})
+    return "\n".join(["## generator.py generateRom", "", "| " + " | ".join(columns) + " |",
+                      "|" + "---|" * len(columns),
+                      "| " + " | ".join(cells[c] for c in columns) + " |", ""])
+
+
+class OracleRunReadsTest(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp(prefix="oracle-run-test-")
+        self.addCleanup(__import__("shutil").rmtree, self.dir)
+        self.ladxr = os.path.join(self.dir, "ladxr")
+        plant(self.ladxr, STUB_LADXR)
+        self.rom = os.path.join(self.dir, "base.gbc")
+        with open(self.rom, "wb") as f:
+            f.write(bytes(range(256)) * 4)
+        self.inventory = os.path.join(self.dir, "inventory.md")
+        with open(self.inventory, "w") as f:
+            f.write(_stub_inventory())
+
+    def run_case(self, name, *extra, settings=()):
+        case = os.path.join(self.dir, name)
+        proc = subprocess.run(
+            [sys.executable, "-B", os.path.join(HERE, "oracle_run.py"), "--rom", self.rom,
+             "--dir", case, "--work", os.path.join(self.dir, "work"),
+             "--inventory", self.inventory] + list(extra) + [self.ladxr, "00"] + list(settings),
+            capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return case
+
+    def files(self, case):
+        found = {}
+        for name in sorted(os.listdir(case)):
+            if name != "meta.txt":
+                with open(os.path.join(case, name), "rb") as f:
+                    found[name] = f.read()
+        return found
+
+    def test_without_the_flag_no_trace_and_with_it_the_same_outputs(self):
+        plain = self.files(self.run_case("plain"))
+        traced = self.files(self.run_case("traced", "--reads"))
+        self.assertEqual(sorted(plain), ["out.gbc", "run.txt", "spoiler.json"])
+        self.assertEqual(sorted(traced), ["out.gbc", "reads.txt", "run.txt", "spoiler.json",
+                                          "writes.txt"])
+        for name in plain:
+            self.assertEqual(traced[name], plain[name], name)
+        self.assertTrue(plain["run.txt"].endswith(b"outcome ok\n"))
+
+    def test_the_trace_tags_reads_and_writes_with_the_inventory_groups(self):
+        traced = self.files(self.run_case("traced", "--reads"))
+        site = "generator.py generateRom\t" + COPY_LINE
+        reads = traced["reads.txt"].decode().splitlines()
+        self.assertIn("g-copy\t%s\tgenerator.py:generateRom\tindex\tbank 0x02\tsource\t"
+                      "n=1 0x0020..0x0020" % site, reads)
+        self.assertIn("-\trandomizer.py Randomizer.__init__\tf.write('{\"first\": %d}\\n' % "
+                      "rom.banks[0][0])\trandomizer.py:Randomizer.__init__\tindex\tbank 0x00\t"
+                      "source\tn=1 0x0000..0x0000", reads)
+        writes = traced["writes.txt"].decode().splitlines()
+        self.assertEqual([l.rsplit("\t", 1)[0] for l in writes],
+                         ["-\tgenerator.py generateRom\trom.texts[0] = rom.texts[1]\tn=1",
+                          "g-copy\t%s\tn=1" % site])
+
+    def test_a_crash_still_writes_the_trace_up_to_where_it_stopped(self):
+        case = self.run_case("crash", "--reads", settings=["crash=1"])
+        traced = self.files(case)
+        self.assertTrue(traced["run.txt"].endswith(b"outcome crash KeyError 'stub'\n"),
+                        traced["run.txt"])
+        writes = traced["writes.txt"].decode().splitlines()
+        self.assertEqual([l.split("\t")[0] for l in writes], ["g-copy"])
+        self.assertNotIn(b"table texts", traced["reads.txt"])
+
+    def test_reads_needs_rom_and_not_plain(self):
+        for extra in (["--reads", "--out", os.path.join(self.dir, "x")],
+                      ["--rom", self.rom, "--dir", self.dir, "--plain", "--reads"]):
+            proc = subprocess.run([sys.executable, "-B", os.path.join(HERE, "oracle_run.py")]
+                                  + extra + [self.ladxr, "00"], capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 2, extra)
 
 
 if __name__ == "__main__":

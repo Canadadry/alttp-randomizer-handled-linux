@@ -1,28 +1,42 @@
 """Usage: python3 -I tests/ladx/oracle/read_trace.py --self-test [--ladxr <dir>]
        python3 -I tests/ladx/oracle/read_trace.py --blind-spots [--ladxr <dir>]
 
-The read-trace instrumentation of LADXR's ROM reads, for Phase 2 step 3. As a module:
+The read-trace instrumentation of LADXR's ROM reads and writes, for Phase 2 step 3. As a module:
 `install(modules, sections, inventory=None, roots=None) -> Trace` instruments `modules["ROM"]`,
 `modules["ROMWithTables"]` and `modules["PointerTable"]` so that every read of a bank's bytes or
 of a parsed table, outside `ROM.patch`, is recorded as
-`(group, site, caller, channel, target, detail)`; `Trace.records()`, `Trace.write(path,
-raw=False)`, `Trace.uninstall()`.
+`(group, site, caller, channel, target, detail, provenance)`, and every write as
+`(group, site, caller, target, detail)`; `Trace.records()`, `Trace.writes()`,
+`Trace.write(path, raw=False)` (reads), `Trace.write_writes(path)`, `Trace.uninstall()`.
 
 Channels: `index` (bank[i]), `slice` (bank[a:b]), `iter`, `search` (find, rfind, index, rindex,
 count, startswith, endswith, in), `compare` (==, !=, ordering), `convert` (hex, decode, bytes())
-and `table` (getitem, in, len on a table attribute of a ROMWithTables). Writes are never recorded.
-Reads through the buffer protocol are invisible: `--blind-spots` lists their candidate lines.
+and `table` (getitem, in, len on a table attribute of a ROMWithTables). Reads through the buffer
+protocol are invisible: `--blind-spots` lists their candidate lines.
+Writes: index and slice assignments to a bank (inside `ROM.patch` too), a bank replaced whole
+(every byte written), and a table entry assigned through `__setitem__` after parsing.
+Provenance of a read: `source` when none of its bytes or entries was written since parsing,
+`written:<g1,g2>` when all were (by those groups), `mixed:<g1,g2>` otherwise; `iter`, `search`,
+`compare`, `convert` and `__len__` cover the whole bank or table.
 
 Site: `<file> <function>\\t<stripped line>` of the innermost frame in one of `sections` (pairs
 (file, function), the file relative to the first root), with ` #<k>` on the k-th occurrence of
-the same line text in that function (k >= 2), else `-`. Group: `inventory[site]`, else `-`.
-Caller: `<file>:<qualname>` of the innermost frame under a root (default: the ROM class's folder).
+the same line text in that function (k >= 2), else `-`. A read on a loop or condition header
+keeps that header line. Group: `inventory[site]`, else `-`. Caller: `<file>:<qualname>` of the
+innermost frame under a root (default: the ROM class's folder).
+
+Aggregated reads (`write`): group, site, caller, channel, target, provenance, `n=<reads>` and
+the offset range. Writes (`write_writes`): one line per writing site, group, site,
+`n=<positions>` and `sha1=<hex>` over the sorted (target, offset or index, last value the site
+wrote there).
 
 `--self-test` instruments LADXR's real `rom.ROM` and `pointerTable.PointerTable` (from `--ladxr`,
-default tests/ladx/oracle/ladxr) on 64 synthetic banks with planted reads, one per channel.
+default tests/ladx/oracle/ladxr) on 64 synthetic banks with planted reads, one per channel and
+per provenance, a header-line read, and planted writes (bank, `patch`, table).
 """
 
 import argparse
+import hashlib
 import io
 import os
 import random
@@ -71,13 +85,19 @@ def _function_keys(path, first_line):
 
 
 class Trace:
-    """The reads recorded since `install`; `uninstall` restores the classes."""
+    """The reads and writes recorded since `install`; `uninstall` restores the classes."""
 
     def __init__(self, modules, sections, inventory, roots):
         self._sections = [(f, fn) for f, fn in sections]
         self._inventory = dict(inventory or {})
         self._roots = [os.path.realpath(r) for r in roots]
         self._records = []
+        self._writes = []
+        self._net = {}
+        self._group_ids = {}
+        self._group_names = [None]
+        self._masks = {}
+        self._entries = {}
         self._code_info = {}
         self._function_keys = {}
         self._table_names = {}
@@ -89,17 +109,21 @@ class Trace:
     def records(self):
         return list(self._records)
 
+    def writes(self):
+        return list(self._writes)
+
     def write(self, path, raw=False):
-        with open(path, "w") as f:
-            for line in self.lines(raw):
-                f.write(line + "\n")
+        _save(path, self.lines(raw))
+
+    def write_writes(self, path):
+        _save(path, self.write_lines())
 
     def lines(self, raw=False):
         if raw:
             return ["\t".join(r) for r in self._records]
         groups = {}
         for record in self._records:
-            entry = groups.setdefault(record[:5], [0, None, None])
+            entry = groups.setdefault(record[:5] + record[6:], [0, None, None])
             entry[0] += 1
             span = _span(record[5])
             if span is not None:
@@ -112,6 +136,17 @@ class Trace:
             if low is not None:
                 detail += " %s..%s" % (_offset(low), _offset(high))
             out.append("\t".join(key + (detail,)))
+        return out
+
+    def write_lines(self):
+        """One line per writing site: group, site, `n=<positions>`, `sha1=<digest>` of the
+        sorted (target, offset or index, last value the site wrote there)."""
+        out = []
+        for (group, site), net in sorted(self._net.items()):
+            digest = hashlib.sha1()
+            for (target, where), value in sorted(net.items()):
+                digest.update(("%s\t%s\t%s\n" % (target, where, _value(value))).encode())
+            out.append("%s\t%s\tn=%d\tsha1=%s" % (group, site, len(net), digest.hexdigest()))
         return out
 
     def uninstall(self):
@@ -146,15 +181,15 @@ class Trace:
             self._function_keys[code] = keys
         return "%s\t%s" % (section, keys.get(frame.f_lineno, "?"))
 
-    def record(self, channel, target, detail):
-        if not self.active:
-            return
+    def _locate(self, depth, in_patch):
+        """(group, site, caller) of the access `depth` frames up; None for a read inside
+        ROM.patch (in_patch False)."""
         site = caller = None
-        frame = sys._getframe(1)
+        frame = sys._getframe(depth + 1)
         while frame is not None:
             code = frame.f_code
-            if code is self._patch_code:
-                return
+            if code is self._patch_code and not in_patch:
+                return None
             rel, qual, section = self._info(code)
             if rel is not None:
                 if caller is None:
@@ -163,8 +198,54 @@ class Trace:
                     site = self._site(frame, section)
             frame = frame.f_back
         site = site or "-"
-        self._records.append((self._inventory.get(site, "-"), site, caller or "-", channel,
-                              target, detail))
+        return self._inventory.get(site, "-"), site, caller or "-"
+
+    def record(self, channel, target, detail, provenance):
+        """provenance: a callable giving the read's provenance field."""
+        if not self.active:
+            return
+        where = self._locate(2, False)
+        if where is not None:
+            self._records.append(where + (channel, target, detail, provenance()))
+
+    def record_write(self, target, detail, positions):
+        """positions: [(offset or index key, value now there)]; returns the writer's group id
+        for the caller's provenance mask, None when inactive."""
+        if not self.active:
+            return None
+        group, site, caller = self._locate(2, True)
+        self._writes.append((group, site, caller, target, detail))
+        net = self._net.setdefault((group, site), {})
+        for where, value in positions:
+            net[(target, where)] = value
+        gid = self._group_ids.get(group)
+        if gid is None:
+            assert len(self._group_names) < 256, "more than 255 writing groups"
+            gid = self._group_ids[group] = len(self._group_names)
+            self._group_names.append(group)
+        return gid
+
+    def provenance(self, ids):
+        """`source`, `written:<groups>` or `mixed:<groups>` of a set of group ids, 0 the
+        source."""
+        names = sorted({self._group_names[i] for i in ids if i})
+        if not names:
+            return "source"
+        return "%s:%s" % ("mixed" if 0 in ids else "written", ",".join(names))
+
+
+def _save(path, lines):
+    with open(path, "w") as f:
+        for line in lines:
+            f.write(line + "\n")
+
+
+def _value(value):
+    if isinstance(value, int):
+        return "%d" % value
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).hex()
+    return repr(value)
 
 
 def _span(detail):
@@ -193,24 +274,74 @@ def _make_bank_class(trace):
         __slots__ = ("_nr",)
         __hash__ = None
 
+        def _from(self, start, stop):
+            mask = trace._masks.get(self._nr)
+            if mask is None or start >= stop:
+                return lambda: "source"
+            return lambda: trace.provenance(set(mask[start:stop]))
+
         def __getitem__(self, item):
-            channel = "slice" if isinstance(item, slice) else "index"
-            trace.record(channel, "bank 0x%02X" % self._nr, _key_detail(item, lambda: len(self)))
+            length = len(self)
+            if isinstance(item, slice):
+                start, stop, _ = item.indices(length)
+                span = (start, max(start, stop))
+                channel = "slice"
+            else:
+                channel = "index"
+                span = None
+                if isinstance(item, int):
+                    n = item + length if item < 0 else item
+                    span = (n, n + 1)
+            trace.record(channel, "bank 0x%02X" % self._nr, _key_detail(item, lambda: length),
+                         self._from(*span) if span else self._from(0, length))
             return bytearray.__getitem__(self, item)
 
+        def __setitem__(self, item, value):
+            old = len(self)
+            if isinstance(item, slice):
+                start, stop, step = item.indices(old)
+                bytearray.__setitem__(self, item, value)
+                if step == 1:
+                    count = max(start, stop) - start + len(self) - old
+                    positions = range(start, start + count)
+                else:
+                    positions = range(start, stop, step)
+            else:
+                start = item + old if item < 0 else item
+                bytearray.__setitem__(self, item, value)
+                positions = range(start, start + 1)
+            if isinstance(item, slice):
+                detail = "%s:%s" % (_offset(start), _offset(start + len(positions)))
+            else:
+                detail = _offset(start)
+            gid = trace.record_write("bank 0x%02X" % self._nr, detail,
+                                     [(_offset(n), bytearray.__getitem__(self, n))
+                                      for n in positions])
+            if gid is None:
+                return
+            mask = trace._masks.get(self._nr)
+            if mask is None:
+                mask = trace._masks[self._nr] = bytearray(old)
+            if isinstance(item, slice) and step == 1:
+                mask[start:max(start, stop)] = bytes([gid]) * len(positions)
+            else:
+                for n in positions:
+                    mask[n] = gid
+
         def __iter__(self):
-            trace.record("iter", "bank 0x%02X" % self._nr, "__iter__")
+            trace.record("iter", "bank 0x%02X" % self._nr, "__iter__", self._from(0, len(self)))
             return bytearray.__iter__(self)
 
         def __bytes__(self):
-            trace.record("convert", "bank 0x%02X" % self._nr, "__bytes__")
+            trace.record("convert", "bank 0x%02X" % self._nr, "__bytes__",
+                         self._from(0, len(self)))
             return bytes(memoryview(self))
 
     def method(channel, name):
         base = getattr(bytearray, name)
 
         def traced(self, *args, **kwargs):
-            trace.record(channel, "bank 0x%02X" % self._nr, name)
+            trace.record(channel, "bank 0x%02X" % self._nr, name, self._from(0, len(self)))
             return base(self, *args, **kwargs)
         traced.__name__ = name
         return traced
@@ -229,6 +360,10 @@ def _make_bank_class(trace):
             else:
                 value = _wrap(value, item + len(self) if item < 0 else item)
             list.__setitem__(self, item, value)
+            for bank in value if isinstance(item, slice) else [value]:
+                if isinstance(bank, TracedBank):
+                    trace._masks.pop(bank._nr, None)
+                    TracedBank.__setitem__(bank, slice(None), bytes(memoryview(bank)))
 
     def _wrap(bank, nr):
         if isinstance(bank, TracedBank) or not isinstance(bank, (bytes, bytearray)):
@@ -245,26 +380,43 @@ def _table_class(trace, cls):
     if traced is not None:
         return traced
 
-    def target(self):
-        return "table " + trace._table_names[id(self)][0]
+    def name(self):
+        return trace._table_names[id(self)][0]
+
+    def provenance(self, keys):
+        def compute():
+            written = trace._entries.get(name(self), {})
+            return trace.provenance({written.get(k, 0) for k in keys()})
+        return compute
 
     def __getitem__(self, item):
-        trace.record("table", target(self), _key_detail(item, lambda: cls.__len__(self)))
+        detail = _key_detail(item, lambda: cls.__len__(self))
+        trace.record("table", "table " + name(self), detail, provenance(self, lambda: [detail]))
         return cls.__getitem__(self, item)
 
     def __contains__(self, item):
-        trace.record("table", target(self),
-                     "__contains__ " + _key_detail(item, lambda: cls.__len__(self)))
+        detail = _key_detail(item, lambda: cls.__len__(self))
+        trace.record("table", "table " + name(self), "__contains__ " + detail,
+                     provenance(self, lambda: [detail]))
         return cls.__contains__(self, item)
 
     def __len__(self):
-        trace.record("table", target(self), "__len__")
+        trace.record("table", "table " + name(self), "__len__",
+                     provenance(self, lambda: [_offset(n) for n in range(cls.__len__(self))]))
         return cls.__len__(self)
 
-    traced = type(cls.__name__, (cls,), {"__getitem__": __getitem__,
-                                          "__contains__": __contains__, "__len__": __len__,
-                                          "__module__": cls.__module__,
-                                          "__qualname__": cls.__qualname__})
+    def __setitem__(self, item, value):
+        cls.__setitem__(self, item, value)
+        detail = _key_detail(item, lambda: cls.__len__(self))
+        gid = trace.record_write("table " + name(self), detail, [(detail, value)])
+        if gid is not None:
+            trace._entries.setdefault(name(self), {})[detail] = gid
+
+    members = {"__getitem__": __getitem__, "__contains__": __contains__, "__len__": __len__,
+               "__module__": cls.__module__, "__qualname__": cls.__qualname__}
+    if hasattr(cls, "__setitem__"):
+        members["__setitem__"] = __setitem__
+    traced = type(cls.__name__, (cls,), members)
     trace._table_classes[cls] = traced
     return traced
 
@@ -383,6 +535,22 @@ def read_convert(rom):
 def read_table(rom):
     return rom.texts[1]
 
+def write_bank(rom):
+    rom.banks[0x08][0x0040] = 0x12
+    rom.banks[0x08][0x0041:0x0043] = b"ab"
+
+def write_entry(rom):
+    rom.texts[0] = bytearray(b"\\x09\\xFF")
+
+def read_written(rom):
+    return rom.banks[0x08][0x0040:0x0043]
+
+def read_mixed(rom):
+    return rom.banks[0x07][0x002F:0x0031]
+
+def read_entry(rom):
+    return rom.texts[0]
+
 def run_channels(stream):
     rom = ROMWithTables(stream)
     read_index(rom)
@@ -393,8 +561,13 @@ def run_channels(stream):
     read_convert(rom)
     read_table(rom)
     rom.patch(0x07, 0x0030, "%(old)s", "A1B2")
-    rom.banks[0x08][0x0040] = 0x12
-    rom.banks[0x08][0x0041:0x0043] = b"ab"
+    write_bank(rom)
+    write_entry(rom)
+    read_written(rom)
+    read_mixed(rom)
+    read_entry(rom)
+    for c in rom.banks[0x16][0x0000:0x0002]:
+        pass
     return rom
 """
 
@@ -406,6 +579,23 @@ SELF_TEST_EXPECTED = [
     ("compare", "read_compare", "bank 0x14", "__eq__"),
     ("convert", "read_convert", "bank 0x15", "hex"),
     ("table", "read_table", "table texts", "0x0001"),
+]
+PATCH_LINE = 'rom.patch(0x07, 0x0030, "%(old)s", "A1B2")'
+SELF_TEST_PROVENANCE = [
+    ("g-written", "read_written(rom)", "planted.py:read_written", "slice", "bank 0x08",
+     "0x0040:0x0043", "written:g-write"),
+    ("g-mixed", "read_mixed(rom)", "planted.py:read_mixed", "slice", "bank 0x07",
+     "0x002F:0x0031", "mixed:g-patch"),
+    ("g-entry-read", "read_entry(rom)", "planted.py:read_entry", "table", "table texts",
+     "0x0000", "written:g-entry"),
+    ("-", "for c in rom.banks[0x16][0x0000:0x0002]:", "planted.py:run_channels", "slice",
+     "bank 0x16", "0x0000:0x0002", "source"),
+]
+SELF_TEST_WRITES = [
+    ("g-patch", PATCH_LINE, "rom.py:ROM.patch", "bank 0x07", "0x0030:0x0032"),
+    ("g-write", "write_bank(rom)", "planted.py:write_bank", "bank 0x08", "0x0040"),
+    ("g-write", "write_bank(rom)", "planted.py:write_bank", "bank 0x08", "0x0041:0x0043"),
+    ("g-entry", "write_entry(rom)", "planted.py:write_entry", "table texts", "0x0000"),
 ]
 
 
@@ -429,8 +619,8 @@ def _synthetic_rom():
 
 
 def self_test(ladxr):
-    """Planted reads through LADXR's real ROM and PointerTable; prints the summary or one
-    `self-test failed` line per mismatch; returns the exit code."""
+    """Planted reads and writes through LADXR's real ROM and PointerTable; prints the summary or
+    one `self-test failed` line per mismatch; returns the exit code."""
     sys.dont_write_bytecode = True
     rom_module = _load(os.path.join(ladxr, "rom.py"), "rom")
     table_module = _load(os.path.join(ladxr, "pointerTable.py"), "pointerTable")
@@ -440,8 +630,14 @@ def self_test(ladxr):
     parse = "planted.py ROMWithTables.__init__"
     parse_byte = parse + "\tself.parsed = self.banks[0x3F][0x0147]"
     parse_table = parse + "\tself.texts = PlantedTable(self)"
+    patch_site = section + "\t" + PATCH_LINE % {"old": old}
     inventory = {"%s\t%s(rom)" % (section, fn): "g-" + ch for ch, fn, _, _ in SELF_TEST_EXPECTED}
     inventory.update({parse_byte: "parse", parse_table: "parse"})
+    for group, line, _, _, _, _, _ in SELF_TEST_PROVENANCE:
+        if group != "-":
+            inventory["%s\t%s" % (section, line)] = group
+    for group, line, _, _, _ in SELF_TEST_WRITES:
+        inventory[patch_site if line == PATCH_LINE else "%s\t%s" % (section, line)] = group
     failures = []
     with tempfile.TemporaryDirectory(prefix="read-trace-") as planted_dir:
         path = os.path.join(planted_dir, "planted.py")
@@ -458,20 +654,29 @@ def self_test(ladxr):
             rom = planted.run_channels(io.BytesIO(data))
         finally:
             trace.uninstall()
-        records = trace.records()
+        records, writes = trace.records(), trace.writes()
         if rom.banks[0x07][0x30:0x32] != bytes.fromhex("A1B2"):
             failures.append("rom.patch did not apply")
     channel_records = [r for r in records if r[1].startswith(section + "\t")]
     for channel, function, target, detail in SELF_TEST_EXPECTED:
         want = ("g-" + channel, "%s\t%s(rom)" % (section, function), "planted.py:" + function,
-                channel, target, detail)
+                channel, target, detail, "source")
         if channel_records.count(want) != 1:
             failures.append("channel %s: expected one %r" % (channel, want))
-    if len(channel_records) != len(SELF_TEST_EXPECTED):
+    for group, line, caller, channel, target, detail, provenance in SELF_TEST_PROVENANCE:
+        want = (group, "%s\t%s" % (section, line), caller, channel, target, detail, provenance)
+        if channel_records.count(want) != 1:
+            failures.append("provenance %s: expected one %r" % (provenance, want))
+    expected = len(SELF_TEST_EXPECTED) + len(SELF_TEST_PROVENANCE)
+    if len(channel_records) != expected:
         failures.append("planted section: %d records, expected %d (patch or write recorded?)"
-                        % (len(channel_records), len(SELF_TEST_EXPECTED)))
+                        % (len(channel_records), expected))
+    want_writes = [(g, patch_site if line == PATCH_LINE else "%s\t%s" % (section, line), c, t, d)
+                   for g, line, c, t, d in SELF_TEST_WRITES]
+    if writes != want_writes:
+        failures.append("writes %r, expected %r" % (writes, want_writes))
     byte_read = ("parse", parse_byte, "planted.py:ROMWithTables.__init__", "index", "bank 0x3F",
-                 "0x0147")
+                 "0x0147", "source")
     if records.count(byte_read) != 1:
         failures.append("parse: the planted parse byte is not recorded once with its site")
     if not any(r[1] == parse_table and r[2].startswith("pointerTable.py:PointerTable.")
@@ -482,14 +687,14 @@ def self_test(ladxr):
     if others:
         failures.append("%d records outside the planted sites, first %r" % (len(others),
                                                                             others[0]))
-    if any(r[4] in ("bank 0x07", "bank 0x08") for r in records):
-        failures.append("a read of the patched or written bank is recorded")
+    if any(r[2] == "rom.py:ROM.patch" for r in records):
+        failures.append("a read inside rom.patch is recorded")
     for failure in failures:
         print("read-trace: self-test failed: " + failure)
     if failures:
         return 1
-    print("read-trace: self-test, %d channels traced, patch and writes excluded"
-          % len(SELF_TEST_EXPECTED))
+    print("read-trace: self-test, %d channels, %d provenances and %d writes traced, patch reads "
+          "excluded" % (len(SELF_TEST_EXPECTED), len(SELF_TEST_PROVENANCE), len(SELF_TEST_WRITES)))
     return 0
 
 

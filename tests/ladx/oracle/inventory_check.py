@@ -320,6 +320,13 @@ def parse_inventory(text):
     return tables, bad
 
 
+def site_groups(text):
+    """{read_trace site: group} of every row of an inventory text's section tables."""
+    tables, _ = parse_inventory(text)
+    return {"%s\t%s" % (section, row["key"]): row[COLUMNS[-1]]
+            for section, rows in tables.items() for row in rows}
+
+
 def diff(extracted, tables):
     """Finding lines of the inventory tables against the extracted sections."""
     findings = []

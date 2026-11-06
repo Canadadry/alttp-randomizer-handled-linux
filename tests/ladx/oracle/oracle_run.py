@@ -1,4 +1,4 @@
-"""Usage: python3 oracle_run.py [--out <file>] [--meta <file>] [--work <dir>] [--rom <file> --dir <dir> [--plain]] <ladxr dir> <seed hex> [k=v ...]
+"""Usage: python3 oracle_run.py [--out <file>] [--meta <file>] [--work <dir>] [--rom <file> --dir <dir> [--plain | --reads [--inventory <file>]]] <ladxr dir> <seed hex> [k=v ...]
 
 Runs LADXR's Randomizer in SKIP_ROM_GENERATION mode (no ROM, no plan, no spoiler) on the seed
 (hex bytes, - for empty; LADXR's seed setting stays empty) and the settings (set in order, then
@@ -29,6 +29,12 @@ then generateRom and the JSON spoiler, written into the case directory --dir:
   out.gbc       the output ROM, when the outcome is ok
   spoiler.json  the spoiler, when the outcome is ok and race is off
   meta.txt      as --meta
+--reads (with --rom, off by default) also installs read_trace.py over the whole run, spoiler
+included, with inventory_check.py's sections and the groups of --inventory (default
+notes/ladx-inventory.md), and writes into --dir, whatever the outcome: reads.txt (aggregated
+reads: group, site, caller, channel, target, provenance, n= and range) and writes.txt (per
+writing site: group, site, n= positions, sha1= of its net writes). The other files are the same
+with or without it.
 --plain (with --rom) runs LADXR's own main.main instead, with no hook and no tracer, os.urandom
 handing it the seed on its first call; it writes out.gbc, spoiler.json and plain.txt:
 rom_sha1 | rom none, spoiler_sha1 | spoiler none, then outcome ok | outcome retry (a second
@@ -46,7 +52,9 @@ import shutil
 import subprocess
 import sys
 
+import inventory_check
 import ladx_oracle
+import read_trace
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK_ROOT = os.path.join(HERE, "..", "..", "..", "tmp", "ladx-oracle")
@@ -159,10 +167,11 @@ class Driver:
     def _after_place(self, placer, args, result):
         self.case["place"] = list(ladx_oracle.place_lines(placer._logic.iteminfo_list))
 
-    def run(self, seed, assignments, pool_only=False, rom=None, case_dir=None):
+    def run(self, seed, assignments, pool_only=False, rom=None, case_dir=None, reads=None):
         """One case: the output lines (without the trace when pool_only, which stops once
         readItemPool returned and then has outcome ok). With rom, a full generation writing
-        out.gbc and spoiler.json into case_dir, their SHA-1 lines before the outcome."""
+        out.gbc and spoiler.json into case_dir, their SHA-1 lines before the outcome; with
+        reads too ({site: group}), reads.txt and writes.txt as well."""
         self.case = {"ws": [], "pool": [], "placer_pool": [], "place": [], "pool_only": pool_only}
         del self.tracer.lines[:]
         settings = self.settings.Settings()
@@ -177,6 +186,7 @@ class Driver:
             out_rom, spoiler = os.path.join(case_dir, "out.gbc"), os.path.join(case_dir, "spoiler.json")
             args = ladxr_args(rom, out_rom, spoiler)
         outcome = "outcome ok"
+        trace = self._trace(reads) if reads is not None and rom is not None else None
         try:
             with contextlib.redirect_stdout(io.StringIO()):
                 self.randomizer.Randomizer(args, settings, seed=seed)
@@ -188,6 +198,11 @@ class Driver:
             raise
         except Exception as e:
             outcome = "outcome crash %s %s" % (type(e).__name__, ladx_oracle.field(str(e)))
+        finally:
+            if trace is not None:
+                trace.uninstall()
+                trace.write(os.path.join(case_dir, "reads.txt"))
+                trace.write_writes(os.path.join(case_dir, "writes.txt"))
         lines = ["seed %s" % ladx_oracle.seed_hex(seed),
                  "settings %s" % ladx_oracle.field(settings.getShortString())]
         for section in ("ws", "pool", "placer_pool", "place"):
@@ -197,6 +212,16 @@ class Driver:
         if rom is not None:
             lines += file_records(out_rom, spoiler, outcome == "outcome ok")
         return lines + [outcome]
+
+    @staticmethod
+    def _trace(groups):
+        import rom
+        import romTables
+        import pointerTable
+        modules = {"ROM": rom.ROM, "ROMWithTables": romTables.ROMWithTables,
+                   "PointerTable": pointerTable.PointerTable}
+        sections = [(f, fn) for f, fn, _ in inventory_check.SECTIONS]
+        return read_trace.install(modules, sections, groups)
 
     def meta(self):
         return ["hashseed %s" % os.environ.get("PYTHONHASHSEED", "unset"),
@@ -264,6 +289,8 @@ def main(argv):
     parser.add_argument("--rom")
     parser.add_argument("--dir")
     parser.add_argument("--plain", action="store_true")
+    parser.add_argument("--reads", action="store_true")
+    parser.add_argument("--inventory", default=inventory_check.DEFAULT_INVENTORY)
     parser.add_argument("ladxr_dir")
     parser.add_argument("seed")
     parser.add_argument("settings", nargs="*")
@@ -271,6 +298,12 @@ def main(argv):
     if (args.rom is None) != (args.dir is None) or (args.plain and args.rom is None) or \
             (args.rom is not None and (args.out or args.meta)):
         parser.error("--rom and --dir go together, --plain needs them, and they replace --out and --meta")
+    if args.reads and (args.rom is None or args.plain):
+        parser.error("--reads needs --rom and not --plain")
+    reads = None
+    if args.reads:
+        with open(args.inventory, "rb") as f:
+            reads = inventory_check.site_groups(f.read().decode("utf-8"))
     work = os.path.abspath(args.work)
     if args.rom is not None:
         rom, case_dir = os.path.abspath(args.rom), os.path.abspath(args.dir)
@@ -287,7 +320,8 @@ def main(argv):
         meta_out = os.path.abspath(args.meta) if args.meta else None
     driver = Driver(args.ladxr_dir, work)
     try:
-        lines = driver.run(parse_seed(args.seed), args.settings, rom=rom, case_dir=case_dir)
+        lines = driver.run(parse_seed(args.seed), args.settings, rom=rom, case_dir=case_dir,
+                           reads=reads)
         meta = driver.meta()
     finally:
         driver.close()
