@@ -25,7 +25,7 @@
   <text x="30" y="82" font-size="14" fill="#78d8f8">Seed Ready</text>
   <line x1="182" y1="77" x2="610" y2="77" stroke="#3858d8" stroke-width="4" stroke-dasharray="8 4"/>
   <text x="30" y="120" font-size="14" fill="#f8f8f8">Saved in Roms/SFC/ALttPR as:</text>
-  <text x="50" y="152" font-size="14" fill="#f8d038">Open-Ganon-E76BF9.sfc</text>
+  <text x="50" y="152" font-size="14" fill="#f8d038">Open-Ganon-1CA10A.sfc</text>
   <text x="30" y="184" font-size="14" fill="#f8f8f8">Spoiler kept in History</text>
   <!-- Message zone -->
   <text x="30" y="412" font-size="12" fill="#78d8f8">Play it from the SNES list</text>

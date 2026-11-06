@@ -39,7 +39,7 @@
     - [x] Chunk 3 — Pairing table and app-side checks
     - [ ] Chunk 4 — Mockup content edits
       - [x] Edit 01 — the real end of the settings list
-      - [ ] Edit 03 — the real seed name
+      - [x] Edit 03 — the real seed name
       - [ ] Edit 05 — the real seed names and date
       - [ ] Edit 07 — a real window of the spoiler detail
       - [ ] Edit 07 — the scroll-down marker
