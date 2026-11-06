@@ -825,6 +825,120 @@ static void test_columns_floor_partial_characters(void)
 	CHECK(theme_columns(&theme, 16) == 38);
 }
 
+#define HELP_KEYS "font = mono\nx = 30\ny = 412\nright = 610\ncolour = #78d8f8\n"
+
+/* Inserts [help] with the given key lines right before [footer]; returns its header's line. */
+static int add_help(const char *keys)
+{
+	char with[512];
+
+	snprintf(with, sizeof with, "[help]\n%s\n[footer]", keys);
+	start();
+	return replace("footer", "[footer]", with);
+}
+
+static void help_key_fails(int test_line, const char *prefix, const char *with, const char *fmt)
+{
+	int line;
+
+	add_help(HELP_KEYS);
+	line = replace("help", prefix, with);
+	parse_fails(test_line, work, expect(fmt, line));
+}
+
+#define HELP_FAILS(prefix, with, fmt) help_key_fails(__LINE__, prefix, with, fmt)
+
+static void test_help_absent(void)
+{
+	ThemeError err;
+
+	start();
+	WORK_OK();
+	CHECK(!theme.help.present && theme.help.font == 0 && theme.help.x == 0 && theme.help.right == 0);
+	CHECK(theme_help_columns(&theme, 10) == 0);
+	memset(&err, 0, sizeof err);
+	if (!theme_load(&theme, INVENTORY_DIR, &err))
+		test_fail(TEST, "inventory refused: %s", err.message);
+	CHECK(!theme.help.present && theme_help_columns(&theme, 10) == 0);
+}
+
+static void test_help_present(void)
+{
+	static const char *const keys[] = { "font", "x", "y", "right", "colour" };
+	char without[sizeof HELP_KEYS];
+	char message[THEME_ERROR_MAX];
+	size_t i;
+	int line;
+
+	add_help(HELP_KEYS);
+	WORK_OK();
+	CHECK(theme.help.present && theme.help.font == 0);
+	CHECK(theme.help.x == 30 && theme.help.y == 412 && theme.help.right == 610);
+	CHECK(theme.help.colour.r == 0x78 && theme.help.colour.g == 0xd8 && theme.help.colour.b == 0xf8);
+	add_help(HELP_KEYS);
+	replace("font.mono", "[font.mono]", "[font.small]\nfile = Small.ttf\nsize = 10\ncell = none\nanchor = baseline\n\n[font.mono]");
+	replace("help", "font", "font = small");
+	WORK_OK();
+	CHECK(theme.help.font == 0 && theme.list.font == 1);
+	for (i = 0; i < sizeof keys / sizeof keys[0]; i++) {
+		const char *at = HELP_KEYS;
+		char *out = without;
+
+		while (*at) {
+			const char *end = strchr(at, '\n') + 1;
+
+			if (!(strncmp(at, keys[i], strlen(keys[i])) == 0 && at[strlen(keys[i])] == ' ')) {
+				memcpy(out, at, (size_t)(end - at));
+				out += end - at;
+			}
+			at = end;
+		}
+		*out = '\0';
+		line = add_help(without);
+		snprintf(message, sizeof message, FILE_NAME ":%d: help.%s: missing", line, keys[i]);
+		WORK_FAILS(message);
+	}
+	add_help(HELP_KEYS);
+	line = replace("help", "x =", "x = 30\nleft = 4");
+	WORK_FAILS(expect(FILE_NAME ":%d: help.left: unknown key", line + 1));
+	add_help(HELP_KEYS);
+	line = replace("help", "x =", "x = 30\nx = 31");
+	WORK_FAILS(expect(FILE_NAME ":%d: help.x: duplicate key", line + 1));
+}
+
+static void test_help_values(void)
+{
+	int line;
+
+	add_help(HELP_KEYS);
+	line = replace("help", "font", "font = tiny");
+	WORK_FAILS(expect(FILE_NAME ":%d: help.font: unknown font tiny", line));
+	HELP_FAILS("x =", "x = 641", FILE_NAME ":%d: help.x: out of range 0..640");
+	HELP_FAILS("x =", "x = -1", FILE_NAME ":%d: help.x: out of range 0..640");
+	HELP_FAILS("y =", "y = 481", FILE_NAME ":%d: help.y: out of range 0..480");
+	HELP_FAILS("right", "right = 641", FILE_NAME ":%d: help.right: out of range 0..640");
+	HELP_FAILS("colour", "colour = blue", FILE_NAME ":%d: help.colour: not a colour (#rrggbb)");
+	HELP_FAILS("x =", "x = 610", FILE_NAME ":%d: help.x: out of range 0..609");
+	HELP_FAILS("x =", "x = 620", FILE_NAME ":%d: help.x: out of range 0..609");
+	add_help(HELP_KEYS);
+	replace("help", "x =", "x = 609");
+	WORK_OK();
+	CHECK(theme_help_columns(&theme, 1) == 1);
+	add_help(HELP_KEYS);
+	line = replace("footer", "[footer]", "[help]\n" HELP_KEYS "\n[footer]");
+	WORK_FAILS(expect(FILE_NAME ":%d: [help]: duplicate section", line));
+}
+
+static void test_help_columns_floor_partial_characters(void)
+{
+	add_help(HELP_KEYS);
+	WORK_OK();
+	CHECK(theme_help_columns(&theme, 10) == 58);
+	CHECK(theme_help_columns(&theme, 12) == 48);
+	CHECK(theme_help_columns(&theme, 16) == 36);
+	CHECK(theme_help_columns(&theme, 1) == 580);
+}
+
 static void check_asset(int line, const ThemeAsset *a, ThemeAssetKind kind, const char *key, const char *file)
 {
 	if (a->kind != kind || strcmp(a->key, key) != 0 || strcmp(a->file, file) != 0)
@@ -925,6 +1039,10 @@ int main(void)
 	test_inventory_assets();
 	test_assets_skip_text_markers_and_a_missing_image();
 	test_path_join();
+	test_help_absent();
+	test_help_present();
+	test_help_values();
+	test_help_columns_floor_partial_characters();
 	test_classic_line_and_section_problems();
 	test_classic_missing_keys_and_sections();
 	test_optional_sections();

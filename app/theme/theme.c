@@ -49,6 +49,7 @@ typedef enum SectionKind {
 	SECTION_LIST_SELECTED_DISABLED,
 	SECTION_NOTICE,
 	SECTION_MESSAGE,
+	SECTION_HELP,
 	SECTION_FOOTER,
 	SECTION_FOOTER_BAND,
 	SECTION_KIND_COUNT
@@ -231,6 +232,14 @@ static const KeySpec message_keys[] = {
 	TYPED(ThemeMessage, error_colour, KEY_COLOUR),
 };
 
+static const KeySpec help_keys[] = {
+	TYPED(ThemeHelp, font, KEY_FONT),
+	INT(ThemeHelp, x, X),
+	INT(ThemeHelp, y, Y),
+	INT(ThemeHelp, right, X),
+	TYPED(ThemeHelp, colour, KEY_COLOUR),
+};
+
 #define BUTTON(key, index) \
 	{ "button." key, KEY_BUTTON, offsetof(ThemeFooter, buttons) + (index) * sizeof(ThemeButton), NO_RANGE }
 
@@ -270,6 +279,7 @@ static const SectionSpec section_specs[SECTION_KIND_COUNT] = {
 					     KEYS(row_band_keys) },
 	[SECTION_NOTICE] = { "notice", ARITY_REQUIRED, "notice", KEYS(notice_keys) },
 	[SECTION_MESSAGE] = { "message", ARITY_REQUIRED, "message", KEYS(message_keys) },
+	[SECTION_HELP] = { "help", ARITY_OPTIONAL, NULL, KEYS(help_keys) },
 	[SECTION_FOOTER] = { "footer", ARITY_REQUIRED, "footer", KEYS(footer_keys) },
 	[SECTION_FOOTER_BAND] = { "footer.band", ARITY_OPTIONAL, NULL, KEYS(band_keys) },
 };
@@ -621,6 +631,9 @@ static void *section_base(Parser *p, Section *s)
 		return &t->notice;
 	case SECTION_MESSAGE:
 		return &t->message;
+	case SECTION_HELP:
+		t->help.present = true;
+		return &t->help;
 	case SECTION_FOOTER:
 		return &t->footer;
 	case SECTION_FOOTER_BAND:
@@ -878,6 +891,16 @@ static bool check_list(Parser *p)
 	return true;
 }
 
+static bool check_help(Parser *p)
+{
+	const Section *s = find_kind(p, SECTION_HELP);
+	const ThemeHelp *h = &p->out->help;
+
+	if (s && h->x >= h->right)
+		return range_fail_at(p, s, key_line(s, "x"), "x", 0, h->right - 1);
+	return true;
+}
+
 bool theme_parse(Theme *out, const char *text, const char *file, ThemeError *err)
 {
 	Parser parser;
@@ -911,7 +934,8 @@ bool theme_parse(Theme *out, const char *text, const char *file, ThemeError *err
 		return false;
 	if (p->font_overflow_name[0])
 		return fonts_fail(p);
-	return check_tabs(p) && check_font_refs(p) && check_fit(p) && check_bands(p) && check_list(p);
+	return check_tabs(p) && check_font_refs(p) && check_fit(p) && check_bands(p) && check_list(p) &&
+	       check_help(p);
 }
 
 static bool load_fail(ThemeError *err, const char *fmt, ...)
@@ -978,6 +1002,14 @@ int theme_columns(const Theme *theme, int advance)
 {
 	assert(advance >= 1);
 	return (theme->list.right - theme->list.label_x) / advance;
+}
+
+int theme_help_columns(const Theme *theme, int advance)
+{
+	assert(advance >= 1);
+	if (!theme->help.present)
+		return 0;
+	return (theme->help.right - theme->help.x) / advance;
 }
 
 static void add_asset(ThemeAsset *out, int *n, ThemeAssetKind kind, const char *key, const char *file, int font)

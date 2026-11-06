@@ -130,6 +130,14 @@ typedef struct ThemeMessage {
 	ThemeColour info_colour, error_colour;
 } ThemeMessage;
 
+/* Every field is zero when the optional [help] section is absent. */
+typedef struct ThemeHelp {
+	bool present;
+	int font;
+	int x, y, right;
+	ThemeColour colour;
+} ThemeHelp;
+
 /* In UiHintButton's order: this module does not include the core. */
 typedef enum ThemeButtonIndex {
 	THEME_BUTTON_LEFT_RIGHT,
@@ -169,6 +177,7 @@ typedef struct Theme {
 	ThemeList list;
 	ThemeNotice notice;
 	ThemeMessage message;
+	ThemeHelp help;
 	ThemeFooter footer;
 } Theme;
 
@@ -192,6 +201,9 @@ int theme_page(const Theme *theme);
 /* Whole characters of advance px (>= 1) between list.label_x and list.right; label_x_cursor is
    not used. */
 int theme_columns(const Theme *theme, int advance);
+
+/* Whole characters of advance px (>= 1) between help.x and help.right; 0 without [help]. */
+int theme_help_columns(const Theme *theme, int advance);
 
 #define THEME_ASSETS_MAX 32
 #define THEME_KEY_MAX 32
