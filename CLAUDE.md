@@ -133,18 +133,36 @@ in `docs/`, then `README.md`.
   writes one configuration's full logic graph, to diff against a
   `logic_vectors.txt` digest. Run every script with `python3` without `-I`
   or `-E` (both drop `PYTHONHASHSEED`).
-- The Nintendo-bytes check, outside the net (python3 only):
-  `python3 -I tests/ladx/oracle/nintendo_bytes.py [--rom <file>] [--min <n>]
-  <file-or-dir>...` proves itself first on planted files against a planted
-  synthetic ROM (`nintendo-bytes: self-test, 6 planted files as expected`,
-  else `self-test failed: <file>`, exit 1), then prints one `LITERAL <path>
-  <view> @<offset> <length> bytes` line per run of `--min` (default 4) or
-  more bytes that also occurs in the ROM (`--rom`, default
-  `tmp/ladx/base.gbc`; any file accepted), in the raw bytes or in the bytes
-  a hex-digit run decodes to at either nibble alignment (directories walked
-  sorted, `.git` skipped, never the bytes themselves), then
-  `nintendo-bytes: <n> files, rom <sha1>, min <m>, <k> literal runs`; exit 1
-  when `k > 0`; a missing ROM or input is a `setup:` line, exit 2.
+- The Nintendo-bytes check, outside the net (python3 and git):
+  `python3 -I tests/ladx/oracle/nintendo_bytes.py [--rom <file>] [--ladxr
+  <dir>] [--scope strict|general] [--min <n>] [--verbose] <file-or-dir>...`
+  proves itself first on planted files against a planted synthetic ROM and
+  corpus, one per scope, view and clearance (`nintendo-bytes: self-test, 34
+  planted files as expected`, else `self-test failed: <case>`, exit 1). Then
+  it prints one `LITERAL <path> <view> @<offset> <length> bytes <scope>`
+  line per uncleared run of a file that also occurs in the ROM (`--rom`,
+  default `tmp/ladx/base.gbc`), never the bytes, then `nintendo-bytes: <n>
+  files, rom <sha1>, ladxr <short>, <k> literal runs, cleared <t> trivial,
+  <l> low-info, <p> ladxr-public`; exit 1 when `k > 0`. Scope by
+  repository-relative path: `strict` under `data/ladx/`,
+  `tests/ladx/cases/`, `tests/ladx/combos/` (the ROM-derived artifacts;
+  step 7 adds its fixture paths to `STRICT_PREFIXES`), `general` for any
+  other path or a file outside the repository (`--scope` overrides). Views:
+  `raw`; `hex` (maximal hex-digit runs, both nibble alignments); `bytelist`
+  (lists of `0xNN`/`$NN` tokens separated by commas and whitespace).
+  Minimum contiguous match: strict 4 bytes in every view; general raw 16,
+  hex and bytelist 8. Cleared runs are counted, listed by `--verbose` as
+  `CLEARED <path> <view> @<offset> <length> bytes <category>`: `trivial`
+  (an arithmetic progression mod 256, constant runs included), `low-info`
+  (at most 3 distinct values, general scope only), `ladxr-public` (the
+  whole run occurs in a text file, valid UTF-8 without NUL, tracked by the
+  LADXR checkout at `4325207e`, or in its decoded hex-digit runs; binary
+  files left out). `--min <n>` is an experimental override of every
+  threshold, shown as `min <n> (override)` in the summary, never used by
+  the gate or a plan check. Directories are walked sorted, `.git` skipped.
+  A missing ROM or input, or no LADXR checkout at the pin (`--ladxr`,
+  default `LADXR_DIR` or `tests/ladx/oracle/ladxr`) is a `setup:` line,
+  exit 2.
 - The ROM fetcher, outside the net (curl and `sha1sum` or `shasum`, else a
   `setup:` line): `tests/ladx/oracle/fetch_rom.sh [<url>]` takes the URL
   from its argument, else `LADX_ROM_URL`, never from a file, and never
@@ -360,7 +378,7 @@ in `docs/`, then `README.md`.
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
   `gen_fixtures.sh`, `determinism.sh` and `audit_order.py` run only to
   regenerate or re-prove its fixtures; `nintendo_bytes.py` needs the ROM,
-  which only Phase 2 holds, `fetch_rom.sh` fetches it, and `push_gate.py`
+  which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
   `inventory_check.py` diffs the inventory against LADXR (their tests run in
   `make test`). The SDL build (`make sdl`,

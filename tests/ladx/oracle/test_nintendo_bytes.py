@@ -22,38 +22,274 @@ nintendo_bytes = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(nintendo_bytes)
 
 _RNG = random.Random(1234)
-ROM = bytes(_RNG.getrandbits(8) for _ in range(4096))
+ZEROS, DOWN, THREE, TEXT, FOUR = 3000, 3100, 3200, 3300, 3400
+TEXT_BYTES = b"Grandpa Ulrira's phone line is busy, so call again after the Wind Fish wakes up!"
+ROM = bytearray(_RNG.getrandbits(8) for _ in range(4096))
+ROM[ZEROS:ZEROS + 64] = bytes(64)
+ROM[DOWN:DOWN + 64] = bytes(range(200, 136, -1))
+ROM[THREE:THREE + 64] = bytes(_RNG.choice(b"\x11\x5a\xc3") for _ in range(64))
+ROM[TEXT:TEXT + len(TEXT_BYTES)] = TEXT_BYTES
+ROM[FOUR:FOUR + 64] = bytes(_RNG.choice(b"\x21\x6b\x90\xe7") for _ in range(64))
+ROM = bytes(ROM)
 
 
-def runs(data, min_len=4):
-    return nintendo_bytes.literal_runs(data, nintendo_bytes.RomIndex(ROM, min_len))
+INDEX = nintendo_bytes.RomIndex(ROM)
+NO_CORPUS = nintendo_bytes.Corpus([])
+STRICT = "data/ladx/x.bin"
+GENERAL = "notes/x.md"
 
 
-class RawView(unittest.TestCase):
-    def test_four_byte_slice_is_one_run_three_is_none(self):
-        self.assertEqual(runs(b"hello " + ROM[100:104] + b" world"), [("raw", 6, 4)])
-        self.assertEqual(runs(b"hello " + ROM[100:103] + b" world"), [])
+def check(path, data, corpus=NO_CORPUS, **kwargs):
+    """(literal runs as (view, offset, length, scope), cleared runs as (view, length, category))."""
+    literals, cleared = nintendo_bytes.check_blob(path, data, INDEX, corpus, **kwargs)
+    return literals, [(view, length, category) for view, _, length, category in cleared]
 
+
+class Thresholds(unittest.TestCase):
+    def test_strict_raw_flags_4_bytes_not_3(self):
+        self.assertEqual(check(STRICT, b"<" + ROM[100:103] + b">"), ([], []))
+        self.assertEqual(check(STRICT, b"<" + ROM[100:104] + b">"), ([("raw", 1, 4, "strict")], []))
+
+    def test_general_raw_flags_16_bytes_not_15(self):
+        self.assertEqual(check(GENERAL, b"<" + ROM[100:115] + b">"), ([], []))
+        self.assertEqual(check(GENERAL, b"<" + ROM[100:116] + b">"),
+                         ([("raw", 1, 16, "general")], []))
+
+    def test_strict_hex_flags_4_bytes_not_3(self):
+        self.assertEqual(check(STRICT, b"x " + ROM[200:203].hex().encode() + b" y"), ([], []))
+        self.assertEqual(check(STRICT, b"x " + ROM[200:204].hex().encode() + b" y")[0],
+                         [("hex", 2, 4, "strict")])
+
+    def test_general_hex_flags_8_bytes_not_7(self):
+        self.assertEqual(check(GENERAL, b"x " + ROM[200:207].hex().encode() + b" y"), ([], []))
+        self.assertEqual(check(GENERAL, b"x " + ROM[200:208].hex().upper().encode() + b" y")[0],
+                         [("hex", 2, 8, "general")])
+
+    def test_strict_bytelist_flags_4_bytes_not_3(self):
+        three = ", ".join("$%02X" % b for b in ROM[300:303]).encode()
+        four = ", ".join("$%02X" % b for b in ROM[300:304]).encode()
+        self.assertEqual(check(STRICT, b"db " + three + b"\n"), ([], []))
+        self.assertEqual(check(STRICT, b"db " + four + b"\n")[0], [("bytelist", 3, 4, "strict")])
+
+    def test_general_bytelist_flags_8_bytes_not_7(self):
+        seven = ", ".join("0x%02x" % b for b in ROM[300:307]).encode()
+        eight = ",0x".join("%02X" % b for b in ROM[300:308]).encode()
+        self.assertEqual(check(GENERAL, b"{" + seven + b"}"), ([], []))
+        self.assertEqual(check(GENERAL, b"u8 a[] = {0x" + eight + b"};")[0],
+                         [("bytelist", 10, 8, "general")])
+
+    def test_every_strict_prefix_is_strict_and_other_paths_general(self):
+        for path in ("data/ladx/a.bin", "tests/ladx/cases/c/g.txt", "tests/ladx/combos/k.txt"):
+            self.assertEqual(nintendo_bytes.scope_of(path), "strict", path)
+        for path in ("data/base.bps", "tests/ladx/oracle/x.txt", "data/ladxr.txt", "README.md"):
+            self.assertEqual(nintendo_bytes.scope_of(path), "general", path)
+
+    def test_an_explicit_scope_overrides_the_path(self):
+        self.assertEqual(check(GENERAL, ROM[100:104], scope="strict")[0],
+                         [("raw", 0, 4, "strict")])
+        self.assertEqual(check(STRICT, ROM[100:110], scope="general"), ([], []))
+
+    def test_a_min_override_replaces_every_threshold(self):
+        self.assertEqual(check(GENERAL, b"<" + ROM[100:106] + b">", min_len=6)[0],
+                         [("raw", 1, 6, "general")])
+        self.assertEqual(check(STRICT, b"<" + ROM[100:105] + b">", min_len=6), ([], []))
+
+
+class Clearances(unittest.TestCase):
+    def test_a_constant_run_is_trivial_in_both_scopes(self):
+        for path in (STRICT, GENERAL):
+            self.assertEqual(check(path, b"<" + ROM[ZEROS:ZEROS + 40] + b">"),
+                             ([], [("raw", 40, "trivial")]), path)
+
+    def test_a_counting_run_is_trivial_in_both_scopes_and_in_every_view(self):
+        down = ROM[DOWN:DOWN + 20]
+        self.assertEqual(check(STRICT, down), ([], [("raw", 20, "trivial")]))
+        self.assertEqual(check(GENERAL, b"x=" + down.hex().encode()),
+                         ([], [("hex", 20, "trivial")]))
+        self.assertEqual(check(GENERAL, ", ".join("0x%02x" % b for b in down).encode()),
+                         ([], [("bytelist", 20, "trivial")]))
+
+    def test_a_three_value_run_is_low_info_in_general_only(self):
+        three = ROM[THREE:THREE + 24]
+        self.assertEqual(check(GENERAL, three), ([], [("raw", 24, "low-info")]))
+        self.assertEqual(check(STRICT, three), ([("raw", 0, 24, "strict")], []))
+
+    def test_a_four_value_run_is_flagged(self):
+        four = ROM[FOUR:FOUR + 24]
+        self.assertEqual(len(set(four)), 4)
+        self.assertEqual(check(GENERAL, four), ([("raw", 0, 24, "general")], []))
+
+
+class LadxrPublic(unittest.TestCase):
+    def corpus(self, *files):
+        return nintendo_bytes.Corpus([(f"f{i}", data) for i, data in enumerate(files)])
+
+    def test_a_run_in_a_text_file_of_the_corpus_is_cleared_in_both_scopes(self):
+        corpus = self.corpus(b"NAME = '" + TEXT_BYTES[10:60] + b"'\n")
+        for path in (STRICT, GENERAL):
+            self.assertEqual(check(path, b"<" + TEXT_BYTES[10:60] + b">", corpus),
+                             ([], [("raw", 50, "ladxr-public")]), path)
+
+    def test_a_run_only_partly_in_the_corpus_is_flagged(self):
+        corpus = self.corpus(b"NAME = '" + TEXT_BYTES[10:60] + b"'\n")
+        self.assertEqual(check(GENERAL, TEXT_BYTES[0:60], corpus),
+                         ([("raw", 0, 60, "general")], []))
+
+    def test_a_run_across_two_corpus_files_is_flagged(self):
+        corpus = self.corpus(TEXT_BYTES[10:30], TEXT_BYTES[30:50])
+        self.assertEqual(check(GENERAL, TEXT_BYTES[10:50], corpus)[0],
+                         [("raw", 0, 40, "general")])
+
+    def test_hex_digit_runs_of_the_corpus_are_decoded_at_both_alignments(self):
+        even = self.corpus(b"rom.patch(0x01, 0x2345, '" + ROM[500:520].hex().encode() + b"')\n")
+        odd = self.corpus(b"x = 7" + ROM[500:520].hex().upper().encode() + b"\n")
+        for corpus in (even, odd):
+            self.assertEqual(check(GENERAL, ROM[500:520], corpus),
+                             ([], [("raw", 20, "ladxr-public")]))
+
+    def test_binary_files_of_the_corpus_are_excluded(self):
+        nul = b"\0" + TEXT_BYTES[10:60]
+        start = next(i for i in range(600, 1000) if b"\0" not in ROM[i:i + 40])
+        invalid = ROM[start:start + 40]
+        self.assertRaises(UnicodeDecodeError, invalid.decode, "utf-8")
+        corpus = self.corpus(nul, invalid)
+        self.assertEqual(check(GENERAL, TEXT_BYTES[10:60], corpus)[0], [("raw", 0, 50, "general")])
+        self.assertEqual(check(GENERAL, invalid, corpus)[0], [("raw", 0, 40, "general")])
+
+
+def planted_ladxr(directory, files):
+    """A git checkout in directory holding files [(path, bytes)] in one commit; its commit."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+    git = lambda *args: subprocess.run(["git", *args], cwd=directory, env=env, check=True,
+                                       capture_output=True).stdout.decode().strip()
+    os.makedirs(directory)
+    git("init", "-q")
+    for rel, data in files:
+        path = os.path.join(directory, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(data)
+    git("add", "-A")
+    git("-c", "user.name=p", "-c", "user.email=p@example.invalid", "commit", "-q", "-m", "pin")
+    return git("rev-parse", "HEAD")
+
+
+@contextlib.contextmanager
+def pinned(commit):
+    real = nintendo_bytes.LADXR_PIN
+    nintendo_bytes.LADXR_PIN = commit
+    try:
+        yield
+    finally:
+        nintendo_bytes.LADXR_PIN = real
+
+
+class LadxrCheckout(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = os.path.join(self.tmp.name, "ladxr")
+        self.head = planted_ladxr(self.dir, [
+            ("names.py", b"NAME = '" + TEXT_BYTES[10:60] + b"'\n"),
+            ("gfx/tiles.bin", b"\0" + ROM[600:640]),
+        ])
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_the_tracked_files_at_the_pin_are_the_corpus_working_tree_edits_ignored(self):
+        with open(os.path.join(self.dir, "names.py"), "ab") as f:
+            f.write(TEXT_BYTES[60:])
+        with open(os.path.join(self.dir, "untracked.py"), "wb") as f:
+            f.write(TEXT_BYTES[0:10])
+        with pinned(self.head):
+            corpus = nintendo_bytes.load_ladxr(self.dir)
+        self.assertEqual(corpus.commit, self.head)
+        self.assertIn(TEXT_BYTES[10:60], corpus)
+        self.assertNotIn(TEXT_BYTES[10:61], corpus)
+        self.assertNotIn(TEXT_BYTES[0:10], corpus)
+        self.assertNotIn(ROM[600:640], corpus)
+
+    def test_a_checkout_at_another_commit_is_a_setup_error(self):
+        with pinned("0" * 40):
+            with self.assertRaisesRegex(nintendo_bytes.SetupError,
+                                        r"LADXR checkout in .* is at [0-9a-f]{12}, not at the "
+                                        r"pin 00000000"):
+                nintendo_bytes.load_ladxr(self.dir)
+
+    def test_a_missing_checkout_is_a_setup_error(self):
+        for missing in (os.path.join(self.tmp.name, "none"), self.tmp.name):
+            with pinned(self.head):
+                with self.assertRaisesRegex(nintendo_bytes.SetupError,
+                                            r"no LADXR checkout in .*tests/ladx/oracle/setup.sh"):
+                    nintendo_bytes.load_ladxr(missing)
+
+
+class BytelistView(unittest.TestCase):
+    def test_commas_whitespace_and_newlines_separate_tokens_of_both_forms(self):
+        tokens = ["0x%02X" % b if i % 2 else "$%02x" % b for i, b in enumerate(ROM[400:410])]
+        text = ("  " + ",\n    ".join(tokens[:5]) + " " + "\t".join(tokens[5:]) + "\n").encode()
+        self.assertEqual(check(GENERAL, text)[0], [("bytelist", 2, 10, "general")])
+
+    def test_a_token_of_more_than_two_digits_ends_the_list(self):
+        words = ", ".join("0x%02X" % b for b in ROM[400:408]).encode()
+        self.assertEqual(check(GENERAL, words[:-4] + b"0x123")[0], [])
+        self.assertEqual(check(GENERAL, b"0x1234, " + words)[0], [("bytelist", 8, 8, "general")])
+
+    def test_other_separators_end_the_list(self):
+        half = lambda part: " ".join("$%02X" % b for b in part).encode()
+        self.assertEqual(check(GENERAL, half(ROM[400:404]) + b"; " + half(ROM[404:408]))[0], [])
+
+
+class MergedRuns(unittest.TestCase):
     def test_a_longer_slice_is_one_merged_run(self):
-        self.assertEqual(runs(b"text: " + ROM[200:209] + b"."), [("raw", 6, 9)])
+        self.assertEqual(check(STRICT, b"text: " + ROM[200:209] + b".")[0],
+                         [("raw", 6, 9, "strict")])
 
-    def test_a_longer_min_ignores_shorter_slices(self):
-        self.assertEqual(runs(b"<" + ROM[300:307] + b">", 8), [])
-        self.assertEqual(runs(b"<" + ROM[300:308] + b">", 8), [("raw", 1, 8)])
-
-
-class HexView(unittest.TestCase):
     def test_upper_case_hex_at_an_odd_nibble_is_one_hex_run(self):
         text = b"zz7" + ROM[500:505].hex().upper().encode() + b" end"
-        self.assertEqual(runs(text), [("hex", 3, 5)])
+        self.assertEqual(check(STRICT, text)[0], [("hex", 3, 5, "strict")])
 
     def test_lower_case_hex_at_an_even_nibble_is_one_hex_run(self):
         text = b"db " + ROM[600:605].hex().encode() + b"\n"
-        self.assertEqual(runs(text), [("hex", 3, 5)])
+        self.assertEqual(check(STRICT, text)[0], [("hex", 3, 5, "strict")])
 
-    def test_hex_shorter_than_twice_min_is_not_decoded(self):
-        self.assertEqual(runs(b"x" + ROM[700:704].hex().encode()[:7] + b"y"), [])
+    def test_hex_shorter_than_twice_the_threshold_is_not_decoded(self):
+        self.assertEqual(check(STRICT, b"x" + ROM[700:704].hex().encode()[:7] + b"y"), ([], []))
 
+
+@contextlib.contextmanager
+def patched(name, value):
+    real = getattr(nintendo_bytes, name)
+    setattr(nintendo_bytes, name, value)
+    try:
+        yield
+    finally:
+        setattr(nintendo_bytes, name, real)
+
+
+class SelfProof(unittest.TestCase):
+    def test_the_self_proof_passes(self):
+        self.assertIsNone(nintendo_bytes.self_test())
+
+    def test_a_broken_policy_fails_the_self_proof_on_the_first_case_it_breaks(self):
+        thresholds = dict(nintendo_bytes.THRESHOLDS)
+        thresholds[("general", "raw")] = 15
+        low_info_everywhere = lambda run, scope, corpus: real_clearance(run, "general", corpus)
+        real_clearance = nintendo_bytes._clearance
+        no_bytelist = tuple(v for v in nintendo_bytes.VIEWS if v[0] != "bytelist")
+        broken = [
+            ("check_blob", lambda path, data, index, corpus, *a: ([], []), "strict-raw"),
+            ("VIEWS", no_bytelist, "strict-bytelist"),
+            ("_clearance", lambda run, scope, corpus: None, "strict-raw-trivial"),
+            ("_clearance", low_info_everywhere, "strict-raw-low-info"),
+            ("THRESHOLDS", thresholds, "general-raw-below"),
+            ("_is_text", lambda data: True, "general-binary-corpus"),
+            ("scope_of", lambda path: "general", "strict-raw"),
+        ]
+        for name, value, case in broken:
+            with patched(name, value):
+                self.assertEqual(nintendo_bytes.self_test(), case, name)
 
 
 class CommandLine(unittest.TestCase):
@@ -61,6 +297,12 @@ class CommandLine(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = self.tmp.name
         self.rom = self.write("rom.bin", ROM)
+        self.ladxr = os.path.join(self.dir, "ladxr")
+        head = planted_ladxr(self.ladxr, [("names.py", b"NAME = '" + TEXT_BYTES[10:60] + b"'\n")])
+        self.short = head[:8]
+        pin = pinned(head)
+        pin.__enter__()
+        self.addCleanup(pin.__exit__, None, None, None)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -75,40 +317,76 @@ class CommandLine(unittest.TestCase):
     def run_main(self, *args):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            code = nintendo_bytes.main(list(args))
+            code = nintendo_bytes.main(["--rom", self.rom, "--ladxr", self.ladxr, *args])
         return code, out.getvalue().splitlines()
+
+    def summary(self, files, literals, cleared=(0, 0, 0), override=""):
+        return (f"nintendo-bytes: {files} files, rom {hashlib.sha1(ROM).hexdigest()}, "
+                f"ladxr {self.short}, {override}{literals} literal runs, cleared {cleared[0]} "
+                f"trivial, {cleared[1]} low-info, {cleared[2]} ladxr-public")
 
     def test_a_planted_directory_reports_each_run_sorted_by_path_then_offset(self):
         tree = os.path.join(self.dir, "tree")
-        self.write("tree/b.txt", b"ok " + ROM[10:15].hex().encode() + b" " + ROM[40:44])
-        self.write("tree/a/x.bin", ROM[900:910])
-        self.write("tree/clean.txt", b"nothing here\n")
+        self.write("tree/b.txt", b"ok " + ROM[10:18].hex().encode() + b" " + ROM[40:60])
+        self.write("tree/a/x.bin", ROM[900:920])
+        self.write("tree/clean.txt", b"nothing here " + ROM[100:110] + ROM[ZEROS:ZEROS + 20])
         self.write("tree/.git/objects/leak", ROM[0:64])
-        code, lines = self.run_main("--rom", self.rom, tree)
+        code, lines = self.run_main(tree)
         a = os.path.join(tree, "a", "x.bin")
         b = os.path.join(tree, "b.txt")
-        self.assertEqual(lines[-4:], [
-            f"LITERAL {a} raw @0 10 bytes",
-            f"LITERAL {b} hex @3 5 bytes",
-            f"LITERAL {b} raw @14 4 bytes",
-            f"nintendo-bytes: 3 files, rom {hashlib.sha1(ROM).hexdigest()}, min 4, "
-            "3 literal runs",
+        self.assertEqual(lines[1:], [
+            f"LITERAL {a} raw @0 20 bytes general",
+            f"LITERAL {b} hex @3 8 bytes general",
+            f"LITERAL {b} raw @20 20 bytes general",
+            self.summary(3, 3, (1, 0, 0)),
         ])
         self.assertEqual(code, 1)
 
-    def test_a_clean_file_passes_with_zero_literal_runs(self):
-        clean = self.write("clean.txt", b"just text, 0000 and FF\n")
-        code, lines = self.run_main("--rom", self.rom, "--min", "5", clean)
-        self.assertEqual(lines[-1], f"nintendo-bytes: 1 files, rom {hashlib.sha1(ROM).hexdigest()}"
-                                    ", min 5, 0 literal runs")
+    def test_the_scope_follows_the_repository_relative_path(self):
+        real = nintendo_bytes.TOP
+        nintendo_bytes.TOP = self.dir
+        try:
+            strict = self.write("data/ladx/t.bin", ROM[100:104])
+            general = self.write("data/t.bin", ROM[100:104])
+            code, lines = self.run_main(strict, general)
+        finally:
+            nintendo_bytes.TOP = real
+        self.assertEqual(lines[1:], [f"LITERAL {strict} raw @0 4 bytes strict", self.summary(2, 1)])
+        self.assertEqual(code, 1)
+
+    def test_scope_overrides_the_path(self):
+        leak = self.write("leak.bin", ROM[100:104])
+        code, lines = self.run_main("--scope", "strict", leak)
+        self.assertEqual(lines[1:], [f"LITERAL {leak} raw @0 4 bytes strict", self.summary(1, 1)])
+        self.assertEqual(code, 1)
+
+    def test_min_overrides_every_threshold_and_says_so(self):
+        leak = self.write("leak.bin", b"<" + ROM[100:106] + b">")
+        code, lines = self.run_main("--min", "6", leak)
+        self.assertEqual(lines[1:], [f"LITERAL {leak} raw @1 6 bytes general",
+                                     self.summary(1, 1, override="min 6 (override), ")])
+
+    def test_verbose_lists_the_cleared_runs(self):
+        f = self.write("f.txt", b"[" + TEXT_BYTES[10:60] + b"] " + ROM[THREE:THREE + 20] + b" "
+                       + ROM[ZEROS:ZEROS + 16])
+        code, lines = self.run_main("--verbose", f)
+        self.assertEqual(lines[1:], [
+            f"CLEARED {f} raw @1 50 bytes ladxr-public",
+            f"CLEARED {f} raw @53 20 bytes low-info",
+            f"CLEARED {f} raw @74 16 bytes trivial",
+            self.summary(1, 0, (1, 1, 1)),
+        ])
         self.assertEqual(code, 0)
+        code, lines = self.run_main(f)
+        self.assertEqual(lines[1:], [self.summary(1, 0, (1, 1, 1))])
 
     def test_no_line_holds_the_rom_bytes_or_their_hex(self):
-        leak = self.write("leak.txt", ROM[1000:1032] + b" " + ROM[2000:2032].hex().encode())
-        code, lines = self.run_main("--rom", self.rom, leak)
+        leak = self.write("leak.txt", ROM[1000:1032] + b" " + ROM[2000:2032].hex().encode()
+                          + b" " + TEXT_BYTES)
+        code, lines = self.run_main("--verbose", "--scope", "strict", leak)
         self.assertEqual(code, 1)
         text = "\n".join(lines)
-        for chunk in (ROM[1000:1032], ROM[2000:2032]):
+        for chunk in (ROM[1000:1032], ROM[2000:2032], TEXT_BYTES):
             for i in range(0, 32, 4):
                 self.assertNotIn(chunk[i:i + 4].hex(), text.lower())
                 self.assertNotIn(chunk[i:i + 4].decode("latin-1"), text)
@@ -119,45 +397,49 @@ class CommandLine(unittest.TestCase):
         self.assertTrue(lines[-1].startswith("setup: nintendo-bytes: no ROM at "), lines)
 
     def test_a_missing_input_is_a_setup_line(self):
-        code, lines = self.run_main("--rom", self.rom, os.path.join(self.dir, "none"))
+        code, lines = self.run_main(os.path.join(self.dir, "none"))
         self.assertEqual(code, 2)
         self.assertTrue(lines[-1].startswith("setup: nintendo-bytes: no such file "), lines)
 
-    def test_the_self_proof_passes_before_the_scan(self):
+    def test_a_missing_or_unpinned_ladxr_checkout_is_a_setup_line(self):
         clean = self.write("clean.txt", b"text\n")
-        code, lines = self.run_main("--rom", self.rom, clean)
-        self.assertEqual(lines[0], "nintendo-bytes: self-test, 6 planted files as expected")
+        code, lines = self.run_main("--ladxr", os.path.join(self.dir, "none"), clean)
+        self.assertEqual(code, 2)
+        self.assertTrue(lines[-1].startswith("setup: nintendo-bytes: no LADXR checkout in "), lines)
+        with pinned("1" * 40):
+            code, lines = self.run_main(clean)
+        self.assertEqual(code, 2)
+        self.assertRegex(lines[-1], r"^setup: nintendo-bytes: LADXR checkout in .* not at the pin")
+
+    def test_ladxr_dir_in_the_environment_is_the_default_checkout(self):
+        clean = self.write("clean.txt", b"text\n")
+        out = io.StringIO()
+        real = os.environ.get("LADXR_DIR")
+        os.environ["LADXR_DIR"] = self.ladxr
+        try:
+            with contextlib.redirect_stdout(out):
+                code = nintendo_bytes.main(["--rom", self.rom, clean])
+        finally:
+            if real is None:
+                del os.environ["LADXR_DIR"]
+            else:
+                os.environ["LADXR_DIR"] = real
+        self.assertEqual(out.getvalue().splitlines()[1:], [self.summary(1, 0)])
         self.assertEqual(code, 0)
 
-    def test_a_check_that_finds_nothing_fails_its_self_proof(self):
+    def test_the_self_proof_passes_before_the_scan(self):
         clean = self.write("clean.txt", b"text\n")
-        real = nintendo_bytes.literal_runs
-        nintendo_bytes.literal_runs = lambda data, index: []
-        try:
-            code, lines = self.run_main("--rom", self.rom, clean)
-        finally:
-            nintendo_bytes.literal_runs = real
-        self.assertEqual(code, 1)
-        self.assertEqual(lines, ["nintendo-bytes: self-test failed: four.bin"])
+        code, lines = self.run_main(clean)
+        self.assertRegex(lines[0], r"^nintendo-bytes: self-test, \d+ planted files as expected$")
+        self.assertEqual(code, 0)
 
-    def test_a_check_that_misses_hex_fails_its_self_proof(self):
-        clean = self.write("clean.txt", b"text\n")
-        real = nintendo_bytes.literal_runs
-        nintendo_bytes.literal_runs = lambda data, index: [
-            run for run in real(data, index) if run[0] == "raw"]
-        try:
-            code, lines = self.run_main("--rom", self.rom, clean)
-        finally:
-            nintendo_bytes.literal_runs = real
-        self.assertEqual(code, 1)
-        self.assertEqual(lines, ["nintendo-bytes: self-test failed: lower.txt"])
-
-    def test_the_script_exits_1_on_a_literal_run(self):
-        leak = self.write("leak.bin", ROM[50:60])
+    def test_the_script_refuses_a_checkout_not_at_the_real_pin(self):
+        leak = self.write("leak.bin", ROM[50:70])
+        env = dict(os.environ, LADXR_DIR=self.ladxr)
         result = subprocess.run([sys.executable, "-I", "-B", os.path.join(HERE, "nintendo_bytes.py"),
-                                 "--rom", self.rom, leak], capture_output=True, text=True)
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertTrue(result.stdout.endswith(" 1 literal runs\n"), result.stdout)
+                                 "--rom", self.rom, leak], capture_output=True, text=True, env=env)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn("not at the pin", result.stdout)
 
 
 if __name__ == "__main__":
