@@ -51,7 +51,7 @@
     - [x] Chunk 4: inventory on real data
       - [x] Fix: inventory_check CLI runs the full check
       - [x] Inventory filled from the traces
-  - [ ] Step 2.4 Cases
+  - [x] Step 2.4 Cases
     - [x] Chunk 1: goal-bingo cut in tier1.txt and fixtures
     - [x] Chunk 2: expected case list and checker
     - [x] Chunk 3: seeds picked with the ROM, case folders
