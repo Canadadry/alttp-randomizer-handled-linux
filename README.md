@@ -321,12 +321,12 @@ the PC binary as the artifact `alttpr-pc`, and its job `package` runs
 `make package` then `make e2e-arm` and uploads the zip as the artifact
 `alttpr-miyoo`.
 
-To try the app on a PC before copying it (needs `libsdl1.2-dev` and
-`libsdl-ttf2.0-dev`):
+To try the app on a PC before copying it (needs `libsdl1.2-dev`,
+`libsdl-ttf2.0-dev` and `libsdl-image1.2-dev`):
 
 ```bash
 make sdl-pc
-tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf
+tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/classic
 ```
 
 `tmp/sd` stands for the SD card. To generate there, put your ROM at
@@ -346,7 +346,7 @@ save the last frame, as a picture and as text:
 
 ```bash
 SDL_VIDEODRIVER=dummy tests/rando/build/sdl/alttpr --sd tmp/sd \
-  --font data/DejaVuSansMono.ttf --shot tmp/shot.bmp --shot-text tmp/shot.txt \
+  --theme themes/classic --shot tmp/shot.bmp --shot-text tmp/shot.txt \
   --seed 1 --date 2026-11-01T14:03:27 down*3 r1
 ```
 
@@ -359,13 +359,18 @@ ROM's expected digests. A bad option, key or value exits with status 2 and
 the usage.
 
 `--theme <dir>` reads `<dir>/theme.ini` (for example `themes/classic`) and
-takes from it the number of list rows per page (the list body's height over
-its row height) and the wrap width (the list's label x to its right edge, in
-the list font's cells); the app still draws with `--font`. A missing or
-broken theme, a list font without a cell, or a page outside 1..36 or a width
-outside 20..94 prints one `alttpr: ` line naming `theme.ini` and exits with
-status 1, before anything touches the SD card. Without `--theme`, the page
-and width are the 40×15 grid's.
+draws every frame from it: its colours, background image, sprites and
+fonts, all read from `<dir>`. The page is the number of list rows (the list
+body's height over its row height) and the wrap width the list's label x to
+its right edge, in the list font's cells (or its `M` advance when it has no
+cell). `--font` with `--theme` is a usage error (status 2). A missing or
+broken `theme.ini`, a missing or unreadable image or font, a font that fits
+no size in its cell, a background that is not 640×480, or a page outside
+1..36 or a width outside 20..94 prints one `alttpr: ` line naming the file
+(and the theme key) and exits with status 1, before anything touches the SD
+card; so does a screen with more tabs than the theme has tab slots. Without
+`--theme`, the app draws the 40×15 grid with `--font` (default
+`DejaVuSansMono.ttf`), as before.
 
 ## Working with Claude
 

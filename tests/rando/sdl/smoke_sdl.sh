@@ -3,7 +3,8 @@
 # Starts the SDL main headless (dummy video driver), renders one frame offscreen and exits; checks
 # its exit statuses, the saved frame, and that starting touches nothing on the SD tree. Then plays
 # scripted keys with the fixed-run options and checks the captured frame's text. Last, runs it on
-# THEME and on edited copies of it, checking the grid size reaching the core and each refusal.
+# THEME and on edited copies of it, checking the frame drawn, the grid size reaching the core and
+# each refusal.
 set -eu
 export LC_ALL=C
 export SDL_VIDEODRIVER=dummy
@@ -11,6 +12,7 @@ export SDL_VIDEODRIVER=dummy
 bin="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 font="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
 theme="$(cd "$3" && pwd)"
+features="$(cd "$(dirname "$0")" && pwd)/themes/features"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 tree="$tmp/sd"
@@ -34,10 +36,9 @@ expect() {
 	[ "$got" -eq "$want" ] || { cat "$tmp/err" >&2; fail "alttpr $*: exit $got, expected $want"; }
 }
 
-before="$(listing)"
-expect 0 --sd "$tree" --font "$font" --frames 1 --shot "$tmp/frame.bmp"
-[ "$(listing)" = "$before" ] || fail "starting changed the SD tree"
-python3 -I - "$tmp/frame.bmp" <<'PY' || fail "the saved frame is not a 640x480 picture of more than one colour"
+# picture BMP: fails unless BMP is a 640x480 picture of more than one colour.
+picture() {
+	python3 -I - "$1" <<'PY' || fail "$1 is not a 640x480 picture of more than one colour"
 import struct, sys
 data = open(sys.argv[1], "rb").read()
 assert data[:2] == b"BM"
@@ -55,6 +56,12 @@ for y in range(abs(h)):
         break
 assert len(colours) > 1
 PY
+}
+
+before="$(listing)"
+expect 0 --sd "$tree" --font "$font" --frames 1 --shot "$tmp/frame.bmp"
+[ "$(listing)" = "$before" ] || fail "starting changed the SD tree"
+picture "$tmp/frame.bmp"
 
 (cd "$tree/App/ALttPR" && expect 0 --font "$font" --frames 1)
 [ "$(listing)" = "$before" ] || fail "starting from App/ALttPR changed the SD tree"
@@ -148,29 +155,51 @@ PY
 themed="$tmp/themed"
 mkdir -p "$themed/App/ALttPR"
 expect 0 --sd "$themed" --font "$font" --frames 1 --shot-text "$tmp/plain.txt"
-expect 0 --sd "$themed" --font "$font" --theme "$theme" --frames 1 --shot-text "$tmp/classic.txt"
+expect 0 --sd "$themed" --theme "$theme" --frames 1 --shot "$tmp/classic.bmp" --shot-text "$tmp/classic.txt"
 cmp -s "$tmp/plain.txt" "$tmp/classic.txt" || fail "--theme $theme does not capture the same text as no theme"
 grid_size "$tmp/classic.txt" 15 40
+picture "$tmp/classic.bmp"
 variant tall list row_height 64 list label_x 208
-expect 0 --sd "$themed" --font "$font" --theme "$tmp/tall" --frames 1 --shot-text "$tmp/tall.txt"
+expect 0 --sd "$themed" --theme "$tmp/tall" --frames 1 --shot-text "$tmp/tall.txt"
 grid_size "$tmp/tall.txt" 9 28
+variant nocell font.mono size 16 font.mono cell none
+expect 0 --sd "$themed" --theme "$tmp/nocell" --frames 1 --shot-text "$tmp/nocell.txt"
+[ "$(head -n 1 "$tmp/nocell.txt" | wc -c | tr -d ' ')" -gt 44 ] ||
+	{ cat "$tmp/nocell.txt" >&2; fail "a list font with no cell does not give a grid wider than 40 columns"; }
+
 before="$(listing)"
-expect 1 --sd "$tree" --font "$font" --theme "$tmp/missing" --frames 1
-one_line "alttpr: "
+# refused DIR PREFIX: fails unless --theme DIR exits 1 with one stderr line starting PREFIX, SD untouched.
+refused() {
+	expect 1 --sd "$tree" --theme "$1" --frames 1
+	one_line "$2"
+	[ "$(listing)" = "$before" ] || fail "--theme $1 changed the SD tree"
+}
+refused "$tmp/missing" "alttpr: "
 grep -q "theme.ini" "$tmp/err" || fail "a missing theme does not name theme.ini"
-[ "$(listing)" = "$before" ] || fail "a missing theme changed the SD tree"
 variant unknown
 echo "bogus = 1" >>"$tmp/unknown/theme.ini"
-expect 1 --sd "$tree" --font "$font" --theme "$tmp/unknown" --frames 1
-one_line "alttpr: $tmp/unknown/theme.ini:$(wc -l <"$tmp/unknown/theme.ini" | tr -d ' '): "
+refused "$tmp/unknown" "alttpr: $tmp/unknown/theme.ini:$(wc -l <"$tmp/unknown/theme.ini" | tr -d ' '): "
 variant narrow list label_x 400
-expect 1 --sd "$tree" --font "$font" --theme "$tmp/narrow" --frames 1
-one_line "alttpr: $tmp/narrow/theme.ini: page 11, width 14: the app shows page 1..36, width 20..94"
-variant nocell font.mono size 16 font.mono cell none
-expect 1 --sd "$tree" --font "$font" --theme "$tmp/nocell" --frames 1
-one_line "alttpr: $tmp/nocell/theme.ini: list.font: no cell, the width needs the font's metrics"
-[ "$(listing)" = "$before" ] || fail "a refused theme changed the SD tree"
-expect 2 --sd "$tree" --font "$font" --theme
+refused "$tmp/narrow" "alttpr: $tmp/narrow/theme.ini: page 11, width 14: the app shows page 1..36, width 20..94"
+variant noimage screen image missing.png
+refused "$tmp/noimage" "alttpr: $tmp/noimage/missing.png: screen.image: "
+variant nofont font.mono file missing.ttf
+refused "$tmp/nofont" "alttpr: $tmp/nofont/missing.ttf: font.mono.file: "
+variant tiny font.mono cell "4 4"
+refused "$tmp/tiny" "alttpr: $tmp/tiny/DejaVuSansMono.ttf: font.mono.file: no size from 64 to 8 fits the 4x4 cell"
+variant small
+cp "$features/cursor.png" "$tmp/small/background.png"
+size="$(python3 -I -c 'import struct, sys; print("%dx%d" % struct.unpack(">II", open(sys.argv[1], "rb").read()[16:24]))' "$features/cursor.png")"
+refused "$tmp/small" "alttpr: $tmp/small/background.png: screen.image: $size, the screen is 640x480"
+variant onetab
+awk '/^\[/ { skip = ($0 == "[tab.2]") } !skip' "$theme/theme.ini" >"$tmp/onetab/theme.ini"
+refused "$tmp/onetab" "alttpr: $tmp/onetab/theme.ini: the screen has 2 tabs, the theme 1 tab slots"
+
+expect 2 --sd "$tree" --font "$font" --theme "$theme" --frames 1
+grep -q "usage: alttpr" "$tmp/err" || fail "--font with --theme does not print the usage"
+grep -q -- "--font and --theme" "$tmp/err" || fail "--font with --theme does not name both"
+[ "$(listing)" = "$before" ] || fail "--font with --theme changed the SD tree"
+expect 2 --sd "$tree" --theme
 grep -q "usage: alttpr" "$tmp/err" || fail "--theme without a value does not print the usage"
 grep -q -- "--theme <dir>" "$tmp/err" || fail "the usage does not list --theme <dir>"
 

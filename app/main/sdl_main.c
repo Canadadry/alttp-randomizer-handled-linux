@@ -4,12 +4,14 @@
 #include "rando_app_shell.h"
 #include "rando_fixed_run.h"
 #include "sdl_loop.h"
+#include "sdl_render.h"
 #include "sdl_view.h"
 #include "theme.h"
 #include "ui_grid.h"
 #include "ui_history.h"
 
 #include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
 #include <SDL/SDL_ttf.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -42,9 +44,12 @@ typedef struct ScriptPos {
 	int key, repeat;
 } ScriptPos;
 
+/* render NULL: the grid is drawn by view. tab_count is that of the screen render refused. */
 typedef struct Presenter {
 	SdlView *view;
+	SdlRender *render;
 	SDL_Surface *offscreen, *screen;
+	int tab_count;
 } Presenter;
 
 /* About 7.3 MiB, near Linux's 8 MiB default stack: keep it static. */
@@ -52,6 +57,7 @@ static RandoAppShell shell;
 static Options opt;
 static char text[UI_GRID_TEXT_MAX];
 static SdlView view;
+static SdlRender render;
 static UiGrid grid;
 static Theme theme;
 static char root[RANDO_SEED_DIR_MAX];
@@ -66,9 +72,10 @@ static void fail_usage(const char *what, const char *arg)
 /* Printed after SDL_Quit restores the device's console; why is copied first, SDL_Quit clears SDL's error. */
 static void fail_setup(const char *what, const char *why)
 {
-	static char line[1024];
+	static char line[CWD_MAX + 64];
 
 	snprintf(line, sizeof line, "alttpr: %s%s%s\n", what, why != NULL ? ": " : "", why != NULL ? why : "");
+	IMG_Quit();
 	TTF_Quit();
 	SDL_Quit();
 	fputs(line, stderr);
@@ -109,7 +116,6 @@ static void parse_args(int argc, char **argv)
 	bool keys_only = false;
 	int i;
 
-	opt.font = DEFAULT_FONT;
 	for (i = 1; i < argc; i++) {
 		const char *a = argv[i];
 
@@ -147,40 +153,87 @@ static void parse_args(int argc, char **argv)
 			fail_usage("unknown option", a);
 		}
 	}
+	if (opt.font != NULL && opt.theme != NULL)
+		fail_usage("--font and --theme are exclusive", NULL);
+	if (opt.font == NULL && opt.theme == NULL)
+		opt.font = DEFAULT_FONT;
+}
+
+static void fail_render(const SdlRenderFailure *f)
+{
+	static char line[CWD_MAX];
+	static ThemeAsset assets[THEME_ASSETS_MAX];
+	int count = theme_assets(&theme, assets);
+	const ThemeAsset *a;
+	const ThemeCell *cell;
+	int n;
+
+	if (f->asset < 0 || f->asset >= count)
+		fail_setup(opt.theme, "theme asset out of range");
+	a = &assets[f->asset];
+	n = snprintf(line, sizeof line, "%s/%s: %s: ", opt.theme, a->file, a->key);
+	if (n < 0 || (size_t)n >= sizeof line)
+		n = 0;
+	switch (f->reason) {
+	case SDLRENDER_OPEN:
+		snprintf(line + n, sizeof line - (size_t)n, "%s", f->error);
+		break;
+	case SDLRENDER_FIT:
+		cell = &theme.fonts[a->font].cell;
+		snprintf(line + n, sizeof line - (size_t)n, "no size from 64 to 8 fits the %dx%d cell", cell->w, cell->h);
+		break;
+	case SDLRENDER_SIZE:
+		snprintf(line + n, sizeof line - (size_t)n, "%dx%d, the screen is %dx%d", f->w, f->h, SCREEN_W, SCREEN_H);
+		break;
+	case SDLRENDER_PATH:
+		snprintf(line + n, sizeof line - (size_t)n, "path too long");
+		break;
+	}
+	fail_setup(line, NULL);
 }
 
 /* The grid is width + 2 by page + 4, so the grid drawn and the page the core scrolls by agree. */
-static void size_from_theme(int *page, int *width)
+static void open_theme(int *page, int *width)
 {
 	static char line[THEME_ERROR_MAX + 128];
 	ThemeError err;
-	const ThemeCell *cell;
+	SdlRenderFailure f;
 
 	if (!theme_load(&theme, opt.theme, &err))
 		fail_setup(err.message, NULL);
-	cell = &theme.fonts[theme.list.font].cell;
-	if (!cell->present) {
-		snprintf(line, sizeof line, "%s/theme.ini: list.font: no cell, the width needs the font's metrics",
-			 opt.theme);
-		fail_setup(line, NULL);
-	}
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		fail_setup("SDL_Init", SDL_GetError());
+	if (TTF_Init() != 0)
+		fail_setup("TTF_Init", TTF_GetError());
+	if ((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) == 0)
+		fail_setup("IMG_Init", IMG_GetError());
+	if (!sdl_render_open(&render, &theme, opt.theme, &f))
+		fail_render(&f);
 	*page = theme_page(&theme);
-	*width = theme_columns(&theme, cell->w);
+	*width = theme_columns(&theme, sdl_render_advance(&render));
 	if (*page < 1 || *page > UI_GRID_LINES_MAX - 4 || *width < UI_HISTORY_WIDTH_MIN ||
 	    *width > UI_HISTORY_WIDTH_MAX) {
 		snprintf(line, sizeof line, "%s/theme.ini: page %d, width %d: the app shows page 1..%d, width %d..%d",
 			 opt.theme, *page, *width, UI_GRID_LINES_MAX - 4, UI_HISTORY_WIDTH_MIN, UI_HISTORY_WIDTH_MAX);
 		fail_setup(line, NULL);
 	}
+	if (!ui_grid_init(&grid, *width + 2, *page + 4))
+		fail_setup("grid", NULL);
 }
 
-static void present(void *ctx, const UiGrid *g)
+static bool present(void *ctx, const UiScreen *screen, const UiGrid *g)
 {
 	Presenter *p = ctx;
 
-	sdl_view_draw(p->view, g, p->offscreen);
+	if (p->render == NULL) {
+		sdl_view_draw(p->view, g, p->offscreen);
+	} else if (!sdl_render_draw(p->render, screen, p->offscreen)) {
+		p->tab_count = screen->tab_count;
+		return false;
+	}
 	SDL_BlitSurface(p->offscreen, NULL, p->screen, NULL);
 	SDL_Flip(p->screen);
+	return true;
 }
 
 static bool script_next(void *ctx, UiButton *out)
@@ -235,9 +288,7 @@ int main(int argc, char **argv)
 		fail_setup("SD root does not fit", NULL);
 	}
 	if (opt.theme != NULL) {
-		size_from_theme(&page, &width);
-		if (!ui_grid_init(&grid, width + 2, page + 4))
-			fail_setup("grid", NULL);
+		open_theme(&page, &width);
 	} else {
 		if (!ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES))
 			fail_setup("grid", NULL);
@@ -247,7 +298,7 @@ int main(int argc, char **argv)
 	if (!rando_app_shell_init(&shell, root, NULL, rando_fixed_run_unsupported(&opt.run), 1, page, width))
 		fail_setup("SD root does not fit", root);
 	rando_fixed_run_apply(&opt.run, &shell);
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	if (opt.theme == NULL && SDL_Init(SDL_INIT_VIDEO) != 0)
 		fail_setup("SDL_Init", SDL_GetError());
 	p.screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 32, SDL_HWSURFACE);
 	if (p.screen == NULL)
@@ -258,23 +309,41 @@ int main(int argc, char **argv)
 					   0x000000FF, 0);
 	if (p.offscreen == NULL)
 		fail_setup("SDL_CreateRGBSurface", SDL_GetError());
-	if (TTF_Init() != 0)
-		fail_setup("TTF_Init", TTF_GetError());
-	st = sdl_view_open(&view, opt.font, p.offscreen->w, p.offscreen->h, grid.cols, grid.lines);
-	if (st == SDLVIEW_FONT_OPEN)
-		fail_setup(opt.font, TTF_GetError());
-	if (st != SDLVIEW_OK)
-		fail_setup(opt.font, "no font size fits the screen's cells");
-	p.view = &view;
+	p.view = NULL;
+	p.render = NULL;
+	p.tab_count = 0;
+	if (opt.theme != NULL) {
+		p.render = &render;
+	} else {
+		if (TTF_Init() != 0)
+			fail_setup("TTF_Init", TTF_GetError());
+		st = sdl_view_open(&view, opt.font, p.offscreen->w, p.offscreen->h, grid.cols, grid.lines);
+		if (st == SDLVIEW_FONT_OPEN)
+			fail_setup(opt.font, TTF_GetError());
+		if (st != SDLVIEW_OK)
+			fail_setup(opt.font, "no font size fits the screen's cells");
+		p.view = &view;
+	}
 	result = sdl_loop_run(&shell.app, &grid, present, &p, opt.frames, opt.scripted ? &script : NULL);
 	if (result == SDLLOOP_ERROR)
 		fail_setup("SDL_WaitEvent", SDL_GetError());
+	if (result == SDLLOOP_PRESENT_FAILED) {
+		static char line[CWD_MAX];
+
+		snprintf(line, sizeof line, "%s/theme.ini: the screen has %d tabs, the theme %d tab slots", opt.theme,
+			 p.tab_count, theme.tabs.slot_count);
+		fail_setup(line, NULL);
+	}
 	if (opt.shot != NULL && SDL_SaveBMP(p.offscreen, opt.shot) != 0)
 		fail_setup(opt.shot, SDL_GetError());
 	if (opt.shot_text != NULL)
 		write_shot_text(opt.shot_text);
-	sdl_view_close(&view);
+	if (p.render != NULL)
+		sdl_render_close(&render);
+	else
+		sdl_view_close(&view);
 	SDL_FreeSurface(p.offscreen);
+	IMG_Quit();
 	TTF_Quit();
 	SDL_Quit();
 	return 0;

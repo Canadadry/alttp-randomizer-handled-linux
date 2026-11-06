@@ -6,7 +6,7 @@
 # BMPs and the environment fingerprint. --compare proves itself on planted goldens, checks the
 # fingerprint, then renders each state once against DIR. golden_states.txt is tab-separated: name,
 # fixture, frame cap, extra alttpr flags, keys, strings joined by " | "; "-" for no cap or no flags.
-# --theme THEME is passed to every alttpr run.
+# --theme THEME is passed to every alttpr run in place of --font; FONT is still fingerprinted.
 set -eu
 set -f
 export LC_ALL=C
@@ -27,8 +27,8 @@ font="$(abs "$2")"
 fixture="$(abs "$3")"
 mode="$4"
 goldens="$5"
-theme_flag=""
-[ $# -eq 5 ] || theme_flag="--theme $(cd "$7" && pwd)"
+look_flag="--font $font"
+[ $# -eq 5 ] || look_flag="--theme $(cd "$7" && pwd)"
 here="$(cd "$(dirname "$0")" && pwd)"
 states="$here/golden_states.txt"
 fingerprint_file=environment.txt
@@ -126,7 +126,7 @@ render() {
 		[ "$flags" != "-" ] || flags=""
 		st=0
 		# shellcheck disable=SC2046,SC2086
-		"$bin" --sd "$sd" --font "$font" $theme_flag --seed 1 --date 2026-11-01T14:03:27 $(cat "$tmp/flags-$fx") $cap $flags \
+		"$bin" --sd "$sd" $look_flag --seed 1 --date 2026-11-01T14:03:27 $(cat "$tmp/flags-$fx") $cap $flags \
 			--shot "$out/$name.bmp" --shot-text "$out/$name.txt" -- $keys </dev/null >"$tmp/out" 2>"$tmp/err" || st=$?
 		[ "$st" -eq 0 ] || { cat "$tmp/err" >&2; fail "$name: alttpr exited $st"; }
 		rm -rf "$sd"

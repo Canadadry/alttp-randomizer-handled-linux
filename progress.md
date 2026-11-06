@@ -20,7 +20,7 @@
     - [x] Chunk 1 — SDL_image, theme assets, classic files, renderer open/close
     - [x] Chunk 2 — Text layer and single-line zones
     - [x] Chunk 3 — Body zones
-    - [ ] Chunk 4 — The app draws through the theme
+    - [x] Chunk 4 — The app draws through the theme
   - [ ] Step 1.6 — Old renderer removed, packaging follows
   - [ ] Step 1.7 — skill: check-net
 - [ ] Phase 2 — The new theme from the mockups

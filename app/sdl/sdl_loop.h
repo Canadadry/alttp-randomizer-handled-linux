@@ -7,7 +7,8 @@
 
 #include <stdbool.h>
 
-typedef void (*SdlPresentFn)(void *ctx, const UiGrid *grid);
+/* grid is screen rendered by ui_grid_render. False ends the run with SDLLOOP_PRESENT_FAILED. */
+typedef bool (*SdlPresentFn)(void *ctx, const UiScreen *screen, const UiGrid *grid);
 
 /* The next scripted button into out; false once the script is exhausted. */
 typedef bool (*SdlScriptFn)(void *ctx, UiButton *out);
@@ -21,7 +22,8 @@ typedef enum SdlLoopResult {
 	SDLLOOP_QUIT,
 	SDLLOOP_FRAMES,
 	SDLLOOP_ERROR,
-	SDLLOOP_SCRIPT_END
+	SDLLOOP_SCRIPT_END,
+	SDLLOOP_PRESENT_FAILED
 } SdlLoopResult;
 
 /* script NULL: interactive, from SDL's event queue. Otherwise each button is played as its device

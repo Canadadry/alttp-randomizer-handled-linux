@@ -14,8 +14,10 @@ typedef struct Loop {
 	SdlPresentFn present;
 	void *ctx;
 	long max_frames, frames;
+	bool failed;
 } Loop;
 
+/* True when the run must end: the frame cap reached or the presenter failed. */
 static bool frame(Loop *loop)
 {
 	static UiScreen screen;
@@ -25,9 +27,9 @@ static bool frame(Loop *loop)
 	ok = ui_grid_render(loop->grid, &screen);
 	assert(ok);
 	(void)ok;
-	loop->present(loop->ctx, loop->grid);
+	loop->failed = !loop->present(loop->ctx, &screen, loop->grid);
 	loop->frames++;
-	return loop->max_frames > 0 && loop->frames >= loop->max_frames;
+	return loop->failed || (loop->max_frames > 0 && loop->frames >= loop->max_frames);
 }
 
 /* Keys pressed during the blocking run would act on the result screen: drop them, keep a quit. */
@@ -66,9 +68,11 @@ static Step button(Loop *loop, const SdlInput *in, bool drain)
 	return quit ? STEP_QUIT : STEP_GO;
 }
 
-static SdlLoopResult result_of(Step step)
+static SdlLoopResult result_of(const Loop *loop, Step step)
 {
-	return step == STEP_QUIT ? SDLLOOP_QUIT : SDLLOOP_FRAMES;
+	if (step == STEP_QUIT)
+		return SDLLOOP_QUIT;
+	return loop->failed ? SDLLOOP_PRESENT_FAILED : SDLLOOP_FRAMES;
 }
 
 static SdlLoopResult scripted(Loop *loop, const SdlScript *script)
@@ -96,7 +100,7 @@ static SdlLoopResult scripted(Loop *loop, const SdlScript *script)
 			assert(ok);
 			step = button(loop, &in, false);
 			if (step != STEP_GO)
-				return result_of(step);
+				return result_of(loop, step);
 		}
 		(void)ok;
 	}
@@ -116,8 +120,9 @@ SdlLoopResult sdl_loop_run(UiApp *app, UiGrid *grid, SdlPresentFn present, void 
 	loop.ctx = present_ctx;
 	loop.max_frames = max_frames;
 	loop.frames = 0;
+	loop.failed = false;
 	if (frame(&loop))
-		return SDLLOOP_FRAMES;
+		return result_of(&loop, STEP_FRAMES);
 	if (script != NULL)
 		return scripted(&loop, script);
 	for (;;) {
@@ -133,11 +138,11 @@ SdlLoopResult sdl_loop_run(UiApp *app, UiGrid *grid, SdlPresentFn present, void 
 		case SDLKEYS_BUTTON:
 			step = button(&loop, &in, true);
 			if (step != STEP_GO)
-				return result_of(step);
+				return result_of(&loop, step);
 			break;
 		case SDLKEYS_NONE:
 			if (event.type == SDL_VIDEOEXPOSE && frame(&loop))
-				return SDLLOOP_FRAMES;
+				return result_of(&loop, STEP_FRAMES);
 			break;
 		}
 	}

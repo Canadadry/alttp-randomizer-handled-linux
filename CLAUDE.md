@@ -20,10 +20,11 @@ in `docs/`, then `README.md`.
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
   like the library, built with only `rando/include` and itself on the include
   path, no SDL. `app/sd/` is the SD-card layer (`record.c`, `seed_save.c`).
-  `app/sdl/` is the SDL 1.2 renderer and input layer (key map, view, frame
-  loop). `app/core` uses the library; `app/sd` the library, `rando/host` and
-  `app/core` (it hands the core its runners and stores); `app/sdl` the
-  library and `app/core`; nothing in `rando/` includes `app/`. Its tests live
+  `app/sdl/` is the SDL 1.2 renderer and input layer (key map, grid view,
+  theme renderer `sdl_render.c`, frame loop). `app/core` uses the library;
+  `app/sd` the library, `rando/host` and `app/core` (it hands the core its
+  runners and stores); `app/sdl` the library, `app/core` and `app/theme`;
+  nothing in `rando/` includes `app/`. Its tests live
   in `tests/rando/unit/`, the SDL ones in `tests/rando/sdl/`.
   `app/theme/` is the theme loader (`theme.ini` into a `Theme` struct):
   pure C99, no SDL, built with only itself on the include path.
@@ -103,17 +104,22 @@ in `docs/`, then `README.md`.
   and qemu-user; a missing one fails with a `setup:` line, a setup problem,
   not a bug.
 - `make sdl` = `sdl-pc` + `sdl-arm`, outside the net. `make sdl-pc` needs
-  `libsdl1.2-dev` (sdl12-compat on SDL2) and `libsdl-ttf2.0-dev`, else a
+  `libsdl1.2-dev` (sdl12-compat on SDL2), `libsdl-ttf2.0-dev` and
+  `libsdl-image1.2-dev`, else a
   `setup:` line: it builds the SDL layer and `sdl_main.c`, runs the SDL tests
   of `tests/rando/sdl/` and the smoke test `sdl/smoke_sdl.sh`, all with the
   dummy video driver. `make sdl-arm` needs docker: it compiles and links the
-  same code with Onion's toolchain against its SDL 1.2, and runs nothing.
-  The owner looks at the PC build with `make sdl-pc`, then
-  `tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf`.
+  same code with Onion's toolchain against its SDL 1.2, SDL_ttf and
+  SDL_image, and runs nothing. The owner looks at the PC build with
+  `make sdl-pc`, then `tests/rando/build/sdl/alttpr --sd tmp/sd --theme
+  themes/classic` (drawn through the theme; `--font` with `--theme` is a
+  usage error) or, until the grid renderer goes, `--font
+  data/DejaVuSansMono.ttf` instead of `--theme`.
 - `make sdl-pc` also runs the golden comparison
   (`tests/rando/sdl/goldens.sh --compare`): it proves itself on a planted
   flipped byte and a removed golden, then plays the 13 states of
-  `sdl/golden_states.txt` (each on a fresh SD from `sd_fixture`) and prints
+  `sdl/golden_states.txt` (each on a fresh SD from `sd_fixture`, drawn
+  through `--theme themes/classic`) and prints
   one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch, else
   `goldens: 13 states byte-identical`. The goldens in
   `tests/rando/sdl/goldens/` are pinned to the Claude Code cloud container
