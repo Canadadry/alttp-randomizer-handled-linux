@@ -37,12 +37,12 @@
     - [x] Chunk 2 — Render check, make mockups, font edit
     - [x] Chunk 2 mockups — local font, no ligatures
     - [x] Chunk 3 — Pairing table and app-side checks
-    - [ ] Chunk 4 — Mockup content edits
+    - [x] Chunk 4 — Mockup content edits
       - [x] Edit 01 — the real end of the settings list
       - [x] Edit 03 — the real seed name
       - [x] Edit 05 — the real seed names and date
       - [x] Edit 07 — a real window of the spoiler detail
-      - [ ] Edit 07 — the scroll-down marker
+      - [x] Edit 07 — the scroll-down marker
   - [ ] Step 2.10 — `make theme-compare`
   - [ ] Step 2.11 — Help text per value
   - [ ] Step 2.12 — The new theme's look
