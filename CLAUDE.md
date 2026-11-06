@@ -182,10 +182,12 @@ in `docs/`, then `README.md`.
   traces the whole run with `read_trace.py` and writes `reads.txt` and
   `writes.txt` into `<dir>`, whatever the outcome.
   `inventory_trace.sh [--out <dir>] [--cases <file>] [--seeds <file>]
-  [<case>...]` runs every case (default `determinism_cases.txt`) that way
+  [<case>...]` runs every case that way (default: the case folders, like
+  `gen_golden.sh`, then, when no case is named, `determinism_cases.txt`'s
+  as `det-<name>`; `--cases <file>`: that list only)
   under its own seed into `tmp/ladx-inventory/<case>/seed-0/` and under each
   seed of `side_seeds.txt` into `seed-<k>/` (one `<case> seed-<k>: outcome
-  <ok|error|crash>` line each; about 7 min for 57 runs), refuses a `<dir>`
+  <ok|error|crash>` line each; about 50 min for the 405 runs), refuses a `<dir>`
   outside `tmp/`, then runs `read_check.py` on it and exits with its code.
   `determinism.sh --full` proves its comparators on planted case
   directories, runs `gen_golden.sh` twice (A: `PYTHONHASHSEED=0`, the setup

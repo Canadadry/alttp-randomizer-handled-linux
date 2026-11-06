@@ -1,7 +1,9 @@
 #!/bin/sh
 # Usage: inventory_trace.sh [--out <dir>] [--cases <file>] [--seeds <file>] [--ladxr <dir>] [--rom <file>] [--work <dir>] [--inventory <file>] [<case>...]
-# The inventory's real-data trace: runs each named case of the case list (default
-# determinism_cases.txt; every case when none is named) through oracle_run.py --rom --reads, one
+# The inventory's real-data trace: runs each named case (every case when none is named) of the case
+# directories tests/ladx/cases/ then tests/ladx/combos/ (ladx_cases.py list), then, when no case is
+# named, every case of determinism_cases.txt as det-<name>; or, with --cases, of that case list file
+# (determinism_cases.txt's format, names kept). Each runs through oracle_run.py --rom --reads, one
 # python3 process per run, PYTHONHASHSEED 0, under its own seed into <dir>/<case>/seed-0/ and
 # under the k-th seed of --seeds (default side_seeds.txt) into <dir>/<case>/seed-<k>/, with the
 # same settings; prints `<case> seed-<k>: outcome <ok|error|crash>` per run, then runs
@@ -29,7 +31,8 @@ setup() {
 }
 
 out="$repo_dir/tmp/ladx-inventory"
-cases="$oracle_dir/determinism_cases.txt"
+cases=
+determinism="$oracle_dir/determinism_cases.txt"
 seeds="$oracle_dir/side_seeds.txt"
 ladxr="$oracle_dir/ladxr"
 rom="$repo_dir/tmp/ladx/base.gbc"
@@ -62,8 +65,17 @@ if ! $oracle inside-tmp "$repo_dir" "$out"; then
 	echo "inventory_trace: refused, --out $out is not inside $repo_dir/tmp/ (ROM-derived outputs stay under tmp/)"
 	exit 2
 fi
-[ -f "$cases" ] || usage
-case_lines="$($oracle cases "$cases" "$@")" || usage
+if [ -n "$cases" ]; then
+	[ -f "$cases" ] || usage
+	case_lines="$($oracle cases "$cases" "$@")" || usage
+else
+	case_lines="$(python3 -I "$oracle_dir/ladx_cases.py" list "$@")" || usage
+	if [ "$#" -eq 0 ]; then
+		det_lines="$($oracle cases "$determinism")" || usage
+		case_lines="$(printf '%s\n%s\n' "$case_lines" "$det_lines" | grep -v '^$' |
+			awk -v n="$(printf '%s\n' "$case_lines" | grep -c .)" 'NR > n { $0 = "det-" $0 } { print }')"
+	fi
+fi
 [ -f "$seeds" ] || usage
 side_seeds="$(grep -v '^#' "$seeds" | grep -v '^$' || true)"
 for seed in $side_seeds; do
