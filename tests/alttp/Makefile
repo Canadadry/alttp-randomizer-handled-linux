@@ -71,7 +71,7 @@ SDL_HDR := $(wildcard $(APP)/sdl/*.h)
 SDL_DIR := $(BUILD)/sdl
 SDL_OBJ := $(patsubst $(APP)/sdl/%.c,$(SDL_DIR)/obj/%.o,$(SDL_SRC))
 SDL_BINS := $(addprefix $(SDL_DIR)/,$(SDL_TESTS))
-SDL_APP := $(SDL_DIR)/alttpr
+SDL_APP := $(SDL_DIR)/zrando
 SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf SDL_image)
 SD_FIXTURE := $(BUILD)/sd_fixture
 GOLDENS_DIR ?= sdl/goldens
@@ -96,13 +96,13 @@ ARM_GEN := $(ARM_DIR)/rando_gen
 ARM_WRAPPER := $(ARM_DIR)/rando_gen_qemu
 ARM_UNIT_DIR := $(ARM_DIR)/unit
 ARM_SDL_DIR := $(ARM_DIR)/sdl
-ARM_SDL_APP := $(ARM_SDL_DIR)/alttpr
+ARM_SDL_APP := $(ARM_SDL_DIR)/zrando
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
 # package: sdl-arm's binary stripped, checked and zipped with app/package/, data/'s base.bps and PKG_THEME as themes/default.
 PKG_DIR := $(BUILD)/package
-PKG_BIN := $(PKG_DIR)/alttpr
-PKG_ZIP := $(PKG_DIR)/ALttPR.zip
+PKG_BIN := $(PKG_DIR)/zrando
+PKG_ZIP := $(PKG_DIR)/ZeldaRando.zip
 PKG_BPS := ../../data/base.bps
 PKG_THEME := ../../themes/alttp
 

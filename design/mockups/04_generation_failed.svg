@@ -24,7 +24,7 @@
   <!-- Title -->
   <text x="30" y="82" font-size="14" fill="#ff6868">Generation Failed</text>
   <line x1="280" y1="77" x2="610" y2="77" stroke="#3858d8" stroke-width="4" stroke-dasharray="8 4"/>
-  <text x="30" y="120" font-size="14" fill="#f8f8f8">Needs App/ALttPR/base.sfc (JP 1.0)</text>
+  <text x="30" y="120" font-size="14" fill="#f8f8f8">Needs App/ZeldaRando/base.sfc (JP 1.0)</text>
   <!-- Message zone -->
   <text x="30" y="412" font-size="12" fill="#ff6868">Base ROM is not the JP 1.0 ROM</text>
   <!-- Footer -->

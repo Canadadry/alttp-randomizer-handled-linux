@@ -1,10 +1,10 @@
 #!/bin/sh
-# Usage: mockups.sh ALTTPR UI_CLI SD_FIXTURE THEME OUT
+# Usage: mockups.sh ZRANDO UI_CLI SD_FIXTURE THEME OUT
 # Checks design/mockups/*.svg against the app, paired by mockup_states.txt (goldens.sh's format plus
 # a sixth column, page: "-" for THEME's page, or a number). A setup: line (exit 1) without python3,
 # node, npm, the playwright module or a launchable Chromium. Then: mockup_text.py's self-test;
 # mockup_render.js (self-proof, then every mockup offline into OUT/render/); every mockup paired;
-# alttpr with THEME plays every pairing into OUT/app/; the ui_cli grid read from those captures;
+# zrando with THEME plays every pairing into OUT/app/; the ui_cli grid read from those captures;
 # ui_cli plays every pairing into OUT/text/, byte-identical to OUT/app/ where the page is THEME's;
 # each mockup compared with OUT/text/. OUT is emptied first. Exit 1 on any failure line.
 set -eu
@@ -12,7 +12,7 @@ set -f
 export LC_ALL=C
 
 usage() {
-	echo "usage: mockups.sh ALTTPR UI_CLI SD_FIXTURE THEME OUT" >&2
+	echo "usage: mockups.sh ZRANDO UI_CLI SD_FIXTURE THEME OUT" >&2
 	exit 2
 }
 
@@ -21,7 +21,7 @@ usage() {
 abs() {
 	echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 }
-alttpr="$(abs "$1")"
+zrando="$(abs "$1")"
 ui_cli="$(abs "$2")"
 fixture="$(abs "$3")"
 theme="$4"
@@ -50,14 +50,14 @@ rendered="$(printf '%s\n' "$svgs" | wc -l | tr -d ' ')"
 
 pairing_check mockups "$mockups" "$states" || bad=1
 
-"$here/goldens.sh" "$alttpr" "$theme" "$fixture" --draw "$out/app" --states "$states"
+"$here/goldens.sh" "$zrando" "$theme" "$fixture" --draw "$out/app" --states "$states"
 
 size=""
 while IFS='	' read -r name _fx _cap _flags _keys page; do
 	[ -n "$name" ] && [ "$page" = "-" ] || continue
 	this="$(python3 -I "$text_py" grid "$out/app/$name.txt")" || { echo "mockups: $name: $this"; exit 1; }
 	[ -z "$size" ] || [ "$size" = "$this" ] || {
-		echo "mockups: $name: alttpr grid $this, not $size like the others"
+		echo "mockups: $name: zrando grid $this, not $size like the others"
 		exit 1
 	}
 	size="$this"
@@ -95,7 +95,7 @@ while IFS='	' read -r name fx cap flags keys page; do
 	if cmp -s "$out/text/$name.txt" "$out/app/$name.txt"; then
 		agreed=$((agreed + 1))
 	else
-		echo "mockups: $name: ui_cli and alttpr differ"
+		echo "mockups: $name: ui_cli and zrando differ"
 		diff "$out/app/$name.txt" "$out/text/$name.txt" || true
 		bad=1
 	fi
@@ -111,7 +111,7 @@ for name in $paired; do
 done
 
 [ "$bad" -eq 0 ] || {
-	echo "mockups: failed: $matched of $rendered texts match, ui_cli agrees with alttpr on $agreed of $checked"
+	echo "mockups: failed: $matched of $rendered texts match, ui_cli agrees with zrando on $agreed of $checked"
 	exit 1
 }
-echo "mockups: $rendered mockups render offline with the local font, ui_cli agrees with alttpr on $agreed, $matched texts match (help line included)"
+echo "mockups: $rendered mockups render offline with the local font, ui_cli agrees with zrando on $agreed, $matched texts match (help line included)"

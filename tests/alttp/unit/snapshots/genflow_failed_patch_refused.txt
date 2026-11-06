@@ -1,7 +1,7 @@
  +----------------------------------------+
 =|[Generate]  History                     |
 #| Generation Failed                      |
- | Reinstall App/ALttPR from the zip      |
+ | Reinstall App/ZeldaRando from the zip  |
  |                                        |
  |                                        |
  |                                        |

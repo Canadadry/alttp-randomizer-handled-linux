@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE]
+# Usage: goldens.sh ZRANDO THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE]
 #                                          | --add DIR STATE...
 # Plays every state of golden_states.txt into the SDL app (dummy video driver), each from a fresh copy
 # of its fixture, and checks the captured text holds the state's strings. --write renders every state
@@ -7,21 +7,21 @@
 # lossless PNGs of the BMP captures and the environment fingerprint. --compare proves itself on
 # planted goldens, checks the fingerprint, then renders each state once and compares its decoded
 # pixels with DIR's PNG. golden_states.txt is tab-separated: name,
-# fixture, frame cap, extra alttpr flags, keys, strings joined by " | "; "-" for no cap or no flags.
+# fixture, frame cap, extra zrando flags, keys, strings joined by " | "; "-" for no cap or no flags.
 # --draw renders each state once into DIR with any theme, checks each BMP is a 640x480 picture of more
 # than one colour, and skips the strings, which are spelled on classic's grid; --states plays FILE,
 # in the same format, instead of golden_states.txt (--draw only: goldens come from golden_states.txt).
 # --add proves itself on planted files, refuses unknown, repeated or already-goldened STATEs and a
 # fingerprint other than DIR's environment.txt, renders those states twice, refuses unless both runs
 # agree byte for byte, then writes only their PNGs; it never touches another file of DIR.
-# Every alttpr run gets --theme THEME; the fingerprint holds one font line per *.ttf of THEME.
+# Every zrando run gets --theme THEME; the fingerprint holds one font line per *.ttf of THEME.
 set -eu
 set -f
 export LC_ALL=C
 export SDL_VIDEODRIVER=dummy
 
 usage() {
-	echo "usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE] | --add DIR STATE..." >&2
+	echo "usage: goldens.sh ZRANDO THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE] | --add DIR STATE..." >&2
 	exit 2
 }
 
@@ -197,7 +197,7 @@ render() {
 		# shellcheck disable=SC2046,SC2086
 		"$bin" --sd "$sd" --theme "$theme" --seed 1 --date 2026-11-01T14:03:27 $(cat "$tmp/flags-$fx") $cap $flags \
 			--shot "$out/$name.bmp" --shot-text "$out/$name.txt" -- $keys </dev/null >"$tmp/out" 2>"$tmp/err" || st=$?
-		[ "$st" -eq 0 ] || { cat "$tmp/err" >&2; fail "$name: alttpr exited $st"; }
+		[ "$st" -eq 0 ] || { cat "$tmp/err" >&2; fail "$name: zrando exited $st"; }
 		rm -rf "$sd"
 		if [ "$check_strings" != strings ]; then
 			why="$(py picture "$out/$name.bmp" 2>&1)" || fail "$name: $why"

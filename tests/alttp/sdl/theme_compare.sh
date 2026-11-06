@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: theme_compare.sh ALTTPR SD_FIXTURE THEME OUT
+# Usage: theme_compare.sh ZRANDO SD_FIXTURE THEME OUT
 # For each mockup of design/mockups/, paired by mockup_states.txt: OUT/<mockup>.png, the mockup
 # rendered offline (mockup_render.js, into OUT/render/), the app's capture with THEME (goldens.sh
 # --draw, into OUT/app/) and their diff side by side, and a "theme-compare: <mockup>: score <s>"
@@ -12,7 +12,7 @@ set -f
 export LC_ALL=C
 
 usage() {
-	echo "usage: theme_compare.sh ALTTPR SD_FIXTURE THEME OUT" >&2
+	echo "usage: theme_compare.sh ZRANDO SD_FIXTURE THEME OUT" >&2
 	exit 2
 }
 
@@ -21,7 +21,7 @@ usage() {
 abs() {
 	echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 }
-alttpr="$(abs "$1")"
+zrando="$(abs "$1")"
 fixture="$(abs "$2")"
 theme="$(cd "$3" && pwd)"
 out="$4"
@@ -45,7 +45,7 @@ svgs="$(ls "$mockups"/*.svg)"
 set -f
 # shellcheck disable=SC2086
 node "$here/mockup_render.js" "$out/render" $svgs
-"$here/goldens.sh" "$alttpr" "$theme" "$fixture" --draw "$out/app" --states "$states"
+"$here/goldens.sh" "$zrando" "$theme" "$fixture" --draw "$out/app" --states "$states"
 
 count=0
 : >"$out/scores.txt"

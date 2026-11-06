@@ -293,7 +293,7 @@ int main(int argc, char **argv)
 	make_tree(root, "/tmp/smoke_ui_cli_XXXXXX");
 	make_tree(scratch, "/tmp/smoke_ui_cli_err_XXXXXX");
 	make_dir("App");
-	make_dir("App/ALttPR");
+	make_dir("App/ZeldaRando");
 	write_bytes(RANDO_SD_BASE_ROM_FILE, synth_source, SYNTH_SOURCE_SIZE);
 	write_bytes(RANDO_SD_BASE_PATCH_FILE, synth_good_patch.bytes, synth_good_patch.size);
 	hex(source_md5, synth_source_md5);

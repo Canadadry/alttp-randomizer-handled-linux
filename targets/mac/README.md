@@ -17,7 +17,7 @@ This builds SDL_ttf and SDL_image (PNG only) for SDL 1.2 in
 make mac-rom ROM=/path/to/your/rom.sfc
 ```
 
-It copies the ROM to `tmp/sd/App/ALttPR/base.sfc`, strips the 512-byte
+It copies the ROM to `tmp/sd/App/ZeldaRando/base.sfc`, strips the 512-byte
 header if the ROM has one, and checks that it is the Japanese 1.0.
 
 ## Run
@@ -30,7 +30,7 @@ It runs the app with `--theme themes/alttp`: its whole look, font
 included, comes from that theme folder.
 
 Seeds go to `tmp/sd/Roms/SFC/ALttPR/`, History records to
-`tmp/sd/App/ALttPR/history/`.
+`tmp/sd/App/ZeldaRando/history/`.
 
 ## Key bindings
 

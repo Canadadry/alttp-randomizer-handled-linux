@@ -1,7 +1,7 @@
  +----------------------------------------+
 =|[Generate]  History                     |
 #| Generation Failed                      |
- | Needs App/ALttPR/base.sfc (JP 1.0)     |
+ | Needs App/ZeldaRando/base.sfc (JP 1.0) |
  |                                        |
  |                                        |
  |                                        |

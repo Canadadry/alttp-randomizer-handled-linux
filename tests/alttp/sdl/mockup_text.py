@@ -4,7 +4,7 @@
        python3 -I mockup_text.py --self-test
 
 compare: one MISMATCH line per difference between a mockup's <text> elements and the grid text of
-the app's screen (ui_cli or alttpr --shot-text), exit 1 if any.
+the app's screen (ui_cli or zrando --shot-text), exit 1 if any.
 grid: prints "<cols> <lines>" of a grid text, exit 1 if its lines are not all the same length.
 generating: prints the last "@ generating" block of a ui_cli --every output, exit 1 if none.
 --self-test: proves compare, grid and generating on planted pairs embedded here.

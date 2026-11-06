@@ -1,8 +1,8 @@
-"""Usage: python3 -I build_zip.py [--check] ALTTPR PACKAGE_DIR DATA_DIR THEME_DIR ZIP
+"""Usage: python3 -I build_zip.py [--check] ZRANDO PACKAGE_DIR DATA_DIR THEME_DIR ZIP
 
-Writes ZIP, the release whose only top-level folder is App/ALttPR/: ALTTPR (the device binary),
+Writes ZIP, the release whose only top-level folder is App/ZeldaRando/: ZRANDO (the device binary),
 launch.sh, config.json and icon.png from PACKAGE_DIR, base.bps from DATA_DIR, and every file of
-THEME_DIR as App/ALttPR/themes/default/. THEME_DIR must hold theme.ini and only regular, non-hidden
+THEME_DIR as App/ZeldaRando/themes/default/. THEME_DIR must hold theme.ini and only regular, non-hidden
 files: a subfolder, a symlink or a name starting with "." is refused. The same inputs give the same
 bytes. After writing, reads ZIP back and checks its entry list, every file's bytes against its
 source and the modes. --check only reads an existing ZIP back against the inputs. Exits non-zero
@@ -14,7 +14,7 @@ import stat
 import sys
 import zipfile
 
-ROOT = "App/ALttPR/"
+ROOT = "App/ZeldaRando/"
 THEMES = ROOT + "themes/"
 THEME = THEMES + "default/"
 EPOCH = (1980, 1, 1, 0, 0, 0)
@@ -51,7 +51,7 @@ def theme_sources(theme_dir):
 
 def sources(binary, package_dir, data_dir, theme_dir):
     """{entry name: (source path, mode)} for every file entry."""
-    files = {"alttpr": (binary, EXEC_MODE)}
+    files = {"zrando": (binary, EXEC_MODE)}
     for name, mode in (("launch.sh", EXEC_MODE), ("config.json", FILE_MODE), ("icon.png", FILE_MODE)):
         files[name] = (os.path.join(package_dir, name), mode)
     files["base.bps"] = (os.path.join(data_dir, "base.bps"), FILE_MODE)

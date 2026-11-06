@@ -138,7 +138,7 @@ static int count_files(const char *rel)
 	return n;
 }
 
-/* A fresh SD root holding App/ALttPR/ with the synthetic base.sfc and base.bps; the runner configured on it
+/* A fresh SD root holding App/ZeldaRando/ with the synthetic base.sfc and base.bps; the runner configured on it
  * with the synthetic digests, a fixed seed and date. */
 static void make_root(void)
 {
@@ -146,7 +146,7 @@ static void make_root(void)
 	if (mkdtemp(root) == NULL)
 		test_fail(TEST, "mkdtemp failed");
 	make_dir("App");
-	make_dir("App/ALttPR");
+	make_dir("App/ZeldaRando");
 	write_bytes(RANDO_SD_BASE_ROM_FILE, synth_source, SYNTH_SOURCE_SIZE);
 	write_bytes(RANDO_SD_BASE_PATCH_FILE, synth_good_patch.bytes, synth_good_patch.size);
 	CHECK(rando_app_gen_init(&gen, root));
@@ -208,12 +208,12 @@ static void check_failed(const char *what, UiGenOutcome o, UiStrId status, UiStr
 static void test_sd_root(void)
 {
 	static const char *const cases[][2] = {
-		{"/mnt/SDCARD/App/ALttPR", "/mnt/SDCARD"},
-		{"/mnt/SDCARD/App/ALttPR/", "/mnt/SDCARD"},
-		{"App/ALttPR", "."},
-		{"/x/y/App/ALttPR", "/x/y"},
+		{"/mnt/SDCARD/App/ZeldaRando", "/mnt/SDCARD"},
+		{"/mnt/SDCARD/App/ZeldaRando/", "/mnt/SDCARD"},
+		{"App/ZeldaRando", "."},
+		{"/x/y/App/ZeldaRando", "/x/y"},
 		{"", "/mnt/SDCARD"},
-		{"ALttPR", "/mnt/SDCARD"},
+		{"ZeldaRando", "/mnt/SDCARD"},
 	};
 	char out[64];
 	size_t i;
@@ -223,8 +223,8 @@ static void test_sd_root(void)
 			test_fail(TEST, "sd root of \"%s\": \"%s\", want \"%s\"", cases[i][0], out, cases[i][1]);
 	}
 	CHECK(rando_app_sd_root(NULL, out, sizeof out) && strcmp(out, "/mnt/SDCARD") == 0);
-	CHECK(!rando_app_sd_root("/mnt/SDCARD/App/ALttPR", out, 5));
-	CHECK(rando_app_sd_root("/a/App/ALttPR", out, 3) && strcmp(out, "/a") == 0);
+	CHECK(!rando_app_sd_root("/mnt/SDCARD/App/ZeldaRando", out, 5));
+	CHECK(rando_app_sd_root("/a/App/ZeldaRando", out, 3) && strcmp(out, "/a") == 0);
 }
 
 static void test_init_defaults(void)
@@ -494,7 +494,7 @@ static void test_tables(void)
 	CHECK(strcmp(ui_str(en, assemble_t[RANDO_ASSEMBLE_PATCH].status), "Patch refused: {}") == 0);
 	CHECK(strcmp(ui_str(en, bps_t[RANDO_BPS_PATCH_CRC].status), "bad patch checksum") == 0);
 	CHECK(strcmp(ui_str(en, gen_t[RANDO_APP_GEN_BASE_MISSING].status), "Base ROM not found") == 0);
-	CHECK(strcmp(ui_str(en, gen_t[RANDO_APP_GEN_BASE_MISSING].advice), "Needs App/ALttPR/base.sfc (JP 1.0)") == 0);
+	CHECK(strcmp(ui_str(en, gen_t[RANDO_APP_GEN_BASE_MISSING].advice), "Needs App/ZeldaRando/base.sfc (JP 1.0)") == 0);
 	CHECK(strcmp(ui_str(en, save_t[RANDO_SAVE_RECORD].status), "History record write failed") == 0);
 	CHECK(strcmp(ui_str(en, assemble_t[RANDO_ASSEMBLE_OUTPUT].status), "SD card write failed") == 0);
 	CHECK(strcmp(ui_str(en, assemble_t[RANDO_ASSEMBLE_OUTPUT].advice), "Check that the SD card is writable") == 0);

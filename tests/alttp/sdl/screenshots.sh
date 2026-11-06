@@ -1,11 +1,11 @@
 #!/bin/sh
-# Usage: screenshots.sh ALTTPR THEME SD_FIXTURE OUT STATE...
+# Usage: screenshots.sh ZRANDO THEME SD_FIXTURE OUT STATE...
 # Draws each STATE of golden_states.txt with THEME twice (goldens.sh --draw --states), refuses
 # unless both runs are byte-identical, then writes OUT/<state>.png, lossless, over any old one.
 set -eu
 export LC_ALL=C
 
-[ $# -ge 5 ] || { echo "usage: screenshots.sh ALTTPR THEME SD_FIXTURE OUT STATE..." >&2; exit 2; }
+[ $# -ge 5 ] || { echo "usage: screenshots.sh ZRANDO THEME SD_FIXTURE OUT STATE..." >&2; exit 2; }
 bin="$1"
 theme="$2"
 fixture="$3"

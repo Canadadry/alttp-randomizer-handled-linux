@@ -1,7 +1,7 @@
 """Usage: python3 -I test_package.py
 
 Self-test of app/package/: the zip builder on planted inputs, launch.sh on the host against a stub
-alttpr, and config.json against the package. Paths are relative to this file's directory.
+zrando, and config.json against the package. Paths are relative to this file's directory.
 """
 
 import contextlib
@@ -28,21 +28,21 @@ _spec = importlib.util.spec_from_file_location("build_zip", BUILDER)
 build_zip = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(build_zip)
 
-THEME = "App/ALttPR/themes/default/"
+THEME = "App/ZeldaRando/themes/default/"
 EXPECTED = [
     "App/",
-    "App/ALttPR/",
-    "App/ALttPR/alttpr",
-    "App/ALttPR/base.bps",
-    "App/ALttPR/config.json",
-    "App/ALttPR/icon.png",
-    "App/ALttPR/launch.sh",
-    "App/ALttPR/themes/",
+    "App/ZeldaRando/",
+    "App/ZeldaRando/base.bps",
+    "App/ZeldaRando/config.json",
+    "App/ZeldaRando/icon.png",
+    "App/ZeldaRando/launch.sh",
+    "App/ZeldaRando/themes/",
     THEME,
     THEME + "Mono-LICENSE.txt",
     THEME + "background.png",
     THEME + "mono.ttf",
     THEME + "theme.ini",
+    "App/ZeldaRando/zrando",
 ]
 PACKAGE_FILES = ("launch.sh", "config.json", "icon.png")
 DATA_FILES = ("base.bps",)
@@ -89,7 +89,7 @@ class Builder(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
-        self.binary = os.path.join(self.tmp, "alttpr")
+        self.binary = os.path.join(self.tmp, "zrando")
         write(self.binary, b"\x7fELF fake binary")
         self.package = os.path.join(self.tmp, "package")
         self.data = os.path.join(self.tmp, "data")
@@ -100,7 +100,7 @@ class Builder(unittest.TestCase):
         for d, names in ((self.package, PACKAGE_FILES), (self.data, DATA_FILES), (self.theme, THEME_FILES)):
             for name in names:
                 write(os.path.join(d, name), ("fake %s\n" % name).encode())
-        self.zip = os.path.join(self.tmp, "out", "ALttPR.zip")
+        self.zip = os.path.join(self.tmp, "out", "ZeldaRando.zip")
 
     def run_builder(self, *extra, out=None):
         return run_builder(*extra, self.binary, self.package, self.data, self.theme, out or self.zip)
@@ -118,16 +118,16 @@ class Builder(unittest.TestCase):
     def test_files_are_byte_identical_copies(self):
         self.build()
         with zipfile.ZipFile(self.zip) as z:
-            self.assertEqual(z.read("App/ALttPR/alttpr"), read(self.binary))
+            self.assertEqual(z.read("App/ZeldaRando/zrando"), read(self.binary))
             for d, names in ((self.package, PACKAGE_FILES), (self.data, DATA_FILES)):
                 for name in names:
-                    self.assertEqual(z.read("App/ALttPR/" + name), read(os.path.join(d, name)), name)
+                    self.assertEqual(z.read("App/ZeldaRando/" + name), read(os.path.join(d, name)), name)
             for name in THEME_FILES:
                 self.assertEqual(z.read(THEME + name), read(os.path.join(self.theme, name)), name)
 
     def test_modes_timestamps_and_compression(self):
         self.build()
-        executable = ("App/ALttPR/alttpr", "App/ALttPR/launch.sh")
+        executable = ("App/ZeldaRando/zrando", "App/ZeldaRando/launch.sh")
         with zipfile.ZipFile(self.zip) as z:
             for info in z.infolist():
                 mode = info.external_attr >> 16
@@ -218,14 +218,14 @@ class Builder(unittest.TestCase):
     def test_check_refuses_an_extra_entry(self):
         self.build()
         with zipfile.ZipFile(self.zip, "a") as z:
-            z.writestr("App/ALttPR/base.sfc", b"rom")
+            z.writestr("App/ZeldaRando/base.sfc", b"rom")
         r = self.run_builder("--check")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("base.sfc", r.stderr)
 
     def test_check_refuses_a_missing_entry(self):
         self.build()
-        names = [n for n in EXPECTED if n != "App/ALttPR/icon.png"]
+        names = [n for n in EXPECTED if n != "App/ZeldaRando/icon.png"]
         with zipfile.ZipFile(self.zip) as src:
             kept = [(src.getinfo(n), src.read(n)) for n in names]
         with zipfile.ZipFile(self.zip, "w") as z:
@@ -247,7 +247,7 @@ class Builder(unittest.TestCase):
             kept = [(src.getinfo(n), src.read(n)) for n in EXPECTED]
         with zipfile.ZipFile(self.zip, "w") as z:
             for info, data in kept:
-                if info.filename == "App/ALttPR/launch.sh":
+                if info.filename == "App/ZeldaRando/launch.sh":
                     info.external_attr = 0o100644 << 16
                 z.writestr(info, data)
         r = self.run_builder("--check")
@@ -289,17 +289,17 @@ class RealPackage(unittest.TestCase):
     def setUpClass(cls):
         cls.default = pkg_theme()
         cls.tmp = tempfile.mkdtemp()
-        binary = os.path.join(cls.tmp, "alttpr")
+        binary = os.path.join(cls.tmp, "zrando")
         write(binary, b"\x7fELF fake binary")
-        out = os.path.join(cls.tmp, "ALttPR.zip")
+        out = os.path.join(cls.tmp, "ZeldaRando.zip")
         r = run_builder(binary, PACKAGE, DATA, cls.default, out)
         if r.returncode != 0:
             shutil.rmtree(cls.tmp)
             raise AssertionError(r.stderr)
         with zipfile.ZipFile(out) as z:
             cls.entries = z.namelist()
-            cls.config = json.loads(z.read("App/ALttPR/config.json"))
-            cls.icon = z.read("App/ALttPR/icon.png")
+            cls.config = json.loads(z.read("App/ZeldaRando/config.json"))
+            cls.icon = z.read("App/ZeldaRando/icon.png")
             cls.theme = {n[len(THEME):]: z.read(n) for n in cls.entries if n.startswith(THEME) and n != THEME}
 
     @classmethod
@@ -307,12 +307,12 @@ class RealPackage(unittest.TestCase):
         shutil.rmtree(cls.tmp)
 
     def test_config_names_the_app_and_its_files(self):
-        self.assertEqual(self.config["label"], "ALttPR")
+        self.assertEqual(self.config["label"], "Zelda Randomizer")
         self.assertTrue(self.config["description"])
-        self.assertIn("App/ALttPR/" + self.config["launch"], self.entries)
+        self.assertIn("App/ZeldaRando/" + self.config["launch"], self.entries)
         icon = self.config["icon"]
-        self.assertTrue(icon.startswith("/mnt/SDCARD/App/ALttPR/"), icon)
-        self.assertIn("App/ALttPR/" + os.path.basename(icon), self.entries)
+        self.assertTrue(icon.startswith("/mnt/SDCARD/App/ZeldaRando/"), icon)
+        self.assertIn("App/ZeldaRando/" + os.path.basename(icon), self.entries)
 
     def test_theme_is_the_package_default_byte_for_byte(self):
         names = sorted(os.listdir(self.default))
@@ -322,7 +322,7 @@ class RealPackage(unittest.TestCase):
             self.assertEqual(self.theme[name], read(os.path.join(self.default, name)), name)
 
     def test_no_font_sits_loose_in_the_app_folder(self):
-        loose = [n for n in self.entries if n.startswith("App/ALttPR/") and "/" not in n[len("App/ALttPR/"):]]
+        loose = [n for n in self.entries if n.startswith("App/ZeldaRando/") and "/" not in n[len("App/ZeldaRando/"):]]
         self.assertTrue(loose)
         self.assertEqual([n for n in loose if n.endswith(".ttf")], [])
 
@@ -339,21 +339,21 @@ echo "stub stdout"
 
 
 class Launch(unittest.TestCase):
-    def test_runs_alttpr_from_its_own_folder_with_stderr_in_a_log(self):
+    def test_runs_zrando_from_its_own_folder_with_stderr_in_a_log(self):
         tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmp)
-        app = os.path.join(tmp, "sd card", "App", "ALttPR")
+        app = os.path.join(tmp, "sd card", "App", "ZeldaRando")
         elsewhere = os.path.join(tmp, "elsewhere")
         os.makedirs(app)
         os.mkdir(elsewhere)
         shutil.copy(os.path.join(PACKAGE, "launch.sh"), app)
-        write(os.path.join(app, "alttpr"), STUB)
-        os.chmod(os.path.join(app, "alttpr"), 0o755)
+        write(os.path.join(app, "zrando"), STUB)
+        os.chmod(os.path.join(app, "zrando"), 0o755)
         r = subprocess.run(["sh", os.path.join(app, "launch.sh")], cwd=elsewhere,
                            capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(read(os.path.join(app, "started_in")).decode().strip(), os.path.realpath(app))
-        self.assertEqual(read(os.path.join(app, "alttpr.log")), b"stub stderr\n")
+        self.assertEqual(read(os.path.join(app, "zrando.log")), b"stub stderr\n")
         self.assertEqual(r.stderr, "")
         self.assertEqual(os.listdir(elsewhere), [])
 

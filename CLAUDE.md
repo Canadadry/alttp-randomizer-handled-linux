@@ -1,9 +1,10 @@
 # Notes for Claude sessions
 
-*ALttPR on Miyoo*: an on-device *A Link to the Past Randomizer* seed
-generator for the Miyoo Mini Flip running OnionOS. An Onion app, driven by the
-d-pad, reads a Japanese 1.0 ROM, generates a seed with every alttpr.com
-setting (a C port of VT, frozen at `sporchia/alttp_vt_randomizer`
+*Zelda Randomizer on Miyoo*: an on-device randomizer seed generator for the
+Miyoo Mini Flip running OnionOS, for now *A Link to the Past Randomizer* only.
+An Onion app (`App/ZeldaRando/`, binary `zrando`), driven by the d-pad, reads
+a Japanese 1.0 ROM, generates a seed with every alttpr.com setting (a C port
+of VT, frozen at `sporchia/alttp_vt_randomizer`
 `219fcafd029dab597b8db400efafd8f56f8b4edb`), and writes a patched `.sfc` that
 Onion's SNES core plays; a History tab lists and deletes seeds. It also builds
 for PC (SDL) so the owner can check the rendering. Start with the current plan
@@ -82,7 +83,7 @@ in `docs/`, then `README.md`.
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
   `--base-md5` fix a run; `--unsupported <setting>=<value>,...` is a
   test-only override of the library's unsupported pairs. The SDL app
-  `alttpr` takes the same keys and flags (one shared module,
+  `zrando` takes the same keys and flags (one shared module,
   `app/sd/rando_fixed_run.c`), plus `--shot-text <file>`; with keys, its run
   ends after the last one.
 - `make check` = `test` plus `lint` (`alttp/` and `app/` built with
@@ -117,7 +118,7 @@ in `docs/`, then `README.md`.
   dummy video driver. `make sdl-arm` needs docker: it compiles and links the
   same code with Onion's toolchain against its SDL 1.2, SDL_ttf and
   SDL_image, and runs nothing. The owner looks at the PC build with
-  `make sdl-pc`, then `tests/alttp/build/sdl/alttpr --sd tmp/sd --theme
+  `make sdl-pc`, then `tests/alttp/build/sdl/zrando --sd tmp/sd --theme
   themes/alttp` (the theme draws every frame; without `--theme` the app
   reads `themes/default/` next to its binary; `--font` is an unknown
   option).
@@ -167,9 +168,9 @@ in `docs/`, then `README.md`.
   offline Chromium render of every mockup with the local Press Start 2P and
   no ligature (`mockup_render.js`), every mockup paired in
   `tests/alttp/sdl/mockup_states.txt` (seed 1, the golden runs' date),
-  `alttpr` with `themes/alttp` playing every pairing (`goldens.sh --draw
+  `zrando` with `themes/alttp` playing every pairing (`goldens.sh --draw
   --states`), the `ui_cli` grid read from those captures, `ui_cli`
-  byte-identical to `alttpr` on the theme's page, and each mockup's text
+  byte-identical to `zrando` on the theme's page, and each mockup's text
   compared with `ui_cli`'s, help line included (one `MISMATCH` line per
   difference; the rules are in `mockup_text.py`'s docstring); it writes
   `tests/alttp/build/mockups/` and ends with one summary line. Without
@@ -211,9 +212,10 @@ in `docs/`, then `README.md`.
   stripped, `hard-float ABI`, NEEDED `libSDL-1.2.so.0`,
   `libSDL_ttf-2.0.so.0` and `libSDL_image-1.2.so.0`), re-runs
   `test_patch_header --file` on `data/base.bps`, and writes
-  `tests/alttp/build/package/ALttPR.zip`, whose only top-level folder is
-  `App/ALttPR/`, with the theme folder `PKG_THEME` (`themes/alttp`)
-  shipped as `App/ALttPR/themes/default/`; the same commit gives the same
+  `tests/alttp/build/package/ZeldaRando.zip`, whose only top-level folder is
+  `App/ZeldaRando/` (binary `zrando`, label "Zelda Randomizer"), with the
+  theme folder `PKG_THEME` (`themes/alttp`) shipped as
+  `App/ZeldaRando/themes/default/`; the same commit gives the same
   zip bytes.
 - `make mac`, `mac-rom ROM=<file>`, `mac-run`, `mac-clean`, outside the
   net, macOS only (`targets/mac/`): the SDL app on sdl12-compat with a
@@ -229,9 +231,9 @@ in `docs/`, then `README.md`.
   pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
 - CI: `.github/workflows/check.yml` runs `make -k check`, in a job
   `sdl` `make sdl` on `ubuntu-24.04`, the goldens' pinned release (the PC
-  binary and `themes/default/` uploaded as the artifact `alttpr-pc`), and
+  binary and `themes/default/` uploaded as the artifact `zrando-pc`), and
   in a job `package` `make package` then `make e2e-arm` (the zip uploaded as
-  the artifact `alttpr-miyoo`), all manually only (`workflow_dispatch`)
+  the artifact `zrando-miyoo`), all manually only (`workflow_dispatch`)
   until the owner turns on its push and pull-request triggers.
 
 ## Ground rules

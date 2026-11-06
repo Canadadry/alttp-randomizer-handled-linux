@@ -9,10 +9,10 @@
 #include <stdbool.h>
 
 #define RANDO_SD_ROM_DIR "Roms/SFC/ALttPR"
-#define RANDO_SD_HISTORY_DIR "App/ALttPR/history"
-#define RANDO_SD_SETTINGS_FILE "App/ALttPR/settings.json"
-#define RANDO_SD_BASE_ROM_FILE "App/ALttPR/base.sfc"
-#define RANDO_SD_BASE_PATCH_FILE "App/ALttPR/base.bps"
+#define RANDO_SD_HISTORY_DIR "App/ZeldaRando/history"
+#define RANDO_SD_SETTINGS_FILE "App/ZeldaRando/settings.json"
+#define RANDO_SD_BASE_ROM_FILE "App/ZeldaRando/base.sfc"
+#define RANDO_SD_BASE_PATCH_FILE "App/ZeldaRando/base.bps"
 #define RANDO_SD_LIST_CACHE6 "Roms/SFC/SFC_cache6.db"
 #define RANDO_SD_LIST_CACHE2 "Roms/SFC/SFC_cache2.db"
 #define RANDO_SD_PROFILE_CURRENT "Saves/CurrentProfile"

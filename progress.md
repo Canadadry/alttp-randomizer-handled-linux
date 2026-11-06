@@ -4,6 +4,9 @@
   - [x] Step 1.2 Additive SDL golden write
     - [x] goldens.sh --add and make sdl-goldens-add, self-proven
   - [ ] Step 1.3 Rename the app to Zelda Randomizer
+    - [x] App folder App/ZeldaRando and its strings
+    - [x] Binary zrando, package ZeldaRando.zip and CI
+    - [x] Docs follow the new name
   - [ ] Step 1.4 Per-game SD layout for ALttP
   - [ ] Step 1.5 Onion facts for GBC
   - [ ] Step 1.6 Game-choice screen in the UI core
