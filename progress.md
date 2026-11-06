@@ -11,7 +11,7 @@
     - [x] ALttP files under App/ZeldaRando/alttp, ROMs in Roms/SFC/ZeldaRando
   - [x] Step 1.5 Onion facts for GBC
     - [x] docs/onion.md section 11: GBC list, saves and states
-  - [ ] Step 1.6 Game-choice screen in the UI core
+  - [x] Step 1.6 Game-choice screen in the UI core
     - [x] Choice screen and app views in the UI core
     - [x] Last-game memory on the SD card
     - [x] SDL side: key sequences and the game_choice golden
