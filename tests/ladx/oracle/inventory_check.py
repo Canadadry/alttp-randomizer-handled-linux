@@ -739,8 +739,11 @@ def main(argv):
     if text is None:
         print("setup: inventory: no inventory %s" % args.inventory)
         return 2
-    tables, bad = parse_inventory(text)
-    findings = bad + diff(extracted, tables)
+    try:
+        findings = check(args.ladxr, text)
+    except SetupError as e:
+        print("setup: inventory: %s" % e)
+        return 2
     for line in findings:
         print(line)
     if findings:

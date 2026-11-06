@@ -49,6 +49,8 @@
     - [x] Chunk 2: inventory format and checker
     - [x] Chunk 3: coverage checker and driver
     - [ ] Chunk 4: inventory on real data
+      - [x] Fix: inventory_check CLI runs the full check
+      - [ ] Inventory filled from the traces
   - [ ] Step 2.4 Cases
   - [ ] Step 2.5 Golden format and goldens
   - [ ] Step 2.6 Patch tables

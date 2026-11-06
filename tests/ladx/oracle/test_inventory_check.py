@@ -410,6 +410,15 @@ class Main(Fixture):
         self.assertEqual(code, 1)
         self.assertIn("MISSING generator.py generateRom: rom = ROMWithTables(", out)
 
+    def test_the_cli_checks_the_named_tables_too(self):
+        code, out = self.run_main(_inventory(blind=[]))
+        self.assertEqual(code, 1)
+        self.assertIn("MISSING Blind spots: utils.py: data = memoryview(b)", out)
+        groups = [g for g in GROUPS if not g.startswith("| debug ")]
+        code, out = self.run_main(_inventory(groups=groups))
+        self.assertEqual(code, 1)
+        self.assertIn("group debug is not in Groups", out)
+
     def test_default_inventory_is_the_committed_draft(self):
         self.assertEqual(os.path.relpath(inventory_check.DEFAULT_INVENTORY,
                                          os.path.join(HERE, "..", "..", "..")),
