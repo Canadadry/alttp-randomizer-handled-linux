@@ -17,6 +17,8 @@
 #define DATA_FONT "../../data/DejaVuSansMono.ttf"
 #define FEATURES_SRC "sdl/themes/features"
 #define FEATURES WORK "/features"
+/* Frozen from sdl_view_open's fit on classic's font (pinned environment). */
+#define CLASSIC_FIT_SIZE 26
 
 #define CHECK(cond) \
 	do { \
@@ -196,6 +198,7 @@ static void test_classic_opens_as_sdl_view(void)
 			  UI_GRID_DEFAULT_LINES) != SDLVIEW_OK)
 		test_fail(TEST, "sdl_view_open: %s", TTF_GetError());
 	CHECK(render.point_size[0] == view.point_size);
+	CHECK(render.point_size[0] == CLASSIC_FIT_SIZE);
 	CHECK(sdl_render_advance(&render) == 16);
 	CHECK(every_pixel_is(render.images[asset_of(&theme, "screen.image")], 0x14161a));
 	sdl_view_close(&view);

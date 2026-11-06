@@ -22,6 +22,10 @@
     - [x] Chunk 3 — Body zones
     - [x] Chunk 4 — The app draws through the theme
   - [ ] Step 1.6 — Old renderer removed, packaging follows
+    - [x] Chunk 1 — Freeze the oracle's values
+    - [ ] Chunk 2 — Delete the old renderer; the theme is required, with its default
+    - [ ] Chunk 3 — Packaging follows
+    - [ ] Chunk 4 — targets/mac follows
   - [ ] Step 1.7 — skill: check-net
 - [ ] Phase 2 — The new theme from the mockups
   - [ ] Step 2.8 — The new theme's geometry
