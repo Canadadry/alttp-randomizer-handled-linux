@@ -2,9 +2,10 @@
 # Usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE]
 # Plays every state of golden_states.txt into the SDL app (dummy video driver), each from a fresh copy
 # of its fixture, and checks the captured text holds the state's strings. --write renders every state
-# twice, refuses unless both runs agree byte for byte and DIR holds no BMP, then fills DIR with the
-# BMPs and the environment fingerprint. --compare proves itself on planted goldens, checks the
-# fingerprint, then renders each state once against DIR. golden_states.txt is tab-separated: name,
+# twice, refuses unless both runs agree byte for byte and DIR holds no golden, then fills DIR with
+# lossless PNGs of the BMP captures and the environment fingerprint. --compare proves itself on
+# planted goldens, checks the fingerprint, then renders each state once and compares its decoded
+# pixels with DIR's PNG. golden_states.txt is tab-separated: name,
 # fixture, frame cap, extra alttpr flags, keys, strings joined by " | "; "-" for no cap or no flags.
 # --draw renders each state once into DIR with any theme, checks each BMP is a 640x480 picture of more
 # than one colour, and skips the strings, which are spelled on classic's grid; --states plays FILE,
@@ -48,10 +49,20 @@ fail() {
 
 # py ARGS...: the comparison and string checks; see each command below.
 py() {
-	python3 -I - "$@" <<'PY'
+	python3 -I - "$here" "$@" <<'PY'
 import os, sys
 
-cmd, args = sys.argv[1], sys.argv[2:]
+sys.path.insert(0, sys.argv[1])
+import theme_compare as codec
+
+cmd, args = sys.argv[2], sys.argv[3:]
+
+
+def pixels(path, decoder):
+    try:
+        return decoder(open(path, "rb").read())
+    except codec.InputError:
+        return None
 
 if cmd == "strings":
     # strings TEXT FIELD: prints each " | "-separated string of FIELD that TEXT lacks.
@@ -66,12 +77,14 @@ if cmd == "compare":
     rendered, goldens, fp, names = args[0], args[1], args[2], args[3:]
     lines = []
     for name in names:
-        golden = os.path.join(goldens, name + ".bmp")
+        golden = os.path.join(goldens, name + ".png")
         if not os.path.isfile(golden):
             lines.append("MISSING " + name)
-        elif open(golden, "rb").read() != open(os.path.join(rendered, name + ".bmp"), "rb").read():
+            continue
+        want = pixels(golden, codec.decode_png)
+        if want is None or want != pixels(os.path.join(rendered, name + ".bmp"), codec.decode_bmp):
             lines.append("DIFFERENT " + name)
-    expected = {n + ".bmp" for n in names} | {fp}
+    expected = {n + ".png" for n in names} | {fp}
     for f in sorted(os.listdir(goldens)):
         if f not in expected:
             lines.append("EXTRA " + f)
@@ -80,11 +93,25 @@ if cmd == "compare":
     sys.exit(1 if lines else 0)
 
 if cmd == "flip":
-    # flip BMP: inverts the first pixel byte, past the header.
-    data = bytearray(open(args[0], "rb").read())
-    offset = int.from_bytes(data[10:14], "little")
-    data[offset] ^= 0xFF
-    open(args[0], "wb").write(bytes(data))
+    # flip PNG: inverts the red channel of the top-left pixel.
+    width, height, rows = codec.decode_png(open(args[0], "rb").read())
+    rows[0] = bytes([rows[0][0] ^ 0xFF]) + rows[0][1:]
+    open(args[0], "wb").write(codec.encode_png((width, height, rows)))
+    sys.exit(0)
+
+if cmd == "bmp":
+    # bmp PNG BMP: writes PNG's pixels as a 24-bit BMP, standing in for a capture in the self-proof.
+    width, height, rows = codec.decode_png(open(args[0], "rb").read())
+    open(args[1], "wb").write(codec.planted_bmp(width, height, rows))
+    sys.exit(0)
+
+if cmd == "png":
+    # png BMP PNG: writes PNG, refused unless it decodes to exactly BMP's pixels.
+    image = codec.decode_bmp(open(args[0], "rb").read())
+    data = codec.encode_png(image)
+    if codec.decode_png(data) != image:
+        sys.exit("goldens: %s: the PNG does not decode to the BMP's pixels" % args[0])
+    open(args[1], "wb").write(data)
     sys.exit(0)
 
 if cmd == "picture":
@@ -174,7 +201,7 @@ names="$(state_names)"
 count="$(printf '%s\n' "$names" | wc -l | tr -d ' ')"
 
 if [ "$mode" = "--write" ]; then
-	if [ -d "$goldens" ] && [ -n "$(find "$goldens" -name '*.bmp' | head -n 1)" ]; then
+	if [ -d "$goldens" ] && [ -n "$(find "$goldens" \( -name '*.png' -o -name '*.bmp' \) | head -n 1)" ]; then
 		fail "$goldens already holds goldens: refused, goldens are never regenerated to get green"
 	fi
 	render "$work/run1"
@@ -186,7 +213,7 @@ if [ "$mode" = "--write" ]; then
 	done
 	[ "$bad" -eq 0 ] || exit 1
 	mkdir -p "$goldens"
-	for n in $names; do cp "$work/run1/$n.bmp" "$goldens/$n.bmp"; done
+	for n in $names; do py png "$work/run1/$n.bmp" "$goldens/$n.png" || fail "$n: PNG refused"; done
 	fingerprint >"$goldens/$fingerprint_file"
 	echo "goldens: $count states written to $goldens, rendered twice byte-identical"
 	exit 0
@@ -200,24 +227,26 @@ if [ "$mode" = "--draw" ]; then
 fi
 
 [ -f "$goldens/$fingerprint_file" ] || fail "no $fingerprint_file in $goldens (make sdl-goldens writes the goldens)"
-sample="$(find "$goldens" -name '*.bmp' | sort | head -n 1)"
-[ -n "$sample" ] || fail "no BMP in $goldens for the self-proof"
+sample="$(find "$goldens" -name '*.png' | sort | head -n 1)"
+[ -n "$sample" ] || fail "no PNG in $goldens for the self-proof"
 proof="$tmp/proof"
 mkdir -p "$proof/rendered" "$proof/clean" "$proof/planted"
-for d in rendered clean planted; do
-	cp "$sample" "$proof/$d/a.bmp"
-	cp "$sample" "$proof/$d/b.bmp"
+py bmp "$sample" "$proof/rendered/a.bmp"
+cp "$proof/rendered/a.bmp" "$proof/rendered/b.bmp"
+for d in clean planted; do
+	cp "$sample" "$proof/$d/a.png"
+	cp "$sample" "$proof/$d/b.png"
 	: >"$proof/$d/$fingerprint_file"
 done
 py compare "$proof/rendered" "$proof/clean" "$fingerprint_file" a b >"$proof/out" ||
 	{ cat "$proof/out" >&2; fail "self-proof: an untouched copy does not compare equal"; }
-py flip "$proof/planted/a.bmp"
-rm "$proof/planted/b.bmp"
-cp "$sample" "$proof/planted/planted.bmp"
+py flip "$proof/planted/a.png"
+rm "$proof/planted/b.png"
+cp "$sample" "$proof/planted/planted.png"
 if py compare "$proof/rendered" "$proof/planted" "$fingerprint_file" a b >"$proof/out"; then
 	fail "self-proof: planted goldens compare equal"
 fi
-printf 'DIFFERENT a\nMISSING b\nEXTRA planted.bmp\n' >"$proof/want"
+printf 'DIFFERENT a\nMISSING b\nEXTRA planted.png\n' >"$proof/want"
 cmp -s "$proof/out" "$proof/want" ||
 	{ cat "$proof/out" >&2; fail "self-proof: planted goldens did not give exactly their three lines"; }
 
@@ -233,4 +262,4 @@ render "$work/compare"
 if ! py compare "$work/compare" "$goldens" "$fingerprint_file" $names; then
 	exit 1
 fi
-echo "goldens: $count states byte-identical"
+echo "goldens: $count states pixel-identical"

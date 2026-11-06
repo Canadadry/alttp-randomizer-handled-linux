@@ -123,12 +123,13 @@ in `docs/`, then `README.md`.
   option).
 - `make sdl-pc` also runs the golden comparison
   (`tests/rando/sdl/goldens.sh --compare`): it proves itself on a planted
-  flipped byte and a removed golden, then plays the 13 states of
+  flipped pixel, a removed golden and an extra one, then plays the 13 states of
   `sdl/golden_states.txt` (each on a fresh SD from `sd_fixture`, drawn
   through `--theme themes/classic`) and prints
-  one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch, else
-  `goldens: 13 states byte-identical`. The goldens in
-  `tests/rando/sdl/goldens/` are pinned to the Claude Code cloud container
+  one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch (each BMP
+  capture's decoded pixels against its lossless PNG golden), else
+  `goldens: 13 states pixel-identical`. The goldens in
+  `tests/rando/sdl/goldens/` (PNGs) are pinned to the Claude Code cloud container
   (Ubuntu 24.04.5, sdl12-compat 1.2.68 on SDL2 2.30.0, SDL_ttf 2.0.11,
   FreeType 2.13.2), fingerprinted in `goldens/environment.txt`; on another
   host it fails with `setup: goldens pinned to <fp>, this host is <fp>`, a
@@ -139,8 +140,8 @@ in `docs/`, then `README.md`.
   `tests/rando/build/sdl/theme-states/alttp/` and prints
   `goldens: 13 states drawn with alttp in <dir>`.
 - `make sdl-goldens`, outside the net, writes the goldens once (every state
-  rendered twice, refused unless byte-identical) and refuses a folder that
-  already holds any: goldens are never regenerated to get green.
+  rendered twice, refused unless byte-identical, written as PNGs) and
+  refuses a folder that already holds any: goldens are never regenerated to get green.
 - `make mockups`, outside the net, checks `design/mockups/` against the app
   (`tests/rando/sdl/mockups.sh`): the comparator's self-test
   (`mockup_text.py --self-test`), the render check's self-proof and its
