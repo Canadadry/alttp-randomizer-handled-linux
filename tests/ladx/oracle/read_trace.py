@@ -15,8 +15,10 @@ Origins: every ROM position starts as its own source offset. A bank slice comes 
 `OBytes` (a bytearray with per-byte `origins`), an index read as an `OInt` (`origin`); slicing,
 bytes() (`OFrozen`), concatenation, in-place changes and assignment to a bank or a table keep
 them, so a parsed entry and PointerTable.store's moves and de-duplication do too. Arithmetic and
-re-encoding give KNOWN. A written origin whose source byte differs from the value becomes KNOWN,
-so a missed path only ever turns a reference into a literal.
+re-encoding give KNOWN, and a KNOWN byte written gets a write identity (`virtual(n)`, below
+KNOWN) that its unchanged copies keep: a computed entry moved by `store` names the write that made
+it. A written origin whose recorded byte differs from the value is renewed, so a missed path only
+ever turns a reference into a new write.
 
 Channels: `index` (bank[i]), `slice` (bank[a:b]), `iter`, `search` (find, rfind, index, rindex,
 count, startswith, endswith, in), `compare` (==, !=, ordering), `convert` (hex, decode, bytes())
@@ -110,6 +112,7 @@ class Trace:
         self._tables = []
         self._source = None
         self._bases = []
+        self._virtual = bytearray()
         self._net = {}
         self._group_ids = {}
         self._group_names = [None]
@@ -284,13 +287,21 @@ class Trace:
         return gid
 
     def checked(self, origins, values):
-        """origins with every source offset whose source byte differs from the value made
-        KNOWN: a change no traced path saw (the buffer protocol) never stays a reference."""
-        source = self._source
-        if source is None:
-            return list(origins)
-        return [q if q == KNOWN or (q < len(source) and source[q] == v) else KNOWN
-                for q, v in zip(origins, values)]
+        """origins as written: one whose recorded byte differs from the value (a change no
+        traced path saw, the buffer protocol) made KNOWN, then every KNOWN byte given a new
+        write identity (`virtual`), so that its unchanged copies keep it."""
+        source, written = self._source, self._virtual
+        out = []
+        for q, v in zip(origins, values):
+            if q >= 0:
+                q = q if source is None or q < len(source) and source[q] == v else KNOWN
+            elif q != KNOWN:
+                q = q if -2 - q < len(written) and written[-2 - q] == v else KNOWN
+            if q == KNOWN:
+                q = virtual(len(written))
+                written.append(v)
+            out.append(q)
+        return out
 
     def provenance(self, ids):
         """`source`, `written:<groups>` or `mixed:<groups>` of a set of group ids, 0 the
@@ -316,6 +327,11 @@ def _value(value):
 
 
 KNOWN = -1
+
+
+def virtual(n):
+    """The origin of the n-th computed byte written (its write identity), below KNOWN."""
+    return -2 - n
 
 
 def _origins_of(value):
@@ -499,8 +515,8 @@ def _span(detail):
 
 
 def origin_text(origins):
-    """Origins as comma-separated runs, hex: `<q>+<n>` for n source offsets from q on, `k<n>`
-    for n KNOWN bytes; `-` when empty."""
+    """Origins as comma-separated runs, hex: `<q>+<n>` for n source offsets from q on, `v<i>+<n>`
+    for n write identities from i on, `k<n>` for n KNOWN bytes; `-` when empty."""
     out, n = [], 0
     while n < len(origins):
         q, m = origins[n], n + 1
@@ -508,6 +524,10 @@ def origin_text(origins):
             while m < len(origins) and origins[m] == KNOWN:
                 m += 1
             out.append("k%x" % (m - n))
+        elif q < KNOWN:
+            while m < len(origins) and origins[m] == q - (m - n):
+                m += 1
+            out.append("v%x+%x" % (-2 - q, m - n))
         else:
             while m < len(origins) and origins[m] == q + m - n:
                 m += 1
@@ -696,6 +716,19 @@ def _entry(trace, key, value):
     return key, data, tuple(trace.checked(_origins_of(value), data))
 
 
+def _carrying(value, origins):
+    """value carrying origins: an OBytes or OFrozen updated in place, a plain one copied."""
+    if isinstance(value, OBytes):
+        value.origins = list(origins)
+    elif isinstance(value, OFrozen):
+        value._parent, value._slice = list(origins), None
+    elif isinstance(value, bytearray):
+        value = _obytes(value, origins)
+    else:
+        value = _ofrozen(value, origins)
+    return value
+
+
 def _alt_keys(table):
     for klass in type(table).__mro__:
         alt = vars(table).get("_%s__alt_data" % klass.__name__.lstrip("_"))
@@ -736,6 +769,8 @@ def _table_class(trace, cls):
 
     def __setitem__(self, item, value):
         value = value if isinstance(value, int) else _assignable(value)
+        if trace.active and isinstance(value, (bytes, bytearray)):
+            value = _carrying(value, trace.checked(_origins_of(value), bytes(memoryview(value))))
         cls.__setitem__(self, item, value)
         detail = _key_detail(item, lambda: cls.__len__(self))
         key = item + cls.__len__(self) if isinstance(item, int) and item < 0 else item
@@ -1076,11 +1111,11 @@ def _origin_expected(data):
         ("B", at(8, 0x104), piece(9, 0x300, 1), src(9, 0x300, 1)),
         ("B", at(8, 0x105), piece(9, 0x10, 1) + piece(9, 0x20, 2),
          src(9, 0x10, 1) + src(9, 0x20, 2)),
-        ("B", at(8, 0x108), bytes([data[at(9, 0x300)] ^ 0xFF]), (KNOWN,)),
+        ("B", at(8, 0x108), bytes([data[at(9, 0x300)] ^ 0xFF]), (virtual(0),)),
         ("T", "texts", 1, bytes([2, 3, 0xFF]), src(2, 0x201, 3)),
         ("B", at(2, 0x200), bytes([1, 2, 3, 0xFF]), src(2, 0x200, 4)),
-        ("B", at(1, 0x100), b"\x00", (KNOWN,)), ("B", at(1, 0x101), b"\x42", (KNOWN,)),
-        ("B", at(1, 0x102), b"\x01", (KNOWN,)), ("B", at(1, 0x103), b"\x42", (KNOWN,)),
+        ("B", at(1, 0x100), b"\x00", (virtual(1),)), ("B", at(1, 0x101), b"\x42", (virtual(2),)),
+        ("B", at(1, 0x102), b"\x01", (virtual(3),)), ("B", at(1, 0x103), b"\x42", (virtual(4),)),
     ]
 
 

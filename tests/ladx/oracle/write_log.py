@@ -1,0 +1,701 @@
+"""Usage: python3 -I tests/ladx/oracle/write_log.py encode --events <file> --rom <file> [--inventory <file>] [--out <file>]
+       python3 -I tests/ladx/oracle/write_log.py decode --rom <file> <rom_writes.txt>
+       python3 -I tests/ladx/oracle/write_log.py project <rom_writes.txt> <group>
+       python3 -I tests/ladx/oracle/write_log.py scrambled --events <file> --rom <file> [--inventory <file>]
+       python3 -I tests/ladx/oracle/write_log.py --self-test
+
+LADX's write log, `rom_writes.txt`: what LADXR writes into the ROM, in its write order, tagged by
+inventory group, every byte that comes from the source ROM a reference, never its value.
+
+`encode` turns read_trace.py's event stream (oracle_run.py --reads' events.txt) and the source
+ROM into the log (to --out, else stdout), with the groups' sides from the inventory's Groups
+table (--inventory, default notes/ladx-inventory.md) and the C-knowable source map of
+known_source.py. `decode` replays the log's bank records onto the ROM and prints the result's
+SHA-1. `project` prints one group's projection (itself a log). `scrambled` re-encodes the stream
+with every ROM byte outside the C-knowable map scrambled, the table groups' encoding kept from
+the real ROM (C copies it from step 6's tables), and prints one `SCRAMBLED <group>` line per C
+group whose projection changed, then a summary; exit 1 on any. `--self-test` runs a
+synthetic encode, decode, projection and scramble.
+
+Format, version 1: line-based ASCII, lowercase hex without 0x.
+  ladx-rom-writes 1
+  tables <table>...                   ROMWithTables' tables in their order
+  G <group>                           opens a segment: a maximal run of one group's writes
+  B <offset> <tokens>                 a maximal run of the segment's net bank bytes at that
+                                      absolute ROM offset, records by offset
+  T <table> <key> <tokens>            a table entry's net new value, key an index in hex or an
+                                      alt key, records in table order then index then alt key
+Tokens, single spaces between: `=<n>` keep (n source bytes at the record's own offsets, bank
+records only), `@<q>+<n>` copy (n source bytes from absolute offset q), a run of literal hex,
+`p<v>` an integer-pointer entry (alone in its record). Continuing references are merged and
+adjacent literals joined; the parser refuses anything else, so equal logs are equal text.
+
+Encoding rule. A byte's origin in the stream is `src(q)` (an unchanged copy of source byte q) or
+the write identity of the computed byte it copies unchanged; a carried origin is the reference q,
+or the encoding that byte got when it was first written. Table groups (side `table`), per byte:
+keep when it equals the source at its own offset (bank records); else its carried origin; else
+the longest source match of at least 4 bytes among the bytes left, lowest offset; else a
+literal. C groups, per byte: a carried origin; else a byte equal to the byte it replaces
+inherits that byte's encoding when
+C can know it (a literal, or a reference into the C-knowable map), else is a literal. The
+replaced byte is the same offset's for a bank write; for a table entry the previous value, the
+new one aligned to it by common prefix, then common suffix, each stopping at a byte C cannot
+know. C bytes are encoded event by event
+against the state before; table groups' net bytes once their segment ends. Within a segment the
+writes collapse to their net effect.
+
+Projection: one group's segments replayed in order into its own bank and table maps, other
+groups ignored, re-encoded as one canonical segment; no ROM needed.
+"""
+
+import argparse
+import hashlib
+import os
+import random
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+TOP = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
+DEFAULT_INVENTORY = os.path.join(TOP, "notes", "ladx-inventory.md")
+
+VERSION_LINE = "ladx-rom-writes 1"
+EVENTS_LINE = "ladx-events 1"
+KNOWN = -1
+MIN_MATCH = 4
+HEX = re.compile(r"[0-9a-f]+")
+NAME = re.compile(r"[A-Za-z0-9_.-]+")
+
+
+class WriteLogError(Exception):
+    pass
+
+
+class Events:
+    """An event stream: table order, parsed entries (table, key, value, origins) and events as
+    read_trace.Trace.events() gives them."""
+
+    def __init__(self, tables, initial, events, source=None):
+        self.tables, self.initial, self.events, self.source = tables, initial, events, source
+
+
+# Atoms: a byte's encoding, q >= 0 a reference to source byte q, -1 - v the literal v.
+
+def _lit(value):
+    return -1 - value
+
+
+def _value(atom, rom):
+    return rom[atom] if atom >= 0 else -1 - atom
+
+
+def _knowable(atom, known):
+    return atom < 0 or atom in known
+
+
+# Event stream ----------------------------------------------------------------------------------
+
+def _hex_int(text, what):
+    if not HEX.fullmatch(text):
+        raise WriteLogError("bad %s %r" % (what, text))
+    return int(text, 16)
+
+
+def _key(text):
+    return int(text, 16) if HEX.fullmatch(text) else text
+
+
+def _origins(text):
+    if text == "-":
+        return ()
+    out = []
+    for run in text.split(","):
+        if run.startswith("k"):
+            out += [KNOWN] * _hex_int(run[1:], "origin run")
+        elif run.startswith("v"):
+            i, _, n = run[1:].partition("+")
+            i, n = _hex_int(i, "write identity"), _hex_int(n, "origin run")
+            out += [-2 - j for j in range(i, i + n)]
+        else:
+            q, _, n = run.partition("+")
+            q, n = _hex_int(q, "origin"), _hex_int(n, "origin run")
+            out += range(q, q + n)
+    return tuple(out)
+
+
+def _payload(value_text, origin_text):
+    if value_text.startswith("p"):
+        return _hex_int(value_text[1:], "pointer"), None
+    value = b"" if value_text == "-" else bytes.fromhex(value_text)
+    origins = _origins(origin_text)
+    if len(origins) != len(value):
+        raise WriteLogError("origins out of step with the value")
+    return value, origins
+
+
+def parse_events(text):
+    """The Events of an event stream's text; WriteLogError on a malformed one."""
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    if len(lines) < 3 or lines[0] != EVENTS_LINE or not lines[1].startswith("source ") \
+            or not lines[2].startswith("tables"):
+        raise WriteLogError("not an event stream (no `%s`, source and tables lines)" % EVENTS_LINE)
+    stream = Events(lines[2].split()[1:], [], [], lines[1].split()[1])
+    for number, line in enumerate(lines[3:], 4):
+        fields = line.split("\t")
+        try:
+            if fields[0] == "I" and len(fields) == 5:
+                stream.initial.append((fields[1], _key(fields[2])) + _payload(fields[3], fields[4]))
+            elif fields[0] == "B" and len(fields) >= 6:
+                value, origins = _payload(fields[3], fields[4])
+                stream.events.append(("B", fields[1], "\t".join(fields[5:]),
+                                      _hex_int(fields[2], "offset"), value, origins))
+            elif fields[0] == "T" and len(fields) >= 7:
+                stream.events.append(("T", fields[1], "\t".join(fields[6:]), fields[2],
+                                      _key(fields[3])) + _payload(fields[4], fields[5]))
+            else:
+                raise WriteLogError("unknown event line")
+        except (WriteLogError, ValueError) as e:
+            raise WriteLogError("event stream line %d: %s" % (number, e))
+    return stream
+
+
+# Encoding --------------------------------------------------------------------------------------
+
+def _longest_match(rom, data, start, stop):
+    """(offset, length) of the longest match in rom of data[start:stop]'s prefix, at least
+    MIN_MATCH bytes, at its lowest offset; None when there is none."""
+    room = stop - start
+    if room < MIN_MATCH or rom.find(data[start:start + MIN_MATCH]) < 0:
+        return None
+    low, high = MIN_MATCH, None
+    while low < room:
+        trial = min(room, low * 2)
+        if rom.find(data[start:start + trial]) < 0:
+            high = trial
+            break
+        low = trial
+    while high is not None and high - low > 1:
+        mid = (low + high) // 2
+        if rom.find(data[start:start + mid]) >= 0:
+            low = mid
+        else:
+            high = mid
+    return rom.find(data[start:start + low]), low
+
+
+def _table_atoms(rom, values, origins, offset=None):
+    """A table group's atoms for a run of net bytes (at offset when they are bank bytes);
+    origins: per byte a source offset, an atom from a write identity, or None."""
+    atoms = [None] * len(values)
+    for i, v in enumerate(values):
+        if offset is not None and offset + i < len(rom) and rom[offset + i] == v:
+            atoms[i] = offset + i
+        elif origins[i] is not None:
+            atoms[i] = origins[i]
+    i = 0
+    while i < len(values):
+        if atoms[i] is not None:
+            i += 1
+            continue
+        stop = i
+        while stop < len(values) and atoms[stop] is None:
+            stop += 1
+        while i < stop:
+            match = _longest_match(rom, values, i, stop)
+            if match is None:
+                atoms[i] = _lit(values[i])
+                i += 1
+            else:
+                at, length = match
+                atoms[i:i + length] = range(at, at + length)
+                i += length
+    return atoms
+
+
+class _Encoder:
+    """The running state: every ROM position's atom, every table entry's atoms (or int
+    pointer), and the atom each write identity got when its byte was first written."""
+
+    def __init__(self, events, rom, sides, known, fixed=None):
+        """fixed: the table groups' encodings of an earlier run, reused segment by segment."""
+        self.rom, self.sides, self.known = rom, sides, known
+        self.fixed = None if fixed is None else list(fixed)
+        self.table_segments = []
+        self.tables = list(events.tables)
+        self.state = {}
+        self.written = {}
+        self.entries = {}
+        for table, key, value, origins in events.initial:
+            self.entries[(table, key)] = value if origins is None else [
+                q if q >= 0 else _lit(v) for q, v in zip(origins, value)]
+
+    def carried(self, origin):
+        """The atom an origin gives by itself: a source reference, or the atom of the write it
+        names; None for KNOWN and for a write identity not met yet."""
+        if origin >= 0:
+            return origin
+        return self.written.get(origin)
+
+    def name(self, origins, atoms):
+        """Records the atoms of the bytes whose write identity is met for the first time."""
+        for q, atom in zip(origins, atoms):
+            if q < KNOWN and q not in self.written:
+                self.written[q] = atom
+
+    def knowable(self, atom):
+        return _knowable(atom, self.known)
+
+    def bank_atom(self, p):
+        return self.state.get(p, p)
+
+    def inherited(self, new, old, origins):
+        """A C group's atoms for a table entry's new value replacing the atoms old (None when
+        unknown): carried origins, then the common prefix and suffix, which stop at an old byte
+        C cannot know so that where they stop never depends on the ROM; else literals."""
+        old = old or []
+        rom = self.rom
+        same = lambda i, j: self.knowable(old[j]) and new[i] == _value(old[j], rom)
+        prefix = 0
+        while prefix < min(len(new), len(old)) and same(prefix, prefix):
+            prefix += 1
+        suffix = 0
+        while suffix < min(len(new), len(old)) - prefix and same(-1 - suffix, -1 - suffix):
+            suffix += 1
+        atoms = []
+        for i, v in enumerate(new):
+            atom = self.carried(origins[i])
+            if atom is None and i < prefix:
+                atom = old[i]
+            elif atom is None and i >= len(new) - suffix:
+                atom = old[len(old) - (len(new) - i)]
+            atoms.append(_lit(v) if atom is None else atom)
+        return atoms
+
+    def segment(self, group, events):
+        side = self.sides.get(group)
+        if side not in ("table", "C"):
+            raise WriteLogError("group %r writes but its side is %r, not table or C" % (group,
+                                                                                       side))
+        if side == "table":
+            return self._table_segment(group, events)
+        banks, tables = {}, {}
+        for event in events:
+            if event[0] == "B":
+                _, _, _, offset, values, origins = event
+                for i, v in enumerate(values):
+                    p = offset + i
+                    atom = self.carried(origins[i])
+                    if atom is None:
+                        replaced = self.bank_atom(p)
+                        atom = (replaced if _value(replaced, self.rom) == v
+                                and self.knowable(replaced) else _lit(v))
+                    self.name(origins[i:i + 1], [atom])
+                    banks[p] = self.state[p] = atom
+                continue
+            _, _, _, table, key, value, origins = event
+            self._check_table(table)
+            if isinstance(value, int):
+                atoms = value
+            else:
+                previous = self.entries.get((table, key))
+                atoms = self.inherited(value, previous if isinstance(previous, list) else None,
+                                       origins)
+                self.name(origins, atoms)
+            tables[(table, key)] = self.entries[(table, key)] = atoms
+        return _records(group, banks, tables, self.tables)
+
+    def _check_table(self, table):
+        if table not in self.tables:
+            raise WriteLogError("table %r is not in the stream's table order" % table)
+
+    def _table_segment(self, group, events):
+        """A table group's net bytes and entries, encoded once its segment ends (or taken from
+        the fixed encoding)."""
+        net, entries = {}, {}
+        for event in events:
+            if event[0] == "B":
+                _, _, _, offset, values, origins = event
+                for i, v in enumerate(values):
+                    net[offset + i] = (v, origins[i])
+            else:
+                self._check_table(event[3])
+                entries[(event[3], event[4])] = (event[5], event[6])
+        if self.fixed is not None:
+            banks, tables = self.fixed.pop(0)
+        else:
+            banks = {}
+            for start, stop in _spans(sorted(net)):
+                values = bytes(net[p][0] for p in range(start, stop))
+                origins = [self.carried(net[p][1]) for p in range(start, stop)]
+                for i, atom in enumerate(_table_atoms(self.rom, values, origins, start)):
+                    banks[start + i] = atom
+            tables = {k: v if isinstance(v, int) else
+                      _table_atoms(self.rom, v, [self.carried(q) for q in o])
+                      for k, (v, o) in entries.items()}
+        self.table_segments.append((banks, tables))
+        for p, (v, origin) in sorted(net.items()):
+            self.name([origin], [banks[p]])
+        for k, (v, o) in entries.items():
+            if not isinstance(v, int):
+                self.name(o, tables[k])
+        self.state.update(banks)
+        self.entries.update(tables)
+        return _records(group, banks, tables, self.tables)
+
+
+def _spans(positions):
+    """[(start, stop)] of the maximal runs of sorted positions."""
+    spans = []
+    for p in positions:
+        if spans and spans[-1][1] == p:
+            spans[-1][1] = p + 1
+        else:
+            spans.append([p, p + 1])
+    return [tuple(s) for s in spans]
+
+
+def _key_order(tables):
+    order = {t: n for n, t in enumerate(tables)}
+    return lambda item: (order[item[0]], isinstance(item[1], str), item[1])
+
+
+def _tokens(atoms, offset=None):
+    """Canonical tokens of atoms, keep tokens only when offset is given."""
+    out, i = [], 0
+    while i < len(atoms):
+        a = atoms[i]
+        j = i + 1
+        if a < 0:
+            while j < len(atoms) and atoms[j] < 0:
+                j += 1
+            out.append(bytes(-1 - b for b in atoms[i:j]).hex())
+        else:
+            while j < len(atoms) and atoms[j] == a + j - i:
+                j += 1
+            if offset is not None and a == offset + i:
+                out.append("=%x" % (j - i))
+            else:
+                out.append("@%x+%x" % (a, j - i))
+        i = j
+    return out
+
+
+def _key_text(key):
+    return "%x" % key if isinstance(key, int) else key
+
+
+def _records(group, banks, tables, order):
+    """The lines of a segment from its net bank atoms {offset: atom} and table entries
+    {(table, key): atoms or int pointer}."""
+    lines = ["G " + group]
+    for start, stop in _spans(sorted(banks)):
+        lines.append("B %x %s" % (start, " ".join(_tokens([banks[p] for p in range(start, stop)],
+                                                         start))))
+    for table, key in sorted(tables, key=_key_order(order)):
+        value = tables[(table, key)]
+        tokens = ["p%x" % value] if isinstance(value, int) else _tokens(value)
+        lines.append(" ".join(["T", table, _key_text(key)] + tokens))
+    return lines
+
+
+def _header(tables):
+    return [VERSION_LINE, " ".join(["tables"] + list(tables))]
+
+
+def encode(events, rom, sides, known):
+    """rom_writes.txt's text for Events on the source rom; sides {group: side}; known: the
+    C-knowable source offsets (any container)."""
+    return _encode(events, rom, sides, known)[0]
+
+
+def _encode(events, rom, sides, known, fixed=None):
+    """(text, the table groups' encodings segment by segment)."""
+    encoder = _Encoder(events, rom, sides, known, fixed)
+    lines = _header(events.tables)
+    run = []
+    for event in events.events + [None]:
+        if run and (event is None or event[1] != run[0][1]):
+            lines += encoder.segment(run[0][1], run)
+            run = []
+        if event is not None:
+            run.append(event)
+    return "".join(line + "\n" for line in lines), encoder.table_segments
+
+
+# Parsing, decode, projection -------------------------------------------------------------------
+
+def _parse_tokens(fields, offset, number):
+    """[atom or int pointer] of a record's tokens; offset None for a table record."""
+    atoms, previous = [], None
+    for token in fields:
+        kind = token[:1]
+        if kind == "p" and offset is None and len(fields) == 1:
+            pointer = _hex_int(token[1:], "pointer")
+            if "%x" % pointer != token[1:]:
+                raise WriteLogError("line %d: pointer %r not canonical" % (number, token))
+            return pointer
+        if kind == "=" and offset is not None:
+            n = _hex_int(token[1:], "length")
+            run = list(range(offset + len(atoms), offset + len(atoms) + n))
+            kind = "ref"
+        elif kind == "@":
+            m = re.fullmatch(r"@([0-9a-f]+)\+([0-9a-f]+)", token)
+            if not m:
+                raise WriteLogError("line %d: bad copy token %r" % (number, token))
+            q, n = int(m.group(1), 16), int(m.group(2), 16)
+            run = list(range(q, q + n))
+            kind = "ref"
+        elif HEX.fullmatch(token) and len(token) % 2 == 0:
+            run = [_lit(b) for b in bytes.fromhex(token)]
+            kind = "lit"
+        else:
+            raise WriteLogError("line %d: bad token %r" % (number, token))
+        if not run:
+            raise WriteLogError("line %d: empty token %r" % (number, token))
+        if previous == "lit" and kind == "lit" or previous == "ref" and kind == "ref" \
+                and atoms[-1] + 1 == run[0]:
+            raise WriteLogError("line %d: token %r continues the one before" % (number, token))
+        if token != _tokens(run, None if offset is None else offset + len(atoms))[0]:
+            raise WriteLogError("line %d: token %r not canonical" % (number, token))
+        atoms += run
+        previous = kind
+    if not atoms and offset is not None:
+        raise WriteLogError("line %d: a bank record without bytes" % number)
+    return atoms
+
+
+def parse(text):
+    """(tables, [(group, {offset: atom}, {(table, key): atoms or int})]) of a log's text, every
+    rule of the format checked; WriteLogError names the first broken one."""
+    lines = text.split("\n")
+    if not lines or lines[-1] != "":
+        raise WriteLogError("the log does not end with a newline")
+    lines.pop()
+    if not lines or lines[0] != VERSION_LINE:
+        raise WriteLogError("line 1: not `%s`" % VERSION_LINE)
+    if len(lines) < 2 or lines[1].split(" ")[0] != "tables":
+        raise WriteLogError("line 2: no tables line")
+    tables = lines[1].split(" ")[1:]
+    if any(not NAME.fullmatch(t) for t in tables) or len(set(tables)) != len(tables):
+        raise WriteLogError("line 2: bad table names")
+    order = _key_order(tables)
+    segments = []
+    last_bank = last_table = None
+    for number, line in enumerate(lines[2:], 3):
+        fields = line.split(" ")
+        if fields[0] == "G" and len(fields) == 2 and NAME.fullmatch(fields[1]):
+            if segments and not (segments[-1][1] or segments[-1][2]):
+                raise WriteLogError("line %d: segment %s has no record" % (number - 1,
+                                                                          segments[-1][0]))
+            if segments and segments[-1][0] == fields[1]:
+                raise WriteLogError("line %d: segment %s continues the one before" % (number,
+                                                                                     fields[1]))
+            segments.append((fields[1], {}, {}))
+            last_bank = last_table = None
+            continue
+        if not segments:
+            raise WriteLogError("line %d: a record before any G line" % number)
+        group, banks, entries = segments[-1]
+        if fields[0] == "B" and len(fields) >= 2:
+            offset = _hex_int(fields[1], "offset")
+            if "%x" % offset != fields[1]:
+                raise WriteLogError("line %d: offset not canonical" % number)
+            if entries or last_bank is not None and offset <= last_bank:
+                raise WriteLogError("line %d: bank record out of order or not maximal" % number)
+            atoms = _parse_tokens(fields[2:], offset, number)
+            banks.update((offset + i, a) for i, a in enumerate(atoms))
+            last_bank = offset + len(atoms)
+        elif fields[0] == "T" and len(fields) >= 3:
+            if fields[1] not in tables:
+                raise WriteLogError("line %d: unknown table %r" % (number, fields[1]))
+            key = _key(fields[2])
+            if not (HEX.fullmatch(fields[2]) and "%x" % key == fields[2]
+                    or not HEX.fullmatch(fields[2]) and NAME.fullmatch(fields[2])):
+                raise WriteLogError("line %d: bad key %r" % (number, fields[2]))
+            if last_table is not None and order((fields[1], key)) <= order(last_table):
+                raise WriteLogError("line %d: table record out of order" % number)
+            entries[(fields[1], key)] = _parse_tokens(fields[3:], None, number)
+            last_table = (fields[1], key)
+        else:
+            raise WriteLogError("line %d: unknown line %r" % (number, line[:40]))
+    if segments and not (segments[-1][1] or segments[-1][2]):
+        raise WriteLogError("segment %s has no record" % segments[-1][0])
+    return tables, segments
+
+
+def decode(text, rom):
+    """The ROM the log's bank records give when replayed in order onto the source rom."""
+    _, segments = parse(text)
+    out = bytearray(rom)
+    for group, banks, _ in segments:
+        for p, atom in banks.items():
+            if p >= len(out) or atom >= len(rom):
+                raise WriteLogError("segment %s writes or copies beyond the ROM" % group)
+            out[p] = _value(atom, rom)
+    return bytes(out)
+
+
+def project(text, group):
+    """One group's projection of a log: its segments replayed in order, as a log of at most one
+    segment."""
+    tables, segments = parse(text)
+    banks, entries = {}, {}
+    for name, seg_banks, seg_entries in segments:
+        if name == group:
+            banks.update(seg_banks)
+            entries.update(seg_entries)
+    lines = _header(tables)
+    if banks or entries:
+        lines += _records(group, banks, entries, tables)
+    return "".join(line + "\n" for line in lines)
+
+
+def groups(text):
+    """The groups of a log's segments, each once, in first-write order."""
+    seen = []
+    for name, _, _ in parse(text)[1]:
+        if name not in seen:
+            seen.append(name)
+    return seen
+
+
+# Scrambled-ROM comparison ----------------------------------------------------------------------
+
+def scramble(rom, known):
+    """rom with every byte outside known changed (xor a position-dependent nonzero mask)."""
+    return bytes(b if p in known else b ^ (1 + p * 7 % 255) for p, b in enumerate(rom))
+
+
+def compare_scrambled(events, rom, sides, known, scramble_known=None):
+    """One `SCRAMBLED <group>` line per C group whose projection differs when the stream is
+    re-encoded on rom with every byte outside scramble_known (default known) scrambled. The
+    table groups keep their encoding from rom: C copies it from step 6's tables."""
+    real, fixed = _encode(events, rom, sides, known)
+    other = _encode(events, scramble(rom, known if scramble_known is None else scramble_known),
+                    sides, known, fixed)[0]
+    lines = []
+    for group in groups(real):
+        if sides.get(group) != "C":
+            continue
+        a, b = project(real, group).splitlines(), project(other, group).splitlines()
+        if a != b:
+            first = next(n for n in range(max(len(a), len(b)))
+                         if n >= len(a) or n >= len(b) or a[n] != b[n])
+            lines.append("SCRAMBLED %s: projection differs from line %d" % (group, first + 1))
+    return lines
+
+
+# Command line ----------------------------------------------------------------------------------
+
+def sides_of(inventory_text):
+    """{group: side} of an inventory's Groups table."""
+    sys.path.insert(0, HERE)
+    import inventory_check
+    named, bad = inventory_check.parse_named(inventory_text)
+    if bad:
+        raise WriteLogError("inventory: " + bad[0])
+    return {row["Group"]: row["Side"] for row in named["Groups"]}
+
+
+def _read(path, binary=False):
+    with open(path, "rb") as f:
+        data = f.read()
+    return data if binary else data.decode("utf-8")
+
+
+def _inputs(args):
+    sys.path.insert(0, HERE)
+    import known_source
+    events = parse_events(_read(args.events))
+    rom = _read(args.rom, binary=True)
+    if events.source != hashlib.sha1(rom).hexdigest():
+        raise WriteLogError("the event stream was recorded on another ROM")
+    return events, rom, sides_of(_read(args.inventory)), known_source.build(rom)
+
+
+def self_test():
+    """A synthetic stream through encode, decode, projection and the scramble; failure lines."""
+    rom = random.Random(0x1ADE).randbytes(0x800)
+    events = Events(["texts"], [("texts", 0, rom[0x100:0x104], tuple(range(0x100, 0x104)))], [
+        ("B", "fix", "-", 0x10, rom[0x300:0x308], (KNOWN,) * 8),
+        ("B", "cg", "-", 0x20, rom[0x40:0x42] + b"\x00", (0x40, 0x41, KNOWN)),
+        ("T", "cg", "-", "texts", 0, rom[0x100:0x102] + b"\x09", (KNOWN,) * 3),
+        ("B", "fix", "-", 0x30, rom[0x30:0x32], (KNOWN, KNOWN))])
+    sides, known = {"fix": "table", "cg": "C"}, set(range(0x100, 0x104))
+    failures = []
+    log = encode(events, rom, sides, known)
+    want = bytearray(rom)
+    for e in events.events:
+        if e[0] == "B":
+            want[e[3]:e[3] + len(e[4])] = e[4]
+    if decode(log, rom) != bytes(want):
+        failures.append("decode does not give the written ROM")
+    expected = ["G fix", "B 10 @300+8", "G cg", "B 20 @40+2 00", "T texts 0 @100+2 09",
+                "G fix", "B 30 =2"]
+    if log.splitlines()[2:] != expected:
+        failures.append("encode gives %r" % log.splitlines()[2:])
+    if project(log, "fix").splitlines()[2:] != ["G fix", "B 10 @300+8", "B 30 =2"]:
+        failures.append("projection of fix")
+    if compare_scrambled(events, rom, sides, known):
+        failures.append("the scramble changes a C group")
+    if not compare_scrambled(events, rom, sides, known, scramble_known=set()):
+        failures.append("the scramble misses a C group reading outside its map")
+    return failures
+
+
+def main(argv):
+    if argv == ["--self-test"]:
+        failures = self_test()
+        for failure in failures:
+            print("write-log: self-test failed: " + failure)
+        if not failures:
+            print("write-log: self-test, encode, decode, projection and scramble")
+        return 1 if failures else 0
+    parser = argparse.ArgumentParser(prog="write_log.py")
+    sub = parser.add_subparsers(dest="mode", required=True)
+    for mode in ("encode", "scrambled"):
+        p = sub.add_parser(mode)
+        p.add_argument("--events", required=True)
+        p.add_argument("--rom", required=True)
+        p.add_argument("--inventory", default=DEFAULT_INVENTORY)
+        if mode == "encode":
+            p.add_argument("--out")
+    p = sub.add_parser("decode")
+    p.add_argument("--rom", required=True)
+    p.add_argument("log")
+    p = sub.add_parser("project")
+    p.add_argument("log")
+    p.add_argument("group")
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit as e:
+        return 2 if e.code else 0
+    try:
+        if args.mode == "decode":
+            print(hashlib.sha1(decode(_read(args.log), _read(args.rom, True))).hexdigest())
+        elif args.mode == "project":
+            sys.stdout.write(project(_read(args.log), args.group))
+        elif args.mode == "encode":
+            text = encode(*_inputs(args))
+            if args.out:
+                with open(args.out, "w", encoding="ascii", newline="\n") as f:
+                    f.write(text)
+            else:
+                sys.stdout.write(text)
+        else:
+            events, rom, sides, known = _inputs(args)
+            lines = compare_scrambled(events, rom, sides, known)
+            for line in lines:
+                print(line)
+            print("write-log: scrambled ROM, %d C groups changed" % len(lines))
+            return 1 if lines else 0
+    except (WriteLogError, OSError) as e:
+        print("write-log: %s" % e)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

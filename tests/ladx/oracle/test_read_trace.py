@@ -185,6 +185,19 @@ PLANTED = textwrap.dedent('''\
             rom.texts[0] = rom.banks[1][0x60:0x63]
             rom.banks[2][0x60:0x63] = rom.texts[0]
             rom.texts[1] = 0x1234
+        if which == "computed-copy":
+            rom.banks[2][0x31] = rom.banks[0][0x05] + 1
+            rom.banks[2][0x40:0x42] = rom.banks[2][0x31:0x33]
+        if which == "invisible-copy":
+            rom.banks[2][0x31] = rom.banks[0][0x05] + 1
+            copy = rom.banks[2][0x31:0x32]
+            memoryview(copy)[0] = 0x07
+            rom.banks[2][0x40:0x41] = copy
+        if which == "entry-computed":
+            rom.texts[0] = rom.banks[0][0x05:0x06] + bytes([9])
+            rom.banks[2][0x60:0x62] = bytes(rom.texts[0])
+            rom.texts[1] = bytearray([1])
+            rom.banks[2][0x70:0x71] = rom.texts[1]
         if which == "concat-bytes":
             rom.banks[2][0x50:0x55] = b"\x09" + bytes(rom.banks[1][0x10:0x12]) + bytes(
                 rom.banks[1][0x00:0x02])
@@ -403,6 +416,7 @@ class Output(Fixture):
 
 
 KNOWN = read_trace.KNOWN
+V = read_trace.virtual
 
 
 class Origins(Fixture):
@@ -416,17 +430,31 @@ class Origins(Fixture):
     def test_a_byte_read_by_index_and_written_keeps_its_source_offset(self):
         self.assertEqual(self.bank_events("copy-index"), [(0x230, b"\x05", (0x005,))])
 
-    def test_arithmetic_and_rebuilt_bytes_are_known(self):
+    def test_arithmetic_and_rebuilt_bytes_get_a_new_write_identity_each(self):
         self.assertEqual(self.bank_events("computed"),
-                         [(0x231, b"\x06", (KNOWN,)), (0x232, b"\x06\x07", (KNOWN, KNOWN))])
+                         [(0x231, b"\x06", (V(0),)), (0x232, b"\x06\x07", (V(1), V(2)))])
+
+    def test_a_copy_of_a_computed_byte_keeps_its_write_identity(self):
+        self.assertEqual(self.bank_events("computed-copy"),
+                         [(0x231, b"\x06", (V(0),)), (0x240, b"\x06\x32", (V(0), 0x232))])
+
+    def test_a_computed_entry_moved_unchanged_keeps_its_write_identity(self):
+        trace = self.trace("entry-computed")
+        self.assertEqual([e[:1] + e[3:] for e in trace.events()], [
+            ("T", "texts", 0, b"\x05\x09", (0x005, V(0))),
+            ("B", 0x260, b"\x05\x09", (0x005, V(0))),
+            ("T", "texts", 1, b"\x01", (V(1),)),
+            ("B", 0x270, b"\x01", (V(1),))])
 
     def test_in_place_changes_keep_the_untouched_bytes_origins(self):
         self.assertEqual(self.bank_events("mutate"),
-                         [(0x290, bytes([8, 9, 0x77, 0x93, 0]), (0x008, 0x009, KNOWN, 0x193, 0x000))])
+                         [(0x290, bytes([8, 9, 0x77, 0x93, 0]), (0x008, 0x009, V(0), 0x193, 0x000))])
 
     def test_a_change_no_traced_path_saw_makes_the_byte_known(self):
         self.assertEqual(self.bank_events("invisible"),
-                         [(0x2A0, bytes([0xEE, 0xA1]), (KNOWN, 0x1A1))])
+                         [(0x2A0, bytes([0xEE, 0xA1]), (V(0), 0x1A1))])
+        self.assertEqual(self.bank_events("invisible-copy"),
+                         [(0x231, b"\x06", (V(0),)), (0x240, b"\x07", (V(1),))])
 
     def test_a_bank_replaced_by_a_copy_keeps_the_copy_s_origins(self):
         self.assertEqual(self.bank_events("whole"),
@@ -467,17 +495,17 @@ class Origins(Fixture):
             "T\t-\ttexts\t1\tp1234\t-\t" + site + "rom.texts[1] = 0x1234"])
 
     def test_origin_runs_are_written_compactly(self):
-        self.assertEqual(read_trace.origin_text((5, 6, 7, KNOWN, KNOWN, 0x20, 9)),
-                         "5+3,k2,20+1,9+1")
+        self.assertEqual(read_trace.origin_text((5, 6, 7, KNOWN, KNOWN, 0x20, 9, V(3), V(4), V(9))),
+                         "5+3,k2,20+1,9+1,v3+2,v9+1")
         self.assertEqual(read_trace.origin_text(()), "-")
 
     def test_concatenation_and_bytes_keep_each_part_s_origins(self):
-        want = (0x100, 0x101, 0x110, 0x111, KNOWN)
+        want = (0x100, 0x101, 0x110, 0x111, V(0))
         self.assertEqual(self.bank_events("concat"),
                          [(0x250, bytes([0, 1, 0x10, 0x11, 9]), want)])
         self.assertEqual(self.bank_events("concat-bytes"),
                          [(0x250, bytes([9, 0x10, 0x11, 0, 1]),
-                           (KNOWN, 0x110, 0x111, 0x100, 0x101))])
+                           (V(0), 0x110, 0x111, 0x100, 0x101))])
 
 
 def _run(*args):
