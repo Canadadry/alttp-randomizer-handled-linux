@@ -142,6 +142,12 @@ in `docs/`, then `README.md`.
 - `make sdl-goldens`, outside the net, writes the goldens once (every state
   rendered twice, refused unless byte-identical, written as PNGs) and
   refuses a folder that already holds any: goldens are never regenerated to get green.
+- `make screenshots`, outside the net, with `make sdl-pc`'s packages (else
+  its `setup:` line; `tests/rando/sdl/screenshots.sh`): draws the README's
+  states (`SHOT_STATES` in `tests/rando/Makefile`, from
+  `sdl/golden_states.txt`) with `themes/alttp` twice, refuses unless
+  byte-identical, and overwrites `docs/screenshots/<state>.png`. No check:
+  they are pictures, rewritten and committed after a theme change.
 - `make mockups`, outside the net, checks `design/mockups/` against the app
   (`tests/rando/sdl/mockups.sh`): the comparator's self-test
   (`mockup_text.py --self-test`), the render check's self-proof and its
@@ -204,7 +210,7 @@ in `docs/`, then `README.md`.
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`,
-  `make mockups`, `make theme-compare`, `make theme-art` and
+  `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and
   `make theme-art-write`.
   `make patch-header` (the base patch's header, source CRC32, size cap and
   pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
