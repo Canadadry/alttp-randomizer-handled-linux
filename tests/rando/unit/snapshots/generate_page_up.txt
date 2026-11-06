@@ -12,6 +12,6 @@
  | Hints                             On   |
  | Heart Beep                Half Speed   |
  | Spoiler in History               Off  v|
- |                                        |
+h| Every item can be found, but not ever~ |
 _| </> Change  Y Default  START Generate  |
  +----------------------------------------+

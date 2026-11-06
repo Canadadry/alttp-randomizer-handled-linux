@@ -180,6 +180,16 @@ static UiGenerateEvent act(UiGenerate *state, UiButton button)
 	return UI_GENERATE_NONE;
 }
 
+static UiStrId selected_help(const UiGenerate *state)
+{
+	RandoSettingId id = (RandoSettingId)state->cursor;
+
+	assert(state->cursor != UI_GENERATE_ROW_ACTION);
+	if (state->cursor == UI_GENERATE_ROW_SPOILER)
+		return ui_spoiler_help(state->spoiler);
+	return ui_setting_help(id, rando_setting_get(&state->options, state->heart_beep, id));
+}
+
 void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 {
 	const UiStrTable *t = state->strings;
@@ -225,6 +235,9 @@ void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 	} else if (state->reason[0] != '\0') {
 		out->message_kind = UI_MESSAGE_INFO;
 		out->message = state->reason;
+	} else if (state->cursor != UI_GENERATE_ROW_ACTION) {
+		out->message_kind = UI_MESSAGE_HELP;
+		out->message = ui_str(t, selected_help(state));
 	}
 }
 

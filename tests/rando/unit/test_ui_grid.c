@@ -406,6 +406,28 @@ static void test_setting_cut_boundaries(void)
 	check_line(&g, 5, UI_LINE_ROW, "   1234567890123~   ");
 }
 
+/* A help message sits on the message line, tagged 'h', cut with '~' like any field. */
+static void test_help_message_line(void)
+{
+	static const char help[] = "The spoiler is kept and shown in this seed's History page.";
+	char buf[UI_GRID_TEXT_MAX];
+	UiScreen s;
+	UiGrid g;
+
+	CHECK(strlen(help) == 58);
+	generate_screen(&s, UI_GRID_DEFAULT_LINES - 4);
+	s.message_kind = UI_MESSAGE_HELP;
+	s.message = "No glitches required.";
+	CHECK(ui_grid_init(&g, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 13, UI_LINE_HELP, " No glitches required.                  ");
+	CHECK(ui_grid_text(&g, buf, sizeof buf) > 0);
+	CHECK(strstr(buf, "\nh| No glitches required.                  |\n") != NULL);
+	s.message = help;
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 13, UI_LINE_HELP, " The spoiler is kept and shown in this~ ");
+}
+
 int main(void)
 {
 	test_grid_bounds_and_page();
@@ -424,6 +446,7 @@ int main(void)
 	test_tab_bar_is_cut();
 	test_setting_cut_boundaries();
 	test_smallest_grid();
+	test_help_message_line();
 	printf("%s: 6 snapshots matched\n", TEST);
 	return 0;
 }

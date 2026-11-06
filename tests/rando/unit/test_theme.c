@@ -4,6 +4,7 @@
 #include "theme.h"
 #include "ui_grid.h"
 #include "ui_history.h"
+#include "ui_strings.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -946,7 +947,7 @@ static void test_help_columns_floor_partial_characters(void)
 static void test_alttp_loads_within_the_app_ranges(void)
 {
 	ThemeError err;
-	int page, columns, help;
+	int page, columns, help, id;
 
 	memset(&err, 0, sizeof err);
 	if (!theme_load(&theme, ALTTP_DIR, &err))
@@ -960,8 +961,13 @@ static void test_alttp_loads_within_the_app_ranges(void)
 		test_fail(TEST, "alttp page %d outside 1..%d", page, UI_GRID_LINES_MAX - 4);
 	if (columns < UI_HISTORY_WIDTH_MIN || columns > UI_HISTORY_WIDTH_MAX)
 		test_fail(TEST, "alttp width %d outside %d..%d", columns, UI_HISTORY_WIDTH_MIN, UI_HISTORY_WIDTH_MAX);
-	if (help < 1)
-		test_fail(TEST, "alttp help line of %d characters", help);
+	if (help != UI_STR_HELP_LEN_MAX)
+		test_fail(TEST, "alttp help line of %d characters, the core's help bound is %d", help,
+			  UI_STR_HELP_LEN_MAX);
+	for (id = UI_STR_HELP_FIRST; id <= UI_STR_HELP_LAST; id++)
+		if ((int)strlen(ui_str(ui_str_english(), (UiStrId)id)) > help)
+			test_fail(TEST, "help %d \"%s\" is longer than alttp's %d-character help line", id,
+				  ui_str(ui_str_english(), (UiStrId)id), help);
 }
 
 static bool ends_with(const char *s, const char *suffix)

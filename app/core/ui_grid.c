@@ -54,6 +54,8 @@ static char style_tag(UiLineStyle style)
 		return 'E';
 	case UI_LINE_FOOTER:
 		return '_';
+	case UI_LINE_HELP:
+		return 'h';
 	case UI_LINE_BLANK:
 	case UI_LINE_ROW:
 	case UI_LINE_TEXT:
@@ -248,6 +250,20 @@ static void put_footer(UiGrid *grid, const UiScreen *screen)
 	grid->styles[line] = UI_LINE_FOOTER;
 }
 
+static UiLineStyle message_style(UiMessageKind kind)
+{
+	switch (kind) {
+	case UI_MESSAGE_ERROR:
+		return UI_LINE_ERROR;
+	case UI_MESSAGE_HELP:
+		return UI_LINE_HELP;
+	case UI_MESSAGE_INFO:
+	case UI_MESSAGE_NONE:
+		break;
+	}
+	return UI_LINE_INFO;
+}
+
 bool ui_grid_render(UiGrid *grid, const UiScreen *screen)
 {
 	assert(grid_size_valid(grid->cols, grid->lines));
@@ -259,8 +275,7 @@ bool ui_grid_render(UiGrid *grid, const UiScreen *screen)
 		put_line(grid, 1, screen->title, UI_LINE_TITLE);
 	put_list(grid, screen);
 	if (screen->message_kind != UI_MESSAGE_NONE)
-		put_line(grid, grid->lines - 2, screen->message,
-			 screen->message_kind == UI_MESSAGE_ERROR ? UI_LINE_ERROR : UI_LINE_INFO);
+		put_line(grid, grid->lines - 2, screen->message, message_style(screen->message_kind));
 	put_footer(grid, screen);
 	return true;
 }

@@ -24,7 +24,8 @@ typedef struct UiRow {
 typedef enum UiMessageKind {
 	UI_MESSAGE_NONE,
 	UI_MESSAGE_INFO,
-	UI_MESSAGE_ERROR
+	UI_MESSAGE_ERROR,
+	UI_MESSAGE_HELP
 } UiMessageKind;
 
 typedef enum UiTitleTone {

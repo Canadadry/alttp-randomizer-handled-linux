@@ -203,6 +203,29 @@ static void test_check_length(void)
 	check_fault(&t, true, UI_STR_HISTORY_DELETE_CONFIRM, UI_STR_FAULT_TOO_LONG, __LINE__);
 }
 
+static void test_check_help_length(void)
+{
+	char buf[UI_GRID_COLS_MAX + 4];
+	UiStrTable t;
+
+	CHECK(UI_STR_HELP_LEN_MAX == 58);
+	CHECK(ui_str_len_max(UI_STR_HELP_FIRST) == UI_STR_HELP_LEN_MAX);
+	CHECK(ui_str_len_max(UI_STR_HELP_LAST) == UI_STR_HELP_LEN_MAX);
+	CHECK(ui_str_len_max(UI_STR_TAB_GENERATE) == UI_STR_LEN_MAX);
+	t = english_with(UI_STR_HELP_FIRST, text_of(buf, UI_STR_HELP_LEN_MAX, false));
+	check_sound(&t, true, __LINE__);
+	t = english_with(UI_STR_HELP_LAST, text_of(buf, UI_STR_HELP_LEN_MAX, false));
+	check_sound(&t, true, __LINE__);
+	t = english_with(UI_STR_HELP_FIRST, text_of(buf, UI_STR_HELP_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_HELP_FIRST, UI_STR_FAULT_TOO_LONG, __LINE__);
+	t = english_with(UI_STR_HELP_LAST, text_of(buf, UI_STR_HELP_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_HELP_LAST, UI_STR_FAULT_TOO_LONG, __LINE__);
+	t = english_with(UI_STR_SPOILER_ON, text_of(buf, UI_STR_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_SPOILER_ON, UI_STR_FAULT_TOO_LONG, __LINE__);
+	t = english_with(UI_STR_GENERATE_TITLE, text_of(buf, UI_STR_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_GENERATE_TITLE, UI_STR_FAULT_TOO_LONG, __LINE__);
+}
+
 static void test_check_translated_table(void)
 {
 	UiStrTable t = { { 0 } };
@@ -257,6 +280,7 @@ int main(void)
 	test_check_bytes();
 	test_check_placeholders();
 	test_check_length();
+	test_check_help_length();
 	test_check_translated_table();
 	printf("%s: passed\n", TEST);
 	return 0;

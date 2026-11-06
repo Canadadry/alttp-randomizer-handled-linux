@@ -78,6 +78,11 @@ bool ui_str_fill(const char *pattern, const char *arg, char *buf, size_t cap)
 	return fit;
 }
 
+int ui_str_len_max(UiStrId id)
+{
+	return id >= UI_STR_HELP_FIRST && id <= UI_STR_HELP_LAST ? UI_STR_HELP_LEN_MAX : UI_STR_LEN_MAX;
+}
+
 static UiStrFault text_fault(UiStrId id, const char *text, bool complete)
 {
 	const char *c;
@@ -102,7 +107,7 @@ static UiStrFault text_fault(UiStrId id, const char *text, bool complete)
 	}
 	if (slots != ui_str_arity(id))
 		return UI_STR_FAULT_ARITY;
-	return len > UI_STR_LEN_MAX ? UI_STR_FAULT_TOO_LONG : UI_STR_FAULT_NONE;
+	return len > ui_str_len_max(id) ? UI_STR_FAULT_TOO_LONG : UI_STR_FAULT_NONE;
 }
 
 bool ui_strings_check(const UiStrTable *table, bool complete, UiStrId *bad_id, UiStrFault *fault)

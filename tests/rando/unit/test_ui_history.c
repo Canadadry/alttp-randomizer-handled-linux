@@ -137,13 +137,14 @@ static void start(void)
 	ui_history_init(&history, &init);
 }
 
-/* The text form of the tab's screen at 40 x 15. */
+/* The text form of the tab's screen at 40 x 15; a History screen never carries help. */
 static const char *render(void)
 {
 	static UiScreen screen;
 	static UiGrid grid;
 
 	ui_history_screen(&history, &screen);
+	CHECK(screen.message_kind != UI_MESSAGE_HELP);
 	CHECK(ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
 	CHECK(ui_grid_render(&grid, &screen));
 	CHECK(ui_grid_text(&grid, text, sizeof text) > 0);

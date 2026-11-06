@@ -12,6 +12,6 @@
  | Swords                     Swordless   |
  | Item Pool              Crowd Control   |
  | Item Functionality            Expert  v|
- |                                        |
+h| Logic may need any major glitch: clip~ |
 _| </> Change  Y Default  START Generate  |
  +----------------------------------------+

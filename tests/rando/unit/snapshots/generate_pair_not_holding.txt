@@ -12,6 +12,6 @@
  | Swords                    Randomized   |
  | Item Pool                     Normal   |
  | Item Functionality            Normal  v|
- |                                        |
+h| Arrows cost rupees, keys sold in shop~ |
 _| </> Change  Y Default  START Generate  |
  +----------------------------------------+
