@@ -12,6 +12,6 @@
  | Heart Beep                Half Speed   |
 >| Spoiler in History              < On > |
  | Generate Seed                          |
- |                                        |
+h| The spoiler is kept and shown in this~ |
 _| </> Change  Y Default  START Generate  |
  +----------------------------------------+

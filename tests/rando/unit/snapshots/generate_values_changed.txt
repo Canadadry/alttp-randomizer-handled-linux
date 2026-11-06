@@ -12,6 +12,6 @@
  | Swords                    Randomized   |
  | Item Pool                     Normal   |
  | Item Functionality            Normal  v|
- |                                        |
+h| Collect every item and beat every bos~ |
 _| </> Change  Y Default  START Generate  |
  +----------------------------------------+

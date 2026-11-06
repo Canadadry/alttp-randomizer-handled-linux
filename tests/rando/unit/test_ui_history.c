@@ -137,13 +137,14 @@ static void start(void)
 	ui_history_init(&history, &init);
 }
 
-/* The text form of the tab's screen at 40 x 15. */
+/* The text form of the tab's screen at 40 x 15; a History screen never carries help. */
 static const char *render(void)
 {
 	static UiScreen screen;
 	static UiGrid grid;
 
 	ui_history_screen(&history, &screen);
+	CHECK(screen.message_kind != UI_MESSAGE_HELP);
 	CHECK(ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
 	CHECK(ui_grid_render(&grid, &screen));
 	CHECK(ui_grid_text(&grid, text, sizeof text) > 0);
@@ -180,6 +181,105 @@ static void remember(void)
 static bool unchanged(void)
 {
 	return strcmp(before, render()) == 0;
+}
+
+/* The current screen's hints, as "A Details|X Delete", buttons as a number before each. */
+static const char *hints(void)
+{
+	static char out[128];
+	UiScreen screen;
+	size_t len = 0;
+	int i;
+
+	ui_history_screen(&history, &screen);
+	out[0] = '\0';
+	for (i = 0; i < screen.hint_count; i++) {
+		const UiHint *h = &screen.hints[i];
+
+		len += (size_t)snprintf(out + len, sizeof out - len, "%s%d:%s %s%s", i > 0 ? "|" : "", (int)h->button,
+					h->key, h->label, h->primary ? "*" : "");
+	}
+	return out;
+}
+
+static void check_hints(const char *expected)
+{
+	const char *got = hints();
+
+	if (strcmp(got, expected) != 0)
+		test_fail(TEST, "hints \"%s\", expected \"%s\"", got, expected);
+}
+
+static void test_hints(void)
+{
+	char list_hints[64], detail_hints[64], confirm_hints[64];
+
+	snprintf(list_hints, sizeof list_hints, "%d:A Details|%d:X Delete", UI_HINT_A, UI_HINT_X);
+	snprintf(detail_hints, sizeof detail_hints, "%d:B Back|%d:X Delete", UI_HINT_B, UI_HINT_X);
+	snprintf(confirm_hints, sizeof confirm_hints, "%d:A Delete|%d:B Keep", UI_HINT_A, UI_HINT_B);
+	memset(&list, 0, sizeof list);
+	start();
+	check_hints("");
+	three_seeds();
+	start();
+	check_hints(list_hints);
+	keys(UI_BUTTON_A, 1);
+	check_hints(detail_hints);
+	keys(UI_BUTTON_X, 1);
+	check_hints(confirm_hints);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_X, 1);
+	check_hints(confirm_hints);
+}
+
+/* A screen's style fields, as "alert notice 0": tone, body, then the emphasised rows' indexes. */
+static const char *style_of(const UiScreen *screen)
+{
+	static char out[128];
+	size_t len;
+	int i;
+
+	len = (size_t)snprintf(out, sizeof out, "%s %s", screen->title_tone == UI_TITLE_ALERT ? "alert" : "normal",
+			       screen->body_kind == UI_BODY_NOTICE ? "notice" : "list");
+	for (i = 0; i < screen->row_count; i++)
+		if (screen->rows[i].emphasis)
+			len += (size_t)snprintf(out + len, sizeof out - len, " %d", i);
+	return out;
+}
+
+static void check_style(const UiScreen *screen, const char *expected)
+{
+	const char *got = style_of(screen);
+
+	if (strcmp(got, expected) != 0)
+		test_fail(TEST, "style \"%s\", expected \"%s\"", got, expected);
+}
+
+static void check_history_style(const char *expected)
+{
+	UiScreen screen;
+
+	ui_history_screen(&history, &screen);
+	check_style(&screen, expected);
+}
+
+static void test_styles(void)
+{
+	memset(&list, 0, sizeof list);
+	start();
+	check_history_style("normal notice");
+	three_seeds();
+	start();
+	check_history_style("normal list");
+	keys(UI_BUTTON_A, 1);
+	check_history_style("normal list");
+	keys(UI_BUTTON_X, 1);
+	check_history_style("alert notice 0");
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_X, 1);
+	check_history_style("alert notice 0");
 }
 
 static void test_list(void)
@@ -551,6 +651,8 @@ int main(void)
 	test_wrapping();
 	test_line_index_full();
 	test_strings();
+	test_hints();
+	test_styles();
 	printf(TEST ": passed\n");
 	return 0;
 }

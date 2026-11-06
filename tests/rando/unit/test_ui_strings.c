@@ -203,6 +203,29 @@ static void test_check_length(void)
 	check_fault(&t, true, UI_STR_HISTORY_DELETE_CONFIRM, UI_STR_FAULT_TOO_LONG, __LINE__);
 }
 
+static void test_check_help_length(void)
+{
+	char buf[UI_GRID_COLS_MAX + 4];
+	UiStrTable t;
+
+	CHECK(UI_STR_HELP_LEN_MAX == 58);
+	CHECK(ui_str_len_max(UI_STR_HELP_FIRST) == UI_STR_HELP_LEN_MAX);
+	CHECK(ui_str_len_max(UI_STR_HELP_LAST) == UI_STR_HELP_LEN_MAX);
+	CHECK(ui_str_len_max(UI_STR_TAB_GENERATE) == UI_STR_LEN_MAX);
+	t = english_with(UI_STR_HELP_FIRST, text_of(buf, UI_STR_HELP_LEN_MAX, false));
+	check_sound(&t, true, __LINE__);
+	t = english_with(UI_STR_HELP_LAST, text_of(buf, UI_STR_HELP_LEN_MAX, false));
+	check_sound(&t, true, __LINE__);
+	t = english_with(UI_STR_HELP_FIRST, text_of(buf, UI_STR_HELP_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_HELP_FIRST, UI_STR_FAULT_TOO_LONG, __LINE__);
+	t = english_with(UI_STR_HELP_LAST, text_of(buf, UI_STR_HELP_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_HELP_LAST, UI_STR_FAULT_TOO_LONG, __LINE__);
+	t = english_with(UI_STR_SPOILER_ON, text_of(buf, UI_STR_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_SPOILER_ON, UI_STR_FAULT_TOO_LONG, __LINE__);
+	t = english_with(UI_STR_GENERATE_TITLE, text_of(buf, UI_STR_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_GENERATE_TITLE, UI_STR_FAULT_TOO_LONG, __LINE__);
+}
+
 static void test_check_translated_table(void)
 {
 	UiStrTable t = { { 0 } };
@@ -215,17 +238,49 @@ static void test_check_translated_table(void)
 	check_fault(&t, false, UI_STR_TAB_HISTORY, UI_STR_FAULT_ARITY, __LINE__);
 }
 
+static void test_hint_from_the_table(void)
+{
+	static const char *const keys[UI_HINT_BUTTON_COUNT] = {"</>", "A", "B", "X", "Y", "START"};
+	const UiStrTable *en = ui_str_english();
+	UiStrTable partial = { { 0 } };
+	UiHint h;
+	int b;
+
+	for (b = 0; b < UI_HINT_BUTTON_COUNT; b++) {
+		h = ui_str_hint(en, (UiHintButton)b, UI_STR_HINT_BACK, false);
+		CHECK(h.button == (UiHintButton)b);
+		if (!h.key || strcmp(h.key, keys[b]) != 0)
+			test_fail(TEST, "button %d: key \"%s\", expected \"%s\"", b, h.key ? h.key : "(null)", keys[b]);
+		CHECK(strcmp(h.label, "Back") == 0);
+		CHECK(!h.primary);
+	}
+	h = ui_str_hint(en, UI_HINT_START, UI_STR_HINT_GENERATE, true);
+	CHECK(strcmp(h.label, "Generate") == 0 && h.primary);
+	CHECK(strcmp(ui_str(en, UI_STR_HINT_CHANGE), "Change") == 0);
+	CHECK(strcmp(ui_str(en, UI_STR_HINT_DEFAULT), "Default") == 0);
+	CHECK(strcmp(ui_str(en, UI_STR_HINT_DETAILS), "Details") == 0);
+	CHECK(strcmp(ui_str(en, UI_STR_HINT_DELETE), "Delete") == 0);
+	CHECK(strcmp(ui_str(en, UI_STR_HINT_KEEP), "Keep") == 0);
+
+	partial.text[UI_STR_KEY_START] = "DEMARRER";
+	partial.text[UI_STR_HINT_GENERATE] = "Generer";
+	h = ui_str_hint(&partial, UI_HINT_START, UI_STR_HINT_GENERATE, true);
+	CHECK(strcmp(h.key, "DEMARRER") == 0 && strcmp(h.label, "Generer") == 0);
+}
+
 int main(void)
 {
 	test_seed_texts_and_arities();
 	test_lookup_never_returns_null();
 	test_missing_entry_falls_back_to_english();
 	test_fill();
+	test_hint_from_the_table();
 	test_english_table_is_sound();
 	test_check_missing_and_empty();
 	test_check_bytes();
 	test_check_placeholders();
 	test_check_length();
+	test_check_help_length();
 	test_check_translated_table();
 	printf("%s: passed\n", TEST);
 	return 0;

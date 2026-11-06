@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" shape-rendering="crispEdges">
+  <title>Delete confirmation</title>
+  <defs>
+    <style>
+      @font-face { font-family: 'Press Start 2P'; src: url('../../data/PressStart2P.ttf') format('truetype'); }
+      text { font-family: 'Press Start 2P', monospace; font-variant-ligatures: none; }
+    </style>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10106c"/><stop offset="1" stop-color="#04043c"/></linearGradient>
+    <g id="triforce"><polygon points="8,0 12,6 4,6"/><polygon points="4,8 8,14 0,14"/><polygon points="12,8 16,14 8,14"/></g>
+    <g id="heart"><path fill="#e83838" d="M1 0h2v1H1zM4 0h2v1H4zM0 1h7v2H0zM1 3h5v1H1zM2 4h3v1H2zM3 5h1v1H3z"/><path fill="#f8f8f8" d="M1 1h1v1H1z"/></g>
+  </defs>
+  <rect width="640" height="480" fill="#0c0c34"/>
+  <path fill="#f8f8f8" d="M6,10 L10,10 L10,6 L630,6 L630,10 L634,10 L634,470 L630,470 L630,474 L10,474 L10,470 L6,470 Z"/>
+  <path fill="#3858d8" d="M10,14 L14,14 L14,10 L626,10 L626,14 L630,14 L630,466 L626,466 L626,470 L14,470 L14,466 L10,466 Z"/>
+  <rect x="14" y="14" width="612" height="452" fill="url(#panel)"/>
+  <!-- Tabs -->
+  <rect x="14" y="54" width="612" height="4" fill="#3858d8"/>
+  <text x="30" y="42" font-size="16" fill="#98a8f0">Generate</text>
+  <use href="#triforce" transform="translate(186 27) scale(1.25)" fill="#f8d038"/>
+  <text x="214" y="42" font-size="16" fill="#f8d038">History</text>
+  <use href="#heart" transform="translate(544 27) scale(3)"/>
+  <use href="#heart" transform="translate(571 27) scale(3)"/>
+  <use href="#heart" transform="translate(598 27) scale(3)"/>
+  <!-- Title -->
+  <text x="30" y="82" font-size="14" fill="#ff6868">Delete 1CA10A-2?</text>
+  <line x1="266" y1="77" x2="610" y2="77" stroke="#3858d8" stroke-width="4" stroke-dasharray="8 4"/>
+  <text x="50" y="120" font-size="14" fill="#f8d038">Open-Ganon-1CA10A-2.sfc</text>
+  <text x="30" y="152" font-size="14" fill="#f8f8f8">Removes the ROM, its save and states</text>
+  <text x="30" y="184" font-size="14" fill="#f8f8f8">This cannot be undone</text>
+  <!-- Footer -->
+  <rect x="14" y="422" width="612" height="44" fill="#08084c"/>
+  <rect x="14" y="422" width="612" height="4" fill="#3858d8"/>
+  <path fill="#f8d038" d="M30,439 L36,439 L36,433 L46,433 L46,439 L52,439 L52,449 L46,449 L46,455 L36,455 L36,449 L30,449 Z"/>
+  <text x="41" y="449" font-size="12" fill="#08084c" text-anchor="middle">A</text>
+  <text x="62" y="448" font-size="12" fill="#f8f8f8">Delete</text>
+  <path fill="#f8d038" d="M170,439 L176,439 L176,433 L186,433 L186,439 L192,439 L192,449 L186,449 L186,455 L176,455 L176,449 L170,449 Z"/>
+  <text x="181" y="449" font-size="12" fill="#08084c" text-anchor="middle">B</text>
+  <text x="202" y="448" font-size="12" fill="#f8f8f8">Keep</text>
+</svg>

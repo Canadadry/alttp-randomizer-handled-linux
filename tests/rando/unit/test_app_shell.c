@@ -135,7 +135,7 @@ static void make_root(void)
 
 static void start(void)
 {
-	CHECK(rando_app_shell_init(&shell, root, NULL, PAGE, WIDTH));
+	CHECK(rando_app_shell_init(&shell, root, NULL, NULL, 0, PAGE, WIDTH));
 }
 
 static const char *render_screen(const UiScreen *screen, char *buf, size_t size)
@@ -287,7 +287,7 @@ static void test_root_too_long(void)
 
 	memset(long_root, 'a', sizeof long_root - 1);
 	long_root[0] = '/';
-	CHECK(!rando_app_shell_init(&shell, long_root, NULL, PAGE, WIDTH));
+	CHECK(!rando_app_shell_init(&shell, long_root, NULL, NULL, 0, PAGE, WIDTH));
 }
 
 static void test_generate_then_history(void)

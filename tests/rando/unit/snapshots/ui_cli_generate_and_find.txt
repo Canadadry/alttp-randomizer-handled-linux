@@ -13,7 +13,7 @@
  | Swords                    Randomized   |
  | Item Pool                     Normal   |
  | Item Functionality            Normal  v|
- |                                        |
+h| No glitches required. Standard logic ~ |
 _| </> Change  Y Default  START Generate  |
  +----------------------------------------+
 @ generating
@@ -67,7 +67,7 @@ _| A Back                                 |
  | Swords                    Randomized   |
  | Item Pool                     Normal   |
  | Item Functionality            Normal  v|
- |                                        |
+h| No glitches required. Standard logic ~ |
 _| </> Change  Y Default  START Generate  |
  +----------------------------------------+
 @ r1

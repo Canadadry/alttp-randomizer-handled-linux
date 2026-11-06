@@ -89,7 +89,19 @@ static void add(UiScreen *s, UiRowKind kind, const char *label, const char *valu
 	row.label = label;
 	row.value = value;
 	row.disabled = disabled;
+	row.emphasis = false;
 	CHECK(ui_screen_add_row(s, row));
+}
+
+static void hint(UiScreen *s, UiHintButton button, const char *key, const char *label, bool primary)
+{
+	UiHint h;
+
+	h.button = button;
+	h.key = key;
+	h.label = label;
+	h.primary = primary;
+	CHECK(ui_screen_add_hint(s, h));
 }
 
 /* 18 rows, the cursor moved from the top to row 13 (a setting), scroll following it on a page of page. */
@@ -123,7 +135,9 @@ static void generate_screen(UiScreen *s, int page)
 	s->scroll = ui_scroll_follow(0, s->cursor, s->row_count, page);
 	s->message_kind = UI_MESSAGE_INFO;
 	s->message = "Left and right change the value";
-	s->footer = "A Select  B Back  L/R Tab";
+	hint(s, UI_HINT_A, "A", "Select", false);
+	hint(s, UI_HINT_B, "B", "Back", false);
+	hint(s, UI_HINT_LEFT_RIGHT, "L/R", "Tab", false);
 }
 
 static void test_snapshot_generate_default(void)
@@ -172,7 +186,7 @@ static void test_snapshot_detail(void)
 	s.more_below = true;
 	s.message_kind = UI_MESSAGE_ERROR;
 	s.message = "Cannot read the record";
-	s.footer = "B Back";
+	hint(&s, UI_HINT_B, "B", "Back", false);
 	check_snapshot(&s, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES, SNAPSHOTS "ui_detail_40x15.txt");
 }
 
@@ -188,7 +202,7 @@ static void test_snapshot_cursor_on_disabled(void)
 	add(&s, UI_ROW_SETTING, "Enemy shuffle", "None", true);
 	add(&s, UI_ROW_ACTION, "Generate", NULL, false);
 	s.cursor = 1;
-	s.footer = "A Select";
+	hint(&s, UI_HINT_A, "A", "Select", false);
 	check_snapshot(&s, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES, SNAPSHOTS "ui_disabled_cursor_40x15.txt");
 }
 
@@ -231,7 +245,6 @@ static void test_null_text_draws_as_empty(void)
 	add(&s, UI_ROW_ACTION, NULL, NULL, false);
 	s.cursor = 0;
 	s.message_kind = UI_MESSAGE_INFO;
-	s.footer = "";
 	CHECK(ui_grid_init(&g, 20, 6));
 	CHECK(ui_grid_render(&g, &s));
 	check_line(&g, 0, UI_LINE_TABS, "[]  B               ");
@@ -240,6 +253,86 @@ static void test_null_text_draws_as_empty(void)
 	check_line(&g, 3, UI_LINE_ROW, "                    ");
 	check_line(&g, 4, UI_LINE_INFO, "                    ");
 	check_line(&g, 5, UI_LINE_BLANK, "                    ");
+	hint(&s, UI_HINT_A, NULL, NULL, false);
+	hint(&s, UI_HINT_B, NULL, "Back", false);
+	hint(&s, UI_HINT_X, "X", NULL, false);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 5, UI_LINE_FOOTER, "     Back  X        ");
+}
+
+static void test_hints_join_into_the_footer(void)
+{
+	UiScreen s;
+	UiGrid g;
+
+	ui_screen_init(&s);
+	CHECK(ui_grid_init(&g, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	hint(&s, UI_HINT_LEFT_RIGHT, "</>", "Change", false);
+	hint(&s, UI_HINT_Y, "Y", "Default", false);
+	hint(&s, UI_HINT_START, "START", "Generate", true);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_FOOTER, " </> Change  Y Default  START Generate  ");
+	s.hints[2].primary = false;
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_FOOTER, " </> Change  Y Default  START Generate  ");
+	hint(&s, UI_HINT_A, "A", "Back", false);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_FOOTER, " </> Change  Y Default  START Generate~ ");
+
+	ui_screen_init(&s);
+	hint(&s, UI_HINT_A, "A", "Delete", false);
+	hint(&s, UI_HINT_B, "B", "Keep", false);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_FOOTER, " A Delete  B Keep                       ");
+
+	ui_screen_init(&s);
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 14, UI_LINE_BLANK, "                                        ");
+}
+
+static void check_same_grid(const UiScreen *plain, const UiScreen *styled)
+{
+	char plain_text[UI_GRID_TEXT_MAX], styled_text[UI_GRID_TEXT_MAX];
+	UiGrid a, b;
+	int i;
+
+	CHECK(ui_grid_init(&a, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	CHECK(ui_grid_init(&b, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	CHECK(ui_grid_render(&a, plain));
+	CHECK(ui_grid_render(&b, styled));
+	CHECK(ui_grid_text(&a, plain_text, sizeof plain_text) > 0);
+	CHECK(ui_grid_text(&b, styled_text, sizeof styled_text) > 0);
+	if (strcmp(plain_text, styled_text) != 0)
+		test_fail(TEST, "styled grid:\n%s\nexpected:\n%s", styled_text, plain_text);
+	for (i = 0; i < a.lines; i++)
+		if (a.styles[i] != b.styles[i])
+			test_fail(TEST, "line %d: style %d, expected %d", i, (int)b.styles[i], (int)a.styles[i]);
+}
+
+static void test_style_fields_do_not_change_the_grid(void)
+{
+	UiScreen plain, styled;
+	int i;
+
+	generate_screen(&plain, UI_GRID_DEFAULT_LINES - 4);
+	plain.message_kind = UI_MESSAGE_ERROR;
+	styled = plain;
+	styled.title_tone = UI_TITLE_ALERT;
+	styled.body_kind = UI_BODY_NOTICE;
+	for (i = 0; i < styled.row_count; i++)
+		styled.rows[i].emphasis = true;
+	check_same_grid(&plain, &styled);
+
+	ui_screen_init(&plain);
+	plain.title = "Delete seed 1CA10A?";
+	add(&plain, UI_ROW_TEXT, "Open-Ganon-1CA10A.sfc", NULL, false);
+	add(&plain, UI_ROW_TEXT, "The ROM and its spoiler", NULL, false);
+	hint(&plain, UI_HINT_A, "A", "Delete", false);
+	styled = plain;
+	styled.title_tone = UI_TITLE_ALERT;
+	styled.body_kind = UI_BODY_NOTICE;
+	styled.rows[0].emphasis = true;
+	check_same_grid(&plain, &styled);
 }
 
 static void test_bytes_outside_printable_ascii_draw_as_question_marks(void)
@@ -313,6 +406,28 @@ static void test_setting_cut_boundaries(void)
 	check_line(&g, 5, UI_LINE_ROW, "   1234567890123~   ");
 }
 
+/* A help message sits on the message line, tagged 'h', cut with '~' like any field. */
+static void test_help_message_line(void)
+{
+	static const char help[] = "The spoiler is kept and shown in this seed's History page.";
+	char buf[UI_GRID_TEXT_MAX];
+	UiScreen s;
+	UiGrid g;
+
+	CHECK(strlen(help) == 58);
+	generate_screen(&s, UI_GRID_DEFAULT_LINES - 4);
+	s.message_kind = UI_MESSAGE_HELP;
+	s.message = "No glitches required.";
+	CHECK(ui_grid_init(&g, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 13, UI_LINE_HELP, " No glitches required.                  ");
+	CHECK(ui_grid_text(&g, buf, sizeof buf) > 0);
+	CHECK(strstr(buf, "\nh| No glitches required.                  |\n") != NULL);
+	s.message = help;
+	CHECK(ui_grid_render(&g, &s));
+	check_line(&g, 13, UI_LINE_HELP, " The spoiler is kept and shown in this~ ");
+}
+
 int main(void)
 {
 	test_grid_bounds_and_page();
@@ -325,10 +440,13 @@ int main(void)
 	test_snapshot_empty();
 	test_invalid_screen_leaves_a_blank_grid();
 	test_null_text_draws_as_empty();
+	test_hints_join_into_the_footer();
+	test_style_fields_do_not_change_the_grid();
 	test_bytes_outside_printable_ascii_draw_as_question_marks();
 	test_tab_bar_is_cut();
 	test_setting_cut_boundaries();
 	test_smallest_grid();
+	test_help_message_line();
 	printf("%s: 6 snapshots matched\n", TEST);
 	return 0;
 }

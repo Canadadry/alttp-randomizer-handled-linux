@@ -30,14 +30,88 @@ static void test_init_gives_the_empty_screen(void)
 	CHECK(!s.more_above && !s.more_below);
 	CHECK(s.message_kind == UI_MESSAGE_NONE);
 	CHECK(s.message == NULL);
-	CHECK(s.footer == NULL);
+	CHECK(s.hint_count == 0);
+	CHECK(s.title_tone == UI_TITLE_NORMAL);
+	CHECK(s.body_kind == UI_BODY_LIST);
+}
+
+static void test_add_hint_appends_until_full(void)
+{
+	UiScreen s;
+	UiHint hint = {UI_HINT_START, "START", "Generate", true};
+	UiHint extra = {UI_HINT_A, "A", "Back", false};
+	int i;
+
+	ui_screen_init(&s);
+	CHECK(ui_screen_add_hint(&s, hint));
+	CHECK(s.hint_count == 1);
+	CHECK(s.hints[0].button == UI_HINT_START && s.hints[0].primary);
+	CHECK(s.hints[0].key == hint.key && s.hints[0].label == hint.label);
+	for (i = 1; i < UI_HINTS_MAX; i++)
+		CHECK(ui_screen_add_hint(&s, extra));
+	CHECK(s.hint_count == UI_HINTS_MAX);
+	CHECK(!ui_screen_add_hint(&s, extra));
+	CHECK(s.hint_count == UI_HINTS_MAX);
+}
+
+static void test_valid_checks_the_hints(void)
+{
+	UiScreen s;
+	UiHint plain = {UI_HINT_A, "A", "Back", false};
+	UiHint primary = {UI_HINT_START, "START", "Generate", true};
+
+	ui_screen_init(&s);
+	CHECK(ui_screen_add_hint(&s, plain));
+	CHECK(ui_screen_add_hint(&s, plain));
+	CHECK(ui_screen_valid(&s));
+	CHECK(ui_screen_add_hint(&s, primary));
+	CHECK(ui_screen_valid(&s));
+	s.hints[0].primary = true;
+	CHECK(!ui_screen_valid(&s));
+	s.hints[0].primary = false;
+
+	s.hints[1].button = UI_HINT_BUTTON_COUNT;
+	CHECK(!ui_screen_valid(&s));
+	s.hints[1].button = (UiHintButton)-1;
+	CHECK(!ui_screen_valid(&s));
+	s.hints[1].button = UI_HINT_LEFT_RIGHT;
+	CHECK(ui_screen_valid(&s));
+
+	s.hint_count = UI_HINTS_MAX + 1;
+	CHECK(!ui_screen_valid(&s));
+	s.hint_count = -1;
+	CHECK(!ui_screen_valid(&s));
+}
+
+static void test_valid_checks_the_style_fields(void)
+{
+	UiScreen s;
+
+	ui_screen_init(&s);
+	s.title_tone = UI_TITLE_ALERT;
+	s.body_kind = UI_BODY_NOTICE;
+	CHECK(ui_screen_valid(&s));
+
+	s.title_tone = UI_TITLE_TONE_COUNT;
+	CHECK(!ui_screen_valid(&s));
+	s.title_tone = (UiTitleTone)-1;
+	CHECK(!ui_screen_valid(&s));
+	s.title_tone = UI_TITLE_NORMAL;
+	CHECK(ui_screen_valid(&s));
+
+	s.body_kind = UI_BODY_KIND_COUNT;
+	CHECK(!ui_screen_valid(&s));
+	s.body_kind = (UiBodyKind)-1;
+	CHECK(!ui_screen_valid(&s));
+	s.body_kind = UI_BODY_LIST;
+	CHECK(ui_screen_valid(&s));
 }
 
 static void test_add_row_appends_until_full(void)
 {
 	UiScreen s;
-	UiRow row = {UI_ROW_SETTING, "Mode", "Open", true};
-	UiRow extra = {UI_ROW_ACTION, "Generate", NULL, false};
+	UiRow row = {UI_ROW_SETTING, "Mode", "Open", true, true};
+	UiRow extra = {UI_ROW_ACTION, "Generate", NULL, false, false};
 	int i;
 
 	ui_screen_init(&s);
@@ -45,6 +119,7 @@ static void test_add_row_appends_until_full(void)
 	CHECK(s.row_count == 1);
 	CHECK(s.rows[0].kind == UI_ROW_SETTING);
 	CHECK(s.rows[0].label == row.label && s.rows[0].value == row.value && s.rows[0].disabled);
+	CHECK(s.rows[0].emphasis);
 	for (i = 1; i < UI_ROWS_MAX; i++)
 		CHECK(ui_screen_add_row(&s, row));
 	CHECK(s.row_count == UI_ROWS_MAX);
@@ -57,7 +132,7 @@ static void test_add_row_appends_until_full(void)
 /* Three rows, two tabs, cursor and scroll at their boundaries. */
 static void valid_screen(UiScreen *s)
 {
-	UiRow row = {UI_ROW_TEXT, "line", NULL, false};
+	UiRow row = {UI_ROW_TEXT, "line", NULL, false, false};
 	int i;
 
 	ui_screen_init(s);
@@ -191,6 +266,9 @@ int main(void)
 {
 	test_init_gives_the_empty_screen();
 	test_add_row_appends_until_full();
+	test_add_hint_appends_until_full();
+	test_valid_checks_the_hints();
+	test_valid_checks_the_style_fields();
 	test_valid_accepts_the_boundaries();
 	test_valid_refuses_each_field_out_of_range();
 	test_scroll_follow();

@@ -348,12 +348,18 @@ UiHistoryEvent ui_history_key(UiHistory *state, UiButton button)
 	return list_key(state, button);
 }
 
-static void add_text(UiScreen *out, const char *text)
+static void add_text_row(UiScreen *out, const char *text, bool emphasis)
 {
-	UiRow row = {UI_ROW_TEXT, NULL, NULL, false};
+	UiRow row = {UI_ROW_TEXT, NULL, NULL, false, false};
 
 	row.label = text;
+	row.emphasis = emphasis;
 	ui_screen_add_row(out, row);
+}
+
+static void add_text(UiScreen *out, const char *text)
+{
+	add_text_row(out, text, false);
 }
 
 static void fill_date_line(UiHistory *state, const UiHistoryEntry *entry)
@@ -381,12 +387,13 @@ static void list_screen(UiHistory *state, UiScreen *out)
 	out->title = ui_str(t, UI_STR_HISTORY_TITLE);
 	show_message(state, out);
 	if (state->list.count == 0) {
+		out->body_kind = UI_BODY_NOTICE;
 		add_text(out, ui_str(t, UI_STR_HISTORY_EMPTY));
 		add_text(out, ui_str(t, UI_STR_HISTORY_EMPTY_HINT));
 		return;
 	}
 	for (i = state->scroll; i < state->list.count && i < state->scroll + state->page; i++) {
-		UiRow row = {UI_ROW_ACTION, NULL, NULL, false};
+		UiRow row = {UI_ROW_ACTION, NULL, NULL, false, false};
 
 		row.label = state->list.entries[i].name.rom;
 		ui_screen_add_row(out, row);
@@ -394,7 +401,8 @@ static void list_screen(UiHistory *state, UiScreen *out)
 	out->cursor = state->cursor - state->scroll;
 	out->more_above = state->scroll > 0;
 	out->more_below = state->scroll + state->page < state->list.count;
-	out->footer = ui_str(t, UI_STR_HISTORY_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_A, UI_STR_HINT_DETAILS, false));
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_X, UI_STR_HINT_DELETE, false));
 	if (out->message_kind == UI_MESSAGE_NONE) {
 		fill_date_line(state, &state->list.entries[state->cursor]);
 		out->message_kind = UI_MESSAGE_INFO;
@@ -406,7 +414,7 @@ static void detail_row(UiHistory *state, int index, UiScreen *out)
 {
 	const UiStrTable *t = state->strings;
 	const UiHistoryEntry *entry = &state->list.entries[state->cursor];
-	UiRow row = {UI_ROW_SETTING, NULL, NULL, false};
+	UiRow row = {UI_ROW_SETTING, NULL, NULL, false, false};
 	char *buf = state->rows[out->row_count];
 
 	if (index == 0) {
@@ -457,7 +465,8 @@ static void detail_screen(UiHistory *state, UiScreen *out)
 		detail_row(state, i, out);
 	out->more_above = state->detail_scroll > 0;
 	out->more_below = state->detail_scroll + state->page < rows;
-	out->footer = ui_str(state->strings, UI_STR_HISTORY_DETAIL_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(state->strings, UI_HINT_B, UI_STR_HINT_BACK, false));
+	ui_screen_add_hint(out, ui_str_hint(state->strings, UI_HINT_X, UI_STR_HINT_DELETE, false));
 	show_message(state, out);
 }
 
@@ -468,10 +477,13 @@ static void confirm_screen(UiHistory *state, UiScreen *out)
 
 	ui_str_fill(ui_str(t, UI_STR_HISTORY_DELETE_CONFIRM), entry->name.code, state->title, sizeof state->title);
 	out->title = state->title;
-	add_text(out, entry->name.rom);
+	out->title_tone = UI_TITLE_ALERT;
+	out->body_kind = UI_BODY_NOTICE;
+	add_text_row(out, entry->name.rom, true);
 	add_text(out, ui_str(t, UI_STR_HISTORY_DELETE_WHAT));
 	add_text(out, ui_str(t, UI_STR_HISTORY_DELETE_FOREVER));
-	out->footer = ui_str(t, UI_STR_HISTORY_CONFIRM_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_A, UI_STR_HINT_DELETE, false));
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_B, UI_STR_HINT_KEEP, false));
 	show_message(state, out);
 }
 

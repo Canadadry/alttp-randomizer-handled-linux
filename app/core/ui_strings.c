@@ -40,6 +40,26 @@ static bool put(char *buf, size_t cap, size_t *len, const char *src, size_t n)
 	return true;
 }
 
+UiHint ui_str_hint(const UiStrTable *table, UiHintButton button, UiStrId label, bool primary)
+{
+	static const UiStrId keys[UI_HINT_BUTTON_COUNT] = {
+		[UI_HINT_LEFT_RIGHT] = UI_STR_KEY_LEFT_RIGHT,
+		[UI_HINT_A] = UI_STR_KEY_A,
+		[UI_HINT_B] = UI_STR_KEY_B,
+		[UI_HINT_X] = UI_STR_KEY_X,
+		[UI_HINT_Y] = UI_STR_KEY_Y,
+		[UI_HINT_START] = UI_STR_KEY_START,
+	};
+	UiHint hint;
+
+	assert((int)button >= 0 && button < UI_HINT_BUTTON_COUNT);
+	hint.button = button;
+	hint.key = ui_str(table, keys[button]);
+	hint.label = ui_str(table, label);
+	hint.primary = primary;
+	return hint;
+}
+
 bool ui_str_fill(const char *pattern, const char *arg, char *buf, size_t cap)
 {
 	const char *slot;
@@ -56,6 +76,11 @@ bool ui_str_fill(const char *pattern, const char *arg, char *buf, size_t cap)
 		fit = put(buf, cap, &len, arg, (size_t)-1) && put(buf, cap, &len, slot + 2, (size_t)-1);
 	buf[len] = '\0';
 	return fit;
+}
+
+int ui_str_len_max(UiStrId id)
+{
+	return id >= UI_STR_HELP_FIRST && id <= UI_STR_HELP_LAST ? UI_STR_HELP_LEN_MAX : UI_STR_LEN_MAX;
 }
 
 static UiStrFault text_fault(UiStrId id, const char *text, bool complete)
@@ -82,7 +107,7 @@ static UiStrFault text_fault(UiStrId id, const char *text, bool complete)
 	}
 	if (slots != ui_str_arity(id))
 		return UI_STR_FAULT_ARITY;
-	return len > UI_STR_LEN_MAX ? UI_STR_FAULT_TOO_LONG : UI_STR_FAULT_NONE;
+	return len > ui_str_len_max(id) ? UI_STR_FAULT_TOO_LONG : UI_STR_FAULT_NONE;
 }
 
 bool ui_strings_check(const UiStrTable *table, bool complete, UiStrId *bad_id, UiStrFault *fault)

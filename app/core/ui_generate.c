@@ -180,6 +180,16 @@ static UiGenerateEvent act(UiGenerate *state, UiButton button)
 	return UI_GENERATE_NONE;
 }
 
+static UiStrId selected_help(const UiGenerate *state)
+{
+	RandoSettingId id = (RandoSettingId)state->cursor;
+
+	assert(state->cursor != UI_GENERATE_ROW_ACTION);
+	if (state->cursor == UI_GENERATE_ROW_SPOILER)
+		return ui_spoiler_help(state->spoiler);
+	return ui_setting_help(id, rando_setting_get(&state->options, state->heart_beep, id));
+}
+
 void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 {
 	const UiStrTable *t = state->strings;
@@ -192,7 +202,7 @@ void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 	out->active_tab = 0;
 	out->title = ui_str(t, UI_STR_GENERATE_TITLE);
 	for (id = 0; id < RANDO_SETTING_COUNT; id++) {
-		UiRow row = {UI_ROW_SETTING, NULL, NULL, false};
+		UiRow row = {UI_ROW_SETTING, NULL, NULL, false, false};
 
 		row.label = ui_str(t, ui_setting_label((RandoSettingId)id));
 		row.disabled = holding_pair(state, id) != NULL;
@@ -202,8 +212,8 @@ void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 		ui_screen_add_row(out, row);
 	}
 	{
-		UiRow spoiler = {UI_ROW_SETTING, NULL, NULL, false};
-		UiRow action = {UI_ROW_ACTION, NULL, NULL, false};
+		UiRow spoiler = {UI_ROW_SETTING, NULL, NULL, false, false};
+		UiRow action = {UI_ROW_ACTION, NULL, NULL, false, false};
 
 		spoiler.label = ui_str(t, UI_STR_SETTING_SPOILER);
 		spoiler.value = ui_str(t, state->spoiler ? UI_STR_SPOILER_ON : UI_STR_SPOILER_OFF);
@@ -216,13 +226,18 @@ void ui_generate_screen(const UiGenerate *state, UiScreen *out)
 	out->scroll = state->scroll;
 	out->more_above = state->scroll > 0;
 	out->more_below = state->scroll + state->page < UI_GENERATE_ROW_COUNT;
-	out->footer = ui_str(t, UI_STR_GENERATE_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_LEFT_RIGHT, UI_STR_HINT_CHANGE, false));
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_Y, UI_STR_HINT_DEFAULT, false));
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_START, UI_STR_HINT_GENERATE, true));
 	if (state->message_kind != UI_MESSAGE_NONE) {
 		out->message_kind = state->message_kind;
 		out->message = state->message == UI_STR_GENERATE_UNSUPPORTED ? state->refusal : ui_str(t, state->message);
 	} else if (state->reason[0] != '\0') {
 		out->message_kind = UI_MESSAGE_INFO;
 		out->message = state->reason;
+	} else if (state->cursor != UI_GENERATE_ROW_ACTION) {
+		out->message_kind = UI_MESSAGE_HELP;
+		out->message = ui_str(t, selected_help(state));
 	}
 }
 

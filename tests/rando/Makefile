@@ -4,9 +4,9 @@ RANDO := ../../rando
 APP := ../../app
 BUILD := build
 
-UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell
+UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme
 # No fixture mode: test_prng already replays its vectors in `test`, the others have no fixture.
-LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell,$(UNIT_TESTS))
+LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ui_input test_ui_generate test_ui_genflow test_ui_history test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme,$(UNIT_TESTS))
 
 RANDO_SRC := $(wildcard $(RANDO)/src/*.c $(RANDO)/src/*/*.c)
 RANDO_HDR := $(wildcard $(RANDO)/include/*.h $(RANDO)/src/*.h)
@@ -19,13 +19,16 @@ HOST_LIB := $(BUILD)/librando_host.a
 INCLUDES := -I$(RANDO)/include -I$(RANDO)/host
 APP_CORE_SRC := $(wildcard $(APP)/core/*.c)
 APP_SD_SRC := $(wildcard $(APP)/sd/*.c)
-APP_SRC := $(APP_CORE_SRC) $(APP_SD_SRC)
-APP_HDR := $(wildcard $(APP)/core/*.h $(APP)/sd/*.h)
+APP_THEME_SRC := $(wildcard $(APP)/theme/*.c)
+APP_SRC := $(APP_CORE_SRC) $(APP_SD_SRC) $(APP_THEME_SRC)
+APP_HDR := $(wildcard $(APP)/core/*.h $(APP)/sd/*.h $(APP)/theme/*.h)
 APP_OBJ := $(patsubst $(APP)/%.c,$(BUILD)/app/%.o,$(APP_SRC))
 APP_LIB := $(BUILD)/librando_app.a
 # app/core sees only the library and itself, so an include of app/sd or rando/host fails to build.
 CORE_INCLUDES := -I$(RANDO)/include -I$(APP)/core
-TEST_INCLUDES := $(INCLUDES) -I$(APP)/core -I$(APP)/sd
+# app/theme sees only itself.
+THEME_INCLUDES := -I$(APP)/theme
+TEST_INCLUDES := $(INCLUDES) -I$(APP)/core -I$(APP)/sd -I$(APP)/theme
 SUPPORT_OBJ := $(BUILD)/support.o $(BUILD)/synthetic_base.o
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 GEN := $(BUILD)/rando_gen
@@ -60,17 +63,25 @@ LINT_OBJ := $(patsubst $(RANDO)/src/%.c,$(LINT_DIR)/%.o,$(RANDO_SRC))
 LINT_APP_DIR := $(BUILD)/lint-app
 LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC) $(APP_MAIN_SRC))
 
-# sdl-pc: the SDL layer, built and tested on the host's SDL 1.2 and SDL_ttf 2.0.
+# sdl-pc: the SDL layer, built and tested on the host's SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2.
 # The SDL flags are expanded by sdl-pc's rules only, so test never calls pkg-config.
-SDL_TESTS := test_sdl_keys test_sdl_view test_sdl_loop
+SDL_TESTS := test_sdl_keys test_sdl_loop test_sdl_classic test_sdl_render test_sdl_alttp
 SDL_SRC := $(wildcard $(APP)/sdl/*.c)
 SDL_HDR := $(wildcard $(APP)/sdl/*.h)
 SDL_DIR := $(BUILD)/sdl
 SDL_OBJ := $(patsubst $(APP)/sdl/%.c,$(SDL_DIR)/obj/%.o,$(SDL_SRC))
 SDL_BINS := $(addprefix $(SDL_DIR)/,$(SDL_TESTS))
 SDL_APP := $(SDL_DIR)/alttpr
-SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf)
-SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf)
+SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf SDL_image)
+SD_FIXTURE := $(BUILD)/sd_fixture
+GOLDENS_DIR ?= sdl/goldens
+# The theme whose 13 states sdl-pc draws, after the classic comparison.
+DRAW_THEME := ../../themes/alttp
+MOCKUP_THEME = ../../themes/alttp
+MOCKUP_OUT := $(BUILD)/mockups
+COMPARE_THEME ?= ../../themes/alttp
+ART_THEME ?= ../../themes/alttp
+SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf SDL_image)
 
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
 # flags (docs/toolchain.md), run under qemu-arm by the same e2e driver.
@@ -84,19 +95,20 @@ ARM_SDL_DIR := $(ARM_DIR)/sdl
 ARM_SDL_APP := $(ARM_SDL_DIR)/alttpr
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
-# package: sdl-arm's binary stripped, checked and zipped with app/package/ and data/.
+# package: sdl-arm's binary stripped, checked and zipped with app/package/, data/'s base.bps and PKG_THEME as themes/default.
 PKG_DIR := $(BUILD)/package
 PKG_BIN := $(PKG_DIR)/alttpr
 PKG_ZIP := $(PKG_DIR)/ALttPR.zip
 PKG_BPS := ../../data/base.bps
+PKG_THEME := ../../themes/alttp
 
-.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
+.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-goldens mockups theme-compare theme-art theme-art-write sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
 
 test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@./$(SMOKE) ./$(UI_CLI)
 	@./selftest.sh discovery
-	@./no_sdl.sh --exempt $(SDL_MAIN) $(APP)/core $(APP)/sd $(APP)/main
+	@./no_sdl.sh --exempt $(SDL_MAIN) $(APP)/core $(APP)/sd $(APP)/theme $(APP)/main
 	@python3 -I ./no_literals.py $(APP)/core
 	@python3 -I ./no_literals.py --no-table $(APP)/sdl
 	@python3 -I ./test_package.py -q
@@ -108,13 +120,41 @@ lint: $(LINT_OBJ) $(LINT_APP_OBJ)
 ui-cli: $(UI_CLI)
 
 sdl-pc:
-	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf || { echo "setup: SDL 1.2 and SDL_ttf 2.0 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev)" >&2; exit 1; }
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf SDL_image || { echo "setup: SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev)" >&2; exit 1; }
 	@$(MAKE) --no-print-directory sdl-pc-build
 
-sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP)
+sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP) $(SD_FIXTURE)
 	@set -e; for t in $(SDL_BINS); do SDL_VIDEODRIVER=dummy ./$$t; done
-	@./sdl/smoke_sdl.sh ./$(SDL_APP) ../../data/DejaVuSansMono.ttf
-	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests and the smoke test ran under the dummy video driver"
+	@./sdl/smoke_sdl.sh ./$(SDL_APP) ../../themes/classic
+	@./sdl/goldens.sh ./$(SDL_APP) ../../themes/classic ./$(SD_FIXTURE) --compare $(GOLDENS_DIR)
+	@./sdl/goldens.sh ./$(SDL_APP) $(DRAW_THEME) ./$(SD_FIXTURE) --draw $(SDL_DIR)/theme-states/$(notdir $(DRAW_THEME))
+	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests, the smoke test, the golden comparison and the draw of every state with $(notdir $(DRAW_THEME)) ran under the dummy video driver"
+
+# mockups: outside the net; needs sdl-pc's packages, node and Playwright's Chromium.
+mockups:
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf SDL_image || { echo "setup: SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev)" >&2; exit 1; }
+	@$(MAKE) --no-print-directory $(SDL_APP) $(SD_FIXTURE) $(UI_CLI)
+	@./sdl/mockups.sh ./$(SDL_APP) ./$(UI_CLI) ./$(SD_FIXTURE) $(MOCKUP_THEME) $(MOCKUP_OUT)
+
+# theme-compare: outside the net; needs sdl-pc's packages, node and Playwright's Chromium.
+theme-compare:
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf SDL_image || { echo "setup: SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev)" >&2; exit 1; }
+	@$(MAKE) --no-print-directory $(SDL_APP) $(SD_FIXTURE)
+	@./sdl/theme_compare.sh ./$(SDL_APP) ./$(SD_FIXTURE) $(COMPARE_THEME) $(BUILD)/theme-compare
+
+# theme-art, theme-art-write: outside the net; need node and Playwright's Chromium.
+theme-art:
+	@./sdl/theme_art.sh --check $(ART_THEME) $(BUILD)/theme-art
+
+theme-art-write:
+	@./sdl/theme_art.sh --write $(ART_THEME) $(BUILD)/theme-art
+
+# sdl-goldens: writes the goldens once, refused if GOLDENS_DIR already holds any.
+sdl-goldens:
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf SDL_image || { echo "setup: SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev)" >&2; exit 1; }
+	@$(MAKE) --no-print-directory $(SDL_APP) $(SD_FIXTURE)
+	@echo "sdl-goldens: writing $(GOLDENS_DIR); an existing set is refused, never regenerated"
+	@./sdl/goldens.sh ./$(SDL_APP) ../../themes/classic ./$(SD_FIXTURE) --write $(GOLDENS_DIR)
 
 logic: $(LOGIC_BINS)
 	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
@@ -150,19 +190,19 @@ e2e-arm:
 sdl: sdl-pc sdl-arm
 
 # sdl-arm: the SDL layer and main compiled and linked, dynamically, against the
-# image's sysroot SDL 1.2 / SDL_ttf 2.0; run nowhere. The image's sdl-config and
+# image's sysroot SDL 1.2 / SDL_ttf 2.0 / SDL_image 1.2; run nowhere. The image's sdl-config and
 # pkg-config are the x86 host's, so no SDL flag is asked of them.
 sdl-arm:
 	@rm -rf $(ARM_SDL_DIR) && mkdir -p $(ARM_SDL_DIR)/obj
 	@echo "sdl-arm: building $(ARM_SDL_APP) with Onion's toolchain"
 	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS)"; o=$(ARM_SDL_DIR)/obj; \
-		for s in $(SDL_SRC); do "$$cc" $$f -pedantic-errors $(CORE_INCLUDES) -c -o $$o/sdl_$$(basename $$s .c).o $$s; done; \
+		for s in $(SDL_SRC); do "$$cc" $$f -pedantic-errors $(CORE_INCLUDES) $(THEME_INCLUDES) -c -o $$o/sdl_$$(basename $$s .c).o $$s; done; \
 		"$$cc" $$f -pedantic-errors $(TEST_INCLUDES) -I$(APP)/sdl -c -o $$o/main.o $(SDL_MAIN); \
 		for s in $(APP_SRC) $(HOST_SRC) $(RANDO_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f $(TEST_INCLUDES) -c -o $$o/\$$(basename {} .c).o {}"; \
-		"$$cc" $$f -o $(ARM_SDL_APP) $$o/*.o -lSDL -lSDL_ttf'
+		"$$cc" $$f -o $(ARM_SDL_APP) $$o/*.o -lSDL -lSDL_ttf -lSDL_image'
 	@file $(ARM_SDL_APP) | grep 'ELF 32-bit LSB executable, ARM, EABI5' | grep -q 'dynamically linked' || { file $(ARM_SDL_APP); echo "sdl-arm: $(ARM_SDL_APP) is not a dynamically linked 32-bit ARM EABI executable" >&2; exit 1; }
 	@file $(ARM_SDL_APP)
-	@echo "sdl-arm: the SDL layer and main compiled with -pedantic-errors and linked against the toolchain's SDL 1.2 and SDL_ttf"
+	@echo "sdl-arm: the SDL layer and main compiled with -pedantic-errors and linked against the toolchain's SDL 1.2, SDL_ttf and SDL_image"
 
 # The checks print the offending file/readelf line on a miss.
 package: sdl-arm $(BUILD)/test_patch_header
@@ -176,11 +216,11 @@ package: sdl-arm $(BUILD)/test_patch_header
 	@h="$$(readelf -h $(PKG_BIN) | grep 'Flags:')"; \
 		case "$$h" in *'hard-float ABI'*) ;; *) echo "$$h"; echo "package: $(PKG_BIN) is not hard-float ABI" >&2; exit 1 ;; esac
 	@d="$$(readelf -d $(PKG_BIN) | grep NEEDED)"; \
-		for l in libSDL-1.2.so.0 libSDL_ttf-2.0.so.0; do \
+		for l in libSDL-1.2.so.0 libSDL_ttf-2.0.so.0 libSDL_image-1.2.so.0; do \
 			case "$$d" in *"[$$l]"*) ;; *) echo "$$d"; echo "package: $(PKG_BIN) does not need $$l" >&2; exit 1 ;; esac; \
 		done
 	@./$(BUILD)/test_patch_header --file $(PKG_BPS)
-	@python3 -I ../../app/package/build_zip.py $(PKG_BIN) ../../app/package ../../data $(PKG_ZIP)
+	@python3 -I ../../app/package/build_zip.py $(PKG_BIN) ../../app/package ../../data $(PKG_THEME) $(PKG_ZIP)
 	@file $(PKG_BIN)
 	@readelf -h $(PKG_BIN) | grep 'Flags:'
 	@echo "package: tests/rando/$(PKG_ZIP), $$(wc -c < $(PKG_ZIP)) bytes"
@@ -227,6 +267,10 @@ $(BUILD)/app/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(TEST_INCLUDES) -c -o $@ $<
 
+$(BUILD)/app/theme/%.o: $(APP)/theme/%.c $(APP)/theme/theme.h
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(THEME_INCLUDES) -c -o $@ $<
+
 $(APP_LIB): $(APP_OBJ)
 	@rm -f $@
 	ar rcs $@ $^
@@ -246,9 +290,12 @@ $(UI_CLI): $(APP)/main/ui_cli.c $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR)
 $(SMOKE): unit/smoke_ui_cli.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
 
+$(SD_FIXTURE): sdl/sd_fixture.c unit/synthetic_base.h $(SUPPORT_OBJ) $(RANDO_LIB) $(APP_HDR) $(RANDO_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -Iunit -o $@ $< $(SUPPORT_OBJ) $(RANDO_LIB)
+
 $(SDL_DIR)/obj/%.o: $(APP)/sdl/%.c $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) $(SDL_CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) $(THEME_INCLUDES) $(SDL_CFLAGS) -c -o $@ $<
 
 $(SDL_DIR)/test_%: sdl/test_%.c unit/support.h $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
@@ -269,6 +316,10 @@ $(LINT_APP_DIR)/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
 $(LINT_APP_DIR)/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -c -o $@ $<
+
+$(LINT_APP_DIR)/theme/%.o: $(APP)/theme/%.c $(APP)/theme/theme.h
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors $(THEME_INCLUDES) -c -o $@ $<
 
 $(LINT_APP_DIR)/main/%.o: $(APP)/main/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)

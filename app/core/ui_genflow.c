@@ -72,11 +72,12 @@ UiGenFlowEvent ui_genflow_key(UiGenFlow *flow, UiButton button)
 	}
 }
 
-static void add_text(UiScreen *out, const char *text)
+static void add_text(UiScreen *out, const char *text, bool emphasis)
 {
-	UiRow row = {UI_ROW_TEXT, NULL, NULL, false};
+	UiRow row = {UI_ROW_TEXT, NULL, NULL, false, false};
 
 	row.label = text;
+	row.emphasis = emphasis;
 	ui_screen_add_row(out, row);
 }
 
@@ -91,24 +92,26 @@ void ui_genflow_screen(const UiGenFlow *flow, UiScreen *out)
 	out->tabs[1] = ui_str(t, UI_STR_TAB_HISTORY);
 	out->tab_count = 2;
 	out->active_tab = 0;
+	out->body_kind = UI_BODY_NOTICE;
 	if (flow->phase == UI_GENFLOW_PHASE_GENERATING) {
 		out->title = ui_str(t, UI_STR_GENFLOW_GENERATING_TITLE);
-		add_text(out, ui_str(t, UI_STR_GENFLOW_WAIT));
-		add_text(out, ui_str(t, UI_STR_GENFLOW_FEW_SECONDS));
+		add_text(out, ui_str(t, UI_STR_GENFLOW_WAIT), false);
+		add_text(out, ui_str(t, UI_STR_GENFLOW_FEW_SECONDS), false);
 		return;
 	}
-	out->footer = ui_str(t, UI_STR_GENFLOW_FOOTER);
+	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_A, UI_STR_HINT_BACK, false));
 	if (o->ok) {
 		out->title = ui_str(t, UI_STR_GENFLOW_READY_TITLE);
-		add_text(out, ui_str(t, UI_STR_GENFLOW_SAVED_IN));
-		add_text(out, o->rom);
-		add_text(out, ui_str(t, o->spoiler ? UI_STR_GENFLOW_SPOILER_KEPT : UI_STR_GENFLOW_SPOILER_NOT_KEPT));
+		add_text(out, ui_str(t, UI_STR_GENFLOW_SAVED_IN), false);
+		add_text(out, o->rom, true);
+		add_text(out, ui_str(t, o->spoiler ? UI_STR_GENFLOW_SPOILER_KEPT : UI_STR_GENFLOW_SPOILER_NOT_KEPT), false);
 		out->message_kind = UI_MESSAGE_INFO;
 		out->message = ui_str(t, o->list_stale ? UI_STR_GENFLOW_REFRESH : UI_STR_GENFLOW_PLAY);
 		return;
 	}
 	out->title = ui_str(t, UI_STR_GENFLOW_FAILED_TITLE);
-	add_text(out, ui_str(t, o->advice));
+	out->title_tone = UI_TITLE_ALERT;
+	add_text(out, ui_str(t, o->advice), false);
 	out->message_kind = UI_MESSAGE_ERROR;
 	out->message = flow->status;
 }

@@ -62,7 +62,11 @@ when you press Generate, and `App/ALttPR/alttpr.log` at each launch.
 
 Unzip a newer `ALttPR.zip` at the root of the card again, over the old
 `App/ALttPR/`. The zip holds no `base.sfc`, `history/` or `settings.json`,
-so your ROM, your History and your last settings stay.
+so your ROM, your History and your last settings stay. Files of the
+previous theme (for example `DejaVuSansMono.ttf` and `background.png`) may
+stay in `App/ALttPR/themes/default/`: the new `theme.ini` replaces the old
+one and names only its own files, so the old ones are unused and may be
+deleted.
 
 ### Remove
 
@@ -306,27 +310,31 @@ need docker and `qemu-user`, and are not part of `make check`.
 
 `make package` builds the Miyoo release: it runs `make sdl-arm`, strips the
 binary with Onion's toolchain, checks it with `file` and `readelf` (32-bit
-ARM EABI5, hard-float, dynamically linked against `libSDL-1.2.so.0` and
-`libSDL_ttf-2.0.so.0`), re-checks `data/base.bps`, and writes
+ARM EABI5, hard-float, dynamically linked against `libSDL-1.2.so.0`,
+`libSDL_ttf-2.0.so.0` and `libSDL_image-1.2.so.0`), re-checks `data/base.bps`, and writes
 `tests/rando/build/package/ALttPR.zip`; the same commit gives the same zip
 bytes. It needs docker and is not part of `make check`. The zip's
 `App/ALttPR/` holds `alttpr`, `launch.sh`, `config.json` and `icon.png`
-(from `app/package/`), and `base.bps`, `DejaVuSansMono.ttf` and
-`DejaVuSansMono-LICENSE.txt` (from `data/`). How `data/base.bps` was built
+(from `app/package/`), `base.bps` (from `data/`), and `themes/default/`, a
+copy of every file of `themes/alttp/` (its `theme.ini`, `frame.png`, the
+thirteen sprites, Press Start 2P and its licence): the app reads its look
+from there. How `data/base.bps` was built
 is in step 0.1's note of `docs/plan-1.md`.
 
 CI (`.github/workflows/check.yml`) runs only by hand (**Run workflow**): its
-job `check` runs `make -k check`, its job `sdl` runs `make sdl` and uploads
-the PC binary as the artifact `alttpr-pc`, and its job `package` runs
+job `check` runs `make -k check`, its job `sdl` runs `make sdl` on
+`ubuntu-24.04` (the SDL goldens are pinned to its SDL_ttf and FreeType) and
+uploads the PC binary with `themes/default/` (alttp) beside it as the
+artifact `alttpr-pc`, and its job `package` runs
 `make package` then `make e2e-arm` and uploads the zip as the artifact
 `alttpr-miyoo`.
 
-To try the app on a PC before copying it (needs `libsdl1.2-dev` and
-`libsdl-ttf2.0-dev`):
+To try the app on a PC before copying it (needs `libsdl1.2-dev`,
+`libsdl-ttf2.0-dev` and `libsdl-image1.2-dev`):
 
 ```bash
 make sdl-pc
-tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf
+tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
 ```
 
 `tmp/sd` stands for the SD card. To generate there, put your ROM at
@@ -340,6 +348,126 @@ tests/rando/build/sdl/alttpr --sd tmp/sd --font data/DejaVuSansMono.ttf
 | L1 / R1 | E / T |
 | L2 / R2 | Tab / Backspace (also Page Up / Page Down) |
 | Start / Select / Menu | Enter / Right Ctrl / Esc |
+
+To capture a screen without a window, play keys into the app headless and
+save the last frame, as a picture and as text:
+
+```bash
+SDL_VIDEODRIVER=dummy tests/rando/build/sdl/alttpr --sd tmp/sd \
+  --theme themes/alttp --shot tmp/shot.bmp --shot-text tmp/shot.txt \
+  --seed 1 --date 2026-11-01T14:03:27 down*3 r1
+```
+
+The keys come after the options (or after `--`), with `ui_cli`'s names
+(`up down left right a b x y l1 r1 l2 r2 select start menu`, `<key>*<n>`
+repeats, `-` reads them from standard input); the run ends after the last
+key, or earlier at `--frames <n>` or on `menu`. `--seed` and `--date` fix
+the seed and the date, `--source-md5` and `--base-md5` replace the base
+ROM's expected digests. A bad option, key or value exits with status 2 and
+the usage.
+
+The app's whole look comes from a theme folder. `--theme <dir>` reads
+`<dir>/theme.ini` (for example `themes/alttp`) and draws every frame from
+it: its colours, background image, sprites and fonts, all read from
+`<dir>`. Without `--theme`, the app reads `themes/default/` in the folder
+that holds the `alttpr` binary, wherever it is started from; on the PC,
+pass `--theme themes/alttp`. The page is the number of list rows (the list
+body's height over its row height) and the wrap width the list's label x to
+its right edge, in the list font's cells (or its `M` advance when it has no
+cell). There is no `--font`: it is an unknown option (status 2). A missing
+or broken `theme.ini` (the default one included), a missing or unreadable image or font, a font that fits
+no size in its cell, a background that is not 640×480, or a page outside
+1..36 or a width outside 20..94 prints one `alttpr: ` line naming the file
+(and the theme key) and exits with status 1, before anything touches the SD
+card; so does a screen with more tabs than the theme has tab slots.
+
+Two themes are in `themes/`: `alttp`, the look the zip ships, and
+`classic`, the 40×15 grid look of phase 1, kept as the SDL tests' theme
+(the goldens are drawn with it). `alttp` is the mockups' (`design/mockups/`) look at 12 px in Press Start
+2P: their zones, rows, help line and footer band, drawn over `frame.png`
+(the notched white and blue frame, the gradient panel, the tab separator
+and the three hearts), with sprites for the tab and row triforces, the
+value arrows, the scroll markers and the footer's d-pad, A, B, X, Y and
+START buttons. The fourteen PNGs are made from the mockups' own shapes:
+`make theme-art-write` (outside the net; needs node and Playwright's
+Chromium) renders the shapes listed in `tests/rando/sdl/theme_art.txt` in
+headless Chromium twice, refuses to write unless both runs are
+byte-identical, and writes them into `themes/alttp/`; `make theme-art`
+renders them again and checks that the committed PNGs have the same pixels
+(one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch). Run
+`make theme-art-write` after a mockup's frame or sprite changes, and commit
+the PNGs with it. The art is pinned to Playwright 1.63.0's Chromium; another
+Chromium may report `DIFFERENT`. Look at the theme with:
+
+```bash
+tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
+```
+
+The shipped theme lives in `themes/alttp/` in the repository and is shipped
+as `App/ALttPR/themes/default/` on the card. Changing the look is editing
+`themes/alttp/theme.ini` (or its PNGs, through `make theme-art-write`) and
+relaunching the app, with no rebuild; compare it with the mockups with
+`make theme-compare` (below).
+
+`make sdl-pc` also draws the 13 states of `tests/rando/sdl/golden_states.txt`
+with it, into `tests/rando/build/sdl/theme-states/alttp/` (a `.bmp` and a
+`.txt` per state); they are not compared with anything.
+
+The mockups load their font from `data/PressStart2P.ttf`, with ligatures
+off, and are paired with the app states that show them in
+`tests/rando/sdl/mockup_states.txt` (fixture, frame cap, flags, keys, page).
+`make mockups` (outside the net; needs `make sdl-pc`'s packages, node and
+Playwright's Chromium) renders them offline, plays every pairing into the
+SDL app and `ui_cli`, and compares each mockup's text with the app's,
+help line included (mockup 00's help line must equal the app's), writing
+`tests/rando/build/mockups/`.
+
+`make theme-compare` (outside the net, same needs as `make mockups`;
+`THEME=themes/classic` compares another theme, default `themes/alttp`)
+renders the mockups the same way, captures the app in each paired state
+with the theme, and writes one 1936×480 image per mockup to
+`tests/rando/build/theme-compare/<mockup>.png`: three panels, left to right
+**mockup | app | diff**, with 8 px grey bars between them. The diff panel
+shows the mockup dimmed to grey where the two pixels are equal, and magenta
+where they differ, brighter the larger the difference. Each mockup gets a
+score, printed and kept in `scores.txt` beside the images: the mean
+absolute difference over every pixel and RGB channel, as a percentage of
+full scale (0.000 identical, 100.000 black against white everywhere). There
+is no threshold: SDL_ttf's text never matches the browser's to the pixel,
+so a score only says whether a tuning pass got closer. The target fails
+only when it cannot produce the images, and every run first checks its
+image code on planted images and checks that each mockup scored against
+itself is exactly 0. Mockup 00 is drawn at 16 px, while its pairing plays at
+the theme's page (one more row, smaller text), so its score is high by
+construction; do not tune the theme to it.
+
+Each run also measures every mockup, in `offsets.txt` beside the images
+(one line per mockup text) and one summary line per mockup:
+`theme-compare: <mockup>: outside <n> px, <k> texts, worst |dx| <a> |dy|
+<b>, <m> beyond 2 px, <z> not found`. A text's window is its mockup box
+grown by 4 px; its offset is how far the app's ink of the text's colour
+(each channel within 48) sits from the mockup's in that window, and
+`not found` means the app has no such ink there. `outside` counts the
+pixels that differ in no text window: frame, bands, sprites and rules. The
+three criteria a theme is tuned to are: same zones (`outside` 0), same
+text positions (every |dx| and |dy| at most 2) and same colours (no text
+not found). These measures are informational, like the score.
+
+A theme may hold an optional `[help]` section (the help line's font, x,
+baseline, right edge and colour). The help line says what the selected
+setting's current value does; any message (an error, or a notice such as a
+row's "Not supported with" reason) takes its place, and Generate Seed, History
+and the notice screens have none. Without `[help]` the theme draws no help
+line, as `classic` draws none; the text renderer still shows it on the
+message line, tagged `h`.
+
+The fonts' sources are in `data/`, each beside its licence: DejaVu Sans Mono
+(`DejaVuSansMono.ttf`) and Press Start 2P (`PressStart2P.ttf`, SIL Open Font
+License 1.1, `PressStart2P-LICENSE.txt`), the unmodified
+`ofl/pressstart2p/PressStart2P-Regular.ttf` and `OFL.txt` of
+[google/fonts](https://github.com/google/fonts) at commit
+`24ddc1f324cac5d9f5aedca126d298f56e3f1640` (sha256 `034c77f1…e017d` and
+`705960c3…944b0`). Each theme folder holds byte copies of the fonts it uses.
 
 ## Working with Claude
 

@@ -12,6 +12,6 @@
  | Item Pool                     Normal   |
  | Item Functionality            Normal   |
 >| Hints                           < On >v|
- |                                        |
+h| Telepathic tiles give hints about whe~ |
 _| </> Change  Y Default  START Generate  |
  +----------------------------------------+

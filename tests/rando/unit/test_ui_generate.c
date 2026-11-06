@@ -92,6 +92,41 @@ static void test_map(void)
 	CHECK(strcmp(ui_str(NULL, ui_setting_value(RANDO_SETTING_HEART_BEEP, RANDO_HEART_BEEP_HALF)), "Half Speed") == 0);
 }
 
+static bool in_help_block(UiStrId id)
+{
+	return id >= UI_STR_HELP_FIRST && id <= UI_STR_HELP_LAST;
+}
+
+/* Every value has its own help id, and every help id belongs to one value. */
+static void test_help_map(void)
+{
+	UiStrId seen[UI_STR_HELP_LAST - UI_STR_HELP_FIRST + 1];
+	int n = 0, id, v, i;
+
+	for (id = 0; id <= RANDO_SETTING_COUNT; id++) {
+		int count = id == RANDO_SETTING_COUNT ? 2 : rando_setting_value_count((RandoSettingId)id);
+
+		for (v = 0; v < count; v++) {
+			UiStrId help = id == RANDO_SETTING_COUNT ? ui_spoiler_help(v == 1)
+								 : ui_setting_help((RandoSettingId)id, v);
+
+			if (!in_help_block(help))
+				test_fail(TEST, "setting %d value %d: help id %d outside the help block", id, v, help);
+			for (i = 0; i < n; i++)
+				if (seen[i] == help)
+					test_fail(TEST, "setting %d value %d shares help id %d", id, v, help);
+			CHECK(n < (int)(sizeof seen / sizeof seen[0]));
+			seen[n++] = help;
+		}
+	}
+	CHECK(n == UI_STR_HELP_LAST - UI_STR_HELP_FIRST + 1);
+	CHECK(ui_spoiler_help(false) == UI_STR_HELP_SPOILER_OFF && ui_spoiler_help(true) == UI_STR_HELP_SPOILER_ON);
+	CHECK(strcmp(ui_str(NULL, ui_setting_help(RANDO_SETTING_GLITCHES, 0)),
+		     "No glitches required. Standard logic only.") == 0);
+	CHECK(strcmp(ui_str(NULL, ui_setting_help(RANDO_SETTING_GOAL, RANDO_OPTION_GOAL_TRIFORCE_HUNT)),
+		     "Find 20 of the 30 Triforce Pieces, then see Murahdahla.") == 0);
+}
+
 /* The cursor's grid line, from the text form: its tag is '>' or 'X'. */
 static const char *cursor_line(char line[UI_GRID_COLS_MAX + 1])
 {
@@ -265,6 +300,81 @@ static const RandoSettingPair retro_pedestal[] = {
 	{RANDO_SETTING_STATE, RANDO_OPTION_STATE_RETRO, RANDO_SETTING_GOAL, RANDO_OPTION_GOAL_PEDESTAL},
 };
 
+static void check_message(UiMessageKind kind, const char *expected, int line)
+{
+	UiScreen screen;
+
+	ui_generate_screen(&gen, &screen);
+	if (screen.message_kind != kind ||
+	    (kind == UI_MESSAGE_NONE ? screen.message != NULL : strcmp(screen.message, expected) != 0))
+		test_fail(TEST, "line %d: message %d \"%s\", expected %d \"%s\"", line, (int)screen.message_kind,
+			  screen.message ? screen.message : "(null)", (int)kind, expected ? expected : "(null)");
+}
+
+static void check_help(RandoSettingId id, int value, int line)
+{
+	check_message(UI_MESSAGE_HELP, ui_str(NULL, ui_setting_help(id, value)), line);
+}
+
+static void init_with_pair(bool goal_pedestal);
+
+/* The help follows the cursor and the value; a message or a reason replaces it. */
+static void test_help_line(void)
+{
+	init_defaults();
+	check_message(UI_MESSAGE_HELP, "No glitches required. Standard logic only.", __LINE__);
+	keys(UI_BUTTON_RIGHT, 1);
+	check_help(RANDO_SETTING_GLITCHES, 1, __LINE__);
+	keys(UI_BUTTON_Y, 1);
+	check_help(RANDO_SETTING_GLITCHES, 0, __LINE__);
+	keys(UI_BUTTON_LEFT, 1);
+	check_help(RANDO_SETTING_GLITCHES, rando_setting_value_count(RANDO_SETTING_GLITCHES) - 1, __LINE__);
+	keys(UI_BUTTON_DOWN, 1);
+	check_help(RANDO_SETTING_ITEM_PLACEMENT, rando_setting_default(RANDO_SETTING_ITEM_PLACEMENT), __LINE__);
+	keys(UI_BUTTON_R2, 1);
+	check_help((RandoSettingId)(1 + gen.page), rando_setting_default((RandoSettingId)(1 + gen.page)), __LINE__);
+	keys(UI_BUTTON_L2, 1);
+	check_help(RANDO_SETTING_ITEM_PLACEMENT, rando_setting_default(RANDO_SETTING_ITEM_PLACEMENT), __LINE__);
+
+	init_defaults();
+	keys(UI_BUTTON_UP, 2);
+	check_message(UI_MESSAGE_HELP, ui_str(NULL, UI_STR_HELP_SPOILER_OFF), __LINE__);
+	keys(UI_BUTTON_A, 1);
+	check_message(UI_MESSAGE_HELP, ui_str(NULL, UI_STR_HELP_SPOILER_ON), __LINE__);
+	keys(UI_BUTTON_DOWN, 1);
+	check_message(UI_MESSAGE_NONE, NULL, __LINE__);
+
+	init_with_pair(true);
+	keys(UI_BUTTON_DOWN, RANDO_SETTING_GOAL);
+	check_message(UI_MESSAGE_INFO, "Not supported with World State", __LINE__);
+	keys(UI_BUTTON_UP, 1);
+	check_help(RANDO_SETTING_ACCESSIBILITY, rando_setting_default(RANDO_SETTING_ACCESSIBILITY), __LINE__);
+	init_with_pair(true);
+	keys(UI_BUTTON_UP, 1);
+	check_message(UI_MESSAGE_INFO, "Not supported with Goal", __LINE__);
+	CHECK(key(UI_BUTTON_START) == UI_GENERATE_NONE);
+	check_message(UI_MESSAGE_ERROR, "Not supported with Goal", __LINE__);
+	keys(UI_BUTTON_UP, 1);
+	check_message(UI_MESSAGE_HELP, ui_str(NULL, UI_STR_HELP_SPOILER_OFF), __LINE__);
+	keys(UI_BUTTON_DOWN, 2);
+	CHECK(key(UI_BUTTON_START) == UI_GENERATE_NONE);
+	check_message(UI_MESSAGE_ERROR, "Not supported with Goal", __LINE__);
+	keys(UI_BUTTON_RIGHT, 1);
+	check_help(RANDO_SETTING_GLITCHES, 1, __LINE__);
+}
+
+static void test_help_after_unreadable_settings(void)
+{
+	UiGenerateInit init;
+
+	ui_generate_init_defaults(&init, ui_str_english(), UI_GRID_DEFAULT_LINES - 4);
+	init.settings_unreadable = true;
+	ui_generate_init(&gen, &init);
+	check_message(UI_MESSAGE_INFO, "Saved settings unreadable: defaults", __LINE__);
+	keys(UI_BUTTON_X, 1);
+	check_help(RANDO_SETTING_GLITCHES, 0, __LINE__);
+}
+
 static void init_with_pair(bool goal_pedestal)
 {
 	UiGenerateInit init;
@@ -320,6 +430,64 @@ static void test_greying(void)
 	keys(UI_BUTTON_DOWN, RANDO_SETTING_STATE);
 	test_snapshot(TEST, SNAPSHOTS "generate_pair_not_holding.txt", render());
 	CHECK(key(UI_BUTTON_START) == UI_GENERATE_GENERATE);
+}
+
+/* A screen's style fields, as "alert notice 0": tone, body, then the emphasised rows' indexes. */
+static const char *style_of(const UiScreen *screen)
+{
+	static char out[128];
+	size_t len;
+	int i;
+
+	len = (size_t)snprintf(out, sizeof out, "%s %s", screen->title_tone == UI_TITLE_ALERT ? "alert" : "normal",
+			       screen->body_kind == UI_BODY_NOTICE ? "notice" : "list");
+	for (i = 0; i < screen->row_count; i++)
+		if (screen->rows[i].emphasis)
+			len += (size_t)snprintf(out + len, sizeof out - len, " %d", i);
+	return out;
+}
+
+static void check_style(const UiScreen *screen, const char *expected)
+{
+	const char *got = style_of(screen);
+
+	if (strcmp(got, expected) != 0)
+		test_fail(TEST, "style \"%s\", expected \"%s\"", got, expected);
+}
+
+static void check_hint(const UiScreen *s, int i, UiHintButton button, UiStrId key, UiStrId label, bool primary)
+{
+	const UiStrTable *en = ui_str_english();
+	const UiHint *h = &s->hints[i];
+
+	CHECK(i < s->hint_count);
+	if (h->button != button || strcmp(h->key, ui_str(en, key)) != 0 || strcmp(h->label, ui_str(en, label)) != 0 ||
+	    h->primary != primary)
+		test_fail(TEST, "hint %d: %d \"%s\" \"%s\" %d", i, (int)h->button, h->key, h->label, (int)h->primary);
+}
+
+static void check_generate_hints(void)
+{
+	UiScreen screen;
+
+	ui_generate_screen(&gen, &screen);
+	CHECK(screen.hint_count == 3);
+	check_hint(&screen, 0, UI_HINT_LEFT_RIGHT, UI_STR_KEY_LEFT_RIGHT, UI_STR_HINT_CHANGE, false);
+	check_hint(&screen, 1, UI_HINT_Y, UI_STR_KEY_Y, UI_STR_HINT_DEFAULT, false);
+	check_hint(&screen, 2, UI_HINT_START, UI_STR_KEY_START, UI_STR_HINT_GENERATE, true);
+	check_style(&screen, "normal list");
+}
+
+/* START stays primary while the action is greyed. */
+static void test_hints(void)
+{
+	init_defaults();
+	check_generate_hints();
+	init_with_pair(true);
+	keys(UI_BUTTON_UP, 1);
+	check_generate_hints();
+	CHECK(key(UI_BUTTON_START) == UI_GENERATE_NONE);
+	check_generate_hints();
 }
 
 static char dir[64], path[128];
@@ -402,6 +570,7 @@ int main(int argc, char **argv)
 {
 	test_fixtures_mode(TEST, argc, argv);
 	test_map();
+	test_help_map();
 	test_events();
 	test_settings_read_back();
 	test_init_from_settings();
@@ -409,6 +578,9 @@ int main(int argc, char **argv)
 	test_snapshots();
 	test_library_list_by_default();
 	test_greying();
+	test_help_line();
+	test_help_after_unreadable_settings();
+	test_hints();
 	test_restore();
 	printf("%s: passed\n", TEST);
 	return 0;

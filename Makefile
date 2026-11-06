@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-arm package patch-header measure-compare check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -14,9 +14,14 @@ help:
 	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make unit-arm       every unit test on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
-	@echo "make sdl-pc         the SDL PC build, its SDL tests and headless smoke test (needs libsdl1.2-dev, libsdl-ttf2.0-dev)"
+	@echo "make sdl-pc         the SDL PC build, its SDL tests, headless smoke test and golden comparison (needs libsdl1.2-dev, libsdl-ttf2.0-dev, libsdl-image1.2-dev)"
+	@echo "make sdl-goldens    writes the SDL goldens once into tests/rando/sdl/goldens/, refused if any exist, kept out of check"
+	@echo "make mockups        the mockups of design/mockups/ checked: rendered offline by Chromium with the local font, kept out of check (needs sdl-pc's packages, node, Playwright's Chromium)"
+	@echo "make theme-compare  the mockups beside the app's captures with a diff, a score and the measures (offsets.txt, outside px, text offsets) per mockup, into tests/rando/build/theme-compare/ (THEME=<dir>, default themes/alttp; needs Playwright's Chromium and sdl-pc's packages; no threshold)"
+	@echo "make theme-art      the art of themes/alttp re-rendered from design/mockups/ by Chromium and compared pixel by pixel (THEME=<dir>; needs node and Playwright's Chromium)"
+	@echo "make theme-art-write the art rendered twice, refused unless byte-identical, written into themes/alttp (THEME=<dir>; needs node and Playwright's Chromium)"
 	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
-	@echo "make package        the release zip tests/rando/build/package/ALttPR.zip: sdl-arm stripped, ABI-checked, with app/package/ and data/ (needs docker)"
+	@echo "make package        the release zip tests/rando/build/package/ALttPR.zip: sdl-arm stripped, ABI-checked, with app/package/, data/base.bps and themes/alttp as themes/default (needs docker)"
 	@echo "make patch-header   the base patch checked like make test checks data/base.bps (BPS=<file>, default data/base.bps), kept out of check"
 	@echo "make measure-compare the generator timed against a worktree of 40314c3, interleaved, +-10% verdicts, kept out of check"
 	@echo "make check          the net: everything that must be green before a push"
@@ -62,7 +67,7 @@ e2e-arm:
 unit-arm:
 	$(MAKE) -C tests/rando unit-arm
 
-# Outside the net: sdl-pc needs the SDL 1.2 and SDL_ttf 2.0 packages, sdl-arm docker.
+# Outside the net: sdl-pc needs the SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 packages, sdl-arm docker.
 sdl:
 	$(MAKE) -C tests/rando sdl
 
@@ -71,6 +76,26 @@ sdl-pc:
 
 sdl-arm:
 	$(MAKE) -C tests/rando sdl-arm
+
+# Outside the net, run once: refused when the goldens folder already holds goldens.
+sdl-goldens:
+	$(MAKE) -C tests/rando sdl-goldens
+
+# Outside the net: needs sdl-pc's packages, node and Playwright's Chromium.
+mockups:
+	$(MAKE) -C tests/rando mockups
+
+# Outside the net: needs sdl-pc's packages, node and Playwright's Chromium. THEME is relative to this directory.
+THEME ?= themes/alttp
+theme-compare:
+	$(MAKE) -C tests/rando theme-compare COMPARE_THEME=$(abspath $(THEME))
+
+# Outside the net: needs node and Playwright's Chromium. THEME is relative to this directory.
+theme-art:
+	$(MAKE) -C tests/rando theme-art ART_THEME=$(abspath $(THEME))
+
+theme-art-write:
+	$(MAKE) -C tests/rando theme-art-write ART_THEME=$(abspath $(THEME))
 
 # Outside the net: needs docker.
 package:

@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" shape-rendering="crispEdges">
+  <title>ALTTP Randomizer - Generate screen (640x480, Miyoo Mini Flip)</title>
+  <defs>
+    <style>
+      @font-face { font-family: 'Press Start 2P'; src: url('../../data/PressStart2P.ttf') format('truetype'); }
+      text { font-family: 'Press Start 2P', monospace; font-variant-ligatures: none; }
+      .label { font-size: 16px; fill: #f8f8f8; }
+      .value { font-size: 16px; fill: #b8e8f8; text-anchor: end; }
+      .sel   { font-size: 16px; fill: #f8d038; }
+    </style>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#10106c"/>
+      <stop offset="1" stop-color="#04043c"/>
+    </linearGradient>
+    <!-- Triforce 16x14 -->
+    <g id="triforce">
+      <polygon points="8,0 12,6 4,6"/>
+      <polygon points="4,8 8,14 0,14"/>
+      <polygon points="12,8 16,14 8,14"/>
+    </g>
+    <!-- Heart 7x6 -->
+    <g id="heart">
+      <path fill="#e83838" d="M1 0h2v1H1zM4 0h2v1H4zM0 1h7v2H0zM1 3h5v1H1zM2 4h3v1H2zM3 5h1v1H3z"/>
+      <path fill="#f8f8f8" d="M1 1h1v1H1z"/>
+    </g>
+  </defs>
+
+  <!-- Screen background -->
+  <rect width="640" height="480" fill="#0c0c34"/>
+
+  <!-- Window frame: white / blue / dark, notched corners -->
+  <path fill="#f8f8f8" d="M6,10 L10,10 L10,6 L630,6 L630,10 L634,10 L634,470 L630,470 L630,474 L10,474 L10,470 L6,470 Z"/>
+  <path fill="#3858d8" d="M10,14 L14,14 L14,10 L626,10 L626,14 L630,14 L630,466 L626,466 L626,470 L14,470 L14,466 L10,466 Z"/>
+  <rect x="14" y="14" width="612" height="452" fill="url(#panel)"/>
+
+  <!-- Header: tabs + hearts (y 14-58) -->
+  <rect x="14" y="54" width="612" height="4" fill="#3858d8"/>
+  <use href="#triforce" transform="translate(30 27) scale(1.25)" fill="#f8d038"/>
+  <text x="58" y="42" class="sel">Generate</text>
+  <text x="214" y="42" font-size="16" fill="#98a8f0">History</text>
+  <use href="#heart" transform="translate(544 27) scale(3)"/>
+  <use href="#heart" transform="translate(571 27) scale(3)"/>
+  <use href="#heart" transform="translate(598 27) scale(3)"/>
+
+  <!-- Section title (y 58-98) -->
+  <text x="30" y="83" font-size="14" fill="#78d8f8">Seed Settings</text>
+  <line x1="224" y1="78" x2="610" y2="78" stroke="#3858d8" stroke-width="4" stroke-dasharray="8 4"/>
+
+  <!-- Rows: start y=98, height 28 -->
+  <!-- Row 0 (selected): Glitches -->
+  <rect x="22" y="98" width="596" height="28" fill="#2040c0"/>
+  <rect x="22" y="98" width="596" height="2" fill="#6888f8"/>
+  <rect x="22" y="124" width="596" height="2" fill="#6888f8"/>
+  <use href="#triforce" transform="translate(30 103) scale(1.25)" fill="#f8d038"/>
+  <text x="60" y="118" class="sel">Glitches</text>
+  <polygon points="510,106 510,122 498,114" fill="#f8d038"/>
+  <text x="584" y="118" class="sel" text-anchor="end">None</text>
+  <polygon points="594,106 594,122 606,114" fill="#f8d038"/>
+
+  <text x="60" y="146" class="label">Item Placement</text>
+  <text x="584" y="146" class="value">Basic</text>
+
+  <text x="60" y="174" class="label">Dungeon Items</text>
+  <text x="584" y="174" class="value">Standard</text>
+
+  <text x="60" y="202" class="label">Accessibility</text>
+  <text x="584" y="202" class="value">Beatable</text>
+
+  <text x="60" y="230" class="label">Goal</text>
+  <text x="584" y="230" class="value">Ganonhunt</text>
+
+  <text x="60" y="258" class="label">Tower Crystals</text>
+  <text x="584" y="258" class="value">7</text>
+
+  <text x="60" y="286" class="label">Ganon Crystals</text>
+  <text x="584" y="286" class="value">7</text>
+
+  <text x="60" y="314" class="label">World State</text>
+  <text x="584" y="314" class="value">Open</text>
+
+  <text x="60" y="342" class="label">Swords</text>
+  <text x="584" y="342" class="value">Swordless</text>
+
+  <text x="60" y="370" class="label">Item Pool</text>
+  <text x="584" y="370" class="value">Crowd Control</text>
+
+  <text x="60" y="398" class="label">Item Functionality</text>
+  <text x="584" y="398" class="value">Normal</text>
+
+  <!-- Help line for selected setting + scroll-down arrow (y 406-422) -->
+  <text x="34" y="418" font-size="10" fill="#78d8f8">No glitches required. Standard logic only.</text>
+  <polygon points="586,410 606,410 596,422" fill="#f8d038"/>
+
+  <!-- Footer: button hints (y 422-466) -->
+  <rect x="14" y="422" width="612" height="44" fill="#08084c"/>
+  <rect x="14" y="422" width="612" height="4" fill="#3858d8"/>
+
+  <!-- D-pad -->
+  <g transform="translate(30 433) scale(2)">
+    <path fill="#f8f8f8" d="M4 0h3v4h4v3H7v4H4V7H0V4h4z"/>
+    <path fill="#08084c" d="M5 1h1v2H5zM5 8h1v2H5zM1 5h2v1H1zM8 5h2v1H8z"/>
+  </g>
+  <text x="62" y="448" font-size="12" fill="#f8f8f8">Change</text>
+
+  <!-- Y button -->
+  <path fill="#f8d038" d="M255,439 L261,439 L261,433 L271,433 L271,439 L277,439 L277,449 L271,449 L271,455 L261,455 L261,449 L255,449 Z"/>
+  <text x="266" y="449" font-size="12" fill="#08084c" text-anchor="middle">Y</text>
+  <text x="287" y="448" font-size="12" fill="#f8f8f8">Default</text>
+
+  <!-- START button -->
+  <path fill="#e83838" d="M438,437 L442,437 L442,433 L500,433 L500,437 L504,437 L504,451 L500,451 L500,455 L442,455 L442,451 L438,451 Z"/>
+  <text x="471" y="448" font-size="10" fill="#f8f8f8" text-anchor="middle">START</text>
+  <text x="514" y="448" font-size="12" fill="#f8d038">Generate</text>
+</svg>
