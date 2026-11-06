@@ -3,10 +3,11 @@
 
 Phase 2's push gate, a pre-push hook chained after .claude/hooks/no_claude_branch.sh. It refuses
 a push (exit 1) when the link held in LADX_ROM_URL is in `git log -p --text` of a pushed commit,
-when a blob the push uploads holds a literal run of the ROM (nintendo_bytes.py), or when an
-untracked file sits outside the git-ignored paths (docs/prd/ allowed, but searched for the link).
-It fails closed: no LADX_ROM_URL, or no tmp/ladx/base.gbc of SHA-1 d90ac17e..., refuses. Its
-messages name commits, paths and blobs, never the link or the bytes.
+when a blob the push uploads holds a literal run of the ROM under nintendo_bytes.py's policy (scope
+from the blob's path), or when an untracked file sits outside the git-ignored paths (docs/prd/
+allowed, but searched for the link). It fails closed: no LADX_ROM_URL, no tmp/ladx/base.gbc of
+SHA-1 d90ac17e..., or no LADXR checkout at the pin (LADXR_DIR, default tests/ladx/oracle/ladxr)
+refuses. Its messages name commits, paths, blobs, views and scopes, never the link or the bytes.
 
 --install proves the gate on planted repositories, then writes the chained hook into the common
 hooks directory if the pre-push hook there is absent, no_claude_branch.sh's own or already the
@@ -17,7 +18,6 @@ no_claude_branch.sh --install. --self-test runs the planted pushes only.
 import hashlib
 import importlib.util
 import os
-import random
 import re
 import shutil
 import subprocess
@@ -31,6 +31,7 @@ ROM_PATH = os.path.join("tmp", "ladx", "base.gbc")
 GATE_PATH = "tests/ladx/oracle/push_gate.py"
 BYTES_PATH = "tests/ladx/oracle/nintendo_bytes.py"
 BRANCH_HOOK_PATH = ".claude/hooks/no_claude_branch.sh"
+LADXR_PATH = "tests/ladx/oracle/ladxr"
 ALLOWED_UNTRACKED = "docs/prd/"
 MIN_LINK = 8
 
@@ -105,11 +106,12 @@ def _untracked(top):
             for entry in out.split(b"\0") if entry.startswith(b"?? ")]
 
 
-def check_push(top, ref_lines, link, rom):
+def check_push(top, ref_lines, link, rom, corpus):
     """(findings, summary): refusal lines for a push of ref_lines from top, and the success
-    line used when there are none. link and rom are bytes."""
+    line used when there are none. link and rom are bytes, corpus a nintendo_bytes.Corpus."""
     findings = []
-    index = nintendo_bytes.RomIndex(rom, 4)
+    index = nintendo_bytes.RomIndex(rom)
+    cleared = {category: 0 for category in nintendo_bytes.CLEARANCES}
     commits = 0
     blobs = {}
     for ref_line in ref_lines:
@@ -125,9 +127,12 @@ def check_push(top, ref_lines, link, rom):
         for obj, path in _pushed_blobs(top, sha):
             blobs.setdefault(obj, path)
     for obj, path in sorted(blobs.items(), key=lambda item: (item[1], item[0])):
-        for view, off, length in nintendo_bytes.literal_runs(_blob(top, obj), index):
+        literals, clears = nintendo_bytes.check_blob(path, _blob(top, obj), index, corpus)
+        for view, off, length, scope in literals:
             findings.append(f"push-gate: refused: {path} (blob {obj[:12]}): literal run of "
-                            f"{length} bytes at @{off} ({view})")
+                            f"{length} bytes at @{off} ({view}, {scope})")
+        for _, _, _, category in clears:
+            cleared[category] += 1
     for path in _untracked(top):
         if not path.startswith(ALLOWED_UNTRACKED):
             findings.append(f"push-gate: refused: untracked file {path}")
@@ -135,8 +140,9 @@ def check_push(top, ref_lines, link, rom):
         with open(os.path.join(top, path), "rb") as f:
             if link in f.read():
                 findings.append(f"push-gate: refused: the link is in untracked file {path}")
-    summary = (f"push-gate: ok, {commits} commits, {len(blobs)} blobs, no link, "
-               "0 literal runs, no stray untracked file")
+    summary = (f"push-gate: ok, {commits} commits, {len(blobs)} blobs, no link, 0 literal runs, "
+               "cleared " + ", ".join(f"{n} {category}" for category, n in cleared.items())
+               + ", no stray untracked file")
     return findings, summary
 
 
@@ -155,7 +161,13 @@ def hook(top, ref_lines, environ):
         print("push-gate: setup: no checked ROM in tmp/ladx/ (run tests/ladx/oracle/fetch_rom.sh)"
               ", push refused", file=sys.stderr)
         return 1
-    findings, summary = check_push(top, ref_lines, link.encode(), rom)
+    try:
+        ladxr = os.path.join(top, environ.get("LADXR_DIR") or LADXR_PATH)
+        corpus = nintendo_bytes.load_ladxr(ladxr)
+    except nintendo_bytes.SetupError as e:
+        print(f"push-gate: setup: {e}, push refused", file=sys.stderr)
+        return 1
+    findings, summary = check_push(top, ref_lines, link.encode(), rom, corpus)
     for line in findings or [summary]:
         print(line, file=sys.stderr)
     return 1 if findings else 0
@@ -213,15 +225,20 @@ PLANTED_COMMIT_MSG_HOOK = "#!/bin/sh\n# planted prepare-commit-msg hook\nexit 0\
 
 
 def planted_rom():
-    rng = random.Random(0x6A7E)
-    return bytes(rng.getrandbits(8) for _ in range(65536))
+    return nintendo_bytes.planted_rom()
+
+
+def planted_text(rom):
+    return rom[0x2300:0x2300 + len(nintendo_bytes.PLANTED_TEXT)]
 
 
 class PlantedRepo:
     """A bare remote and a clone in base, with copies of the gate, nintendo_bytes.py and
     no_claude_branch.sh at their repository paths, the gate's ROM SHA-1 constant rewritten to rom's,
-    rom at tmp/ladx/base.gbc, a planted prepare-commit-msg hook and the chain installed through
-    the copy's install_chain. Branch main is pushed; every case branches from it."""
+    rom at tmp/ladx/base.gbc, a planted LADXR checkout (git-ignored, one text file holding
+    planted_text(rom)[20:70]) with the copy's LADXR pin rewritten to its commit, a planted
+    prepare-commit-msg hook and the chain installed through the copy's install_chain. Branch main
+    is pushed; every case branches from it."""
 
     def __init__(self, base, rom):
         self.rom = rom
@@ -240,9 +257,20 @@ class PlantedRepo:
         quoted = f'"{LADX_SHA1}"'
         assert gate.count(quoted) == 1, "the ROM SHA-1 constant must occur exactly once"
         self.write(GATE_PATH, gate.replace(quoted, f'"{hashlib.sha1(rom).hexdigest()}"'))
-        self.write(BYTES_PATH, _read(os.path.join(HERE, "nintendo_bytes.py")))
+        self.ladxr = os.path.join(self.top, LADXR_PATH)
+        self.write(os.path.join(LADXR_PATH, "names.py"),
+                   b"NAME = '" + planted_text(rom)[20:70] + b"'\n")
+        ladxr_git = lambda *args: _git(self.ladxr, *args, env=self.env).decode().strip()
+        ladxr_git("init", "-q")
+        ladxr_git("add", "-A")
+        ladxr_git("-c", "user.name=planted", "-c", "user.email=planted@example.invalid",
+                  "commit", "-q", "-m", "pin")
+        checker = _read(os.path.join(HERE, "nintendo_bytes.py"))
+        pin = f'"{nintendo_bytes.LADXR_PIN}"'
+        assert checker.count(pin) == 1, "the LADXR pin constant must occur exactly once"
+        self.write(BYTES_PATH, checker.replace(pin, f'"{ladxr_git("rev-parse", "HEAD")}"'))
         self.write(BRANCH_HOOK_PATH, _read(os.path.join(TOP, BRANCH_HOOK_PATH)))
-        self.write(".gitignore", "tmp/\n")
+        self.write(".gitignore", f"tmp/\n{LADXR_PATH}/\n")
         self.write(ROM_PATH, rom)
         self.git("add", "-A")
         self.git("commit", "-q", "-m", "base")
@@ -299,6 +327,8 @@ class PlantedRepo:
 def _cases(rom):
     """[(name, setup, unset_link, expected substring or None for a pass)]."""
     link = PLANTED_LINK.encode()
+    text = planted_text(rom)
+    bytelist = ", ".join("0x%02X" % b for b in rom[6000:6008])
     return [
         ("clean", lambda r: r.commit("clean", [("a.txt", "plain text\n")]), False, None),
         ("link-in-message", lambda r: r.commit("see " + PLANTED_LINK), False,
@@ -310,11 +340,21 @@ def _cases(rom):
         ("link-in-parent", lambda r: (r.commit("add", [("old.txt", PLANTED_LINK + "\n")]),
                                       r.commit("drop", removed=["old.txt"])),
          False, "the link is in commit"),
-        ("rom-slice", lambda r: r.commit("slice", [("s.bin", b"<" + rom[2000:2004] + b">")]),
-         False, "literal run of 4 bytes"),
-        ("rom-slice-removed", lambda r: (r.commit("add", [("s.bin", rom[3000:3010])]),
+        ("strict-rom-4", lambda r: r.commit("slice", [("data/ladx/s.bin",
+                                                        b"<" + rom[2000:2004] + b">")]),
+         False, "literal run of 4 bytes at @1 (raw, strict)"),
+        ("general-english-12", lambda r: r.commit("say", [("notes/n.md", b"<" + text[:12] + b">")]),
+         False, None),
+        ("general-rom-16", lambda r: r.commit("slice", [("notes/r.bin", rom[5000:5016])]),
+         False, "literal run of 16 bytes at @0 (raw, general)"),
+        ("ladxr-public", lambda r: r.commit("name", [("notes/names.md", text[20:70])]),
+         False, None),
+        ("general-bytelist-8",
+         lambda r: r.commit("c", [("src/t.c", "u8 t[] = {" + bytelist + "};")]),
+         False, "literal run of 8 bytes at @10 (bytelist, general)"),
+        ("rom-slice-removed", lambda r: (r.commit("add", [("s.bin", rom[3000:3020])]),
                                          r.commit("drop", removed=["s.bin"])),
-         False, "literal run of 10 bytes"),
+         False, "literal run of 20 bytes"),
         ("stray-untracked", lambda r: (r.commit("clean"), r.write("LADXR_1.gbc.txt", "x\n")),
          False, "untracked file LADXR_1.gbc.txt"),
         ("prd-untracked", lambda r: (r.commit("clean"), r.write("docs/prd/next/x.md", "# next\n")),

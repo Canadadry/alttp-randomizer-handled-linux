@@ -182,15 +182,25 @@ in `docs/`, then `README.md`.
   `no_claude_branch.sh` (both fed the same ref lines, both always run). It
   refuses a push when the link in `LADX_ROM_URL` is in `git log -p --text`
   of a pushed commit (`the link is in commit <sha>`), when a blob the push
-  uploads, intermediate commits included, holds a literal run of the ROM
-  (`<path> (blob <sha>): literal run of <n> bytes at @<offset> (<view>)`),
-  or when an untracked file sits outside the git-ignored paths (`docs/prd/`
-  allowed, but searched for the link); it fails closed (no `LADX_ROM_URL`,
-  or no `tmp/ladx/base.gbc` of SHA-1 `d90ac17e…`: `push-gate: setup: …,
-  push refused`), never echoes the link or the bytes, else prints
-  `push-gate: ok, …`. `--self-test` makes 12 planted pushes through the
-  installed chain in a planted clone with a planted ROM and link
-  (`push-gate: self-test, 12 planted pushes as expected`, else one
+  uploads, intermediate commits included, holds a literal run under the
+  Nintendo-bytes check's policy, through the check's own `check_blob`, the
+  scope taken from the blob's path (`<path> (blob <sha>): literal run of <n>
+  bytes at @<offset> (<view>, <scope>)`), or when an untracked file sits
+  outside the git-ignored paths (`docs/prd/` allowed, but searched for the
+  link); it fails closed (no `LADX_ROM_URL`, no `tmp/ladx/base.gbc` of
+  SHA-1 `d90ac17e…`, or no LADXR checkout at `4325207e` in `LADXR_DIR`,
+  default `tests/ladx/oracle/ladxr`: `push-gate: setup: …, push refused`),
+  never echoes the link or the bytes, else prints `push-gate: ok, <c>
+  commits, <b> blobs, no link, 0 literal runs, cleared <t> trivial, <l>
+  low-info, <p> ladxr-public, no stray untracked file`. While it is armed,
+  every push needs `LADX_ROM_URL` exported in the same shell command as
+  `git push`, the ROM and the pinned LADXR checkout; a refusal for one of
+  them is a setup problem, not a bug. `--self-test` makes 16 planted pushes
+  through the installed chain in a planted clone with a planted ROM, link
+  and LADXR checkout (among them a 4-byte ROM run under a strict path, a
+  16-byte one and an 8-byte `bytelist` under general paths, refused; a
+  12-byte English coincidence and a run of the planted corpus, passing;
+  `push-gate: self-test, 16 planted pushes as expected`, else one
   `self-test failed: <case>` line each); `--install` runs it, then writes
   the chain into the common hooks directory only over no hook,
   `no_claude_branch.sh`'s own or the chain (else `the gate is NOT armed`,

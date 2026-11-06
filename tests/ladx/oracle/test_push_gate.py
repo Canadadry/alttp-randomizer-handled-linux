@@ -49,8 +49,25 @@ class Pushes(unittest.TestCase):
     def test_a_clean_push_passes_and_says_so(self):
         status, output = self.push(lambda r: r.commit("clean", [("a.txt", "text\n")]))
         self.assertEqual(status, 0, output)
-        self.assertIn("push-gate: ok, 1 commits, 1 blobs, no link, 0 literal runs, "
-                      "no stray untracked file", output)
+        self.assertIn("push-gate: ok, 1 commits, 1 blobs, no link, 0 literal runs, cleared 0 "
+                      "trivial, 0 low-info, 0 ladxr-public, no stray untracked file", output)
+
+    def test_cleared_runs_pass_and_are_counted(self):
+        text = push_gate.planted_text(ROM)
+        status, output = self.push(lambda r: r.commit("clean", [
+            ("notes/a.md", b"[" + text[20:70] + b"]"),
+            ("data/b.bin", ROM[0x2000:0x2020]),
+            ("data/c.bin", ROM[0x2200:0x2220])]))
+        self.assertEqual(status, 0, output)
+        self.assertIn("0 literal runs, cleared 1 trivial, 1 low-info, 1 ladxr-public", output)
+
+    def test_the_scope_follows_the_pushed_path(self):
+        status, output = self.push(lambda r: r.commit("c", [("data/ladx/a.bin", ROM[300:305]),
+                                                            ("data/a.bin", ROM[300:315])]))
+        self.assertEqual(status, 1)
+        self.assertRegex(output, r"push-gate: refused: data/ladx/a.bin \(blob [0-9a-f]{12}\): "
+                                 r"literal run of 5 bytes at @0 \(raw, strict\)")
+        self.assertNotIn("data/a.bin", output)
 
     def test_a_link_in_a_binary_file_is_refused(self):
         status, output = self.push(
@@ -59,18 +76,18 @@ class Pushes(unittest.TestCase):
         self.assertIn("push-gate: refused: the link is in commit ", output)
 
     def test_a_literal_only_in_an_intermediate_commit_is_refused(self):
-        status, output = self.push(lambda r: (r.commit("add", [("d/s.bin", ROM[100:106])]),
-                                              r.commit("drop", removed=["d/s.bin"])))
+        status, output = self.push(lambda r: (r.commit("add", [("data/ladx/s.bin", ROM[100:106])]),
+                                              r.commit("drop", removed=["data/ladx/s.bin"])))
         self.assertEqual(status, 1)
-        self.assertRegex(output, r"push-gate: refused: d/s.bin \(blob [0-9a-f]{12}\): "
-                                 r"literal run of 6 bytes at @0 \(raw\)")
+        self.assertRegex(output, r"push-gate: refused: data/ladx/s.bin \(blob [0-9a-f]{12}\): "
+                                 r"literal run of 6 bytes at @0 \(raw, strict\)")
 
     def test_a_literal_written_as_hex_is_refused(self):
         status, output = self.push(
-            lambda r: r.commit("hex", [("t.txt", "db " + ROM[200:205].hex() + "\n")]))
+            lambda r: r.commit("hex", [("t.txt", "db " + ROM[200:208].hex() + "\n")]))
         self.assertEqual(status, 1)
-        self.assertIn("literal run of 5 bytes at @3 (hex)", output)
-        self.assertNotIn(ROM[200:205].hex(), output)
+        self.assertIn("literal run of 8 bytes at @3 (hex, general)", output)
+        self.assertNotIn(ROM[200:208].hex(), output)
 
     def test_untracked_files_under_docs_prd_pass_and_are_searched_for_the_link(self):
         status, output = self.push(
@@ -107,6 +124,28 @@ class Pushes(unittest.TestCase):
             self.repo.write(push_gate.ROM_PATH, ROM)
         self.assertEqual(status, 1)
         self.assertIn("push-gate: setup: no checked ROM in tmp/ladx/", output)
+
+    def test_a_missing_or_unpinned_ladxr_checkout_refuses(self):
+        moved = self.repo.ladxr + ".away"
+        os.rename(self.repo.ladxr, moved)
+        try:
+            status, output = self.push(lambda r: r.commit("c"))
+        finally:
+            os.rename(moved, self.repo.ladxr)
+        self.assertEqual(status, 1)
+        self.assertIn("push-gate: setup: no LADXR checkout in ", output)
+        self.assertIn(", push refused", output)
+        git = lambda *args: subprocess.run(["git", *args], cwd=self.repo.ladxr, env=self.repo.env,
+                                           check=True, capture_output=True)
+        git("-c", "user.name=p", "-c", "user.email=p@example.invalid", "commit", "-q",
+            "--allow-empty", "-m", "later")
+        try:
+            status, output = self.push(lambda r: r.commit("c"))
+        finally:
+            git("reset", "-q", "--hard", "HEAD~1")
+        self.assertEqual(status, 1)
+        self.assertRegex(output, r"push-gate: setup: LADXR checkout in .* not at the pin .*"
+                                 r", push refused")
 
     def test_a_claude_branch_is_refused_by_the_chain_and_the_gate_still_reports(self):
         status, output = self.repo.push("claude/x", lambda r: r.commit("c", [("l.txt", LINK)]))

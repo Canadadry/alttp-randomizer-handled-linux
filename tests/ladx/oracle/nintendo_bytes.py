@@ -44,9 +44,8 @@ THRESHOLDS = {
 class RomIndex:
     """The ROM's n-byte windows, each length's set built on first use."""
 
-    def __init__(self, rom_bytes, min_len=None):
+    def __init__(self, rom_bytes):
         self.rom = rom_bytes
-        self.min_len = min_len
         self._windows = {}
 
     def windows(self, n):
@@ -200,14 +199,6 @@ class Corpus:
                 return True
             pos = self._joined.find(run, pos + 1)
         return False
-
-
-def literal_runs(data, index):
-    """[(view, offset, length)] of the runs of index.min_len bytes or more, Phase 1's rule."""
-    n = index.min_len
-    runs = [("raw", off, len(run)) for off, run in _raw_runs(data, index, n)]
-    runs += [("hex", off, len(run)) for off, run in _hex_runs(data, index, n)]
-    return sorted(runs, key=lambda run: (run[1], run[0], run[2]))
 
 
 class SetupError(Exception):
