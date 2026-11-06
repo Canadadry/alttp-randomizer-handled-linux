@@ -9,6 +9,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -19,7 +20,8 @@ import zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 PACKAGE = os.path.join(HERE, "..", "..", "app", "package")
 DATA = os.path.join(HERE, "..", "..", "data")
-CLASSIC = os.path.join(HERE, "..", "..", "themes", "classic")
+ALTTP = os.path.join(HERE, "..", "..", "themes", "alttp")
+MAKEFILE = os.path.join(HERE, "Makefile")
 BUILDER = os.path.join(PACKAGE, "build_zip.py")
 sys.dont_write_bytecode = True
 _spec = importlib.util.spec_from_file_location("build_zip", BUILDER)
@@ -55,6 +57,16 @@ def write(path, data):
 def read(path):
     with open(path, "rb") as f:
         return f.read()
+
+
+def pkg_theme(makefile=MAKEFILE):
+    """The theme folder make package ships: the Makefile's single `PKG_THEME := <path>`, resolved from HERE."""
+    with open(makefile) as f:
+        values = [line.split(":=", 1)[1].strip() for line in f
+                  if line.split(":=", 1)[0].strip() == "PKG_THEME" and ":=" in line]
+    if len(values) != 1:
+        raise AssertionError("%s: %d PKG_THEME := lines, want 1" % (makefile, len(values)))
+    return os.path.join(HERE, values[0])
 
 
 def run_builder(*args):
@@ -248,15 +260,39 @@ class Builder(unittest.TestCase):
         self.assertIn("Usage:", r.stderr)
 
 
+class DefaultTheme(unittest.TestCase):
+
+    def makefile(self, text):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        path = os.path.join(tmp, "Makefile")
+        write(path, text.encode())
+        return path
+
+    def test_the_package_ships_alttp(self):
+        self.assertEqual(os.path.realpath(pkg_theme()), os.path.realpath(ALTTP))
+
+    def test_a_missing_pkg_theme_line_is_refused_naming_the_makefile(self):
+        path = self.makefile("PKG_BIN := x\n")
+        with self.assertRaisesRegex(AssertionError, "^" + re.escape(path)):
+            pkg_theme(path)
+
+    def test_a_duplicated_pkg_theme_line_is_refused_naming_the_makefile(self):
+        path = self.makefile("PKG_THEME := ../a\nPKG_THEME := ../b\n")
+        with self.assertRaisesRegex(AssertionError, "^" + re.escape(path)):
+            pkg_theme(path)
+
+
 class RealPackage(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.default = pkg_theme()
         cls.tmp = tempfile.mkdtemp()
         binary = os.path.join(cls.tmp, "alttpr")
         write(binary, b"\x7fELF fake binary")
         out = os.path.join(cls.tmp, "ALttPR.zip")
-        r = run_builder(binary, PACKAGE, DATA, CLASSIC, out)
+        r = run_builder(binary, PACKAGE, DATA, cls.default, out)
         if r.returncode != 0:
             shutil.rmtree(cls.tmp)
             raise AssertionError(r.stderr)
@@ -278,12 +314,12 @@ class RealPackage(unittest.TestCase):
         self.assertTrue(icon.startswith("/mnt/SDCARD/App/ALttPR/"), icon)
         self.assertIn("App/ALttPR/" + os.path.basename(icon), self.entries)
 
-    def test_theme_is_classic_byte_for_byte(self):
-        classic = sorted(os.listdir(CLASSIC))
-        self.assertIn("theme.ini", classic)
-        self.assertEqual(sorted(self.theme), classic)
-        for name in classic:
-            self.assertEqual(self.theme[name], read(os.path.join(CLASSIC, name)), name)
+    def test_theme_is_the_package_default_byte_for_byte(self):
+        names = sorted(os.listdir(self.default))
+        self.assertIn("theme.ini", names)
+        self.assertEqual(sorted(self.theme), names)
+        for name in names:
+            self.assertEqual(self.theme[name], read(os.path.join(self.default, name)), name)
 
     def test_no_font_sits_loose_in_the_app_folder(self):
         loose = [n for n in self.entries if n.startswith("App/ALttPR/") and "/" not in n[len("App/ALttPR/"):]]

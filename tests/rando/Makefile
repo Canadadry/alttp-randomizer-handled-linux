@@ -100,7 +100,7 @@ PKG_DIR := $(BUILD)/package
 PKG_BIN := $(PKG_DIR)/alttpr
 PKG_ZIP := $(PKG_DIR)/ALttPR.zip
 PKG_BPS := ../../data/base.bps
-PKG_THEME := ../../themes/classic
+PKG_THEME := ../../themes/alttp
 
 .PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-goldens mockups theme-compare theme-art theme-art-write sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
 

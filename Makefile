@@ -21,7 +21,7 @@ help:
 	@echo "make theme-art      the art of themes/alttp re-rendered from design/mockups/ by Chromium and compared pixel by pixel (THEME=<dir>; needs node and Playwright's Chromium)"
 	@echo "make theme-art-write the art rendered twice, refused unless byte-identical, written into themes/alttp (THEME=<dir>; needs node and Playwright's Chromium)"
 	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
-	@echo "make package        the release zip tests/rando/build/package/ALttPR.zip: sdl-arm stripped, ABI-checked, with app/package/, data/base.bps and themes/classic as themes/default (needs docker)"
+	@echo "make package        the release zip tests/rando/build/package/ALttPR.zip: sdl-arm stripped, ABI-checked, with app/package/, data/base.bps and themes/alttp as themes/default (needs docker)"
 	@echo "make patch-header   the base patch checked like make test checks data/base.bps (BPS=<file>, default data/base.bps), kept out of check"
 	@echo "make measure-compare the generator timed against a worktree of 40314c3, interleaved, +-10% verdicts, kept out of check"
 	@echo "make check          the net: everything that must be green before a push"
