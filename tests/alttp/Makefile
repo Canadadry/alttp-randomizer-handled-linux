@@ -106,7 +106,7 @@ PKG_ZIP := $(PKG_DIR)/ALttPR.zip
 PKG_BPS := ../../data/base.bps
 PKG_THEME := ../../themes/alttp
 
-.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-goldens screenshots mockups theme-compare theme-art theme-art-write sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
+.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
 
 test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -165,6 +165,13 @@ sdl-goldens:
 	@$(MAKE) --no-print-directory $(SDL_APP) $(SD_FIXTURE)
 	@echo "sdl-goldens: writing $(GOLDENS_DIR); an existing set is refused, never regenerated"
 	@./sdl/goldens.sh ./$(SDL_APP) ../../themes/classic ./$(SD_FIXTURE) --write $(GOLDENS_DIR)
+
+# sdl-goldens-add: writes only the goldens of STATES, refused if one already exists.
+sdl-goldens-add:
+	@[ -n "$(strip $(STATES))" ] || { echo "usage: make sdl-goldens-add STATES=\"<state> ...\" (states of sdl/golden_states.txt with no golden yet)" >&2; exit 2; }
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf SDL_image || { echo "setup: SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev)" >&2; exit 1; }
+	@$(MAKE) --no-print-directory $(SDL_APP) $(SD_FIXTURE)
+	@./sdl/goldens.sh ./$(SDL_APP) ../../themes/classic ./$(SD_FIXTURE) --add $(GOLDENS_DIR) $(STATES)
 
 logic: $(LOGIC_BINS)
 	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done

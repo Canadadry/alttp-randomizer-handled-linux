@@ -1,5 +1,6 @@
 #!/bin/sh
 # Usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE]
+#                                          | --add DIR STATE...
 # Plays every state of golden_states.txt into the SDL app (dummy video driver), each from a fresh copy
 # of its fixture, and checks the captured text holds the state's strings. --write renders every state
 # twice, refuses unless both runs agree byte for byte and DIR holds no golden, then fills DIR with
@@ -10,6 +11,9 @@
 # --draw renders each state once into DIR with any theme, checks each BMP is a 640x480 picture of more
 # than one colour, and skips the strings, which are spelled on classic's grid; --states plays FILE,
 # in the same format, instead of golden_states.txt (--draw only: goldens come from golden_states.txt).
+# --add proves itself on planted files, refuses unknown, repeated or already-goldened STATEs and a
+# fingerprint other than DIR's environment.txt, renders those states twice, refuses unless both runs
+# agree byte for byte, then writes only their PNGs; it never touches another file of DIR.
 # Every alttpr run gets --theme THEME; the fingerprint holds one font line per *.ttf of THEME.
 set -eu
 set -f
@@ -17,12 +21,17 @@ export LC_ALL=C
 export SDL_VIDEODRIVER=dummy
 
 usage() {
-	echo "usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE]" >&2
+	echo "usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE] | --add DIR STATE..." >&2
 	exit 2
 }
 
-[ $# -eq 5 ] || { [ $# -eq 7 ] && [ "$4" = --draw ] && [ "$6" = --states ]; } || usage
-case "$4" in --write | --compare | --draw) ;; *) usage ;; esac
+[ $# -ge 5 ] || usage
+case "$4" in
+--write | --compare) [ $# -eq 5 ] || usage ;;
+--draw) [ $# -eq 5 ] || { [ $# -eq 7 ] && [ "$6" = --states ]; } || usage ;;
+--add) [ $# -ge 6 ] || usage ;;
+*) usage ;;
+esac
 abs() {
 	echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 }
@@ -33,7 +42,7 @@ mode="$4"
 goldens="$5"
 here="$(cd "$(dirname "$0")" && pwd)"
 states="$here/golden_states.txt"
-if [ $# -eq 7 ]; then
+if [ "$mode" = --draw ] && [ $# -eq 7 ]; then
 	[ -f "$7" ] || usage
 	states="$(abs "$7")"
 fi
@@ -103,6 +112,11 @@ if cmd == "bmp":
     # bmp PNG BMP: writes PNG's pixels as a 24-bit BMP, standing in for a capture in the self-proof.
     width, height, rows = codec.decode_png(open(args[0], "rb").read())
     open(args[1], "wb").write(codec.planted_bmp(width, height, rows))
+    sys.exit(0)
+
+if cmd == "plant":
+    # plant BMP VALUE: writes a 2x2 24-bit BMP whose every byte is VALUE, a capture in the self-proofs.
+    open(args[0], "wb").write(codec.planted_bmp(2, 2, [bytes([int(args[1])] * 6)] * 2))
     sys.exit(0)
 
 if cmd == "png":
@@ -197,6 +211,90 @@ render() {
 	done <"$states"
 }
 
+# same_runs RUN1 RUN2 NAME...: one NONDETERMINISTIC line per NAME whose captures differ.
+same_runs() {
+	sr_run1="$1"
+	sr_run2="$2"
+	shift 2
+	sr_bad=0
+	for sr_n in "$@"; do
+		cmp -s "$sr_run1/$sr_n.bmp" "$sr_run2/$sr_n.bmp" && cmp -s "$sr_run1/$sr_n.txt" "$sr_run2/$sr_n.txt" ||
+			{ echo "NONDETERMINISTIC $sr_n"; sr_bad=1; }
+	done
+	return "$sr_bad"
+}
+
+# goldened DIR NAME...: prints the NAMEs that have a PNG or BMP golden in DIR.
+goldened() {
+	gd_dir="$1"
+	shift
+	for gd_n in "$@"; do
+		if [ -e "$gd_dir/$gd_n.png" ] || [ -e "$gd_dir/$gd_n.bmp" ]; then printf '%s\n' "$gd_n"; fi
+	done
+}
+
+refuse_goldened() {
+	# shellcheck disable=SC2086
+	fail "$(echo $2): a golden already exists in $1: refused, goldens are never regenerated (delete that one golden first to rewrite it on purpose)"
+}
+
+# add_goldens RUN1 RUN2 DIR NAME...: writes DIR/NAME.png from RUN1's captures, refused with DIR
+# unchanged if a NAME has a golden or its two runs differ.
+add_goldens() {
+	ag_run1="$1"
+	ag_run2="$2"
+	ag_dir="$3"
+	shift 3
+	ag_have="$(goldened "$ag_dir" "$@")"
+	[ -z "$ag_have" ] || refuse_goldened "$ag_dir" "$ag_have"
+	same_runs "$ag_run1" "$ag_run2" "$@" || exit 1
+	ag_stage="$tmp/stage"
+	rm -rf "$ag_stage"
+	mkdir -p "$ag_stage"
+	for ag_n in "$@"; do py png "$ag_run1/$ag_n.bmp" "$ag_stage/$ag_n.png" || fail "$ag_n: PNG refused"; done
+	for ag_n in "$@"; do cp "$ag_stage/$ag_n.png" "$ag_dir/$ag_n.png"; done
+}
+
+add_self_proof() {
+	p="$tmp/add-proof"
+	rm -rf "$p"
+	mkdir -p "$p/run1" "$p/dir"
+	for v in a:1 b:2 c:3; do
+		py plant "$p/run1/${v%%:*}.bmp" "${v#*:}"
+		echo "${v%%:*}" >"$p/run1/${v%%:*}.txt"
+	done
+	cp -R "$p/run1" "$p/run2"
+	py png "$p/run1/a.bmp" "$p/dir/a.png"
+	echo planted >"$p/dir/$fingerprint_file"
+	cp -R "$p/dir" "$p/before"
+	(add_goldens "$p/run1" "$p/run2" "$p/dir" b) >"$p/out" 2>&1 ||
+		{ cat "$p/out" >&2; fail "add self-proof: adding a state with no golden was refused"; }
+	py compare "$p/run1" "$p/dir" "$fingerprint_file" a b >"$p/out" ||
+		{ cat "$p/out" >&2; fail "add self-proof: the folder does not hold exactly a.png, the added b.png and $fingerprint_file"; }
+	cmp -s "$p/before/a.png" "$p/dir/a.png" && cmp -s "$p/before/$fingerprint_file" "$p/dir/$fingerprint_file" ||
+		fail "add self-proof: adding b changed an existing file"
+	rm -rf "$p/before"
+	cp -R "$p/dir" "$p/before"
+	if (add_goldens "$p/run1" "$p/run2" "$p/dir" a) >"$p/out" 2>&1; then
+		fail "add self-proof: a state that has a golden was not refused"
+	fi
+	diff -r "$p/before" "$p/dir" >/dev/null || fail "add self-proof: a refused add changed the folder"
+	if (add_goldens "$p/run1" "$p/run2" "$p/dir" a c) >"$p/out" 2>&1; then
+		fail "add self-proof: a request holding a state that has a golden was not refused"
+	fi
+	diff -r "$p/before" "$p/dir" >/dev/null || fail "add self-proof: a refused add wrote c.png or changed the folder"
+	rm "$p/dir/b.png"
+	py plant "$p/run2/b.bmp" 4
+	rm -rf "$p/before"
+	cp -R "$p/dir" "$p/before"
+	if (add_goldens "$p/run1" "$p/run2" "$p/dir" b) >"$p/out" 2>"$p/err"; then
+		fail "add self-proof: differing runs were not refused"
+	fi
+	printf 'NONDETERMINISTIC b\n' >"$p/want"
+	cmp -s "$p/out" "$p/want" || { cat "$p/out" >&2; fail "add self-proof: differing runs did not give exactly NONDETERMINISTIC b"; }
+	diff -r "$p/before" "$p/dir" >/dev/null || fail "add self-proof: refused differing runs changed the folder"
+}
+
 names="$(state_names)"
 count="$(printf '%s\n' "$names" | wc -l | tr -d ' ')"
 
@@ -206,16 +304,44 @@ if [ "$mode" = "--write" ]; then
 	fi
 	render "$work/run1"
 	render "$work/run2"
-	bad=0
-	for n in $names; do
-		cmp -s "$work/run1/$n.bmp" "$work/run2/$n.bmp" && cmp -s "$work/run1/$n.txt" "$work/run2/$n.txt" ||
-			{ echo "NONDETERMINISTIC $n"; bad=1; }
-	done
-	[ "$bad" -eq 0 ] || exit 1
+	# shellcheck disable=SC2086
+	same_runs "$work/run1" "$work/run2" $names || exit 1
 	mkdir -p "$goldens"
 	for n in $names; do py png "$work/run1/$n.bmp" "$goldens/$n.png" || fail "$n: PNG refused"; done
 	fingerprint >"$goldens/$fingerprint_file"
 	echo "goldens: $count states written to $goldens, rendered twice byte-identical"
+	exit 0
+fi
+
+if [ "$mode" = "--add" ]; then
+	add_self_proof
+	shift 5
+	unknown=""
+	repeated=""
+	seen=" "
+	for n in "$@"; do
+		case "$seen" in *" $n "*) repeated="$repeated $n"; continue ;; esac
+		seen="$seen$n "
+		printf '%s\n' "$names" | grep -qxF -- "$n" || unknown="$unknown $n"
+	done
+	[ -z "$unknown" ] || fail "unknown state(s)$unknown: not in golden_states.txt, refused"
+	[ -z "$repeated" ] || fail "state(s)$repeated requested twice, refused"
+	have="$(goldened "$goldens" "$@")"
+	[ -z "$have" ] || refuse_goldened "$goldens" "$have"
+	[ -f "$goldens/$fingerprint_file" ] || fail "no $fingerprint_file in $goldens: --add only grows a pinned set (make sdl-goldens writes the first one)"
+	pinned="$(tr '\n' ' ' <"$goldens/$fingerprint_file" | sed 's/ $//')"
+	host="$(fingerprint | tr '\n' ' ' | sed 's/ $//')"
+	if [ "$pinned" != "$host" ]; then
+		echo "setup: goldens pinned to $pinned, this host is $host"
+		exit 1
+	fi
+	printf '%s\n' "$@" >"$tmp/requested"
+	awk -F '\t' 'NR == FNR { want[$0] = 1; next } ($1 in want)' "$tmp/requested" "$states" >"$tmp/add-states"
+	states="$tmp/add-states"
+	render "$work/run1"
+	render "$work/run2"
+	add_goldens "$work/run1" "$work/run2" "$goldens" "$@"
+	echo "goldens: $# states added to $goldens, rendered twice byte-identical: $*"
 	exit 0
 fi
 

@@ -142,6 +142,19 @@ in `docs/`, then `README.md`.
 - `make sdl-goldens`, outside the net, writes the goldens once (every state
   rendered twice, refused unless byte-identical, written as PNGs) and
   refuses a folder that already holds any: goldens are never regenerated to get green.
+- `make sdl-goldens-add STATES="<state> ..."`, outside the net, with
+  `make sdl-pc`'s packages (else its `setup:` line; `goldens.sh --add DIR
+  STATE...`), writes only the goldens of the named states of
+  `sdl/golden_states.txt` (empty `STATES` is a usage error). It first proves
+  itself on planted files, then refuses, writing nothing, an unknown or
+  repeated state, a state that already has a golden, a folder with no
+  `environment.txt`, or a host fingerprint other than it (the `setup:` line
+  of `--compare`); it renders those states twice with `themes/classic`,
+  refuses unless byte-identical (`NONDETERMINISTIC <state>`), writes their
+  PNGs and touches no other file, `environment.txt` included; it prints
+  `goldens: <n> states added to <dir>, rendered twice byte-identical:
+  <names>`. To rewrite one golden on purpose, delete only that PNG, then
+  add it; `GOLDENS_DIR=<dir>` points it at a scratch copy.
 - `make screenshots`, outside the net, with `make sdl-pc`'s packages (else
   its `setup:` line; `tests/alttp/sdl/screenshots.sh`): draws the README's
   states (`SHOT_STATES` in `tests/alttp/Makefile`, from
@@ -209,7 +222,7 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
-  build are not `check`, nor are `make package`, `make sdl-goldens`,
+  build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and
   `make theme-art-write`.
   `make patch-header` (the base patch's header, source CRC32, size cap and
