@@ -77,7 +77,7 @@ in `docs/`, then `README.md`.
   `notes/plan3-scope-cuts.md` lists every tier-1 value cut from plan 3
   with its reason; `tier1.txt`'s header names the cut values it leaves
   out (`goal=bingo*`, cut `goal-bingo`). `tests/ladx/cases/` and
-  `tests/ladx/combos/` will hold LADX's cases (Phase 2 step 4), one
+  `tests/ladx/combos/` hold LADX's cases (Phase 2 step 4), one
   directory each, named from its settings (`<key>-<value>`, joined with `+`
   in LADXR's order; `baseline`): `config.txt`, one `key=value` line per
   non-default setting in LADXR's order (empty for the baseline), and `seed`,
@@ -87,7 +87,12 @@ in `docs/`, then `README.md`.
   (the baseline and every non-default value alone), the hand-written
   `combos.txt` (`cross <keyA> <keyB>` and `case <k=v> ...` lines; a cross
   cell that validate rewrites, per `settings_validate.txt`, is skipped and
-  named) and the `settings.txt` fixture. `tests/ladx/extract/` will hold the extraction fixtures
+  named; `refused <k=v>`, a value LADXR refuses on every seed alone, has no
+  single case and must be in a combo: `boomerang=default`, covered by
+  `accessibility-goal+boomerang-default`) and the `settings.txt` fixture.
+  Each seed is the first candidate `k` that clears the strict
+  Nintendo-bytes check and gives `outcome ok` with the ROM (`ladx_cases.py
+  pick`, re-proven by `verify`). `tests/ladx/extract/` will hold the extraction fixtures
   the inventory's Extractions table names (Phase 2 step 7), under the
   Nintendo-bytes check's strict scope.
 
@@ -127,18 +132,19 @@ in `docs/`, then `README.md`.
   no work tree gives a `setup:` line; else `rom_guard: <n> tracked files, no
   ROM`; plus `test-ladx-oracle` (`unittest discover` of
   `tests/ladx/oracle/test_*.py` under `python3 -I`: the LADX oracle's helpers
-  and Phase 2's tools, no LADXR, no ROM, no network).
+  and Phase 2's tools, no LADXR, no ROM, no network); plus `ladx-cases`.
 - `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check`,
-  no ROM, no LADXR, no network; not yet in `make test`, until the case
-  directories are committed): it proves itself on planted trees (a missing
+  no ROM, no LADXR, no network; run by `make test`): it proves itself on planted trees (a missing
   and an extra case, a config order swap and a wrong value, a seed not from
   the derivation, an uppercase seed, an extra file, a name in both
   directories), then compares `tests/ladx/cases/` and `tests/ladx/combos/`
   with the expected list: one `MISSING`, `EXTRA`, `WRONG`, `BADSEED`,
   `STRAY` or `BOTH` line per mismatch (exit 1), else one `skip <name>:
-  validate sets <k=v>` line per skipped cell and `ladx-cases: <n> cases, <m>
-  combos, <s> cells skipped by validate, every tier-1 value and cross cell
-  covered`; a malformed input exits 2. `ladx_cases.py list [<name>...]`
+  validate sets <k=v>` line per skipped cell, one `refused <name>: LADXR
+  refuses every seed, covered by <combo>...` line per refused single and
+  `ladx-cases: <n> cases, <m> combos, <s> cells skipped by validate[, <r>
+  singles refused by LADXR], every tier-1 value and cross cell covered`; a
+  malformed input exits 2. `ladx_cases.py list [<name>...]`
   prints the case directories as `ladx_oracle.py cases` prints a case list,
   after the same comparison.
 - The LADX oracle, outside the net (it needs git, the network for GitHub and
@@ -189,6 +195,22 @@ in `docs/`, then `README.md`.
   (...), driver equal to LADXR's CLI`; it fails when the runs did not vary
   in hash seed, checkout and the work root's `git describe`, and on a new
   untracked file (`STRAY <path>`).
+  `ladx_cases.py pick [<name>...]` (with the ROM and the checkout at the
+  pin, else a `setup:` line, exit 2) writes each expected case that has no
+  directory yet (a named one must not exist: it never touches a case; to
+  re-pick, delete the directory by hand) after checking with the live
+  `Settings.validate` that it keeps the case's values: for `k = 0…63` the
+  candidate `derive(name, k)` is refused as `nintendo-bytes` (its seed file
+  fails the strict check) or by its outcome (`oracle_run.py --rom`,
+  `PYTHONHASHSEED=0`, under `tmp/ladx-cases/`), and the first accepted one
+  is written; one `<name>: seed k=<k> (<r> refused: k=<j> <reason>; ...)`
+  line per case, then the refusal counts by kind; exit 1 when a case has
+  none below 64. `ladx_cases.py verify [<name>...]` checks the tree, then
+  re-runs each case's candidates `0…k` (`verified <name> k=<k>`, else
+  `UNVERIFIED <name>: ...`) and every candidate of each refused single
+  (`refused <name>: 64 candidates not ok (...)`), then `ladx-cases: <n>
+  seeds verified first-ok, <r> refused singles not ok on any candidate`.
+  Each takes about 3 minutes.
   `python3 tests/ladx/oracle/audit_order.py <ladxr dir>` checks every
   directory listing, set and environment read (subprocess, environment
   variables, clock, working directory, `os.urandom`, platform and Python

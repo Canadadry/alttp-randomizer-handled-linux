@@ -4,8 +4,14 @@
 #                                a default are the baseline or a single case); a cell whose pair
 #                                vector in settings_validate.txt changes its own values is skipped
 #   case <k=v> <k=v> ...         one combo of two or more non-default tier-1 values, distinct keys
+#   refused <k=v>                a tier-1 value LADXR refuses on every seed with the other settings
+#                                at their defaults: no single case, at least one combo holds it
 # Names and config.txt follow LADXR's settings order, whatever the order here.
 cross logic dungeon_keys
 cross goal accessibility
 cross hardmode hpmode
 case dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=keysanity dungeon_maps=keysanity keyholesanity=1
+# boomerang=default with accessibility=all: LADXR's fill asserts on every seed (D7's Pit Switch
+# (Range) key location is unreachable without the boomerang in the pool); fine with accessibility=goal.
+refused boomerang=default
+case accessibility=goal boomerang=default

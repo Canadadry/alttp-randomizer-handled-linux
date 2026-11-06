@@ -1,0 +1,1 @@
+miniboss=random

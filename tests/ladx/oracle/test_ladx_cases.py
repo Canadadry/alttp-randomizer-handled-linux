@@ -132,6 +132,40 @@ class ExpansionTest(unittest.TestCase):
             expected(spec=spec)
 
 
+class RefusedTest(unittest.TestCase):
+    SPEC = SPEC + "refused music=random\ncase race=1 music=random\n"
+
+    def test_a_refused_single_leaves_the_cases_and_is_covered_by_a_combo(self):
+        e = expected(spec=self.SPEC)
+        self.assertNotIn("music-random", [n for n, _ in e.cases])
+        self.assertIn(("race-1+music-random", ["race=1", "music=random"]), e.combos)
+        self.assertEqual(e.refused, [("music-random", ["music=random"], ["race-1+music-random"])])
+
+    def test_bad_refused_lines(self):
+        for spec in (SPEC + "refused music=random\n",                  # covered by no combo
+                     self.SPEC + "refused music=random\n",             # twice
+                     SPEC + "refused race=0\ncase race=0 logic=hell\n",  # a default value
+                     SPEC + "refused logic=hell race=1\n",             # two assignments
+                     SPEC + "refused dungeon_keys=keysanity\n"):       # a cross cell's single
+            with self.assertRaises(ladx_cases.CasesError, msg=spec):
+                expected(spec=spec)
+
+    def test_the_check_reports_the_refused_single(self):
+        root = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(root))
+        e = expected(spec=self.SPEC)
+        plant(root, e)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(ladx_cases.report(e, root), 0)
+        self.assertEqual(out.getvalue().splitlines()[-2:], [
+            "refused music-random: LADXR refuses every seed, covered by race-1+music-random",
+            "ladx-cases: 9 cases, 6 combos, 1 cells skipped by validate, 1 singles refused by "
+            "LADXR, every tier-1 value and cross cell covered"])
+        ladx_cases.write_case(os.path.join(root, "cases", "music-random"), ["music=random"],
+                              ladx_cases.derive("music-random", 0))
+        self.assertEqual(ladx_cases.mismatches(e, root), ["EXTRA cases/music-random"])
+
 def plant(root, e):
     for sub, entries in (("cases", e.cases), ("combos", e.combos)):
         for k, (name, assignments) in enumerate(entries):
@@ -291,6 +325,94 @@ class CommandTest(unittest.TestCase):
         status, out, err = self.main("list", "nope")
         self.assertEqual(status, 2)
 
+
+class Candidates(unittest.TestCase):
+    """Stand-ins for the Nintendo-bytes test and the oracle run of the picker's candidate loop."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.root))
+        self.path = os.path.join(self.root, "combos", "goal-maze+race-1")
+        self.name = "goal-maze+race-1"
+
+    def stand_ins(self, bad_text, outcomes):
+        """nintendo_ok refuses the seed texts of the candidates in bad_text; run gives outcomes
+        by candidate (ok past the end) and records the candidates it ran."""
+        ran = []
+        bad = {ladx_cases.derive(self.name, k).hex() + "\n" for k in bad_text}
+
+        def nintendo_ok(text):
+            return text not in bad
+
+        def run(seed):
+            k = next(k for k in range(ladx_cases.BOUND) if ladx_cases.derive(self.name, k) == seed)
+            ran.append(k)
+            return outcomes[k] if k < len(outcomes) else "ok"
+        return nintendo_ok, run, ran
+
+
+class PickTest(Candidates):
+    def test_picks_the_first_acceptable_candidate_and_records_refusals_in_order(self):
+        nintendo_ok, run, ran = self.stand_ins([1], ["error Item placement failed", "ok",
+                                                     "crash IndexError list index out of range"])
+        k, refusals = ladx_cases.pick_case(self.path, self.name, ["goal=maze", "race=1"],
+                                           nintendo_ok, run)
+        self.assertEqual(k, 3)
+        self.assertEqual(refusals, [(0, "error Item placement failed"), (1, "nintendo-bytes"),
+                                    (2, "crash IndexError list index out of range")])
+        self.assertEqual(ran, [0, 2, 3])
+        with open(os.path.join(self.path, "config.txt")) as f:
+            self.assertEqual(f.read(), "goal=maze\nrace=1\n")
+        with open(os.path.join(self.path, "seed")) as f:
+            self.assertEqual(f.read(), ladx_cases.derive(self.name, 3).hex() + "\n")
+
+    def test_writes_nothing_when_every_candidate_is_refused(self):
+        nintendo_ok, run, _ = self.stand_ins([], ["error x"] * ladx_cases.BOUND)
+        k, refusals = ladx_cases.pick_case(self.path, self.name, ["race=1"], nintendo_ok, run)
+        self.assertEqual((k, len(refusals)), (None, ladx_cases.BOUND))
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_refuses_an_existing_directory(self):
+        os.makedirs(self.path)
+        nintendo_ok, run, ran = self.stand_ins([], [])
+        with self.assertRaises(ladx_cases.CasesError):
+            ladx_cases.pick_case(self.path, self.name, ["race=1"], nintendo_ok, run)
+        self.assertEqual((ran, os.listdir(self.path)), ([], []))
+
+    def test_refusal_kinds(self):
+        self.assertEqual([ladx_cases.refusal_kind(r) for r in (
+            "nintendo-bytes", "error Item placement failed", "crash IndexError list index",
+            "crash UnicodeEncodeError 'x' codec")],
+            ["nintendo-bytes", "error", "crash IndexError", "crash UnicodeEncodeError"])
+
+
+class VerifyTest(Candidates):
+    def plant(self, k):
+        ladx_cases.write_case(self.path, ["race=1"], ladx_cases.derive(self.name, k))
+
+    def test_a_first_ok_seed_is_verified(self):
+        self.plant(2)
+        nintendo_ok, run, ran = self.stand_ins([0], ["ok", "crash IndexError x"])
+        self.assertEqual(ladx_cases.verify_case(self.path, self.name, nintendo_ok, run), (2, []))
+        self.assertEqual(ran, [1, 2])
+
+    def test_an_earlier_acceptable_candidate_or_a_refused_seed_is_a_problem(self):
+        self.plant(1)
+        nintendo_ok, run, _ = self.stand_ins([], ["ok", "error x"])
+        self.assertEqual(ladx_cases.verify_case(self.path, self.name, nintendo_ok, run),
+                         (1, ["candidate 0 is acceptable", "candidate 1 is refused: error x"]))
+
+
+class VerifyRefusedTest(unittest.TestCase):
+    def test_every_candidate_must_be_not_ok(self):
+        name = "boomerang-default"
+        outcomes = {ladx_cases.derive(name, k): "crash AssertionError x"
+                    for k in range(ladx_cases.BOUND)}
+        self.assertEqual(ladx_cases.verify_refused(name, outcomes.get),
+                         ({"crash AssertionError": ladx_cases.BOUND}, []))
+        outcomes[ladx_cases.derive(name, 5)] = "ok"
+        counts, problems = ladx_cases.verify_refused(name, outcomes.get)
+        self.assertEqual(problems, ["candidate 5 is ok"])
 
 if __name__ == "__main__":
     unittest.main()

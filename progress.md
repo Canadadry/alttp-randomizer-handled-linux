@@ -54,7 +54,7 @@
   - [ ] Step 2.4 Cases
     - [x] Chunk 1: goal-bingo cut in tier1.txt and fixtures
     - [x] Chunk 2: expected case list and checker
-    - [ ] Chunk 3: seeds picked with the ROM, case folders
+    - [x] Chunk 3: seeds picked with the ROM, case folders
     - [ ] Chunk 4: runners over every case
   - [ ] Step 2.5 Golden format and goldens
   - [ ] Step 2.6 Patch tables
