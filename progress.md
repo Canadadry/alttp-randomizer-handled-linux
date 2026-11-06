@@ -49,7 +49,7 @@
   - [ ] Step 2.11 — Help text per value
     - [x] Chunk 1 — Core help strings and the help line
     - [x] Chunk 2 — The SDL renderer draws the help
-    - [ ] Chunk 3 — Mockup check and docs
+    - [x] Chunk 3 — Mockup check and docs
   - [ ] Step 2.12 — The new theme's look
   - [ ] Step 2.13 — Default theme switched
   - [ ] Step 2.14 — skill: check-net

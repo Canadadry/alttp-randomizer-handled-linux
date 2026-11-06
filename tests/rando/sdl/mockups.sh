@@ -114,4 +114,4 @@ done
 	echo "mockups: failed: $matched of $rendered texts match, ui_cli agrees with alttpr on $agreed of $checked"
 	exit 1
 }
-echo "mockups: $rendered mockups render offline with the local font, ui_cli agrees with alttpr on $agreed, $matched texts match (help line excepted)"
+echo "mockups: $rendered mockups render offline with the local font, ui_cli agrees with alttpr on $agreed, $matched texts match (help line included)"

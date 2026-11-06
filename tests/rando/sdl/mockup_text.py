@@ -25,8 +25,8 @@ The rules, in one place:
 - Indent, on rows whose strings are equal: on a 12 px list body (every body text font-size="12")
   the row's leftmost start-anchored text is at base + 12 x leading spaces, base 60 with a
   <use href="#triforce"> in the body zone, else 30; any other body needs no leading space.
-- A message-zone text with font-size="10" is the help line: left out, and the app's message must
-  then be empty.
+- A message-zone text with font-size="10" is the help line; it is the mockup's message line. A
+  mockup with a help line and another message text is refused: the message replaces the help.
 - Colours, scroll markers, the cursor row and the disabled state are not text: not compared.
 """
 
@@ -113,9 +113,8 @@ class Mockup:
                 href = element.get("href", element.get(XLINK_HREF))
                 if href == "#triforce" and zone_of(translate_y(element)) == BODY:
                     self.cursor = True
-        self.help = [t for t in self.texts[MESSAGE] if t["size"] == HELP_FONT_SIZE]
-        self.texts[MESSAGE] = [t for t in self.texts[MESSAGE] if t["size"] != HELP_FONT_SIZE]
-        if self.help and self.texts[MESSAGE]:
+        sizes = {t["size"] == HELP_FONT_SIZE for t in self.texts[MESSAGE]}
+        if len(sizes) > 1:
             raise InputError("a help line and another message text")
         self.rows = self._rows(self.texts[BODY])
         self.list_body = bool(self.texts[BODY]) and all(
@@ -277,7 +276,8 @@ LIST_BODY = (body_text(60, 114, "Swords") + body_text(584, 114, "Swordless", anc
              body_text(84, 186, "Ganon: Ganon"))
 
 
-def grid(rows, message=" Not supported", footer=" </> Y Default  B Back", tabs="[Generate]  History"):
+def grid(rows, message=" Not supported", footer=" </> Y Default  B Back", tabs="[Generate]  History",
+         message_tag="E"):
     def line(tag, cell, marker=" "):
         assert len(cell) <= COLS - 1, cell
         return tag + "|" + cell.ljust(COLS - 1) + marker + "|"
@@ -285,7 +285,7 @@ def grid(rows, message=" Not supported", footer=" </> Y Default  B Back", tabs="
     border = " +" + "-" * COLS + "+"
     lines = [border, line("=", tabs), line("#", " Seed Settings")]
     lines += [line(tag, cell, marker) for tag, cell, marker in rows]
-    lines += [line("E", message), line("_", footer), border]
+    lines += [line(message_tag, message), line("_", footer), border]
     return "\n".join(lines) + "\n"
 
 
@@ -322,10 +322,13 @@ COMPARE_CASES = [
      svg(LIST_BODY), grid(LIST_ROWS, footer=" </> Y Default  B Cancel"),
      ['MISMATCH self: footer: mockup "Y Default B Back" app "Y Default B Cancel"']),
     ("help line, empty app message",
-     svg(LIST_BODY, message=HELP), grid(LIST_ROWS, message=""), []),
+     svg(LIST_BODY, message=HELP), grid(LIST_ROWS, message=""),
+     ['MISMATCH self: message: mockup "Press A to pick" app ""']),
     ("help line, app message",
      svg(LIST_BODY, message=HELP), grid(LIST_ROWS),
-     ['MISMATCH self: message: mockup "" app "Not supported"']),
+     ['MISMATCH self: message: mockup "Press A to pick" app "Not supported"']),
+    ("help line, app help",
+     svg(LIST_BODY, message=HELP), grid(LIST_ROWS, message=" Press A to pick", message_tag="h"), []),
     ("notice body, clean", svg(NOTICE_BODY, cursor=""), grid(NOTICE_ROWS), []),
     ("notice body, app row indented",
      svg(NOTICE_BODY, cursor=""), grid(with_row(NOTICE_ROWS, 1, (" ", "   Open.sfc", " "))),

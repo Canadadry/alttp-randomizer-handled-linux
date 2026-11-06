@@ -148,8 +148,8 @@ in `docs/`, then `README.md`.
   `alttpr` with `themes/alttp` playing every pairing (`goldens.sh --draw
   --states`), the `ui_cli` grid read from those captures, `ui_cli`
   byte-identical to `alttpr` on the theme's page, and each mockup's text
-  compared with `ui_cli`'s (one `MISMATCH` line per difference; the rules
-  are in `mockup_text.py`'s docstring); it writes
+  compared with `ui_cli`'s, help line included (one `MISMATCH` line per
+  difference; the rules are in `mockup_text.py`'s docstring); it writes
   `tests/rando/build/mockups/` and ends with one summary line. Without
   python3, node, npm, Playwright or its Chromium (`NODE_PATH=$(npm root
   -g)`, browsers in `/opt/pw-browsers`) or `make sdl-pc`'s packages it

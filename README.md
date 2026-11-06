@@ -394,7 +394,8 @@ off, and are paired with the app states that show them in
 `make mockups` (outside the net; needs `make sdl-pc`'s packages, node and
 Playwright's Chromium) renders them offline, plays every pairing into the
 SDL app and `ui_cli`, and compares each mockup's text with the app's,
-writing `tests/rando/build/mockups/`.
+help line included (mockup 00's help line must equal the app's), writing
+`tests/rando/build/mockups/`.
 
 `make theme-compare` (outside the net, same needs as `make mockups`;
 `THEME=themes/classic` compares another theme, default `themes/alttp`)
@@ -416,8 +417,12 @@ the theme's page (one more row, smaller text), so its score is high by
 construction; do not tune the theme to it.
 
 A theme may hold an optional `[help]` section (the help line's font, x,
-baseline, right edge and colour); without it the theme has no help line, as
-`classic` has none.
+baseline, right edge and colour). The help line says what the selected
+setting's current value does; any message (an error, or a notice such as a
+row's "Not supported with" reason) takes its place, and Generate Seed, History
+and the notice screens have none. Without `[help]` the theme draws no help
+line, as `classic` draws none; the text renderer still shows it on the
+message line, tagged `h`.
 
 The fonts' sources are in `data/`, each beside its licence: DejaVu Sans Mono
 (`DejaVuSansMono.ttf`) and Press Start 2P (`PressStart2P.ttf`, SIL Open Font
