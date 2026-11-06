@@ -660,7 +660,7 @@ def runs_varied(a_meta, b_meta, describe=False):
     return all(key in a and key in b and a[key] != b[key] for key in keys)
 
 
-_CASE_LINE = re.compile(r"([A-Za-z0-9_.-]+) ((?:[0-9a-fA-F]{2})+)((?: [A-Za-z0-9_]+=\S*)*)")
+_CASE_LINE = re.compile(r"([A-Za-z0-9_.+-]+) ((?:[0-9a-fA-F]{2})+)((?: [A-Za-z0-9_]+=\S*)*)")
 
 
 def read_cases(text, names=None):

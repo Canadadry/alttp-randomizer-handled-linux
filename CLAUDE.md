@@ -76,7 +76,18 @@ in `docs/`, then `README.md`.
   `item_pools.txt`), each describing its format in its `#` header.
   `notes/plan3-scope-cuts.md` lists every tier-1 value cut from plan 3
   with its reason; `tier1.txt`'s header names the cut values it leaves
-  out (`goal=bingo*`, cut `goal-bingo`). `tests/ladx/extract/` will hold the extraction fixtures
+  out (`goal=bingo*`, cut `goal-bingo`). `tests/ladx/cases/` and
+  `tests/ladx/combos/` will hold LADX's cases (Phase 2 step 4), one
+  directory each, named from its settings (`<key>-<value>`, joined with `+`
+  in LADXR's order; `baseline`): `config.txt`, one `key=value` line per
+  non-default setting in LADXR's order (empty for the baseline), and `seed`,
+  32 lowercase hex digits, `derive(name, k)` (the first 16 bytes of SHA-256
+  of `ladx-case <name> <k>`, `k < 64`). Their expected list is derived by
+  `ladx_cases.py` (unit-tested by `test_ladx_cases.py`) from `tier1.txt`
+  (the baseline and every non-default value alone), the hand-written
+  `combos.txt` (`cross <keyA> <keyB>` and `case <k=v> ...` lines; a cross
+  cell that validate rewrites, per `settings_validate.txt`, is skipped and
+  named) and the `settings.txt` fixture. `tests/ladx/extract/` will hold the extraction fixtures
   the inventory's Extractions table names (Phase 2 step 7), under the
   Nintendo-bytes check's strict scope.
 
@@ -117,6 +128,19 @@ in `docs/`, then `README.md`.
   ROM`; plus `test-ladx-oracle` (`unittest discover` of
   `tests/ladx/oracle/test_*.py` under `python3 -I`: the LADX oracle's helpers
   and Phase 2's tools, no LADXR, no ROM, no network).
+- `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check`,
+  no ROM, no LADXR, no network; not yet in `make test`, until the case
+  directories are committed): it proves itself on planted trees (a missing
+  and an extra case, a config order swap and a wrong value, a seed not from
+  the derivation, an uppercase seed, an extra file, a name in both
+  directories), then compares `tests/ladx/cases/` and `tests/ladx/combos/`
+  with the expected list: one `MISSING`, `EXTRA`, `WRONG`, `BADSEED`,
+  `STRAY` or `BOTH` line per mismatch (exit 1), else one `skip <name>:
+  validate sets <k=v>` line per skipped cell and `ladx-cases: <n> cases, <m>
+  combos, <s> cells skipped by validate, every tier-1 value and cross cell
+  covered`; a malformed input exits 2. `ladx_cases.py list [<name>...]`
+  prints the case directories as `ladx_oracle.py cases` prints a case list,
+  after the same comparison.
 - The LADX oracle, outside the net (it needs git, the network for GitHub and
   python3 >= 3.11, else a `setup:` line; no ROM): `tests/ladx/oracle/setup.sh
   [--fresh]` clones LADXR at its pin into `LADXR_DIR` (default

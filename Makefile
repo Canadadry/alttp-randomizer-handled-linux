@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template rom-guard test-ladx-oracle lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
+.PHONY: help install test test-rando ui-cli test-template rom-guard test-ladx-oracle ladx-cases lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -6,6 +6,7 @@ help:
 	@echo "make test-rando     the randomizer's unit tests (tests/alttp)"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
 	@echo "make test-ladx-oracle the LADX oracle's helper unit tests (tests/ladx/oracle), no LADXR, no network, run by make test"
+	@echo "make ladx-cases     tests/ladx/cases/ and combos/ checked against tier1.txt and combos.txt, no ROM, no LADXR"
 	@echo "make rom-guard      fails if git's index holds a .gb/.gbc/.sfc/.smc file or a LADX/ALttP ROM by digest, run by make test"
 	@echo "make ui-cli         builds tests/alttp/build/ui_cli, the agent's text view of the app"
 	@echo "make lint           alttp/ and app/ built as strict ISO C99 (-pedantic-errors)"
@@ -54,6 +55,9 @@ rom-guard:
 
 test-ladx-oracle:
 	python3 -I -B -m unittest discover -s tests/ladx/oracle -p 'test_*.py' -q
+
+ladx-cases:
+	python3 -I -B tests/ladx/oracle/ladx_cases.py check
 
 ui-cli:
 	$(MAKE) -C tests/alttp ui-cli

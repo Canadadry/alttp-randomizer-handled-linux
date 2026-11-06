@@ -1,0 +1,11 @@
+# The LADX combos, hand-written; read by ladx_cases.py, which expands them into the expected
+# tests/ladx/combos/ directories. One line each:
+#   cross <keyA> <keyB>          every non-default tier-1 value of A with every one of B (cells with
+#                                a default are the baseline or a single case); a cell whose pair
+#                                vector in settings_validate.txt changes its own values is skipped
+#   case <k=v> <k=v> ...         one combo of two or more non-default tier-1 values, distinct keys
+# Names and config.txt follow LADXR's settings order, whatever the order here.
+cross logic dungeon_keys
+cross goal accessibility
+cross hardmode hpmode
+case dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=keysanity dungeon_maps=keysanity keyholesanity=1

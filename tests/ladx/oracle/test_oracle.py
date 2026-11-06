@@ -560,6 +560,10 @@ class CaseListTest(unittest.TestCase):
             ("race", bytes.fromhex("4c41"), ["race=1"]),
             ("hell", bytes.fromhex("0123"), ["logic=hell", "dungeon_keys=keysanity"])])
 
+    def test_combo_names_join_assignments_with_plus(self):
+        self.assertEqual(ladx_oracle.read_cases("logic-hell+goal-5-8 00 logic=hell goal=5-8\n"),
+                         [("logic-hell+goal-5-8", b"\x00", ["logic=hell", "goal=5-8"])])
+
     def test_name_selection_keeps_the_list_order(self):
         self.assertEqual([c[0] for c in ladx_oracle.read_cases(self.LIST, ["hell", "baseline"])],
                          ["baseline", "hell"])

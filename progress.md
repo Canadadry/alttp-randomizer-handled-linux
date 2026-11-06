@@ -53,7 +53,7 @@
       - [x] Inventory filled from the traces
   - [ ] Step 2.4 Cases
     - [x] Chunk 1: goal-bingo cut in tier1.txt and fixtures
-    - [ ] Chunk 2: expected case list and checker
+    - [x] Chunk 2: expected case list and checker
     - [ ] Chunk 3: seeds picked with the ROM, case folders
     - [ ] Chunk 4: runners over every case
   - [ ] Step 2.5 Golden format and goldens

@@ -1,0 +1,296 @@
+import contextlib
+import io
+import os
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import ladx_cases  # noqa: E402
+import ladx_oracle  # noqa: E402
+
+SETTINGS = """# stand-in settings.txt
+setting seed\tMain\t<\tstr\t""\tSeed\t0\t-
+setting logic\tMain\tL\tstr\t""\tLogic\t0\t-
+option logic\tcasual\tc\tCasual\t-
+option logic\t""\t""\tNormal\t-
+option logic\thell\tH\tHell\t-
+setting accessibility\tMain\tA\tstr\tall\tAccessibility\t0\t-
+option accessibility\tall\ta\t100%\t-
+option accessibility\tgoal\tg\tBeatable\t-
+setting race\tMain\tV\tbool\t0\tRace mode\t0\t-
+setting dungeon_keys\tItems\td\tstr\t""\tKeys\t0\t-
+option dungeon_keys\t""\t""\tStandard\t-
+option dungeon_keys\tkeysanity\tk\tKeysanity\t-
+setting goal\tGameplay\tG\tstr\tvanilla\tGoal\t0\t-
+option goal\tvanilla\tv\tVanilla\t-
+option goal\topen-4\t<\tShort\t-
+option goal\t5-8\t>\tLong\t-
+option goal\tmaze\tm\tMaze\t-
+setting music\tUser\tM\tstr\t""\tMusic\t1\t-
+option music\t""\t""\tDefault\t-
+option music\trandom\tr\tRandom\t-
+"""
+
+VALIDATE = """# stand-in settings_validate.txt
+# keys accessibility goal
+validate accessibility=all -> =\t
+validate accessibility=goal -> =\tAg
+validate goal=vanilla -> =\t
+validate goal=open-4 -> =\tG<
+validate goal=5-8 -> =\tG>
+validate goal=maze -> =\tGm
+validate accessibility=all,goal=vanilla -> =\t
+validate accessibility=all,goal=open-4 -> =\tG<
+validate accessibility=all,goal=5-8 -> =\tG>
+validate accessibility=all,goal=maze -> =\tGm
+validate accessibility=goal,goal=vanilla -> =\tAg
+validate accessibility=goal,goal=open-4 -> =\tAgG<
+validate accessibility=goal,goal=5-8 -> =\tAgG>
+validate accessibility=goal,goal=maze -> accessibility=all\tGm
+"""
+
+TIER1 = """# stand-in tier1.txt
+logic all
+accessibility all
+race all
+dungeon_keys all
+goal vanilla open-4 5-8 maze
+music "" random
+"""
+
+SPEC = """# stand-in combos.txt
+cross logic dungeon_keys
+cross goal accessibility
+case dungeon_keys=keysanity race=1 logic=hell
+"""
+
+
+def expected(tier1=TIER1, spec=SPEC, settings=SETTINGS, validate=VALIDATE):
+    return ladx_cases.expected_list(tier1, settings, validate, spec)
+
+
+class DeriveTest(unittest.TestCase):
+    def test_fixed_vectors(self):
+        self.assertEqual(ladx_cases.derive("baseline", 0).hex(), "3ad484d5f6d7795ad8893b6c536da4ad")
+        self.assertEqual(ladx_cases.derive("baseline", 1).hex(), "e8515e7064fb5fd6458e72d56122673b")
+        name = "logic-hell+dungeon_keys-keysanity"
+        self.assertEqual(ladx_cases.derive(name, 0).hex(), "0dd7bf2fed653fb0eb50bc08881a0080")
+        self.assertEqual(ladx_cases.derive(name, 1).hex(), "5edccd2fa62e08de4e75d77eae22b9ff")
+
+
+class ExpansionTest(unittest.TestCase):
+    def test_singles_are_the_baseline_then_every_non_default_value(self):
+        self.assertEqual(expected().cases, [
+            ("baseline", []),
+            ("logic-casual", ["logic=casual"]),
+            ("logic-hell", ["logic=hell"]),
+            ("accessibility-goal", ["accessibility=goal"]),
+            ("race-1", ["race=1"]),
+            ("dungeon_keys-keysanity", ["dungeon_keys=keysanity"]),
+            ("goal-open-4", ["goal=open-4"]),
+            ("goal-5-8", ["goal=5-8"]),
+            ("goal-maze", ["goal=maze"]),
+            ("music-random", ["music=random"]),
+        ])
+
+    def test_cross_skips_default_cells_and_validate_rewrites_in_ladxr_order(self):
+        e = expected()
+        self.assertEqual(e.combos, [
+            ("logic-casual+dungeon_keys-keysanity", ["logic=casual", "dungeon_keys=keysanity"]),
+            ("logic-hell+dungeon_keys-keysanity", ["logic=hell", "dungeon_keys=keysanity"]),
+            ("accessibility-goal+goal-open-4", ["accessibility=goal", "goal=open-4"]),
+            ("accessibility-goal+goal-5-8", ["accessibility=goal", "goal=5-8"]),
+            ("logic-hell+race-1+dungeon_keys-keysanity",
+             ["logic=hell", "race=1", "dungeon_keys=keysanity"]),
+        ])
+        self.assertEqual(e.skipped, [("accessibility-goal+goal-maze", ["accessibility=all"])])
+
+    def test_a_single_rewritten_by_validate_is_refused(self):
+        validate = VALIDATE.replace("validate goal=maze -> =", "validate goal=maze -> goal=vanilla")
+        with self.assertRaisesRegex(ladx_cases.CasesError, "goal-maze"):
+            expected(validate=validate)
+
+    def test_bad_spec_lines_are_refused(self):
+        for line in ("case logic=hell logic=casual",            # a repeated key
+                     "case dungeon_keys=keysanity logic=hell",  # a cross cell again
+                     "case logic=hell",                         # one assignment
+                     "case logic=hell race=0",                  # a default value
+                     "case logic=hard race=1",                  # not a tier-1 value
+                     "case logic=hell nope=1",                  # no such setting
+                     "cross logic logic",
+                     "cross logic nope",
+                     "cross logic dungeon_keys",                # the same cross twice
+                     "pair logic race"):
+            with self.assertRaises(ladx_cases.CasesError, msg=line):
+                expected(spec=SPEC + line + "\n")
+
+    def test_a_case_line_rewritten_by_validate_is_refused(self):
+        spec = "case accessibility=goal goal=maze race=1\n"
+        with self.assertRaisesRegex(ladx_cases.CasesError, "validate"):
+            expected(spec=spec)
+
+
+def plant(root, e):
+    for sub, entries in (("cases", e.cases), ("combos", e.combos)):
+        for k, (name, assignments) in enumerate(entries):
+            ladx_cases.write_case(os.path.join(root, sub, name), assignments,
+                                  ladx_cases.derive(name, k % 3))
+
+
+def write(path, text):
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
+class CheckTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.root))
+        self.e = expected()
+        plant(self.root, self.e)
+
+    def run_check(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            status = ladx_cases.report(self.e, self.root)
+        return status, out.getvalue().splitlines()
+
+    def assert_lines(self, lines):
+        status, out = self.run_check()
+        self.assertEqual((status, out), (1, lines))
+
+    def test_a_correct_tree_gives_the_skips_and_the_summary(self):
+        self.assertEqual(self.run_check(), (0, [
+            "skip accessibility-goal+goal-maze: validate sets accessibility=all",
+            "ladx-cases: 10 cases, 5 combos, 1 cells skipped by validate, every tier-1 value and "
+            "cross cell covered"]))
+
+    def test_the_baseline_config_is_empty(self):
+        with open(os.path.join(self.root, "cases", "baseline", "config.txt"), "rb") as f:
+            self.assertEqual(f.read(), b"")
+        with open(os.path.join(self.root, "combos", "logic-hell+dungeon_keys-keysanity",
+                               "config.txt"), "rb") as f:
+            self.assertEqual(f.read(), b"logic=hell\ndungeon_keys=keysanity\n")
+
+    def test_missing_and_extra(self):
+        __import__("shutil").rmtree(os.path.join(self.root, "cases", "goal-5-8"))
+        ladx_cases.write_case(os.path.join(self.root, "combos", "race-1+goal-maze"),
+                              ["race=1", "goal=maze"], ladx_cases.derive("race-1+goal-maze", 0))
+        self.assert_lines(["MISSING cases/goal-5-8", "EXTRA combos/race-1+goal-maze"])
+
+    def test_wrong_config(self):
+        write(os.path.join(self.root, "combos", "logic-hell+dungeon_keys-keysanity", "config.txt"),
+              "dungeon_keys=keysanity\nlogic=hell\n")
+        write(os.path.join(self.root, "cases", "race-1", "config.txt"), "race=0\n")
+        self.assert_lines([
+            "WRONG cases/race-1: config.txt is 'race=0\\n', expected 'race=1\\n'",
+            "WRONG combos/logic-hell+dungeon_keys-keysanity: config.txt is "
+            "'dungeon_keys=keysanity\\nlogic=hell\\n', expected "
+            "'logic=hell\\ndungeon_keys=keysanity\\n'"])
+
+    def test_bad_seeds(self):
+        write(os.path.join(self.root, "cases", "race-1", "seed"),
+              ladx_cases.derive("race-1", 64 - 1).hex().upper() + "\n")
+        write(os.path.join(self.root, "cases", "goal-maze", "seed"),
+              ladx_cases.derive("goal-5-8", 0).hex() + "\n")
+        os.remove(os.path.join(self.root, "cases", "baseline", "seed"))
+        self.assert_lines([
+            "BADSEED cases/baseline: no seed file",
+            "BADSEED cases/race-1: not 32 lowercase hex digits and a newline",
+            "BADSEED cases/goal-maze: not derive(goal-maze, k) for any k < 64"])
+
+    def test_stray_files_and_a_name_in_both(self):
+        write(os.path.join(self.root, "cases", "race-1", "notes.txt"), "x\n")
+        write(os.path.join(self.root, "combos", "README"), "x\n")
+        ladx_cases.write_case(os.path.join(self.root, "combos", "goal-maze"), ["goal=maze"],
+                              ladx_cases.derive("goal-maze", 0))
+        self.assert_lines(["STRAY cases/race-1/notes.txt", "STRAY combos/README",
+                           "BOTH goal-maze"])
+
+    def test_listing_is_what_ladx_oracle_cases_prints(self):
+        lines = ladx_cases.listing(self.e, self.root)
+        self.assertEqual(lines[0], "baseline " + ladx_cases.derive("baseline", 0).hex())
+        self.assertEqual(lines[-1], "logic-hell+race-1+dungeon_keys-keysanity %s logic=hell "
+                         "race=1 dungeon_keys=keysanity"
+                         % ladx_cases.derive("logic-hell+race-1+dungeon_keys-keysanity", 1).hex())
+        self.assertEqual(len(lines), 15)
+        path = os.path.join(self.root, "list.txt")
+        write(path, "\n".join(lines) + "\n")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(ladx_oracle.main(["cases", path]), 0)
+        self.assertEqual(out.getvalue().splitlines(), lines)
+
+    def test_listing_named_cases_in_list_order(self):
+        self.assertEqual([line.split()[0] for line in ladx_cases.listing(
+            self.e, self.root, ["logic-hell+dungeon_keys-keysanity", "race-1"])],
+            ["race-1", "logic-hell+dungeon_keys-keysanity"])
+        with self.assertRaises(ladx_cases.CasesError):
+            ladx_cases.listing(self.e, self.root, ["race-0"])
+
+    def test_no_directories_is_every_case_missing(self):
+        __import__("shutil").rmtree(os.path.join(self.root, "cases"))
+        __import__("shutil").rmtree(os.path.join(self.root, "combos"))
+        status, out = self.run_check()
+        self.assertEqual((status, len(out)), (1, 15))
+        self.assertEqual(out[0], "MISSING cases/baseline")
+
+
+class CommandTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.root))
+        self.inputs = os.path.join(self.root, "inputs")
+        os.makedirs(self.inputs)
+        for name, text in (("tier1.txt", TIER1), ("settings.txt", SETTINGS),
+                           ("settings_validate.txt", VALIDATE), ("combos.txt", SPEC)):
+            write(os.path.join(self.inputs, name), text)
+
+    def main(self, *args):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            status = ladx_cases.main(list(args) + ["--root", self.root, "--inputs", self.inputs])
+        return status, out.getvalue().splitlines(), err.getvalue()
+
+    def test_check_proves_itself_then_checks_the_tree(self):
+        plant(self.root, expected())
+        status, out, _ = self.main("check")
+        self.assertEqual(status, 0)
+        self.assertTrue(out[-1].startswith("ladx-cases: 10 cases, 5 combos, 1 cells skipped"))
+        __import__("shutil").rmtree(os.path.join(self.root, "combos"))
+        status, out, _ = self.main("check")
+        self.assertEqual((status, len(out)), (1, 5))
+
+    def test_a_blind_checker_fails_its_self_proof(self):
+        plant(self.root, expected())
+        real = ladx_cases.mismatches
+        ladx_cases.mismatches = lambda e, root: []
+        try:
+            status, out, err = self.main("check")
+        finally:
+            ladx_cases.mismatches = real
+        self.assertEqual(status, 1)
+        self.assertIn("ladx-cases: self-test failed: missing", err)
+
+    def test_malformed_input_exits_2(self):
+        write(os.path.join(self.inputs, "combos.txt"), "cross logic logic\n")
+        status, out, err = self.main("check")
+        self.assertEqual((status, out), (2, []))
+        self.assertIn("combos.txt", err)
+
+    def test_list_refuses_a_tree_that_does_not_check(self):
+        plant(self.root, expected())
+        status, out, _ = self.main("list", "race-1")
+        self.assertEqual((status, out), (0, ["race-1 %s race=1" % ladx_cases.derive("race-1", 1).hex()]))
+        os.remove(os.path.join(self.root, "cases", "race-1", "seed"))
+        status, out, err = self.main("list")
+        self.assertEqual((status, out), (1, []))
+        self.assertIn("BADSEED cases/race-1: no seed file", err)
+        status, out, err = self.main("list", "nope")
+        self.assertEqual(status, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()
