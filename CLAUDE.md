@@ -154,6 +154,18 @@ in `docs/`, then `README.md`.
   python3, node, npm, Playwright or its Chromium (`NODE_PATH=$(npm root
   -g)`, browsers in `/opt/pw-browsers`) or `make sdl-pc`'s packages it
   prints a `setup:` line, a setup problem that verifies nothing.
+- `make theme-compare`, outside the net, with the same needs and `setup:`
+  lines as `make mockups` (`tests/rando/sdl/theme_compare.sh`, image tool
+  `theme_compare.py`): it renders the mockups like `make mockups`, captures
+  the app in each pairing with `THEME` (default `themes/alttp`, e.g.
+  `THEME=themes/classic`), and writes `tests/rando/build/theme-compare/`:
+  one `<mockup>.png` per mockup, panels **mockup | app | diff** (diff: the
+  mockup in dim grey where equal, magenta where not), and `scores.txt`,
+  one `theme-compare: <mockup>: score <s>` line each. The score is
+  100 × Σ|A−B| / (W×H×3×255) over every pixel and RGB channel. There is no
+  threshold: it fails only when the images cannot be produced. Each run
+  first proves the tool on planted images and checks that each mockup's
+  self-score is 0. Mockup 00 (16 px) scores high by construction.
 - `make package`, outside the net, needs docker: it runs `sdl-arm`, strips
   the binary with Onion's toolchain, checks it with `file` and `readelf`
   (32-bit ARM EABI5, dynamically linked, `/lib/ld-linux-armhf.so.3`,
@@ -167,8 +179,8 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
-  build are not `check`, nor are `make package`, `make sdl-goldens` and
-  `make mockups`.
+  build are not `check`, nor are `make package`, `make sdl-goldens`,
+  `make mockups` and `make theme-compare`.
   `make patch-header` (the base patch's header, source CRC32, size cap and
   pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
 - CI: `.github/workflows/check.yml` runs `make -k check`, in a job

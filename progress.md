@@ -45,7 +45,7 @@
       - [x] Edit 07 — the scroll-down marker
   - [ ] Step 2.10 — `make theme-compare`
     - [x] Chunk 1 — The image tool
-    - [ ] Chunk 2 — The driver and make targets
+    - [x] Chunk 2 — The driver and make targets
   - [ ] Step 2.11 — Help text per value
   - [ ] Step 2.12 — The new theme's look
   - [ ] Step 2.13 — Default theme switched

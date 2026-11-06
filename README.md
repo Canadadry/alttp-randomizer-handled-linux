@@ -396,6 +396,25 @@ Playwright's Chromium) renders them offline, plays every pairing into the
 SDL app and `ui_cli`, and compares each mockup's text with the app's,
 writing `tests/rando/build/mockups/`.
 
+`make theme-compare` (outside the net, same needs as `make mockups`;
+`THEME=themes/classic` compares another theme, default `themes/alttp`)
+renders the mockups the same way, captures the app in each paired state
+with the theme, and writes one 1936×480 image per mockup to
+`tests/rando/build/theme-compare/<mockup>.png`: three panels, left to right
+**mockup | app | diff**, with 8 px grey bars between them. The diff panel
+shows the mockup dimmed to grey where the two pixels are equal, and magenta
+where they differ, brighter the larger the difference. Each mockup gets a
+score, printed and kept in `scores.txt` beside the images: the mean
+absolute difference over every pixel and RGB channel, as a percentage of
+full scale (0.000 identical, 100.000 black against white everywhere). There
+is no threshold: SDL_ttf's text never matches the browser's to the pixel,
+so a score only says whether a tuning pass got closer. The target fails
+only when it cannot produce the images, and every run first checks its
+image code on planted images and checks that each mockup scored against
+itself is exactly 0. Mockup 00 is drawn at 16 px, while its pairing plays at
+the theme's page (one more row, smaller text), so its score is high by
+construction; do not tune the theme to it.
+
 A theme may hold an optional `[help]` section (the help line's font, x,
 baseline, right edge and colour); without it the theme has no help line, as
 `classic` has none.

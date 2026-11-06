@@ -32,24 +32,8 @@ states="$here/mockup_states.txt"
 text_py="$here/mockup_text.py"
 date=2026-11-01T14:03:27
 
-setup() {
-	echo "setup: $*" >&2
-	exit 1
-}
-
-for tool in python3 node npm; do
-	command -v "$tool" >/dev/null 2>&1 || setup "$tool not found on PATH"
-done
-NODE_PATH="$(npm root -g)"
-export NODE_PATH
-if [ -z "${PLAYWRIGHT_BROWSERS_PATH:-}" ] && [ -d /opt/pw-browsers ]; then
-	PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
-	export PLAYWRIGHT_BROWSERS_PATH
-fi
-node -e "require('playwright')" >/dev/null 2>&1 ||
-	setup "the playwright module is not found under $NODE_PATH (npm install -g playwright)"
-node -e "require('playwright').chromium.launch().then(b => b.close()).catch(() => process.exit(1))" >/dev/null 2>&1 ||
-	setup "headless Chromium does not launch (npx playwright install chromium)"
+. "$here/mockup_common.sh"
+browser_setup
 
 rm -rf "$out"
 mkdir -p "$out/text" "$out/work"
@@ -64,20 +48,7 @@ set -f
 node "$here/mockup_render.js" "$out/render" $svgs || bad=1
 rendered="$(printf '%s\n' "$svgs" | wc -l | tr -d ' ')"
 
-paired=""
-while IFS='	' read -r name _rest; do
-	[ -n "$name" ] || continue
-	if [ -f "$mockups/$name.svg" ]; then
-		paired="$paired $name"
-	else
-		echo "mockups: $name: no mockup"
-		bad=1
-	fi
-done <"$states"
-for svg in $svgs; do
-	name="$(basename "$svg" .svg)"
-	grep -q "^$name	" "$states" || { echo "mockups: $name: no pairing"; bad=1; }
-done
+pairing_check mockups "$mockups" "$states" || bad=1
 
 "$here/goldens.sh" "$alttpr" "$theme" "$fixture" --draw "$out/app" --states "$states"
 
