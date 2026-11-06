@@ -34,10 +34,13 @@ in `docs/`, then `README.md`.
   `app/package/` holds the Onion app folder's files (`launch.sh`,
   `config.json`, `icon.png`) and `build_zip.py`, which writes the release zip
   (self-test `tests/rando/test_package.py`).
-- `themes/` holds one folder per theme (`themes/classic/`: today's look as a
-  theme).
-- `data/` holds the fonts' source (DejaVu Sans Mono and its licence; the
-  themes ship their own copies) and the base patch `base.bps`.
+- `themes/` holds one flat folder per theme (`themes/classic/`: today's look
+  as a theme; `themes/alttp/`: the mockups' 12 px geometry in Press Start 2P,
+  with plain colours and text markers standing in for the frame and sprites).
+- `data/` holds the fonts' source (DejaVu Sans Mono and Press Start 2P, each
+  with its licence; the themes ship byte copies, checked by `test_theme`) and
+  the base patch `base.bps`. Press Start 2P is `google/fonts`
+  `ofl/pressstart2p/` at `24ddc1f324cac5d9f5aedca126d298f56e3f1640`, renamed.
 - `tests/rando/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/rando/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.

@@ -374,6 +374,28 @@ no size in its cell, a background that is not 640×480, or a page outside
 (and the theme key) and exits with status 1, before anything touches the SD
 card; so does a screen with more tabs than the theme has tab slots.
 
+Two themes are in `themes/`: `classic`, the 40×15 grid look the zip ships,
+and `alttp`, the mockups' (`design/mockups/`) 12 px geometry in Press Start
+2P: zones, rows, the help line's place and the footer band, with plain
+colours and text markers (`>`, `<`, `^`, `v`, the buttons' key text)
+standing in until the frame and the sprites exist. Look at it with:
+
+```bash
+tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
+```
+
+A theme may hold an optional `[help]` section (the help line's font, x,
+baseline, right edge and colour); without it the theme has no help line, as
+`classic` has none.
+
+The fonts' sources are in `data/`, each beside its licence: DejaVu Sans Mono
+(`DejaVuSansMono.ttf`) and Press Start 2P (`PressStart2P.ttf`, SIL Open Font
+License 1.1, `PressStart2P-LICENSE.txt`), the unmodified
+`ofl/pressstart2p/PressStart2P-Regular.ttf` and `OFL.txt` of
+[google/fonts](https://github.com/google/fonts) at commit
+`24ddc1f324cac5d9f5aedca126d298f56e3f1640` (sha256 `034c77f1…e017d` and
+`705960c3…944b0`). Each theme folder holds byte copies of the fonts it uses.
+
 ## Working with Claude
 
 ### Skills you run

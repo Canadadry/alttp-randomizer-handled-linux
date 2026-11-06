@@ -3,10 +3,12 @@
 #include "support.h"
 #include "theme.h"
 #include "ui_grid.h"
+#include "ui_history.h"
 
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <dirent.h>
 #include <sys/stat.h>
 
 #define TEST "test_theme"
@@ -33,6 +35,8 @@
 
 #define CLASSIC_DIR "../../themes/classic"
 #define INVENTORY_DIR "unit/themes/inventory"
+#define ALTTP_DIR "../../themes/alttp"
+#define DATA_DIR "../../data"
 
 static Theme theme;
 static char classic[THEME_FILE_BYTES_MAX + 1];
@@ -939,6 +943,89 @@ static void test_help_columns_floor_partial_characters(void)
 	CHECK(theme_help_columns(&theme, 1) == 580);
 }
 
+static void test_alttp_loads_within_the_app_ranges(void)
+{
+	ThemeError err;
+	int page, columns, help;
+
+	memset(&err, 0, sizeof err);
+	if (!theme_load(&theme, ALTTP_DIR, &err))
+		test_fail(TEST, "alttp refused: %s", err.message);
+	CHECK(theme.help.present);
+	CHECK(!theme.fonts[theme.list.font].size.fit && !theme.fonts[theme.help.font].size.fit);
+	page = theme_page(&theme);
+	columns = theme_columns(&theme, theme.fonts[theme.list.font].size.px);
+	help = theme_help_columns(&theme, theme.fonts[theme.help.font].size.px);
+	if (page < 1 || page > UI_GRID_LINES_MAX - 4)
+		test_fail(TEST, "alttp page %d outside 1..%d", page, UI_GRID_LINES_MAX - 4);
+	if (columns < UI_HISTORY_WIDTH_MIN || columns > UI_HISTORY_WIDTH_MAX)
+		test_fail(TEST, "alttp width %d outside %d..%d", columns, UI_HISTORY_WIDTH_MIN, UI_HISTORY_WIDTH_MAX);
+	if (help < 1)
+		test_fail(TEST, "alttp help line of %d characters", help);
+}
+
+static bool ends_with(const char *s, const char *suffix)
+{
+	size_t n = strlen(s), m = strlen(suffix);
+
+	return n >= m && strcmp(s + n - m, suffix) == 0;
+}
+
+/* false when a or b cannot be opened; otherwise *same says whether their bytes are equal. */
+static bool same_bytes(const char *a, const char *b, bool *same)
+{
+	FILE *fa = fopen(a, "rb");
+	FILE *fb = fa ? fopen(b, "rb") : NULL;
+	int ca, cb;
+
+	if (!fa || !fb) {
+		if (fa)
+			fclose(fa);
+		return false;
+	}
+	do {
+		ca = getc(fa);
+		cb = getc(fb);
+	} while (ca == cb && ca != EOF);
+	*same = ca == cb && !ferror(fa) && !ferror(fb);
+	fclose(fa);
+	fclose(fb);
+	return true;
+}
+
+static void test_alttp_fonts_are_data_copies(void)
+{
+	DIR *dir = opendir(ALTTP_DIR);
+	struct dirent *e;
+	int compared = 0;
+
+	if (!dir)
+		test_fail(TEST, "cannot open %s: %s", ALTTP_DIR, strerror(errno));
+	while ((e = readdir(dir)) != NULL) {
+		char ours[512], theirs[512];
+		bool same = false;
+		FILE *f;
+
+		if (!ends_with(e->d_name, ".ttf") && !ends_with(e->d_name, "-LICENSE.txt"))
+			continue;
+		snprintf(theirs, sizeof theirs, "%s/%s", DATA_DIR, e->d_name);
+		f = fopen(theirs, "rb");
+		if (!f)
+			continue;
+		fclose(f);
+		snprintf(ours, sizeof ours, "%s/%s", ALTTP_DIR, e->d_name);
+		if (!same_bytes(ours, theirs, &same))
+			test_fail(TEST, "cannot read %s", ours);
+		if (!same)
+			test_fail(TEST, "%s differs from %s", ours, theirs);
+		compared++;
+	}
+	closedir(dir);
+	if (compared < 2)
+		test_fail(TEST, "%s: %d font or licence files shared with %s, expected at least 2", ALTTP_DIR, compared,
+			  DATA_DIR);
+}
+
 static void check_asset(int line, const ThemeAsset *a, ThemeAssetKind kind, const char *key, const char *file)
 {
 	if (a->kind != kind || strcmp(a->key, key) != 0 || strcmp(a->file, file) != 0)
@@ -1043,6 +1130,8 @@ int main(void)
 	test_help_present();
 	test_help_values();
 	test_help_columns_floor_partial_characters();
+	test_alttp_loads_within_the_app_ranges();
+	test_alttp_fonts_are_data_copies();
 	test_classic_line_and_section_problems();
 	test_classic_missing_keys_and_sections();
 	test_optional_sections();
