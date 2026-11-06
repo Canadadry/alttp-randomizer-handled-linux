@@ -46,7 +46,7 @@
   - [x] Step 2.10 — `make theme-compare`
     - [x] Chunk 1 — The image tool
     - [x] Chunk 2 — The driver and make targets
-  - [ ] Step 2.11 — Help text per value
+  - [x] Step 2.11 — Help text per value
     - [x] Chunk 1 — Core help strings and the help line
     - [x] Chunk 2 — The SDL renderer draws the help
     - [x] Chunk 3 — Mockup check and docs

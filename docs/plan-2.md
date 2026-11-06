@@ -574,3 +574,25 @@ position.
   02 8.265 / 14.929, 03 8.205 / 16.259, 04 8.089 / 15.601, 05 8.255 /
   19.645, 06 8.268 / 15.036, 07 8.524 / 18.712, 08 8.344 / 16.148. 00 is
   high by construction (a 16 px mockup against the theme's 12 px page).
+
+### Step 2.11
+
+- Done in 3 chunks (`366add8`, `5c391ec`, and the mockup-check commit): 63
+  English help strings (`UI_STR_HELP_*`, bound `UI_STR_HELP_LEN_MAX` 58,
+  tied to alttp's help columns in `test_theme`; other strings keep 38), one
+  per value of the 13 library settings and the Spoiler row, each checked
+  against the C port in `rando/`. Generate's message line shows its
+  message, else the selected row's unsupported reason, else the value's
+  help (`UI_MESSAGE_HELP`, tag `h` in the text renderer); the action row,
+  History and notices have none. `sdl_render` draws it in `[help]`; classic
+  has no `[help]`, so its goldens stay byte-identical.
+- Deliberate snapshot change (`366add8` alone): the eight snapshots
+  showing a selected setting without a message gained their `h|` line. The
+  SDL goldens differed only at that commit, which was pushed with the next.
+- Three PRD wordings corrected against the port: Tower Crystals 0 ("opens
+  without any crystal", not "open from the start"), Basic placement
+  ("logic expects", it gives nothing), Hard item functionality ("silvers
+  work only at Ganon"). The Hard/Expert caps (no armor upgrade, Tempered /
+  Master sword) were checked and hold.
+- `make mockups`: 9 texts match, help line included (00's help line equals
+  the app's). `make test`, `make sdl-pc` and `make -k check` green.
