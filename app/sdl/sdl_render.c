@@ -301,23 +301,21 @@ static const char *cut_mark(const SdlRender *r)
 	return r->theme->screen.cut.kind == THEME_MARKER_TEXT ? r->theme->screen.cut.text : "";
 }
 
-/* Draws text from x, cut so that it and the cut mark end within room px; returns the drawn end. */
-static int put_text(SdlRender *r, SDL_Surface *dst, int font, int x, int y, int room, const char *text,
-		    ThemeColour c)
+/* Cuts printable s in place so that it, and the cut mark when *cut, end within room px; returns the
+   width of both. A room too small for the mark leaves s empty. */
+static int fit(const SdlRender *r, int font, char *s, int room, bool *cut)
 {
-	char s[TEXT_BYTES];
 	const char *mark = cut_mark(r);
-	int w, mark_w, len;
+	int w = measure(r, font, s), mark_w, len;
 
-	printable(s, text);
-	w = measure(r, font, s);
-	if (w <= room) {
-		put_plain(r, dst, font, x, y, s, c);
-		return x + w;
-	}
+	*cut = false;
+	if (w <= room)
+		return w;
 	mark_w = measure(r, font, mark);
-	if (room - mark_w < 0)
-		return x;
+	if (room - mark_w < 0) {
+		s[0] = '\0';
+		return 0;
+	}
 	len = (int)strlen(s);
 	if (font_of(r, font)->cell.present) {
 		len = (room - mark_w) / font_of(r, font)->cell.w;
@@ -327,10 +325,30 @@ static int put_text(SdlRender *r, SDL_Surface *dst, int font, int x, int y, int 
 		while (len > 0 && measure(r, font, s) + mark_w > room);
 	}
 	s[len] = '\0';
+	*cut = true;
+	return measure(r, font, s) + mark_w;
+}
+
+static void put_fitted(SdlRender *r, SDL_Surface *dst, int font, int x, int y, const char *s, bool cut,
+		       ThemeColour c)
+{
 	put_plain(r, dst, font, x, y, s, c);
-	w = measure(r, font, s);
-	put_plain(r, dst, font, x + w, y, mark, c);
-	return x + w + mark_w;
+	if (cut)
+		put_plain(r, dst, font, x + measure(r, font, s), y, cut_mark(r), c);
+}
+
+/* Draws text from x, cut so that it and the cut mark end within room px; returns the drawn end. */
+static int put_text(SdlRender *r, SDL_Surface *dst, int font, int x, int y, int room, const char *text,
+		    ThemeColour c)
+{
+	char s[TEXT_BYTES];
+	bool cut;
+	int w;
+
+	printable(s, text);
+	w = fit(r, font, s, room, &cut);
+	put_fitted(r, dst, font, x, y, s, cut, c);
+	return x + w;
 }
 
 static int marker_width(const SdlRender *r, int font, const ThemeMarker *m)
@@ -383,6 +401,108 @@ static void draw_title(SdlRender *r, const UiScreen *screen, SDL_Surface *dst)
 	for (x = end + rule->offset; x < rule->end; x += rule->dash + rule->gap)
 		fill(dst, x, rule->y, rule->dash < rule->end - x ? rule->dash : rule->end - x, rule->thickness,
 		     rule->colour);
+}
+
+typedef struct RowColours {
+	ThemeColour label, value;
+} RowColours;
+
+static RowColours row_colours(const ThemeList *l, const UiRow *row, bool selected)
+{
+	RowColours c;
+
+	if (row->disabled)
+		c.label = selected ? l->selected_disabled_colour : l->disabled_colour;
+	else if (selected)
+		c.label = l->selected_colour;
+	else
+		c.label = row->kind == UI_ROW_TEXT ? l->text_colour : l->label_colour;
+	c.value = row->disabled || selected || row->kind == UI_ROW_TEXT ? c.label : l->value_colour;
+	return c;
+}
+
+static bool row_visible(const UiScreen *screen, int index, int page)
+{
+	return index >= screen->scroll && index < screen->scroll + page && index < screen->row_count;
+}
+
+static void draw_selected_band(const SdlRender *r, const UiScreen *screen, SDL_Surface *dst)
+{
+	const ThemeList *l = &r->theme->list;
+	const ThemeBand *b;
+
+	if (screen->body_kind != UI_BODY_LIST || screen->cursor < 0 ||
+	    !row_visible(screen, screen->cursor, theme_page(r->theme)))
+		return;
+	b = screen->rows[screen->cursor].disabled ? &l->selected_disabled : &l->selected;
+	if (b->present)
+		band(dst, b, l->top + (screen->cursor - screen->scroll) * l->row_height + b->y);
+}
+
+/* The value right-aligned to value_right, its arrows around it; the label cut before the left arrow. */
+static void draw_setting(SdlRender *r, SDL_Surface *dst, const UiRow *row, int top, int label_x, bool arrows,
+			 RowColours c)
+{
+	const ThemeList *l = &r->theme->list;
+	char value[TEXT_BYTES];
+	bool cut;
+	int w, value_x, arrow_x;
+
+	printable(value, row->value);
+	w = fit(r, l->font, value, l->value_max, &cut);
+	value_x = l->value_right - w;
+	arrow_x = value_x - l->arrow_left_gap - marker_width(r, l->font, &l->arrow_left);
+	put_text(r, dst, l->font, label_x, top + l->text_y, arrow_x - l->label_gap - label_x, row->label, c.label);
+	put_fitted(r, dst, l->font, value_x, top + l->text_y, value, cut, c.value);
+	if (!arrows)
+		return;
+	put_marker(r, dst, l->font, &l->arrow_left, arrow_x, top + l->arrow_y, c.value);
+	put_marker(r, dst, l->font, &l->arrow_right, l->value_right + l->arrow_right_gap, top + l->arrow_y, c.value);
+}
+
+static void draw_list(SdlRender *r, const UiScreen *screen, SDL_Surface *dst)
+{
+	const ThemeList *l = &r->theme->list;
+	int page = theme_page(r->theme), label_x = screen->cursor >= 0 ? l->label_x_cursor : l->label_x, i;
+	int last = l->top + (page - 1) * l->row_height;
+	ThemeColour first_colour = l->label_colour, last_colour = l->label_colour;
+
+	for (i = 0; i < page && screen->scroll + i < screen->row_count; i++) {
+		int index = screen->scroll + i, top = l->top + i * l->row_height;
+		const UiRow *row = &screen->rows[index];
+		bool selected = index == screen->cursor;
+		RowColours c = row_colours(l, row, selected);
+
+		if (i == 0)
+			first_colour = c.label;
+		if (i == page - 1)
+			last_colour = c.label;
+		if (selected)
+			put_marker(r, dst, l->font, row->disabled ? &l->cursor_disabled : &l->cursor, l->cursor_x,
+				   top + l->cursor_y, c.label);
+		if (row->kind == UI_ROW_SETTING)
+			draw_setting(r, dst, row, top, label_x, selected && !row->disabled, c);
+		else
+			put_text(r, dst, l->font, label_x, top + l->text_y, l->right - label_x, row->label, c.label);
+	}
+	if (screen->scroll > 0 || screen->more_above)
+		put_marker(r, dst, l->font, &l->scroll_up, l->scroll_x, l->top + l->scroll_y, first_colour);
+	if (screen->scroll + page < screen->row_count || screen->more_below)
+		put_marker(r, dst, l->font, &l->scroll_down, l->scroll_x, last + l->scroll_y, last_colour);
+}
+
+static void draw_notice(SdlRender *r, const UiScreen *screen, SDL_Surface *dst)
+{
+	const ThemeNotice *n = &r->theme->notice;
+	int page = theme_page(r->theme), i;
+
+	for (i = 0; i < page && screen->scroll + i < screen->row_count; i++) {
+		const UiRow *row = &screen->rows[screen->scroll + i];
+		int x = row->emphasis ? n->emphasis_x : n->x;
+
+		put_text(r, dst, n->font, x, n->top + i * n->row_height + n->text_y, n->right - x, row->label,
+			 row->emphasis ? n->emphasis_colour : n->colour);
+	}
 }
 
 static void draw_message(SdlRender *r, const UiScreen *screen, SDL_Surface *dst)
@@ -535,8 +655,13 @@ bool sdl_render_draw(SdlRender *r, const UiScreen *screen, SDL_Surface *dst)
 		band(dst, &t->tabs.band, t->tabs.band.y);
 	if (screen->hint_count > 0 && t->footer.band.present)
 		band(dst, &t->footer.band, t->footer.band.y);
+	draw_selected_band(r, screen, dst);
 	draw_tabs(r, screen, dst);
 	draw_title(r, screen, dst);
+	if (screen->body_kind == UI_BODY_LIST)
+		draw_list(r, screen, dst);
+	else
+		draw_notice(r, screen, dst);
 	draw_message(r, screen, dst);
 	draw_footer(r, screen, dst);
 	return true;

@@ -334,12 +334,21 @@ static const char *chars(int n, char c)
 	return b;
 }
 
-static void test_equivalence_without_body(void)
+static void add_row(UiScreen *sc, UiRowKind kind, const char *label, const char *value, bool disabled, bool emphasis)
 {
-	static const char unprintable[] = { 'A', '\t', 'b', (char)0x7F, 'c', (char)0xC3, (char)0xA9, 'd', '\0' };
+	UiRow row;
+
+	row.kind = kind;
+	row.label = label;
+	row.value = value;
+	row.disabled = disabled;
+	row.emphasis = emphasis;
+	CHECK(ui_screen_add_row(sc, row));
+}
+
+static void open_equivalence(void)
+{
 	SdlRenderFailure f;
-	UiScreen sc;
-	int i;
 
 	load(&theme, CLASSIC);
 	if (!sdl_render_open(&render, &theme, CLASSIC, &f))
@@ -348,6 +357,152 @@ static void test_equivalence_without_body(void)
 		test_fail(TEST, "sdl_view_open: %s", TTF_GetError());
 	grid_shot = surface();
 	theme_shot = surface();
+}
+
+static void close_equivalence(void)
+{
+	SDL_FreeSurface(grid_shot);
+	SDL_FreeSurface(theme_shot);
+	sdl_view_close(&grid_view);
+	sdl_render_close(&render);
+}
+
+static void test_equivalence_with_body(void)
+{
+	static const int value_lens[] = { 0, 5, 32, 33, 34, 35, 40 };
+	static const char unprintable[] = { 'v', '\t', 'a', (char)0x80, 'l', '\0' };
+	char name[96];
+	UiScreen sc;
+	int v, state, i;
+
+	open_equivalence();
+	sc = base_screen();
+	add_row(&sc, UI_ROW_SETTING, "Mode", "Open", false, false);
+	same_pixels("one setting", &sc);
+
+	for (v = 0; v < (int)(sizeof value_lens / sizeof value_lens[0]); v++)
+		for (state = 0; state < 4; state++) {
+			bool selected = state & 1, disabled = (state & 2) != 0;
+
+			sc = base_screen();
+			add_row(&sc, UI_ROW_ACTION, "Generate", NULL, false, false);
+			add_row(&sc, UI_ROW_SETTING, "Item placement", chars(value_lens[v], (char)('a' + v)), disabled,
+				false);
+			add_row(&sc, UI_ROW_SETTING, chars(40, 'L'), chars(value_lens[v], 'q'), false, false);
+			sc.cursor = selected ? 1 : 0;
+			snprintf(name, sizeof name, "value of %d, %s%s", value_lens[v], selected ? "selected" : "unselected",
+				 disabled ? ", disabled" : "");
+			same_pixels(name, &sc);
+		}
+
+	sc = base_screen();
+	add_row(&sc, UI_ROW_SETTING, chars(31, 'k'), "x", false, false);
+	add_row(&sc, UI_ROW_SETTING, chars(33, 'k'), "x", false, false);
+	add_row(&sc, UI_ROW_SETTING, chars(30, 'k'), "x", false, false);
+	add_row(&sc, UI_ROW_SETTING, chars(10, 'k'), chars(32, 'w'), false, false);
+	add_row(&sc, UI_ROW_SETTING, NULL, NULL, false, false);
+	add_row(&sc, UI_ROW_SETTING, unprintable, unprintable, false, false);
+	same_pixels("long labels cut, no cursor", &sc);
+	sc.cursor = 3;
+	same_pixels("label of one cell before a selected 32-character value", &sc);
+
+	sc = base_screen();
+	add_row(&sc, UI_ROW_ACTION, "Generate seed", NULL, false, false);
+	add_row(&sc, UI_ROW_ACTION, "Disabled action", NULL, true, false);
+	add_row(&sc, UI_ROW_TEXT, "A line of text", NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, "    indented text", NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, chars(38, 't'), NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, chars(39, 'u'), NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, "Disabled text", NULL, true, false);
+	add_row(&sc, UI_ROW_ACTION, chars(50, 'z'), NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, unprintable, NULL, false, false);
+	same_pixels("action and text rows", &sc);
+	for (i = 0; i < sc.row_count; i++) {
+		sc.cursor = i;
+		snprintf(name, sizeof name, "action and text rows, cursor on %d", i);
+		same_pixels(name, &sc);
+	}
+
+	sc = base_screen();
+	for (i = 0; i < 20; i++)
+		add_row(&sc, i % 3 == 0 ? UI_ROW_ACTION : UI_ROW_SETTING, chars(i + 1, 'r'), chars(i, 'n'), i % 5 == 4,
+			false);
+	sc.cursor = 0;
+	same_pixels("cursor on the first line, down mark", &sc);
+	sc.cursor = 10;
+	same_pixels("cursor on the last line, down mark on it", &sc);
+	sc.cursor = 9;
+	same_pixels("cursor on a disabled row, down mark", &sc);
+	sc.scroll = 5;
+	sc.cursor = 5;
+	same_pixels("both marks, up mark on the selected row", &sc);
+	sc.cursor = 15;
+	same_pixels("both marks, cursor on the last line", &sc);
+	sc.scroll = 9;
+	sc.cursor = 14;
+	same_pixels("up mark on a selected disabled row", &sc);
+	sc.cursor = 19;
+	same_pixels("last page, up mark only", &sc);
+	sc.more_below = true;
+	same_pixels("last page, more_below", &sc);
+	sc.scroll = 0;
+	sc.cursor = -1;
+	sc.more_above = true;
+	sc.more_below = false;
+	same_pixels("first page, more_above, no cursor", &sc);
+
+	sc = base_screen();
+	add_row(&sc, UI_ROW_SETTING, "Mode", "Open", false, false);
+	add_row(&sc, UI_ROW_SETTING, "Goal", "Ganon", false, false);
+	same_pixels("short list, no marks", &sc);
+	sc.more_below = true;
+	same_pixels("short list, more_below on an empty line", &sc);
+	sc.more_above = true;
+	sc.cursor = 0;
+	same_pixels("short list, both flags, up mark on the selected row", &sc);
+	sc.cursor = -1;
+	same_pixels("short list, both flags, no cursor", &sc);
+
+	sc = base_screen();
+	with_tabs(&sc, 1);
+	sc.title = "Delete this seed?";
+	sc.title_tone = UI_TITLE_ALERT;
+	sc.body_kind = UI_BODY_NOTICE;
+	add_row(&sc, UI_ROW_TEXT, "ALttPR - 2026-11-06 - abcdef.sfc", NULL, false, true);
+	add_row(&sc, UI_ROW_TEXT, "The seed and its spoiler", NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, chars(45, 'f'), NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, chars(41, 'g'), NULL, false, true);
+	add_hint(&sc, UI_HINT_A, "A", "Delete", true);
+	add_hint(&sc, UI_HINT_B, "B", "Keep", false);
+	same_pixels("notice with an emphasised row", &sc);
+	sc = base_screen();
+	sc.body_kind = UI_BODY_NOTICE;
+	for (i = 0; i < 11; i++)
+		add_row(&sc, UI_ROW_TEXT, chars(i + 3, 'h'), NULL, false, i == 2);
+	same_pixels("notice filling the page", &sc);
+
+	sc = base_screen();
+	with_tabs(&sc, 0);
+	sc.title = "Settings";
+	add_row(&sc, UI_ROW_SETTING, "Glitches", "None", false, false);
+	add_row(&sc, UI_ROW_SETTING, "Mode", "Open", false, false);
+	add_row(&sc, UI_ROW_ACTION, "Generate", NULL, false, false);
+	sc.cursor = 1;
+	sc.message_kind = UI_MESSAGE_ERROR;
+	sc.message = "No ROM found";
+	add_hint(&sc, UI_HINT_LEFT_RIGHT, "<>", "Change", false);
+	add_hint(&sc, UI_HINT_START, "Start", "Generate", true);
+	same_pixels("every zone with a list", &sc);
+	close_equivalence();
+}
+
+static void test_equivalence_without_body(void)
+{
+	static const char unprintable[] = { 'A', '\t', 'b', (char)0x7F, 'c', (char)0xC3, (char)0xA9, 'd', '\0' };
+	UiScreen sc;
+	int i;
+
+	open_equivalence();
 
 	sc = base_screen();
 	same_pixels("empty", &sc);
@@ -424,11 +579,7 @@ static void test_equivalence_without_body(void)
 	add_hint(&sc, UI_HINT_A, "A", "Details", false);
 	add_hint(&sc, UI_HINT_X, "X", "Delete", false);
 	same_pixels("every zone", &sc);
-
-	SDL_FreeSurface(grid_shot);
-	SDL_FreeSurface(theme_shot);
-	sdl_view_close(&grid_view);
-	sdl_render_close(&render);
+	close_equivalence();
 }
 
 static Uint32 rgb(int r, int g, int b)
@@ -695,6 +846,175 @@ static void test_features_footer(void)
 	expect_run("mark at the dropped key's x", "~", f->label_colour, key, f->y, band_colour);
 }
 
+static int row_top(int k)
+{
+	return features.list.top + k * features.list.row_height;
+}
+
+static int row_base(int k)
+{
+	return row_top(k) + features.list.text_y;
+}
+
+/* The text a run-font cut keeps: the longest prefix whose width plus the mark's fits in room. */
+static const char *run_cut(const char *text, int room)
+{
+	static char kept[128];
+	int len = (int)strlen(text);
+
+	CHECK(len < (int)sizeof kept);
+	memcpy(kept, text, (size_t)len + 1);
+	while (len > 0 && run_width(kept) + run_width("~") > room)
+		kept[--len] = '\0';
+	return kept;
+}
+
+static void test_features_list(void)
+{
+	const ThemeList *l = &features.list;
+	static const char long_label[] = "A label far too long to fit before the value of its setting row";
+	char kept[128];
+	UiScreen sc = base_screen();
+	int value_x, arrow_x, room;
+
+	add_row(&sc, UI_ROW_SETTING, "Mode", "Open", false, false);
+	add_row(&sc, UI_ROW_SETTING, "Goal", "Ganon", false, false);
+	add_row(&sc, UI_ROW_ACTION, "Generate", NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, "Some text", NULL, false, false);
+	add_row(&sc, UI_ROW_SETTING, "Glitches", "None", true, false);
+	sc.cursor = 0;
+	draw(&sc);
+	expect_rect("selected band top line", l->selected.x, row_top(0), 8, l->selected.top_line,
+		    rgb_of(l->selected.line_colour));
+	expect_rect("selected band", l->selected.x, row_top(0) + l->selected.top_line, 8,
+		    l->selected.h - l->selected.top_line - l->selected.bottom_line, rgb_of(l->selected.colour));
+	expect_rect("selected band bottom line", l->selected.x, row_top(0) + l->selected.h - l->selected.bottom_line, 8,
+		    l->selected.bottom_line, rgb_of(l->selected.line_colour));
+	expect_rect("left of the selected band", 0, row_top(0), l->selected.x, l->selected.h, FRAME_TOP);
+	expect_rect("right of the selected band", l->selected.x + l->selected.w, row_top(0),
+		    640 - l->selected.x - l->selected.w, l->selected.h, FRAME_TOP);
+	expect_rect("no band on an unselected row", l->selected.x, row_top(1), 8, l->row_height, FRAME_TOP);
+	expect_rect("cursor sprite", l->cursor_x, row_top(0) + l->cursor_y, 16, 14, 0xf8d038u);
+	value_x = l->value_right - run_width("Open");
+	arrow_x = value_x - l->arrow_left_gap - 8;
+	expect_rect("left arrow before the drawn value", arrow_x, row_top(0) + l->arrow_y, 8, 12, 0x00ff00u);
+	expect_rect("right of the left arrow", arrow_x + 8, row_top(0) + l->arrow_y, 1, 12, rgb_of(l->selected.colour));
+	expect_rect("right arrow after value_right", l->value_right + l->arrow_right_gap, row_top(0) + l->arrow_y, 9, 12,
+		    0x00ffaau);
+	expect_run("unselected label at label_x_cursor", "Goal", l->label_colour, l->label_x_cursor, row_base(1),
+		   FRAME_TOP);
+	expect_run("value right-aligned", "Ganon", l->value_colour, l->value_right - run_width("Ganon"), row_base(1),
+		   FRAME_TOP);
+	CHECK(!colour_in_rows(0x00ff00u, row_top(1), row_top(2)));
+	expect_run("action label", "Generate", l->label_colour, l->label_x_cursor, row_base(2), FRAME_TOP);
+	expect_run("text row", "Some text", l->text_colour, l->label_x_cursor, row_base(3), FRAME_TOP);
+	expect_run("disabled label", "Glitches", l->disabled_colour, l->label_x_cursor, row_base(4), FRAME_TOP);
+	expect_run("disabled value", "None", l->disabled_colour, l->value_right - run_width("None"), row_base(4),
+		   FRAME_TOP);
+
+	sc.cursor = 4;
+	draw(&sc);
+	expect_rect("selected disabled band top line", l->selected_disabled.x, row_top(4), 8,
+		    l->selected_disabled.top_line, rgb_of(l->selected_disabled.line_colour));
+	expect_rect("selected disabled band bottom line", l->selected_disabled.x,
+		    row_top(4) + l->selected_disabled.h - l->selected_disabled.bottom_line, 8,
+		    l->selected_disabled.bottom_line, rgb_of(l->selected_disabled.line_colour));
+	expect_rect("disabled cursor sprite", l->cursor_x, row_top(4) + l->cursor_y, 15, 13, 0xbcc4eeu);
+	CHECK(!colour_in_rows(0xf8d038u, row_top(0), row_top(5)));
+	CHECK(!colour_in_rows(0x00ff00u, row_top(0), row_top(5)));
+	CHECK(!colour_in_rows(0x00ffaau, row_top(0), row_top(5)));
+
+	sc.cursor = -1;
+	draw(&sc);
+	expect_run("label at label_x without a cursor", "Mode", l->label_colour, l->label_x, row_base(0), FRAME_TOP);
+	CHECK(!colour_in_rows(rgb_of(l->selected.colour), row_top(0), row_top(5)));
+
+	sc = base_screen();
+	add_row(&sc, UI_ROW_SETTING, long_label, "Open", false, false);
+	add_row(&sc, UI_ROW_SETTING, "Seed", chars(80, 'v'), false, false);
+	add_row(&sc, UI_ROW_ACTION, long_label, NULL, false, false);
+	add_row(&sc, UI_ROW_ACTION, "Back", NULL, false, false);
+	sc.cursor = 3;
+	draw(&sc);
+	room = l->value_right - run_width("Open") - l->arrow_left_gap - 8 - l->label_gap - l->label_x_cursor;
+	memcpy(kept, run_cut(long_label, room), sizeof kept);
+	CHECK(kept[0] != '\0' && strlen(kept) < strlen(long_label) - 1);
+	expect_run("label cut before the arrow", kept, l->label_colour, l->label_x_cursor, row_base(0), FRAME_TOP);
+	expect_run("label's cut mark", "~", l->label_colour, l->label_x_cursor + run_width(kept), row_base(0), FRAME_TOP);
+	memcpy(kept, run_cut(chars(80, 'v'), l->value_max), sizeof kept);
+	value_x = l->value_right - run_width(kept) - run_width("~");
+	CHECK(l->value_right - value_x <= l->value_max);
+	expect_run("value cut to value_max", kept, l->value_colour, value_x, row_base(1), FRAME_TOP);
+	expect_run("value's cut mark", "~", l->value_colour, value_x + run_width(kept), row_base(1), FRAME_TOP);
+	memcpy(kept, run_cut(long_label, l->right - l->label_x_cursor), sizeof kept);
+	expect_run("action cut at list.right", kept, l->label_colour, l->label_x_cursor, row_base(2), FRAME_TOP);
+	expect_run("action's cut mark", "~", l->label_colour, l->label_x_cursor + run_width(kept), row_base(2),
+		   FRAME_TOP);
+}
+
+static void test_features_scroll_marks(void)
+{
+	const ThemeList *l = &features.list;
+	int page = theme_page(&features), i, last;
+	UiScreen sc = base_screen();
+
+	CHECK(page == 10);
+	last = row_top(page - 1);
+	add_row(&sc, UI_ROW_ACTION, "Generate", NULL, false, false);
+	draw(&sc);
+	CHECK(!colour_in_rows(0xff8000u, 0, 480) && !colour_in_rows(0xff0080u, 0, 480));
+	sc.more_below = true;
+	draw(&sc);
+	expect_rect("down mark on an empty last line", l->scroll_x, last + l->scroll_y, 11, 6, 0xff0080u);
+	CHECK(!colour_in_rows(0xff8000u, 0, 480));
+	sc.more_below = false;
+	sc.more_above = true;
+	draw(&sc);
+	expect_rect("up mark from more_above", l->scroll_x, l->top + l->scroll_y, 10, 6, 0xff8000u);
+
+	sc = base_screen();
+	for (i = 0; i < 15; i++)
+		add_row(&sc, UI_ROW_ACTION, chars(i + 1, 'a'), NULL, false, false);
+	sc.scroll = 3;
+	sc.cursor = 3;
+	draw(&sc);
+	expect_rect("up mark when scrolled", l->scroll_x, l->top + l->scroll_y, 10, 6, 0xff8000u);
+	expect_rect("down mark with rows below", l->scroll_x, last + l->scroll_y, 11, 6, 0xff0080u);
+	expect_rect("cursor on the scrolled page's first line", l->cursor_x, row_top(0) + l->cursor_y, 16, 14,
+		    0xf8d038u);
+	expect_run("second visible row", chars(5, 'a'), l->label_colour, l->label_x_cursor, row_base(1), FRAME_TOP);
+}
+
+static void test_features_notice(void)
+{
+	const ThemeNotice *n = &features.notice;
+	const ThemeList *l = &features.list;
+	UiScreen sc = base_screen();
+	int i;
+
+	sc.body_kind = UI_BODY_NOTICE;
+	add_row(&sc, UI_ROW_TEXT, "Seed ready", NULL, false, false);
+	add_row(&sc, UI_ROW_TEXT, "seed.sfc", NULL, false, true);
+	draw(&sc);
+	expect_run("notice row", "Seed ready", n->colour, n->x, n->top + n->text_y, FRAME_TOP);
+	expect_run("emphasised notice row", "seed.sfc", n->emphasis_colour, n->emphasis_x,
+		   n->top + n->row_height + n->text_y, FRAME_TOP);
+
+	sc = base_screen();
+	sc.body_kind = UI_BODY_NOTICE;
+	for (i = 0; i < 12; i++)
+		add_row(&sc, UI_ROW_TEXT, chars(20, 'W'), NULL, false, false);
+	sc.cursor = 0;
+	sc.more_above = true;
+	sc.more_below = true;
+	draw(&sc);
+	CHECK(!colour_in_rows(rgb_of(l->selected.colour), 0, 480));
+	CHECK(!colour_in_rows(0xf8d038u, 0, 480));
+	CHECK(!colour_in_rows(0xff8000u, 0, 480) && !colour_in_rows(0xff0080u, 0, 480));
+	expect_rect("no row past the page", 0, n->top + theme_page(&features) * n->row_height, 640,
+		    480 - n->top - theme_page(&features) * n->row_height, FRAME_BOTTOM);
+}
+
 static void test_features_too_many_tabs(void)
 {
 	UiScreen sc = base_screen();
@@ -715,6 +1035,9 @@ static void test_features(void)
 	test_features_tabs();
 	test_features_title();
 	test_features_footer();
+	test_features_list();
+	test_features_scroll_marks();
+	test_features_notice();
 	test_features_too_many_tabs();
 	close_features();
 }
@@ -736,6 +1059,7 @@ int main(void)
 	test_failures();
 	test_open_error_text_is_kept();
 	test_equivalence_without_body();
+	test_equivalence_with_body();
 	test_features();
 	IMG_Quit();
 	TTF_Quit();
