@@ -77,6 +77,8 @@ SD_FIXTURE := $(BUILD)/sd_fixture
 GOLDENS_DIR ?= sdl/goldens
 # The theme whose 13 states sdl-pc draws, after the classic comparison.
 DRAW_THEME := ../../themes/alttp
+MOCKUP_THEME = ../../themes/alttp
+MOCKUP_OUT := $(BUILD)/mockups
 SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf SDL_image)
 
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
@@ -98,7 +100,7 @@ PKG_ZIP := $(PKG_DIR)/ALttPR.zip
 PKG_BPS := ../../data/base.bps
 PKG_THEME := ../../themes/classic
 
-.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-goldens sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
+.PHONY: test ui-cli sdl sdl-pc sdl-pc-build sdl-goldens mockups sdl-arm package lint logic selftest e2e e2e-combos e2e-arm unit-arm measure measure-compare patch-header clean
 
 test: $(UNIT_BINS) $(UI_CLI) $(SMOKE)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
@@ -125,6 +127,12 @@ sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP) $(SD_FIXTURE)
 	@./sdl/goldens.sh ./$(SDL_APP) ../../themes/classic ./$(SD_FIXTURE) --compare $(GOLDENS_DIR)
 	@./sdl/goldens.sh ./$(SDL_APP) $(DRAW_THEME) ./$(SD_FIXTURE) --draw $(SDL_DIR)/theme-states/$(notdir $(DRAW_THEME))
 	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests, the smoke test, the golden comparison and the draw of every state with $(notdir $(DRAW_THEME)) ran under the dummy video driver"
+
+# mockups: outside the net; needs sdl-pc's packages, node and Playwright's Chromium.
+mockups:
+	@command -v pkg-config >/dev/null 2>&1 && pkg-config --exists sdl SDL_ttf SDL_image || { echo "setup: SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 development files not found (apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev)" >&2; exit 1; }
+	@$(MAKE) --no-print-directory $(SDL_APP) $(SD_FIXTURE) $(UI_CLI)
+	@./sdl/mockups.sh ./$(SDL_APP) ./$(UI_CLI) ./$(SD_FIXTURE) $(MOCKUP_THEME) $(MOCKUP_OUT)
 
 # sdl-goldens: writes the goldens once, refused if GOLDENS_DIR already holds any.
 sdl-goldens:
