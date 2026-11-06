@@ -1,4 +1,4 @@
-- [ ] Phase 1 — Theme engine with a `classic` theme identical to today
+- [x] Phase 1 — Theme engine with a `classic` theme identical to today
   - [x] Step 1.1 — Goldens of the current rendering
     - [x] Chunk 1 — Shared fixed-run options
     - [x] Chunk 2 — Scripted SDL app
@@ -26,7 +26,7 @@
     - [x] Chunk 2 — Delete the old renderer; the theme is required, with its default
     - [x] Chunk 3 — Packaging follows
     - [x] Chunk 4 — targets/mac follows
-  - [ ] Step 1.7 — skill: check-net
+  - [x] Step 1.7 — skill: check-net
 - [ ] Phase 2 — The new theme from the mockups
   - [ ] Step 2.8 — The new theme's geometry
   - [ ] Step 2.9 — Mockups made true and comparable

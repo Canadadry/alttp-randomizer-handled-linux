@@ -509,3 +509,8 @@ position.
   same way, linked into the PC app, passed the smoke test and the goldens);
   an owner item asks for a Mac run. The CI `sdl` artifact uploads the
   binary alone, which now needs `--theme` or a `themes/default/` beside it.
+
+### Step 1.7
+
+- check-net: `make -k check` green on the first run (test, lint, logic 12,
+  selftest, e2e 50 pass, e2e-combos 23 pass); no `fix:` commit.
