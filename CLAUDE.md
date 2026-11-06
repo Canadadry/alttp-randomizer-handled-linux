@@ -64,7 +64,8 @@ in `docs/`, then `README.md`.
   `test_oracle.py`); Phase 2's ROM-free tools, each unit-tested by its
   `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check;
   `push_gate.py`, Phase 2's push gate; `read_trace.py`, the ROM read
-  trace), and
+  trace; `inventory_check.py`, the grep-diff of `notes/ladx-inventory.md`,
+  the static draft of Phase 2's inventory of `generateRom`), and
   `fetch_rom.sh`, the ROM fetcher, proved by its own run; the
   hand-written inputs `tier1.txt`,
   `determinism_cases.txt` and `order_audit.txt`; and the six fixtures they
@@ -193,6 +194,24 @@ in `docs/`, then `README.md`.
   else one `self-test failed: <case>` line each, exit 1); `--blind-spots`
   lists the buffer-protocol lines a Python trace cannot see (`BLIND
   <file>\t<line>`, then `read-trace: <n> buffer-protocol sites to review`).
+- The inventory check, outside the net (python3 and the LADXR checkout, else
+  `setup: inventory: no LADXR checkout in <dir>, run
+  tests/ladx/oracle/setup.sh`, exit 2; no ROM): `python3 -I
+  tests/ladx/oracle/inventory_check.py [--ladxr <dir>] [--inventory <file>]
+  [--print]` proves itself first on a planted tree and inventory
+  (`inventory: self-test, 7 planted inventories as expected`, else one
+  `self-test failed: <case>` line each, exit 1), then extracts every
+  statement of `generator.py generateRom`, `randomizer.py
+  Randomizer.__init__` after the fill, `romTables.py ROMWithTables.__init__`
+  and `.save`, `rom.py ROM.save` and `ROM.fixHeader` (keyed by stripped
+  line, ` #<k>` on a repeat, as `read_trace.py`'s sites) with the settings,
+  `args`, RNG and placement each names, and diffs them against
+  `notes/ladx-inventory.md`'s tables (default): one `MISSING`, `STALE`,
+  `MISMATCH <section>: <call>: <column> inventory <a>, source <b>` or `BAD`
+  (bad `Side (draft)`, empty `Group (draft)`, malformed table) line each,
+  exit 1, else `inventory: <rows> rows in 6 sections match <commit>`.
+  `--print` writes the extracted tables, draft columns kept, to refresh the
+  draft by hand.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -342,8 +361,9 @@ in `docs/`, then `README.md`.
   `gen_fixtures.sh`, `determinism.sh` and `audit_order.py` run only to
   regenerate or re-prove its fixtures; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, `fetch_rom.sh` fetches it, and `push_gate.py`
-  guards Phase 2's pushes and `read_trace.py` traces LADXR's ROM reads (their
-  tests run in `make test`). The SDL build (`make sdl`,
+  guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
+  `inventory_check.py` diffs the inventory against LADXR (their tests run in
+  `make test`). The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and

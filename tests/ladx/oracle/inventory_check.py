@@ -1,0 +1,572 @@
+"""Usage: python3 -I tests/ladx/oracle/inventory_check.py [--ladxr <dir>] [--inventory <file>] [--print]
+
+The grep-diff of notes/ladx-inventory.md against LADXR's frozen (patched) sources (--ladxr,
+default tests/ladx/oracle/ladxr). It extracts every statement of the sections below and diffs
+them, row by row, against the inventory's table under `## <file> <function>`; prints one
+`MISSING`, `STALE`, `MISMATCH` or `BAD` line per finding, else
+`inventory: <rows> rows in <n> sections match <commit>`. Exit 1 on a finding, 2 on `setup:`.
+`--print` writes the extracted tables instead (draft columns kept from the inventory when it
+has the row, else `?`). Proves itself first, on every run, on a planted tree and inventory.
+
+Sections: generator.py generateRom; randomizer.py Randomizer.__init__ after
+`item_placer.run(self.rnd)`; romTables.py ROMWithTables.__init__ and ROMWithTables.save; rom.py
+ROM.save and ROM.fixHeader. A function body ends at the first non-blank line indented no deeper
+than its `def`, a line continuing a statement (multi-line string, bracket) never ending it;
+`\\r` is stripped. A row is every statement's first line but blanks, comments, `if`/`elif`/
+`else`/`for`/`while`/`try`/`except` headers, `return`, `import` and `print(` lines, greped with
+its continuation lines. Its key is its stripped text, ` #<k>` on the k-th occurrence of that
+text in the whole body (read_trace.py's site key).
+
+Grep columns, over the line and its scope (every enclosing header, and for an `elif`/`else`
+every earlier header of its chain): `Settings` the `settings.<name>`s, `*` when the line passes
+`settings` whole; `Args` the same for `args`; `RNG (grep)` `rnd` and `seed` named by the line,
+`global` when a callee `patches.<m>.<f>`, `hints.<f>` or `mapgen.<f>` has a body using the
+module `random` (`random.Random(...)` is not global use; one level only); `Reads (grep)`
+`placement` (item_list, iteminfo_list, spot), `world_setup`, `logic` (passed whole).
+"""
+
+import argparse
+import difflib
+import io
+import itertools
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import tokenize
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+TOP = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
+DEFAULT_LADXR = os.path.join(HERE, "ladxr")
+DEFAULT_INVENTORY = os.path.join(TOP, "notes", "ladx-inventory.md")
+
+SECTIONS = [
+    ("generator.py", "generateRom", None),
+    ("randomizer.py", "Randomizer.__init__", "item_placer.run(self.rnd)"),
+    ("romTables.py", "ROMWithTables.__init__", None),
+    ("romTables.py", "ROMWithTables.save", None),
+    ("rom.py", "ROM.save", None),
+    ("rom.py", "ROM.fixHeader", None),
+]
+COLUMNS = ["Call", "Settings", "Args", "RNG (grep)", "Reads (grep)", "Notes", "Side (draft)",
+           "Group (draft)"]
+GREP_COLUMNS = COLUMNS[1:5]
+SIDES = ("table", "C", "none", "unused", "?")
+
+HEADER = re.compile(r"(if|elif|else|for|while|try|except)\b")
+SKIPPED = re.compile(r"(#|return\b|import\b|from\s+\S+\s+import\b|print\()")
+CALLEE = re.compile(r"\b(?:patches\.(\w+)\.(\w+)|(hints)\.(\w+)|(mapgen)\.(\w+))\s*\(")
+# random.Random(seed) builds a private generator: it does not touch the global state.
+GLOBAL_RANDOM = re.compile(r"(?<![\w.])random\.(?!Random\b)\w")
+PLACEMENT = re.compile(r"\b(item_list|iteminfo_list|spot)\b")
+LOGIC_WHOLE = re.compile(r"(?<![\w.])(?:self\.)?_*logic(?![\w.])")
+
+
+class SetupError(Exception):
+    pass
+
+
+def section_name(file, function):
+    return "%s %s" % (file, function)
+
+
+def _read_lines(path):
+    with open(path, "rb") as f:
+        return f.read().decode("utf-8", "replace").replace("\r", "").split("\n")
+
+
+def _indent(line):
+    return len(line) - len(line.lstrip())
+
+
+def _continuations(lines):
+    """Indexes of the lines that continue a statement begun above (multi-line strings,
+    brackets, backslashes); empty when the text does not tokenize."""
+    found = set()
+    start = None
+    skipped = (tokenize.NL, tokenize.COMMENT, tokenize.INDENT, tokenize.DEDENT,
+               tokenize.ENCODING, tokenize.ENDMARKER)
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO("\n".join(lines) + "\n").readline):
+            if tok.type == tokenize.NEWLINE:
+                if start is not None:
+                    found.update(range(start, tok.start[0]))
+                start = None
+            elif tok.type not in skipped and start is None:
+                start = tok.start[0]
+    except (tokenize.TokenError, SyntaxError):
+        return set()
+    return found
+
+
+def _function_body(lines, qualname, continued):
+    """[(index, line, continues)] of the body of the first def whose qualname matches, None when
+    absent; a continuation line never ends the body."""
+    stack = []
+    for n, line in enumerate(lines):
+        text = line.strip()
+        if not text or text.startswith("#") or n in continued:
+            continue
+        while stack and _indent(line) <= stack[-1][0]:
+            stack.pop()
+        m = re.match(r"(?:async\s+)?(class|def)\s+(\w+)", text)
+        if not m:
+            continue
+        stack.append((_indent(line), m.group(2)))
+        if m.group(1) == "def" and ".".join(name for _, name in stack) == qualname:
+            body = []
+            for k in range(n + 1, len(lines)):
+                if k not in continued and lines[k].strip() and _indent(lines[k]) <= _indent(line):
+                    break
+                body.append((k, lines[k], k in continued))
+            return body
+    return None
+
+
+def _scope(body, i):
+    """Texts of the enclosing headers of body[i], with the earlier headers of each elif/else
+    chain."""
+    texts = []
+    current = _indent(body[i][1])
+    for j in range(i - 1, -1, -1):
+        _, line, continues = body[j]
+        text = line.strip()
+        if not text or text.startswith("#") or continues or _indent(line) >= current:
+            continue
+        current = _indent(line)
+        texts.append(text)
+        if re.match(r"(elif|else)\b", text):
+            for k in range(j - 1, -1, -1):
+                _, other, continues = body[k]
+                if not other.strip() or continues or _indent(other) > current:
+                    continue
+                if _indent(other) < current:
+                    break
+                if re.match(r"elif\b", other.strip()):
+                    texts.append(other.strip())
+                    continue
+                if re.match(r"if\b", other.strip()):
+                    texts.append(other.strip())
+                break
+    return texts
+
+
+def _names(pattern, texts):
+    return sorted({m for text in texts for m in re.findall(pattern, text)})
+
+
+def _whole(name, text):
+    return re.search(r"(?<![\w.])%s(?![\w.])" % name, text) is not None
+
+
+def _column(names, whole):
+    names = list(names) + (["*"] if whole else [])
+    return ", ".join(names) if names else "-"
+
+
+class Sources:
+    """LADXR's sources under root, read once each."""
+
+    def __init__(self, root):
+        self.root = root
+        self._lines = {}
+        self._continuations = {}
+
+    def lines(self, rel):
+        if rel not in self._lines:
+            path = os.path.join(self.root, rel)
+            self._lines[rel] = _read_lines(path) if os.path.isfile(path) else None
+        return self._lines[rel]
+
+    def continuations(self, rel):
+        if rel not in self._continuations:
+            self._continuations[rel] = _continuations(self.lines(rel))
+        return self._continuations[rel]
+
+    def uses_global_random(self, module, function):
+        for rel in (module + ".py", os.path.join(module, "__init__.py")):
+            lines = self.lines(rel)
+            if lines is None:
+                continue
+            body = _function_body(lines, function, self.continuations(rel))
+            if body is not None:
+                return any(GLOBAL_RANDOM.search(line) for _, line, _ in body)
+        return False
+
+
+def _rng(line, sources):
+    found = [name for name in ("rnd", "seed") if re.search(r"\b%s\b" % name, line)]
+    for m in CALLEE.finditer(line):
+        if m.group(1):
+            module, function = "patches/" + m.group(1), m.group(2)
+        else:
+            module, function = (m.group(3) or m.group(5)), (m.group(4) or m.group(6))
+        if "global" not in found and sources.uses_global_random(module, function):
+            found.append("global")
+    return ", ".join(found) if found else "-"
+
+
+def _reads(texts, line):
+    found = []
+    if any(PLACEMENT.search(t) for t in texts):
+        found.append("placement")
+    if any(re.search(r"\bworld_setup\b", t) for t in texts):
+        found.append("world_setup")
+    if LOGIC_WHOLE.search(line):
+        found.append("logic")
+    return ", ".join(found) if found else "-"
+
+
+def extract_section(sources, file, function, start):
+    """[row dict] of one section, in source order; SetupError when the function or the start
+    line is absent."""
+    lines = sources.lines(file)
+    body = (_function_body(lines, function, sources.continuations(file)) if lines is not None
+            else None)
+    if body is None:
+        raise SetupError("no %s in %s" % (function, os.path.join(sources.root, file)))
+    seen = {}
+    rows = []
+    started = start is None
+    for i, (_, line, continues) in enumerate(body):
+        text = line.strip()
+        if not text:
+            continue
+        seen[text] = seen.get(text, 0) + 1
+        if not started:
+            started = text == start
+            continue
+        if continues or HEADER.match(text) or SKIPPED.match(text):
+            continue
+        assert "`" not in text, "a backtick in a source line cannot be quoted: " + text
+        statement = " ".join([text] + [l.strip() for _, l, c in
+                                       itertools.takewhile(lambda b: b[2], body[i + 1:])])
+        scope = [statement] + _scope(body, i)
+        rows.append({
+            "text": text, "k": seen[text],
+            "Settings": _column(_names(r"\bsettings\.(\w+)", scope),
+                                _whole("settings", statement)),
+            "Args": _column(_names(r"\bargs\.(\w+)", scope), _whole("args", statement)),
+            "RNG (grep)": _rng(statement, sources),
+            "Reads (grep)": _reads(scope, statement),
+        })
+    if not started:
+        raise SetupError("no line %r in %s %s" % (start, file, function))
+    return rows
+
+
+def extract(root):
+    """[(section name, [row dict])] of every section, in order."""
+    sources = Sources(root)
+    return [(section_name(f, fn), extract_section(sources, f, fn, start))
+            for f, fn, start in SECTIONS]
+
+
+def row_key(row):
+    return row["text"] if row["k"] == 1 else "%s #%d" % (row["text"], row["k"])
+
+
+def _split_cells(line):
+    cells = re.split(r"(?<!\\)\|", line.strip())
+    if cells and cells[0] == "":
+        cells = cells[1:]
+    if cells and cells[-1] == "":
+        cells = cells[:-1]
+    return [c.strip().replace("\\|", "|") for c in cells]
+
+
+def _escape(text):
+    return text.replace("|", "\\|")
+
+
+def parse_inventory(text):
+    """({section name: [row dict keyed by COLUMNS, plus "key"]}, [BAD lines]) of the tables under
+    a section heading; text elsewhere is free."""
+    names = {section_name(f, fn) for f, fn, _ in SECTIONS}
+    tables, bad = {}, []
+    heading = None
+    lines = text.replace("\r", "").split("\n")
+    n = 0
+    while n < len(lines):
+        line = lines[n]
+        if line.startswith("## "):
+            heading = line[3:].strip()
+            n += 1
+            continue
+        if heading not in names or not line.startswith("|"):
+            n += 1
+            continue
+        section, heading = heading, None
+        if section in tables:
+            bad.append("BAD %s: a second table" % section)
+        table = []
+        tables[section] = table
+        header = _split_cells(line)
+        if header != COLUMNS:
+            bad.append("BAD %s: columns %s, expected %s" % (section, " | ".join(header),
+                                                            " | ".join(COLUMNS)))
+        n += 2
+        while n < len(lines) and lines[n].startswith("|"):
+            cells = _split_cells(lines[n])
+            n += 1
+            m = re.fullmatch(r"`(.+)`(?: #(\d+))?", cells[0]) if cells else None
+            if len(cells) != len(COLUMNS) or not m:
+                bad.append("BAD %s: malformed row %s" % (section, lines[n - 1]))
+                continue
+            row = dict(zip(COLUMNS, cells))
+            row["key"] = m.group(1) if m.group(2) is None else "%s #%s" % m.groups()
+            table.append(row)
+    return tables, bad
+
+
+def diff(extracted, tables):
+    """Finding lines of the inventory tables against the extracted sections."""
+    findings = []
+    for section, rows in extracted:
+        inventory = tables.get(section, [])
+        for row in inventory:
+            if row["Side (draft)"] not in SIDES:
+                findings.append("BAD %s: %s: Side (draft) %r is not one of %s"
+                                % (section, row["key"], row["Side (draft)"], ", ".join(SIDES)))
+            if not row["Group (draft)"]:
+                findings.append("BAD %s: %s: empty Group (draft)" % (section, row["key"]))
+        source_keys = [row_key(r) for r in rows]
+        inventory_keys = [r["key"] for r in inventory]
+        matcher = difflib.SequenceMatcher(None, inventory_keys, source_keys, autojunk=False)
+        for op, i1, i2, j1, j2 in matcher.get_opcodes():
+            if op == "equal":
+                for a, b in zip(inventory[i1:i2], rows[j1:j2]):
+                    for column in GREP_COLUMNS:
+                        if a[column] != b[column]:
+                            findings.append("MISMATCH %s: %s: %s inventory %s, source %s"
+                                            % (section, a["key"], column, a[column], b[column]))
+                continue
+            for key in source_keys[j1:j2]:
+                findings.append("MISSING %s: %s" % (section, key))
+            for key in inventory_keys[i1:i2]:
+                findings.append("STALE %s: %s" % (section, key))
+    return findings
+
+
+def check(root, text):
+    """Finding lines of an inventory text against the sources under root."""
+    tables, bad = parse_inventory(text)
+    return bad + diff(extract(root), tables)
+
+
+def render(extracted, tables=None):
+    """The extracted sections as Markdown tables, draft columns taken from tables when the row
+    is there, else empty notes, `?` side and group."""
+    out = []
+    for section, rows in extracted:
+        known = {r["key"]: r for r in (tables or {}).get(section, [])}
+        out += ["## " + section, "", "| " + " | ".join(COLUMNS) + " |",
+                "|" + "---|" * len(COLUMNS)]
+        for row in rows:
+            old = known.get(row_key(row), {})
+            call = "`%s`" % row["text"] + ("" if row["k"] == 1 else " #%d" % row["k"])
+            cells = [call] + [row[c] for c in GREP_COLUMNS] + [
+                old.get("Notes", ""), old.get("Side (draft)", "?"),
+                old.get("Group (draft)", "?")]
+            out.append("| " + " | ".join(_escape(c) for c in cells) + " |")
+        out.append("")
+    return "\n".join(out)
+
+
+PLANTED_SOURCES = {
+    "generator.py": """\
+import patches.planted
+
+
+def generateRom(args, settings, seed, logic, *, rnd=None):
+    rom = ROMWithTables(open(args.input_filename, 'rb'))
+    patches.planted.fixed(rom)
+    if settings.music == 'random':
+        patches.planted.shuffle(rom)
+    elif settings.music == 'off':
+        patches.planted.fixed(rom)
+    for spot in logic.iteminfo_list:
+        spot.patch(rom, spot.item)
+    return rom
+""",
+    "randomizer.py": """\
+class Randomizer:
+    def __init__(self, args, settings, *, seed=None):
+        item_placer.run(self.rnd)
+        rom = generator.generateRom(args, settings, self.seed, self.__logic, rnd=self.rnd)
+""",
+    "romTables.py": """\
+class ROMWithTables(ROM):
+    def __init__(self, filestream):
+        self.texts = Texts(self)
+
+    def save(self, filename, *, name=None):
+        self.texts.store(self)
+""",
+    "rom.py": """\
+class ROM:
+    def save(self, file, *, name=None):
+        self.fixHeader(name=name)
+
+    def fixHeader(self, *, name=None):
+        self.banks[0][0x14D] = 0
+""",
+    "patches/planted.py": """\
+import random
+
+
+def fixed(rom):
+    rom.banks[0][0] = 1
+
+
+def shuffle(rom):
+    rom.patch(0, 0x10, ASM(\"\"\"
+ld a, 1
+\"\"\"), ASM(\"\"\"
+ld a, 2
+\"\"\"))
+    rom.banks[0][1] = random.randint(0, 3)
+""",
+}
+
+PLANTED_COLUMNS = "| " + " | ".join(COLUMNS) + " |\n|" + "---|" * len(COLUMNS) + "\n"
+
+PLANTED_INVENTORY = ("""\
+# Planted inventory
+
+## generator.py generateRom
+
+""" + PLANTED_COLUMNS + """\
+| `rom = ROMWithTables(open(args.input_filename, 'rb'))` | - | input_filename | - | - |  | table | parse |
+| `patches.planted.fixed(rom)` | - | - | - | - |  | table | fixed |
+| `patches.planted.shuffle(rom)` | music | - | global | - |  | C | music |
+| `patches.planted.fixed(rom)` #2 | music | - | - | - |  | table | music |
+| `spot.patch(rom, spot.item)` | - | - | - | placement |  | C | items |
+
+## randomizer.py Randomizer.__init__
+
+""" + PLANTED_COLUMNS + """\
+| `rom = generator.generateRom(args, settings, self.seed, self.__logic, rnd=self.rnd)` | * | * | rnd, seed | logic |  | none | generate |
+
+## romTables.py ROMWithTables.__init__
+
+""" + PLANTED_COLUMNS + """\
+| `self.texts = Texts(self)` | - | - | - | - |  | table | parse |
+
+## romTables.py ROMWithTables.save
+
+""" + PLANTED_COLUMNS + """\
+| `self.texts.store(self)` | - | - | - | - |  | C | save |
+
+## rom.py ROM.save
+
+""" + PLANTED_COLUMNS + """\
+| `self.fixHeader(name=name)` | - | - | - | - |  | C | save |
+
+## rom.py ROM.fixHeader
+
+""" + PLANTED_COLUMNS + """\
+| `self.banks[0][0x14D] = 0` | - | - | - | - |  | C | save |
+""")
+
+_SHUFFLE = "| `patches.planted.shuffle(rom)` | music | - | global | - |  | C | music |\n"
+_FIXED_2 = "| `patches.planted.fixed(rom)` #2 | music | - | - | - |  | table | music |\n"
+_SPOT = "| `spot.patch(rom, spot.item)` | - | - | - | placement |  | C | items |\n"
+SELF_TEST_CASES = [
+    ("matching", lambda t: t, []),
+    ("dropped row", lambda t: t.replace(_SHUFFLE, ""), ["MISSING"]),
+    ("extra row", lambda t: t.replace(_SPOT, _SPOT + "| `gone(rom)` | - | - | - | - |  | C | x |\n"),
+     ["STALE"]),
+    ("wrong Settings", lambda t: t.replace("| music | - | global", "| witch | - | global"),
+     ["MISMATCH"]),
+    ("wrong RNG of a global-random callee", lambda t: t.replace("| global |", "| - |"),
+     ["MISMATCH"]),
+    ("swapped rows", lambda t: t.replace(_SHUFFLE + _FIXED_2, _FIXED_2 + _SHUFFLE),
+     ["MISSING", "STALE"]),
+    ("bad Side", lambda t: t.replace("| C | music |", "| D | music |"), ["BAD"]),
+]
+
+
+def self_test(out=None):
+    """Runs every planted case; prints the summary or one `self-test failed` line per case to
+    out (default stdout); returns the exit code."""
+    out = out or sys.stdout
+    failures = []
+    with tempfile.TemporaryDirectory(prefix="inventory-check-") as root:
+        for rel, text in PLANTED_SOURCES.items():
+            path = os.path.join(root, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as f:
+                newline = "\r\n" if rel == "generator.py" else "\n"
+                f.write(text.replace("\n", newline).encode())
+        for name, mutate, expected in SELF_TEST_CASES:
+            try:
+                found = sorted(line.split()[0] for line in check(root, mutate(PLANTED_INVENTORY)))
+            except (SetupError, AssertionError) as e:
+                found = ["error: %s" % e]
+            if found != sorted(expected):
+                failures.append("%s: %s, expected %s" % (name, " ".join(found) or "no finding",
+                                                         " ".join(expected) or "no finding"))
+    for failure in failures:
+        print("inventory: self-test failed: " + failure, file=out)
+    if failures:
+        return 1
+    print("inventory: self-test, %d planted inventories as expected" % len(SELF_TEST_CASES),
+          file=out)
+    return 0
+
+
+def _commit(root):
+    try:
+        result = subprocess.run(["git", "-C", root, "rev-parse", "--short=8", "HEAD"],
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                universal_newlines=True)
+    except OSError:
+        return "an unknown commit"
+    return result.stdout.strip() if result.returncode == 0 else "an unknown commit"
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(prog="inventory_check.py")
+    parser.add_argument("--ladxr", default=DEFAULT_LADXR)
+    parser.add_argument("--inventory", default=DEFAULT_INVENTORY)
+    parser.add_argument("--print", action="store_true", dest="print_")
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit as e:
+        return 2 if e.code else 0
+    if self_test(sys.stderr if args.print_ else sys.stdout):
+        return 1
+    if not os.path.isfile(os.path.join(args.ladxr, "generator.py")):
+        print("setup: inventory: no LADXR checkout in %s, run tests/ladx/oracle/setup.sh"
+              % args.ladxr)
+        return 2
+    try:
+        extracted = extract(args.ladxr)
+    except SetupError as e:
+        print("setup: inventory: %s" % e)
+        return 2
+    text = None
+    if os.path.isfile(args.inventory):
+        with open(args.inventory, "rb") as f:
+            text = f.read().decode("utf-8")
+    if args.print_:
+        print(render(extracted, parse_inventory(text)[0] if text is not None else None), end="")
+        return 0
+    if text is None:
+        print("setup: inventory: no inventory %s" % args.inventory)
+        return 2
+    tables, bad = parse_inventory(text)
+    findings = bad + diff(extracted, tables)
+    for line in findings:
+        print(line)
+    if findings:
+        return 1
+    print("inventory: %d rows in %d sections match %s"
+          % (sum(len(rows) for _, rows in extracted), len(extracted), _commit(args.ladxr)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
