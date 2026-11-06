@@ -84,7 +84,15 @@ in `docs/`, then `README.md`.
   table `ui_strings_en.c`, or under `app/sdl/`, after proving itself on
   planted sources; and `ui_cli`, built from `make test`'s
   own objects, with its smoke test `unit/smoke_ui_cli.c`) plus
-  `test-template` (the tooling under `.claude/`).
+  `test-template` (the tooling under `.claude/`) plus `rom-guard`
+  (`tests/rom_guard.py`, git and python3 only): it fails, one
+  `rom_guard: <path>: <reason>` line per hit, when git's index (the staged
+  blob, not the working tree) holds a `.gb`, `.gbc`, `.sfc` or `.smc` path in
+  any case, or a blob that is the LADX English 1.0 ROM (SHA-1) or the ALttP
+  JP 1.0 ROM (MD5, with or without a copier header), whatever its name; it
+  proves itself first on planted files in throwaway repositories; no git or
+  no work tree gives a `setup:` line; else `rom_guard: <n> tracked files, no
+  ROM`.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -255,6 +263,7 @@ in `docs/`, then `README.md`.
   Miyoo and under qemu.*
 - **No Nintendo ROM in the repository or in CI**; only the base patch
   (`data/base.bps`) is committed. Tests use synthetic ROMs and write logs.
+  `make test`'s ROM guard (`tests/rom_guard.py`) enforces it on the index.
   *Goal: a legal repository, verifiable without the ROM.*
 - **VT is frozen** at `219fcafd`, with no tracking of later alttpr.com
   updates. *Goal: a stable oracle.*

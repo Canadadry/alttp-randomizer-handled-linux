@@ -23,3 +23,5 @@ tests/alttp/oracle/vt/
 # Nintendo ROMs never enter the repository
 *.sfc
 *.smc
+*.gb
+*.gbc

@@ -1,10 +1,11 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
+.PHONY: help install test test-rando ui-cli test-template rom-guard lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
 	@echo "make test           the fast loop: unit tests, on the host, in seconds"
 	@echo "make test-rando     the randomizer's unit tests (tests/alttp)"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
+	@echo "make rom-guard      fails if git's index holds a .gb/.gbc/.sfc/.smc file or a LADX/ALttP ROM by digest, run by make test"
 	@echo "make ui-cli         builds tests/alttp/build/ui_cli, the agent's text view of the app"
 	@echo "make lint           alttp/ and app/ built as strict ISO C99 (-pedantic-errors)"
 	@echo "make logic          unit tests replaying the oracle fixtures (tests/alttp/oracle)"
@@ -36,7 +37,7 @@ install:
 	@echo "install: no dependency to install (host gcc, make, python3)"
 
 # The fast loop. Keep it a few seconds, with no network and no external service.
-test: test-rando test-template
+test: test-rando test-template rom-guard
 
 test-rando:
 	$(MAKE) -C tests/alttp test
@@ -46,6 +47,9 @@ test-rando:
 test-template:
 	python3 -m unittest discover -s .claude/hooks/tests
 	python3 -m unittest discover -s .claude/skills/plan-pilot/tests
+
+rom-guard:
+	python3 -I tests/rom_guard.py
 
 ui-cli:
 	$(MAKE) -C tests/alttp ui-cli
