@@ -384,6 +384,10 @@ standing in until the frame and the sprites exist. Look at it with:
 tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
 ```
 
+`make sdl-pc` also draws the 13 states of `tests/rando/sdl/golden_states.txt`
+with it, into `tests/rando/build/sdl/theme-states/alttp/` (a `.bmp` and a
+`.txt` per state); they are not compared with anything.
+
 A theme may hold an optional `[help]` section (the help line's font, x,
 baseline, right edge and colour); without it the theme has no help line, as
 `classic` has none.

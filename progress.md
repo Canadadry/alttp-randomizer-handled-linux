@@ -31,7 +31,7 @@
   - [ ] Step 2.8 — The new theme's geometry
     - [x] Chunk 1 — The [help] section
     - [x] Chunk 2 — Press Start 2P and themes/alttp
-    - [ ] Chunk 3 — The SDL side
+    - [x] Chunk 3 — The SDL side
   - [ ] Step 2.9 — Mockups made true and comparable
   - [ ] Step 2.10 — `make theme-compare`
   - [ ] Step 2.11 — Help text per value

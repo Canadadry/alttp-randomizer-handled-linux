@@ -130,7 +130,12 @@ in `docs/`, then `README.md`.
   (Ubuntu 24.04.5, sdl12-compat 1.2.68 on SDL2 2.30.0, SDL_ttf 2.0.11,
   FreeType 2.13.2), fingerprinted in `goldens/environment.txt`; on another
   host it fails with `setup: goldens pinned to <fp>, this host is <fp>`, a
-  setup problem that verifies nothing, not a bug.
+  setup problem that verifies nothing, not a bug. Then it draws the same 13
+  states with `themes/alttp` (`goldens.sh --draw`, the theme in the
+  Makefile's `DRAW_THEME`): no comparison and no state strings, each capture
+  must be a 640×480 picture of more than one colour; it writes them to
+  `tests/rando/build/sdl/theme-states/alttp/` and prints
+  `goldens: 13 states drawn with alttp in <dir>`.
 - `make sdl-goldens`, outside the net, writes the goldens once (every state
   rendered twice, refused unless byte-identical) and refuses a folder that
   already holds any: goldens are never regenerated to get green.

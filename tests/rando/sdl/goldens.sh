@@ -1,11 +1,13 @@
 #!/bin/sh
-# Usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR
+# Usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR
 # Plays every state of golden_states.txt into the SDL app (dummy video driver), each from a fresh copy
 # of its fixture, and checks the captured text holds the state's strings. --write renders every state
 # twice, refuses unless both runs agree byte for byte and DIR holds no BMP, then fills DIR with the
 # BMPs and the environment fingerprint. --compare proves itself on planted goldens, checks the
 # fingerprint, then renders each state once against DIR. golden_states.txt is tab-separated: name,
 # fixture, frame cap, extra alttpr flags, keys, strings joined by " | "; "-" for no cap or no flags.
+# --draw renders each state once into DIR with any theme, checks each BMP is a 640x480 picture of more
+# than one colour, and skips the strings, which are spelled on classic's grid.
 # Every alttpr run gets --theme THEME; the fingerprint holds one font line per *.ttf of THEME.
 set -eu
 set -f
@@ -13,12 +15,12 @@ export LC_ALL=C
 export SDL_VIDEODRIVER=dummy
 
 usage() {
-	echo "usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR" >&2
+	echo "usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR" >&2
 	exit 2
 }
 
 [ $# -eq 5 ] || usage
-case "$4" in --write | --compare) ;; *) usage ;; esac
+case "$4" in --write | --compare | --draw) ;; *) usage ;; esac
 abs() {
 	echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 }
@@ -80,6 +82,26 @@ if cmd == "flip":
     open(args[0], "wb").write(bytes(data))
     sys.exit(0)
 
+if cmd == "picture":
+    # picture BMP: fails unless BMP is a 640x480 picture of more than one colour.
+    data = open(args[0], "rb").read()
+    if len(data) < 54 or data[:2] != b"BM":
+        sys.exit("not a BMP")
+    w = int.from_bytes(data[18:22], "little", signed=True)
+    h = abs(int.from_bytes(data[22:26], "little", signed=True))
+    bpp = int.from_bytes(data[28:30], "little")
+    if (w, h) != (640, 480):
+        sys.exit("%dx%d, not 640x480" % (w, h))
+    step = bpp // 8
+    offset = int.from_bytes(data[10:14], "little")
+    stride = (w * step + 3) & ~3
+    first = data[offset:offset + step]
+    for y in range(h):
+        row = data[offset + y * stride:offset + y * stride + w * step]
+        if row != first * w:
+            sys.exit(0)
+    sys.exit("a single colour")
+
 if cmd == "sha256":
     import hashlib
     print(hashlib.sha256(open(args[0], "rb").read()).hexdigest())
@@ -107,9 +129,10 @@ state_names() {
 	done <"$states"
 }
 
-# render OUT: plays every state into OUT/<state>.bmp and OUT/<state>.txt.
+# render OUT [nostrings]: plays every state into OUT/<state>.bmp and OUT/<state>.txt.
 render() {
 	out="$1"
+	check_strings="${2:-strings}"
 	rm -rf "$out"
 	mkdir -p "$out"
 	while IFS='	' read -r name fx frames flags keys strings; do
@@ -130,6 +153,10 @@ render() {
 			--shot "$out/$name.bmp" --shot-text "$out/$name.txt" -- $keys </dev/null >"$tmp/out" 2>"$tmp/err" || st=$?
 		[ "$st" -eq 0 ] || { cat "$tmp/err" >&2; fail "$name: alttpr exited $st"; }
 		rm -rf "$sd"
+		if [ "$check_strings" != strings ]; then
+			why="$(py picture "$out/$name.bmp" 2>&1)" || fail "$name: $why"
+			continue
+		fi
 		if ! py strings "$out/$name.txt" "$strings" >"$tmp/missing"; then
 			cat "$out/$name.txt" >&2
 			while IFS= read -r s; do echo "UNREACHED $name: lacks $s" >&2; done <"$tmp/missing"
@@ -157,6 +184,13 @@ if [ "$mode" = "--write" ]; then
 	for n in $names; do cp "$work/run1/$n.bmp" "$goldens/$n.bmp"; done
 	fingerprint >"$goldens/$fingerprint_file"
 	echo "goldens: $count states written to $goldens, rendered twice byte-identical"
+	exit 0
+fi
+
+if [ "$mode" = "--draw" ]; then
+	mkdir -p "$goldens"
+	render "$(cd "$goldens" && pwd)" nostrings
+	echo "goldens: $count states drawn with $(basename "$theme") in $goldens"
 	exit 0
 fi
 

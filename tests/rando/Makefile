@@ -65,7 +65,7 @@ LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC) $(APP_MAIN_
 
 # sdl-pc: the SDL layer, built and tested on the host's SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2.
 # The SDL flags are expanded by sdl-pc's rules only, so test never calls pkg-config.
-SDL_TESTS := test_sdl_keys test_sdl_loop test_sdl_classic test_sdl_render
+SDL_TESTS := test_sdl_keys test_sdl_loop test_sdl_classic test_sdl_render test_sdl_alttp
 SDL_SRC := $(wildcard $(APP)/sdl/*.c)
 SDL_HDR := $(wildcard $(APP)/sdl/*.h)
 SDL_DIR := $(BUILD)/sdl
@@ -75,6 +75,8 @@ SDL_APP := $(SDL_DIR)/alttpr
 SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf SDL_image)
 SD_FIXTURE := $(BUILD)/sd_fixture
 GOLDENS_DIR ?= sdl/goldens
+# The theme whose 13 states sdl-pc draws, after the classic comparison.
+DRAW_THEME := ../../themes/alttp
 SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf SDL_image)
 
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini
@@ -121,7 +123,8 @@ sdl-pc-build: $(SDL_OBJ) $(SDL_BINS) $(SDL_APP) $(SD_FIXTURE)
 	@set -e; for t in $(SDL_BINS); do SDL_VIDEODRIVER=dummy ./$$t; done
 	@./sdl/smoke_sdl.sh ./$(SDL_APP) ../../themes/classic
 	@./sdl/goldens.sh ./$(SDL_APP) ../../themes/classic ./$(SD_FIXTURE) --compare $(GOLDENS_DIR)
-	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests, the smoke test and the golden comparison ran under the dummy video driver"
+	@./sdl/goldens.sh ./$(SDL_APP) $(DRAW_THEME) ./$(SD_FIXTURE) --draw $(SDL_DIR)/theme-states/$(notdir $(DRAW_THEME))
+	@echo "sdl-pc: $(words $(SDL_SRC)) SDL-layer sources and the SDL main built with -pedantic-errors, $(words $(SDL_TESTS)) SDL tests, the smoke test, the golden comparison and the draw of every state with $(notdir $(DRAW_THEME)) ran under the dummy video driver"
 
 # sdl-goldens: writes the goldens once, refused if GOLDENS_DIR already holds any.
 sdl-goldens:
