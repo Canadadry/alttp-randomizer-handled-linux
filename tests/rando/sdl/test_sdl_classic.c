@@ -1,4 +1,3 @@
-#include "sdl_view.h"
 #include "support.h"
 #include "theme.h"
 #include "ui_grid.h"
@@ -20,7 +19,7 @@
 #define COLS UI_GRID_DEFAULT_COLS
 #define LINES UI_GRID_DEFAULT_LINES
 
-/* Frozen from sdl_view_palette and sdl_view_open's fit on classic's font (pinned environment). */
+/* Frozen from the deleted grid renderer's palette and its fit on classic's font (pinned environment). */
 #define CLASSIC_FIT_SIZE 26
 #define BG { 0x14, 0x16, 0x1A }
 #define BAR { 0x22, 0x26, 0x2E }
@@ -48,11 +47,6 @@ static const struct {
 static Theme theme;
 static int cw, ch;
 
-static bool same_oracle(ThemeColour c, SdlRgb rgb)
-{
-	return c.r == rgb.r && c.g == rgb.g && c.b == rgb.b;
-}
-
 static bool same_frozen(ThemeColour c, FrozenRgb rgb)
 {
 	return c.r == rgb.r && c.g == rgb.g && c.b == rgb.b;
@@ -60,31 +54,18 @@ static bool same_frozen(ThemeColour c, FrozenRgb rgb)
 
 static bool same_text(ThemeColour c, UiLineStyle style)
 {
-	return same_oracle(c, sdl_view_palette[style].text) && same_frozen(c, frozen_palette[style].text);
+	return same_frozen(c, frozen_palette[style].text);
 }
 
 static bool same_band(ThemeColour c, UiLineStyle style)
 {
-	return same_oracle(c, sdl_view_palette[style].band) && same_frozen(c, frozen_palette[style].band);
+	return same_frozen(c, frozen_palette[style].band);
 }
 
 static bool full_line_band(const ThemeBand *b, int line, bool row_relative)
 {
 	return b->present && b->x == 0 && b->y == (row_relative ? 0 : line * ch) && b->w == COLS * cw && b->h == ch &&
 	       b->top_line == 0 && b->bottom_line == 0;
-}
-
-static void test_frozen_palette_is_oracle(void)
-{
-	int i;
-
-	for (i = 0; i < UI_LINE_STYLE_COUNT; i++) {
-		const SdlPaletteEntry *o = &sdl_view_palette[i];
-		const FrozenRgb *band = &frozen_palette[i].band, *text = &frozen_palette[i].text;
-
-		CHECK(o->band.r == band->r && o->band.g == band->g && o->band.b == band->b);
-		CHECK(o->text.r == text->r && o->text.g == text->g && o->text.b == text->b);
-	}
 }
 
 static void test_colours(void)
@@ -122,10 +103,7 @@ static void test_bands_left_out_are_background(void)
 	size_t i;
 
 	for (i = 0; i < sizeof styles / sizeof styles[0]; i++)
-	{
-		CHECK(memcmp(&sdl_view_palette[styles[i]].band, &sdl_view_palette[UI_LINE_BLANK].band, sizeof(SdlRgb)) == 0);
 		CHECK(memcmp(&frozen_palette[styles[i]].band, &frozen_palette[UI_LINE_BLANK].band, sizeof(FrozenRgb)) == 0);
-	}
 }
 
 static void test_geometry(void)
@@ -182,23 +160,13 @@ static int fit_size(const char *path, int w, int h)
 	return 0;
 }
 
-static void test_fit_is_sdl_view_open(void)
+static void test_fit_is_the_frozen_size(void)
 {
 	char path[256];
-	SdlView view;
-	SdlViewStatus st;
-	int size;
 
 	snprintf(path, sizeof path, CLASSIC "/%s", theme.fonts[0].file);
 	CHECK(theme.fonts[0].size.fit);
-	size = fit_size(path, theme.fonts[0].cell.w, theme.fonts[0].cell.h);
-	st = sdl_view_open(&view, path, 640, 480, COLS, LINES);
-	if (st != SDLVIEW_OK)
-		test_fail(TEST, "sdl_view_open %s: status %d (%s)", path, (int)st, TTF_GetError());
-	CHECK(view.cell_w == theme.fonts[0].cell.w && view.cell_h == theme.fonts[0].cell.h);
-	CHECK(size > 0 && view.point_size == size);
-	CHECK(size == CLASSIC_FIT_SIZE);
-	sdl_view_close(&view);
+	CHECK(fit_size(path, theme.fonts[0].cell.w, theme.fonts[0].cell.h) == CLASSIC_FIT_SIZE);
 }
 
 static long read_all(const char *path, unsigned char *buf, long cap)
@@ -246,12 +214,11 @@ int main(void)
 		test_fail(TEST, "%s", err.message);
 	cw = THEME_SCREEN_W / COLS;
 	ch = THEME_SCREEN_H / LINES;
-	test_frozen_palette_is_oracle();
 	test_colours();
 	test_bands_left_out_are_background();
 	test_geometry();
 	test_font_copies_are_identical();
-	test_fit_is_sdl_view_open();
+	test_fit_is_the_frozen_size();
 	TTF_Quit();
 	SDL_Quit();
 	printf("%s: passed\n", TEST);

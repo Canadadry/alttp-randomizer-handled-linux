@@ -112,9 +112,9 @@ in `docs/`, then `README.md`.
   same code with Onion's toolchain against its SDL 1.2, SDL_ttf and
   SDL_image, and runs nothing. The owner looks at the PC build with
   `make sdl-pc`, then `tests/rando/build/sdl/alttpr --sd tmp/sd --theme
-  themes/classic` (drawn through the theme; `--font` with `--theme` is a
-  usage error) or, until the grid renderer goes, `--font
-  data/DejaVuSansMono.ttf` instead of `--theme`.
+  themes/classic` (the theme draws every frame; without `--theme` the app
+  reads `themes/default/` next to its binary; `--font` is an unknown
+  option).
 - `make sdl-pc` also runs the golden comparison
   (`tests/rando/sdl/goldens.sh --compare`): it proves itself on a planted
   flipped byte and a removed golden, then plays the 13 states of

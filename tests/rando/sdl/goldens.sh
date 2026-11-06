@@ -1,34 +1,32 @@
 #!/bin/sh
-# Usage: goldens.sh ALTTPR FONT SD_FIXTURE --write DIR | --compare DIR [--theme THEME]
+# Usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR
 # Plays every state of golden_states.txt into the SDL app (dummy video driver), each from a fresh copy
 # of its fixture, and checks the captured text holds the state's strings. --write renders every state
 # twice, refuses unless both runs agree byte for byte and DIR holds no BMP, then fills DIR with the
 # BMPs and the environment fingerprint. --compare proves itself on planted goldens, checks the
 # fingerprint, then renders each state once against DIR. golden_states.txt is tab-separated: name,
 # fixture, frame cap, extra alttpr flags, keys, strings joined by " | "; "-" for no cap or no flags.
-# --theme THEME is passed to every alttpr run in place of --font; FONT is still fingerprinted.
+# Every alttpr run gets --theme THEME; the fingerprint holds one font line per *.ttf of THEME.
 set -eu
 set -f
 export LC_ALL=C
 export SDL_VIDEODRIVER=dummy
 
 usage() {
-	echo "usage: goldens.sh ALTTPR FONT SD_FIXTURE --write DIR | --compare DIR [--theme THEME]" >&2
+	echo "usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR" >&2
 	exit 2
 }
 
-[ $# -eq 5 ] || { [ $# -eq 7 ] && [ "$6" = "--theme" ]; } || usage
+[ $# -eq 5 ] || usage
 case "$4" in --write | --compare) ;; *) usage ;; esac
 abs() {
 	echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 }
 bin="$(abs "$1")"
-font="$(abs "$2")"
+theme="$(cd "$2" && pwd)"
 fixture="$(abs "$3")"
 mode="$4"
 goldens="$5"
-look_flag="--font $font"
-[ $# -eq 5 ] || look_flag="--theme $(cd "$7" && pwd)"
 here="$(cd "$(dirname "$0")" && pwd)"
 states="$here/golden_states.txt"
 fingerprint_file=environment.txt
@@ -98,7 +96,9 @@ fingerprint() {
 	if pkg-config --exists sdl2 2>/dev/null; then
 		echo "sdl2 $(pkg-config --modversion sdl2)"
 	fi
-	echo "font $(basename "$font") $(py sha256 "$font")"
+	find "$theme" -maxdepth 1 -type f -name '*.ttf' | sort | while IFS= read -r f; do
+		echo "font $(basename "$f") $(py sha256 "$f")"
+	done
 }
 
 state_names() {
@@ -126,7 +126,7 @@ render() {
 		[ "$flags" != "-" ] || flags=""
 		st=0
 		# shellcheck disable=SC2046,SC2086
-		"$bin" --sd "$sd" $look_flag --seed 1 --date 2026-11-01T14:03:27 $(cat "$tmp/flags-$fx") $cap $flags \
+		"$bin" --sd "$sd" --theme "$theme" --seed 1 --date 2026-11-01T14:03:27 $(cat "$tmp/flags-$fx") $cap $flags \
 			--shot "$out/$name.bmp" --shot-text "$out/$name.txt" -- $keys </dev/null >"$tmp/out" 2>"$tmp/err" || st=$?
 		[ "$st" -eq 0 ] || { cat "$tmp/err" >&2; fail "$name: alttpr exited $st"; }
 		rm -rf "$sd"

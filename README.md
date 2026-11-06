@@ -358,19 +358,20 @@ the seed and the date, `--source-md5` and `--base-md5` replace the base
 ROM's expected digests. A bad option, key or value exits with status 2 and
 the usage.
 
-`--theme <dir>` reads `<dir>/theme.ini` (for example `themes/classic`) and
-draws every frame from it: its colours, background image, sprites and
-fonts, all read from `<dir>`. The page is the number of list rows (the list
+The app's whole look comes from a theme folder. `--theme <dir>` reads
+`<dir>/theme.ini` (for example `themes/classic`) and draws every frame from
+it: its colours, background image, sprites and fonts, all read from
+`<dir>`. Without `--theme`, the app reads `themes/default/` in the folder
+that holds the `alttpr` binary, wherever it is started from; on the PC,
+pass `--theme themes/classic`. The page is the number of list rows (the list
 body's height over its row height) and the wrap width the list's label x to
 its right edge, in the list font's cells (or its `M` advance when it has no
-cell). `--font` with `--theme` is a usage error (status 2). A missing or
-broken `theme.ini`, a missing or unreadable image or font, a font that fits
+cell). There is no `--font`: it is an unknown option (status 2). A missing
+or broken `theme.ini` (the default one included), a missing or unreadable image or font, a font that fits
 no size in its cell, a background that is not 640×480, or a page outside
 1..36 or a width outside 20..94 prints one `alttpr: ` line naming the file
 (and the theme key) and exits with status 1, before anything touches the SD
-card; so does a screen with more tabs than the theme has tab slots. Without
-`--theme`, the app draws the 40×15 grid with `--font` (default
-`DejaVuSansMono.ttf`), as before.
+card; so does a screen with more tabs than the theme has tab slots.
 
 ## Working with Claude
 

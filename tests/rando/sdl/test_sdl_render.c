@@ -1,6 +1,5 @@
 #include "rando_crc32.h"
 #include "sdl_render.h"
-#include "sdl_view.h"
 #include "support.h"
 #include "theme.h"
 #include "ui_grid.h"
@@ -17,7 +16,7 @@
 #define DATA_FONT "../../data/DejaVuSansMono.ttf"
 #define FEATURES_SRC "sdl/themes/features"
 #define FEATURES WORK "/features"
-/* Frozen from sdl_view_open's fit on classic's font (pinned environment). */
+/* Frozen from the deleted grid renderer's fit on classic's font (pinned environment). */
 #define CLASSIC_FIT_SIZE 26
 
 #define CHECK(cond) \
@@ -186,22 +185,16 @@ static bool every_pixel_is(SDL_Surface *s, Uint32 rgb)
 	return true;
 }
 
-static void test_classic_opens_as_sdl_view(void)
+static void test_classic_opens_at_the_frozen_fit(void)
 {
 	SdlRenderFailure f;
-	SdlView view;
 
 	load(&theme, CLASSIC);
 	if (!sdl_render_open(&render, &theme, CLASSIC, &f))
 		test_fail(TEST, "classic: reason %d asset %d: %s", (int)f.reason, f.asset, f.error);
-	if (sdl_view_open(&view, CLASSIC "/DejaVuSansMono.ttf", 640, 480, UI_GRID_DEFAULT_COLS,
-			  UI_GRID_DEFAULT_LINES) != SDLVIEW_OK)
-		test_fail(TEST, "sdl_view_open: %s", TTF_GetError());
-	CHECK(render.point_size[0] == view.point_size);
 	CHECK(render.point_size[0] == CLASSIC_FIT_SIZE);
 	CHECK(sdl_render_advance(&render) == 16);
 	CHECK(every_pixel_is(render.images[asset_of(&theme, "screen.image")], 0x14161a));
-	sdl_view_close(&view);
 	sdl_render_close(&render);
 }
 
@@ -276,28 +269,6 @@ static Uint32 pixel(SDL_Surface *s, int x, int y)
 	return ((Uint32 *)((Uint8 *)s->pixels + y * s->pitch))[x] & 0x00FFFFFF;
 }
 
-static SdlView grid_view;
-static SDL_Surface *grid_shot, *theme_shot;
-
-/* Draws sc through the grid renderer (data/'s font) and through classic, and requires every pixel equal. */
-static void same_pixels(const char *name, const UiScreen *sc)
-{
-	UiGrid grid;
-	int x, y;
-
-	CHECK(ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
-	if (!ui_grid_render(&grid, sc))
-		test_fail(TEST, "%s: ui_grid_render refused the screen", name);
-	sdl_view_draw(&grid_view, &grid, grid_shot);
-	if (!sdl_render_draw(&render, sc, theme_shot))
-		test_fail(TEST, "%s: sdl_render_draw refused the screen", name);
-	for (y = 0; y < 480; y++)
-		for (x = 0; x < 640; x++)
-			if (pixel(grid_shot, x, y) != pixel(theme_shot, x, y))
-				test_fail(TEST, "%s: first difference at (%d, %d): grid %06x, theme %06x", name, x, y,
-					  (unsigned)pixel(grid_shot, x, y), (unsigned)pixel(theme_shot, x, y));
-}
-
 static UiScreen base_screen(void)
 {
 	UiScreen sc;
@@ -347,242 +318,6 @@ static void add_row(UiScreen *sc, UiRowKind kind, const char *label, const char 
 	row.disabled = disabled;
 	row.emphasis = emphasis;
 	CHECK(ui_screen_add_row(sc, row));
-}
-
-static void open_equivalence(void)
-{
-	SdlRenderFailure f;
-
-	load(&theme, CLASSIC);
-	if (!sdl_render_open(&render, &theme, CLASSIC, &f))
-		test_fail(TEST, "classic: reason %d asset %d: %s", (int)f.reason, f.asset, f.error);
-	if (sdl_view_open(&grid_view, DATA_FONT, 640, 480, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES) != SDLVIEW_OK)
-		test_fail(TEST, "sdl_view_open: %s", TTF_GetError());
-	grid_shot = surface();
-	theme_shot = surface();
-}
-
-static void close_equivalence(void)
-{
-	SDL_FreeSurface(grid_shot);
-	SDL_FreeSurface(theme_shot);
-	sdl_view_close(&grid_view);
-	sdl_render_close(&render);
-}
-
-static void test_equivalence_with_body(void)
-{
-	static const int value_lens[] = { 0, 5, 32, 33, 34, 35, 40 };
-	static const char unprintable[] = { 'v', '\t', 'a', (char)0x80, 'l', '\0' };
-	char name[96];
-	UiScreen sc;
-	int v, state, i;
-
-	open_equivalence();
-	sc = base_screen();
-	add_row(&sc, UI_ROW_SETTING, "Mode", "Open", false, false);
-	same_pixels("one setting", &sc);
-
-	for (v = 0; v < (int)(sizeof value_lens / sizeof value_lens[0]); v++)
-		for (state = 0; state < 4; state++) {
-			bool selected = state & 1, disabled = (state & 2) != 0;
-
-			sc = base_screen();
-			add_row(&sc, UI_ROW_ACTION, "Generate", NULL, false, false);
-			add_row(&sc, UI_ROW_SETTING, "Item placement", chars(value_lens[v], (char)('a' + v)), disabled,
-				false);
-			add_row(&sc, UI_ROW_SETTING, chars(40, 'L'), chars(value_lens[v], 'q'), false, false);
-			sc.cursor = selected ? 1 : 0;
-			snprintf(name, sizeof name, "value of %d, %s%s", value_lens[v], selected ? "selected" : "unselected",
-				 disabled ? ", disabled" : "");
-			same_pixels(name, &sc);
-		}
-
-	sc = base_screen();
-	add_row(&sc, UI_ROW_SETTING, chars(31, 'k'), "x", false, false);
-	add_row(&sc, UI_ROW_SETTING, chars(33, 'k'), "x", false, false);
-	add_row(&sc, UI_ROW_SETTING, chars(30, 'k'), "x", false, false);
-	add_row(&sc, UI_ROW_SETTING, chars(10, 'k'), chars(32, 'w'), false, false);
-	add_row(&sc, UI_ROW_SETTING, NULL, NULL, false, false);
-	add_row(&sc, UI_ROW_SETTING, unprintable, unprintable, false, false);
-	same_pixels("long labels cut, no cursor", &sc);
-	sc.cursor = 3;
-	same_pixels("label of one cell before a selected 32-character value", &sc);
-
-	sc = base_screen();
-	add_row(&sc, UI_ROW_ACTION, "Generate seed", NULL, false, false);
-	add_row(&sc, UI_ROW_ACTION, "Disabled action", NULL, true, false);
-	add_row(&sc, UI_ROW_TEXT, "A line of text", NULL, false, false);
-	add_row(&sc, UI_ROW_TEXT, "    indented text", NULL, false, false);
-	add_row(&sc, UI_ROW_TEXT, chars(38, 't'), NULL, false, false);
-	add_row(&sc, UI_ROW_TEXT, chars(39, 'u'), NULL, false, false);
-	add_row(&sc, UI_ROW_TEXT, "Disabled text", NULL, true, false);
-	add_row(&sc, UI_ROW_ACTION, chars(50, 'z'), NULL, false, false);
-	add_row(&sc, UI_ROW_TEXT, unprintable, NULL, false, false);
-	same_pixels("action and text rows", &sc);
-	for (i = 0; i < sc.row_count; i++) {
-		sc.cursor = i;
-		snprintf(name, sizeof name, "action and text rows, cursor on %d", i);
-		same_pixels(name, &sc);
-	}
-
-	sc = base_screen();
-	for (i = 0; i < 20; i++)
-		add_row(&sc, i % 3 == 0 ? UI_ROW_ACTION : UI_ROW_SETTING, chars(i + 1, 'r'), chars(i, 'n'), i % 5 == 4,
-			false);
-	sc.cursor = 0;
-	same_pixels("cursor on the first line, down mark", &sc);
-	sc.cursor = 10;
-	same_pixels("cursor on the last line, down mark on it", &sc);
-	sc.cursor = 9;
-	same_pixels("cursor on a disabled row, down mark", &sc);
-	sc.scroll = 5;
-	sc.cursor = 5;
-	same_pixels("both marks, up mark on the selected row", &sc);
-	sc.cursor = 15;
-	same_pixels("both marks, cursor on the last line", &sc);
-	sc.scroll = 9;
-	sc.cursor = 14;
-	same_pixels("up mark on a selected disabled row", &sc);
-	sc.cursor = 19;
-	same_pixels("last page, up mark only", &sc);
-	sc.more_below = true;
-	same_pixels("last page, more_below", &sc);
-	sc.scroll = 0;
-	sc.cursor = -1;
-	sc.more_above = true;
-	sc.more_below = false;
-	same_pixels("first page, more_above, no cursor", &sc);
-
-	sc = base_screen();
-	add_row(&sc, UI_ROW_SETTING, "Mode", "Open", false, false);
-	add_row(&sc, UI_ROW_SETTING, "Goal", "Ganon", false, false);
-	same_pixels("short list, no marks", &sc);
-	sc.more_below = true;
-	same_pixels("short list, more_below on an empty line", &sc);
-	sc.more_above = true;
-	sc.cursor = 0;
-	same_pixels("short list, both flags, up mark on the selected row", &sc);
-	sc.cursor = -1;
-	same_pixels("short list, both flags, no cursor", &sc);
-
-	sc = base_screen();
-	with_tabs(&sc, 1);
-	sc.title = "Delete this seed?";
-	sc.title_tone = UI_TITLE_ALERT;
-	sc.body_kind = UI_BODY_NOTICE;
-	add_row(&sc, UI_ROW_TEXT, "ALttPR - 2026-11-06 - abcdef.sfc", NULL, false, true);
-	add_row(&sc, UI_ROW_TEXT, "The seed and its spoiler", NULL, false, false);
-	add_row(&sc, UI_ROW_TEXT, chars(45, 'f'), NULL, false, false);
-	add_row(&sc, UI_ROW_TEXT, chars(41, 'g'), NULL, false, true);
-	add_hint(&sc, UI_HINT_A, "A", "Delete", true);
-	add_hint(&sc, UI_HINT_B, "B", "Keep", false);
-	same_pixels("notice with an emphasised row", &sc);
-	sc = base_screen();
-	sc.body_kind = UI_BODY_NOTICE;
-	for (i = 0; i < 11; i++)
-		add_row(&sc, UI_ROW_TEXT, chars(i + 3, 'h'), NULL, false, i == 2);
-	same_pixels("notice filling the page", &sc);
-
-	sc = base_screen();
-	with_tabs(&sc, 0);
-	sc.title = "Settings";
-	add_row(&sc, UI_ROW_SETTING, "Glitches", "None", false, false);
-	add_row(&sc, UI_ROW_SETTING, "Mode", "Open", false, false);
-	add_row(&sc, UI_ROW_ACTION, "Generate", NULL, false, false);
-	sc.cursor = 1;
-	sc.message_kind = UI_MESSAGE_ERROR;
-	sc.message = "No ROM found";
-	add_hint(&sc, UI_HINT_LEFT_RIGHT, "<>", "Change", false);
-	add_hint(&sc, UI_HINT_START, "Start", "Generate", true);
-	same_pixels("every zone with a list", &sc);
-	close_equivalence();
-}
-
-static void test_equivalence_without_body(void)
-{
-	static const char unprintable[] = { 'A', '\t', 'b', (char)0x7F, 'c', (char)0xC3, (char)0xA9, 'd', '\0' };
-	UiScreen sc;
-	int i;
-
-	open_equivalence();
-
-	sc = base_screen();
-	same_pixels("empty", &sc);
-	with_tabs(&sc, 0);
-	same_pixels("tab 0 active", &sc);
-	with_tabs(&sc, 1);
-	same_pixels("tab 1 active", &sc);
-
-	sc = base_screen();
-	sc.title = "";
-	same_pixels("title empty", &sc);
-	sc.title = "Settings";
-	same_pixels("title short", &sc);
-	sc.title_tone = UI_TITLE_ALERT;
-	same_pixels("title alert", &sc);
-	sc.title = chars(38, 'T');
-	same_pixels("title 38", &sc);
-	sc.title = chars(39, 'W');
-	same_pixels("title 39", &sc);
-	sc.title = chars(60, 'x');
-	same_pixels("title 60", &sc);
-	sc.title = unprintable;
-	same_pixels("title unprintable", &sc);
-
-	sc = base_screen();
-	sc.message_kind = UI_MESSAGE_INFO;
-	sc.message = "Saved to the SD card";
-	same_pixels("info message", &sc);
-	sc.message_kind = UI_MESSAGE_ERROR;
-	sc.message = "Could not write the seed";
-	same_pixels("error message", &sc);
-	sc.message = chars(45, 'e');
-	same_pixels("error message cut", &sc);
-	sc.message_kind = UI_MESSAGE_NONE;
-	same_pixels("message none", &sc);
-
-	sc = base_screen();
-	for (i = 0; i < UI_HINTS_MAX; i++) {
-		add_hint(&sc, (UiHintButton)(UI_HINT_A + i), chars(1, (char)('A' + i)), "Select", false);
-		same_pixels("footer hints", &sc);
-	}
-	sc = base_screen();
-	add_hint(&sc, UI_HINT_LEFT_RIGHT, "<>", "Change", false);
-	add_hint(&sc, UI_HINT_START, "Start", "Generate", true);
-	same_pixels("footer primary", &sc);
-	sc = base_screen();
-	add_hint(&sc, UI_HINT_A, "A", chars(16, 'l'), false);
-	add_hint(&sc, UI_HINT_B, "B", chars(16, 'm'), false);
-	same_pixels("footer exactly 38 cells", &sc);
-	add_hint(&sc, UI_HINT_X, "X", chars(30, 'n'), false);
-	same_pixels("footer overflowing in a label", &sc);
-	sc = base_screen();
-	add_hint(&sc, UI_HINT_A, "A", chars(35, 'l'), false);
-	add_hint(&sc, UI_HINT_B, "B", "Keep", false);
-	same_pixels("footer overflowing in a hint gap", &sc);
-	sc = base_screen();
-	add_hint(&sc, UI_HINT_A, "A", chars(32, 'l'), false);
-	add_hint(&sc, UI_HINT_B, "B", "Keep", false);
-	same_pixels("footer overflowing in a key gap", &sc);
-	sc = base_screen();
-	add_hint(&sc, UI_HINT_A, "A", chars(36, 'o'), false);
-	same_pixels("footer exactly full", &sc);
-	sc = base_screen();
-	add_hint(&sc, UI_HINT_A, chars(40, 'K'), "Back", false);
-	same_pixels("footer overflowing in a key", &sc);
-	add_hint(&sc, UI_HINT_B, NULL, NULL, false);
-	same_pixels("footer null texts", &sc);
-
-	sc = base_screen();
-	with_tabs(&sc, 1);
-	sc.title = "History";
-	sc.message_kind = UI_MESSAGE_INFO;
-	sc.message = unprintable;
-	add_hint(&sc, UI_HINT_A, "A", "Details", false);
-	add_hint(&sc, UI_HINT_X, "X", "Delete", false);
-	same_pixels("every zone", &sc);
-	close_equivalence();
 }
 
 static Uint32 rgb(int r, int g, int b)
@@ -1057,12 +792,10 @@ int main(void)
 		test_fail(TEST, "IMG_Init: %s", IMG_GetError());
 	n = read_file(CLASSIC "/theme.ini", (unsigned char *)classic_ini, (long)sizeof classic_ini - 1);
 	classic_ini[n] = '\0';
-	test_classic_opens_as_sdl_view();
+	test_classic_opens_at_the_frozen_fit();
 	test_cell_less_advance_is_m_advance();
 	test_failures();
 	test_open_error_text_is_kept();
-	test_equivalence_without_body();
-	test_equivalence_with_body();
 	test_features();
 	IMG_Quit();
 	TTF_Quit();

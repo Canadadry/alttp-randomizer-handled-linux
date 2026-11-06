@@ -5,7 +5,6 @@
 #include "rando_fixed_run.h"
 #include "sdl_loop.h"
 #include "sdl_render.h"
-#include "sdl_view.h"
 #include "theme.h"
 #include "ui_grid.h"
 #include "ui_history.h"
@@ -23,16 +22,16 @@
 #define SCREEN_W 640
 #define SCREEN_H 480
 #define CWD_MAX 4096
-#define DEFAULT_FONT "DejaVuSansMono.ttf"
+#define DEFAULT_THEME "themes/default"
 
-static const char usage[] = "usage: alttpr [--sd <root>] [--font <file>] [--theme <dir>] [--frames <n>] [--shot <file.bmp>] "
+static const char usage[] = "usage: alttpr [--sd <root>] [--theme <dir>] [--frames <n>] [--shot <file.bmp>] "
 			    "[--shot-text <file>] [--seed <n>] [--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] "
 			    "[--base-md5 <32 hex>] [--unsupported <setting>=<value>,<setting>=<value>] [--] [<key>...]\n"
 			    "keys: up down left right a b x y l1 r1 l2 r2 select start menu, <key>*<n> repeats, "
 			    "- reads keys from standard input; with keys, the run ends after the last one\n";
 
 typedef struct Options {
-	const char *sd, *font, *theme, *shot, *shot_text;
+	const char *sd, *theme, *shot, *shot_text;
 	long frames;
 	bool scripted;
 	RandoFixedRun run;
@@ -44,9 +43,8 @@ typedef struct ScriptPos {
 	int key, repeat;
 } ScriptPos;
 
-/* render NULL: the grid is drawn by view. tab_count is that of the screen render refused. */
+/* tab_count is that of the screen render refused. */
 typedef struct Presenter {
-	SdlView *view;
 	SdlRender *render;
 	SDL_Surface *offscreen, *screen;
 	int tab_count;
@@ -56,12 +54,12 @@ typedef struct Presenter {
 static RandoAppShell shell;
 static Options opt;
 static char text[UI_GRID_TEXT_MAX];
-static SdlView view;
 static SdlRender render;
 static UiGrid grid;
 static Theme theme;
 static char root[RANDO_SEED_DIR_MAX];
 static char cwd[CWD_MAX];
+static char default_theme[CWD_MAX];
 
 static void fail_usage(const char *what, const char *arg)
 {
@@ -126,8 +124,6 @@ static void parse_args(int argc, char **argv)
 			keys_only = true;
 		} else if (strcmp(a, "--sd") == 0) {
 			opt.sd = value_of(argc, argv, &i);
-		} else if (strcmp(a, "--font") == 0) {
-			opt.font = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--theme") == 0) {
 			opt.theme = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--shot") == 0) {
@@ -153,10 +149,21 @@ static void parse_args(int argc, char **argv)
 			fail_usage("unknown option", a);
 		}
 	}
-	if (opt.font != NULL && opt.theme != NULL)
-		fail_usage("--font and --theme are exclusive", NULL);
-	if (opt.font == NULL && opt.theme == NULL)
-		opt.font = DEFAULT_FONT;
+}
+
+/* Without --theme: themes/default next to the binary, argv[0]'s directory, or . when it has no slash. */
+static void use_default_theme(const char *argv0)
+{
+	const char *slash = argv0 != NULL ? strrchr(argv0, '/') : NULL;
+	int n;
+
+	if (slash == NULL)
+		n = snprintf(default_theme, sizeof default_theme, "./%s", DEFAULT_THEME);
+	else
+		n = snprintf(default_theme, sizeof default_theme, "%.*s/%s", (int)(slash - argv0), argv0, DEFAULT_THEME);
+	if (n < 0 || (size_t)n >= sizeof default_theme)
+		fail_setup("default theme path does not fit", argv0);
+	opt.theme = default_theme;
 }
 
 static void fail_render(const SdlRenderFailure *f)
@@ -225,9 +232,8 @@ static bool present(void *ctx, const UiScreen *screen, const UiGrid *g)
 {
 	Presenter *p = ctx;
 
-	if (p->render == NULL) {
-		sdl_view_draw(p->view, g, p->offscreen);
-	} else if (!sdl_render_draw(p->render, screen, p->offscreen)) {
+	(void)g;
+	if (!sdl_render_draw(p->render, screen, p->offscreen)) {
 		p->tab_count = screen->tab_count;
 		return false;
 	}
@@ -270,11 +276,12 @@ int main(int argc, char **argv)
 	Presenter p;
 	ScriptPos pos;
 	SdlScript script;
-	SdlViewStatus st;
 	SdlLoopResult result;
 	int page, width;
 
 	parse_args(argc, argv);
+	if (opt.theme == NULL)
+		use_default_theme(argv[0]);
 	pos.keys = &opt.keys;
 	pos.key = 0;
 	pos.repeat = 0;
@@ -287,19 +294,10 @@ int main(int argc, char **argv)
 	} else if (getcwd(cwd, sizeof cwd) == NULL || !rando_app_sd_root(cwd, root, sizeof root)) {
 		fail_setup("SD root does not fit", NULL);
 	}
-	if (opt.theme != NULL) {
-		open_theme(&page, &width);
-	} else {
-		if (!ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES))
-			fail_setup("grid", NULL);
-		page = ui_grid_page(&grid);
-		width = grid.cols - 2;
-	}
+	open_theme(&page, &width);
 	if (!rando_app_shell_init(&shell, root, NULL, rando_fixed_run_unsupported(&opt.run), 1, page, width))
 		fail_setup("SD root does not fit", root);
 	rando_fixed_run_apply(&opt.run, &shell);
-	if (opt.theme == NULL && SDL_Init(SDL_INIT_VIDEO) != 0)
-		fail_setup("SDL_Init", SDL_GetError());
 	p.screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 32, SDL_HWSURFACE);
 	if (p.screen == NULL)
 		fail_setup("SDL_SetVideoMode", SDL_GetError());
@@ -309,21 +307,8 @@ int main(int argc, char **argv)
 					   0x000000FF, 0);
 	if (p.offscreen == NULL)
 		fail_setup("SDL_CreateRGBSurface", SDL_GetError());
-	p.view = NULL;
-	p.render = NULL;
+	p.render = &render;
 	p.tab_count = 0;
-	if (opt.theme != NULL) {
-		p.render = &render;
-	} else {
-		if (TTF_Init() != 0)
-			fail_setup("TTF_Init", TTF_GetError());
-		st = sdl_view_open(&view, opt.font, p.offscreen->w, p.offscreen->h, grid.cols, grid.lines);
-		if (st == SDLVIEW_FONT_OPEN)
-			fail_setup(opt.font, TTF_GetError());
-		if (st != SDLVIEW_OK)
-			fail_setup(opt.font, "no font size fits the screen's cells");
-		p.view = &view;
-	}
 	result = sdl_loop_run(&shell.app, &grid, present, &p, opt.frames, opt.scripted ? &script : NULL);
 	if (result == SDLLOOP_ERROR)
 		fail_setup("SDL_WaitEvent", SDL_GetError());
@@ -338,10 +323,7 @@ int main(int argc, char **argv)
 		fail_setup(opt.shot, SDL_GetError());
 	if (opt.shot_text != NULL)
 		write_shot_text(opt.shot_text);
-	if (p.render != NULL)
-		sdl_render_close(&render);
-	else
-		sdl_view_close(&view);
+	sdl_render_close(&render);
 	SDL_FreeSurface(p.offscreen);
 	IMG_Quit();
 	TTF_Quit();

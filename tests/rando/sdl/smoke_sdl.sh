@@ -1,17 +1,17 @@
 #!/bin/sh
-# Usage: smoke_sdl.sh ALTTPR FONT THEME
-# Starts the SDL main headless (dummy video driver), renders one frame offscreen and exits; checks
-# its exit statuses, the saved frame, and that starting touches nothing on the SD tree. Then plays
-# scripted keys with the fixed-run options and checks the captured frame's text. Last, runs it on
-# THEME and on edited copies of it, checking the frame drawn, the grid size reaching the core and
-# each refusal.
+# Usage: smoke_sdl.sh ALTTPR THEME
+# Starts the SDL main headless (dummy video driver) on THEME, renders one frame offscreen and exits;
+# checks its exit statuses, the saved frame, and that starting touches nothing on the SD tree. Then
+# plays scripted keys with the fixed-run options and checks the captured frame's text. Then runs it
+# on edited copies of THEME, checking the grid size reaching the core and each refusal. Last, runs
+# a copy of ALTTPR with THEME as its themes/default, checking the default lookup.
 set -eu
 export LC_ALL=C
 export SDL_VIDEODRIVER=dummy
 
 bin="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
-font="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
-theme="$(cd "$3" && pwd)"
+run=
+theme="$(cd "$2" && pwd)"
 features="$(cd "$(dirname "$0")" && pwd)/themes/features"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -23,17 +23,18 @@ fail() {
 	exit 1
 }
 
+# listing [DIR]: the sorted tree of DIR, the SD tree by default.
 listing() {
-	(cd "$tree" && find . | sort)
+	(cd "${1:-$tree}" && find . | sort)
 }
 
-# expect STATUS ARGS...: runs the program in the current directory, standard error kept in $tmp/err.
+# expect STATUS ARGS...: runs $run (ALTTPR when empty) in the current directory, standard error kept in $tmp/err.
 expect() {
 	want="$1"
 	shift
 	got=0
-	"$bin" "$@" >"$tmp/out" 2>"$tmp/err" || got=$?
-	[ "$got" -eq "$want" ] || { cat "$tmp/err" >&2; fail "alttpr $*: exit $got, expected $want"; }
+	"${run:-$bin}" "$@" >"$tmp/out" 2>"$tmp/err" || got=$?
+	[ "$got" -eq "$want" ] || { cat "$tmp/err" >&2; fail "${run:-$bin} $*: exit $got, expected $want"; }
 }
 
 # picture BMP: fails unless BMP is a 640x480 picture of more than one colour.
@@ -59,20 +60,17 @@ PY
 }
 
 before="$(listing)"
-expect 0 --sd "$tree" --font "$font" --frames 1 --shot "$tmp/frame.bmp"
+expect 0 --sd "$tree" --theme "$theme" --frames 1 --shot "$tmp/frame.bmp"
 [ "$(listing)" = "$before" ] || fail "starting changed the SD tree"
 picture "$tmp/frame.bmp"
 
-(cd "$tree/App/ALttPR" && expect 0 --font "$font" --frames 1)
+(cd "$tree/App/ALttPR" && expect 0 --theme "$theme" --frames 1)
 [ "$(listing)" = "$before" ] || fail "starting from App/ALttPR changed the SD tree"
 
-expect 2 --sd "$tree" --font "$font" --bogus
-expect 2 --sd "$tree" --font "$font" --frames 0
-expect 2 --sd "$tree" --font "$font" --frames 1x
+expect 2 --sd "$tree" --theme "$theme" --bogus
+expect 2 --sd "$tree" --theme "$theme" --frames 0
+expect 2 --sd "$tree" --theme "$theme" --frames 1x
 expect 2 --sd
-expect 1 --sd "$tree" --font "$tmp/missing.ttf" --frames 1
-grep -q "missing.ttf" "$tmp/err" || fail "a missing font is not named on standard error"
-[ "$(listing)" = "$before" ] || fail "a failed start changed the SD tree"
 
 fixed="--seed 1 --date 2026-11-01T14:03:27 --source-md5 00112233445566778899aabbccddeeff --base-md5 ffeeddccbbaa99887766554433221100"
 # shown FILE TEXT...: fails unless each TEXT is a line fragment of FILE.
@@ -87,35 +85,35 @@ shown() {
 play="$tmp/play"
 mkdir -p "$play/App/ALttPR"
 # shellcheck disable=SC2086
-expect 0 --sd "$play" --font "$font" $fixed --shot "$tmp/history.bmp" --shot-text "$tmp/history.txt" -- start a r1
+expect 0 --sd "$play" --theme "$theme" $fixed --shot "$tmp/history.bmp" --shot-text "$tmp/history.txt" -- start a r1
 shown "$tmp/history.txt" "[History]" "No seeds yet"
 cmp -s "$tmp/history.bmp" "$tmp/frame.bmp" && fail "the scripted frame is the first frame"
 # shellcheck disable=SC2086
-expect 0 --sd "$play" --font "$font" $fixed --shot-text "$tmp/failed.txt" start
+expect 0 --sd "$play" --theme "$theme" $fixed --shot-text "$tmp/failed.txt" start
 shown "$tmp/failed.txt" "Generation Failed" "Base ROM not found"
-expect 0 --sd "$play" --font "$font" --frames 5 --shot-text "$tmp/generating.txt" down start
+expect 0 --sd "$play" --theme "$theme" --frames 5 --shot-text "$tmp/generating.txt" down start
 shown "$tmp/generating.txt" "Generating Seed" "Please wait..."
-printf 'r1\n' | expect 0 --sd "$play" --font "$font" --shot-text "$tmp/stdin.txt" -
+printf 'r1\n' | expect 0 --sd "$play" --theme "$theme" --shot-text "$tmp/stdin.txt" -
 shown "$tmp/stdin.txt" "No seeds yet"
-expect 0 --sd "$play" --font "$font" --shot "$tmp/quit.bmp" --shot-text "$tmp/quit.txt" r1 menu down
+expect 0 --sd "$play" --theme "$theme" --shot "$tmp/quit.bmp" --shot-text "$tmp/quit.txt" r1 menu down
 shown "$tmp/quit.txt" "No seeds yet"
 [ -s "$tmp/quit.bmp" ] || fail "a quit wrote no --shot"
 
 # shellcheck disable=SC2086
-expect 0 --sd "$play" --font "$font" $fixed --unsupported goal=ganon,state=open --shot-text "$tmp/greyed.txt" up
+expect 0 --sd "$play" --theme "$theme" $fixed --unsupported goal=ganon,state=open --shot-text "$tmp/greyed.txt" up
 shown "$tmp/greyed.txt" "X| Generate Seed" "Not supported with"
 
-expect 2 --sd "$play" --font "$font" bogus
+expect 2 --sd "$play" --theme "$theme" bogus
 grep -q "unknown key: bogus" "$tmp/err" || fail "a bad key is not named"
-expect 2 --sd "$play" --font "$font" down*0
-expect 2 --sd "$play" --font "$font" --seed x down
+expect 2 --sd "$play" --theme "$theme" down*0
+expect 2 --sd "$play" --theme "$theme" --seed x down
 grep -q "bad --seed: x" "$tmp/err" || fail "a bad --seed is not named"
-expect 2 --sd "$play" --font "$font" --date 2026-13-01T14:03:27 down
-expect 2 --sd "$play" --font "$font" --source-md5 00 down
-expect 2 --sd "$play" --font "$font" --base-md5 zz112233445566778899aabbccddeeff down
-expect 2 --sd "$play" --font "$font" --unsupported goal=ganon down
+expect 2 --sd "$play" --theme "$theme" --date 2026-13-01T14:03:27 down
+expect 2 --sd "$play" --theme "$theme" --source-md5 00 down
+expect 2 --sd "$play" --theme "$theme" --base-md5 zz112233445566778899aabbccddeeff down
+expect 2 --sd "$play" --theme "$theme" --unsupported goal=ganon down
 grep -q "bad --unsupported: goal=ganon" "$tmp/err" || fail "a bad --unsupported is not named"
-expect 2 --sd "$play" --font "$font" down --frames 1
+expect 2 --sd "$play" --theme "$theme" down --frames 1
 grep -q "usage: alttpr" "$tmp/err" || fail "a usage error does not print the usage"
 # variant NAME SECTION KEY VALUE...: copies THEME to $tmp/NAME, each KEY of [SECTION] set to VALUE.
 variant() {
@@ -154,9 +152,7 @@ PY
 
 themed="$tmp/themed"
 mkdir -p "$themed/App/ALttPR"
-expect 0 --sd "$themed" --font "$font" --frames 1 --shot-text "$tmp/plain.txt"
 expect 0 --sd "$themed" --theme "$theme" --frames 1 --shot "$tmp/classic.bmp" --shot-text "$tmp/classic.txt"
-cmp -s "$tmp/plain.txt" "$tmp/classic.txt" || fail "--theme $theme does not capture the same text as no theme"
 grid_size "$tmp/classic.txt" 15 40
 picture "$tmp/classic.bmp"
 variant tall list row_height 64 list label_x 208
@@ -195,12 +191,52 @@ variant onetab
 awk '/^\[/ { skip = ($0 == "[tab.2]") } !skip' "$theme/theme.ini" >"$tmp/onetab/theme.ini"
 refused "$tmp/onetab" "alttpr: $tmp/onetab/theme.ini: the screen has 2 tabs, the theme 1 tab slots"
 
-expect 2 --sd "$tree" --font "$font" --theme "$theme" --frames 1
-grep -q "usage: alttpr" "$tmp/err" || fail "--font with --theme does not print the usage"
-grep -q -- "--font and --theme" "$tmp/err" || fail "--font with --theme does not name both"
-[ "$(listing)" = "$before" ] || fail "--font with --theme changed the SD tree"
+expect 2 --font x --frames 1
+grep -q "unknown option: --font" "$tmp/err" || fail "--font is not refused as an unknown option"
+grep -q "usage: alttpr" "$tmp/err" || fail "--font does not print the usage"
+sed 1d "$tmp/err" | grep -q -- "--font" && fail "the usage still mentions --font"
 expect 2 --sd "$tree" --theme
 grep -q "usage: alttpr" "$tmp/err" || fail "--theme without a value does not print the usage"
 grep -q -- "--theme <dir>" "$tmp/err" || fail "the usage does not list --theme <dir>"
+
+# app DIR [THEME]: a copy of ALTTPR in DIR/App/ALttPR, with THEME copied as its themes/default.
+app() {
+	mkdir -p "$1/App/ALttPR"
+	cp "$bin" "$1/App/ALttPR/alttpr"
+	if [ $# -gt 1 ]; then
+		mkdir -p "$1/App/ALttPR/themes"
+		cp -R "$2" "$1/App/ALttPR/themes/default"
+	fi
+}
+
+app "$tmp/default" "$theme"
+here="$tmp/default/App/ALttPR"
+run=./alttpr
+(cd "$here" && expect 0 --sd "$themed" --frames 1 --shot "$tmp/here.bmp" --shot-text "$tmp/here.txt")
+run="$here/alttpr"
+expect 0 --sd "$themed" --frames 1 --shot "$tmp/full.bmp" --shot-text "$tmp/full.txt"
+for f in here full; do
+	cmp -s "$tmp/$f.txt" "$tmp/classic.txt" || fail "the default theme ($f) does not capture the text of --theme $theme"
+	cmp -s "$tmp/$f.bmp" "$tmp/classic.bmp" || fail "the default theme ($f) does not capture the frame of --theme $theme"
+done
+card="$(listing "$tmp/default")"
+run=./alttpr
+(cd "$here" && expect 0 --frames 1)
+[ "$(listing "$tmp/default")" = "$card" ] || fail "starting from App/ALttPR with the default theme changed the SD tree"
+
+app "$tmp/bare"
+run="$tmp/bare/App/ALttPR/alttpr"
+expect 1 --sd "$tree" --frames 1
+one_line "alttpr: "
+grep -qF "$tmp/bare/App/ALttPR/themes/default/theme.ini" "$tmp/err" || fail "a missing default theme does not name its theme.ini"
+[ "$(listing)" = "$before" ] || fail "a missing default theme changed the SD tree"
+
+app "$tmp/broken" "$theme"
+broken="$tmp/broken/App/ALttPR/themes/default/theme.ini"
+echo "bogus = 1" >>"$broken"
+run="$tmp/broken/App/ALttPR/alttpr"
+expect 1 --sd "$tree" --frames 1
+one_line "alttpr: $broken:$(wc -l <"$broken" | tr -d ' '): "
+[ "$(listing)" = "$before" ] || fail "a broken default theme changed the SD tree"
 
 echo "smoke_sdl: alttpr started, rendered one frame offscreen, played scripted keys, read themes and exited"
