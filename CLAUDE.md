@@ -204,7 +204,8 @@ in `docs/`, then `README.md`.
   `make patch-header` (the base patch's header, source CRC32, size cap and
   pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
 - CI: `.github/workflows/check.yml` runs `make -k check`, in a job
-  `sdl` `make sdl` (the PC binary uploaded as the artifact `alttpr-pc`), and
+  `sdl` `make sdl` on `ubuntu-24.04`, the goldens' pinned release (the PC
+  binary and `themes/default/` uploaded as the artifact `alttpr-pc`), and
   in a job `package` `make package` then `make e2e-arm` (the zip uploaded as
   the artifact `alttpr-miyoo`), all manually only (`workflow_dispatch`)
   until the owner turns on its push and pull-request triggers.

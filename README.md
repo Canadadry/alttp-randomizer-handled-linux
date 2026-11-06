@@ -322,8 +322,10 @@ from there. How `data/base.bps` was built
 is in step 0.1's note of `docs/plan-1.md`.
 
 CI (`.github/workflows/check.yml`) runs only by hand (**Run workflow**): its
-job `check` runs `make -k check`, its job `sdl` runs `make sdl` and uploads
-the PC binary as the artifact `alttpr-pc`, and its job `package` runs
+job `check` runs `make -k check`, its job `sdl` runs `make sdl` on
+`ubuntu-24.04` (the SDL goldens are pinned to its SDL_ttf and FreeType) and
+uploads the PC binary with `themes/default/` (alttp) beside it as the
+artifact `alttpr-pc`, and its job `package` runs
 `make package` then `make e2e-arm` and uploads the zip as the artifact
 `alttpr-miyoo`.
 

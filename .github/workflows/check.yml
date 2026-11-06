@@ -13,17 +13,19 @@ jobs:
 
   # The SDL build, outside check: the PC build with its tests and smoke test,
   # then the Onion cross build (docker is on GitHub's runners).
+  # Pinned to 24.04: the SDL goldens are pinned to its SDL_ttf and FreeType.
   sdl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update
       - run: sudo apt-get install -y libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev
       - run: make sdl
+      - run: mkdir -p tmp/alttpr-pc/themes && cp tests/rando/build/sdl/alttpr tmp/alttpr-pc/ && cp -R themes/alttp tmp/alttpr-pc/themes/default
       - uses: actions/upload-artifact@v4
         with:
           name: alttpr-pc
-          path: tests/rando/build/sdl/alttpr
+          path: tmp/alttpr-pc
 
   # The Miyoo release, outside check: the zip from Onion's toolchain, then the
   # cross-built generator on the e2e cases under qemu-arm.
