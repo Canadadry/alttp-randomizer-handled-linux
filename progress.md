@@ -25,7 +25,7 @@
     - [x] Chunk 1 — Freeze the oracle's values
     - [x] Chunk 2 — Delete the old renderer; the theme is required, with its default
     - [x] Chunk 3 — Packaging follows
-    - [ ] Chunk 4 — targets/mac follows
+    - [x] Chunk 4 — targets/mac follows
   - [ ] Step 1.7 — skill: check-net
 - [ ] Phase 2 — The new theme from the mockups
   - [ ] Step 2.8 — The new theme's geometry

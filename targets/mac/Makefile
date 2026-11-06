@@ -8,6 +8,8 @@ DEPS := $(ROOT)/tmp/sdl-deps
 PREFIX := $(DEPS)/prefix
 TTF_LIB := $(PREFIX)/lib/libSDL_ttf.a
 TTF_PC := $(PREFIX)/lib/pkgconfig/SDL_ttf.pc
+IMG_LIB := $(PREFIX)/lib/libSDL_image.a
+IMG_PC := $(PREFIX)/lib/pkgconfig/SDL_image.pc
 SD := $(ROOT)/tmp/sd
 SD_APP := $(SD)/App/ALttPR
 APP := $(ROOT)/tests/rando/build/sdl/alttpr
@@ -24,7 +26,7 @@ export PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
 all: build
 
 deps:
-	@for f in sdl12-compat freetype pkg-config; do \
+	@for f in sdl12-compat freetype libpng pkg-config; do \
 		brew list --versions $$f >/dev/null || { echo "setup: brew install $$f" >&2; exit 1; }; \
 	done
 
@@ -38,13 +40,26 @@ $(TTF_PC): | deps
 	printf '%s\n' 'prefix=$(PREFIX)' 'Name: SDL_ttf' 'Description: SDL_ttf 2.0 built locally' 'Version: 2.0.11' \
 		'Requires: sdl freetype2' 'Cflags: -I$${prefix}/include/SDL' 'Libs: -L$${prefix}/lib -lSDL_ttf' > $@
 
+# Nor SDL_image for SDL 1.2: PNG only, on the common backend (the ImageIO one is Objective-C, IMG_ImageIO.m).
+$(IMG_PC): | deps
+	mkdir -p $(PREFIX)/lib/pkgconfig $(PREFIX)/include/SDL $(DEPS)/img
+	[ -d $(DEPS)/SDL_image ] || git clone -q --depth 1 --branch SDL-1.2 https://github.com/libsdl-org/SDL_image.git $(DEPS)/SDL_image
+	for f in $(DEPS)/SDL_image/IMG*.c; do \
+		cc -O2 -DLOAD_PNG -DSDL_IMAGE_USE_COMMON_BACKEND -c "$$f" -o $(DEPS)/img/$$(basename "$$f" .c).o \
+			$$(pkg-config --cflags sdl libpng) || exit 1; \
+	done
+	ar rcs $(IMG_LIB) $(DEPS)/img/*.o
+	cp $(DEPS)/SDL_image/SDL_image.h $(PREFIX)/include/SDL/
+	printf '%s\n' 'prefix=$(PREFIX)' 'Name: SDL_image' 'Description: SDL_image 1.2 built locally, PNG only' 'Version: 1.2.13' \
+		'Requires: sdl libpng' 'Cflags: -I$${prefix}/include/SDL' 'Libs: -L$${prefix}/lib -lSDL_image' > $@
+
 # <SDL/SDL.h> needs the parent include dirs; Apple clang flags an intentional
 # string concatenation in text_strings.c that gcc accepts.
-build: $(TTF_PC) sd
+build: $(TTF_PC) $(IMG_PC) sd
 	$(MAKE) -C $(ROOT)/tests/rando build/sdl/alttpr \
 		CFLAGS="-std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS -Wno-string-concatenation" \
-		SDL_CFLAGS="$$(pkg-config --cflags sdl SDL_ttf) -I$(PREFIX)/include -I$$(brew --prefix)/include" \
-		SDL_LIBS="$$(pkg-config --libs sdl SDL_ttf)"
+		SDL_CFLAGS="$$(pkg-config --cflags sdl SDL_ttf SDL_image) -I$(PREFIX)/include -I$$(brew --prefix)/include" \
+		SDL_LIBS="$$(pkg-config --libs sdl SDL_ttf SDL_image)"
 	@[ -f $(SD_APP)/base.sfc ] || echo "no ROM yet: make -C targets/mac rom ROM=<your JP 1.0 rom.sfc>"
 
 sd:
@@ -65,7 +80,7 @@ rom: sd
 		&& echo "rom: JP 1.0, ready" || echo "rom: not the JP 1.0 ROM (MD5 differs): the app will refuse it" >&2
 
 run: build
-	cd $(ROOT) && $(APP) --sd tmp/sd --font data/DejaVuSansMono.ttf
+	cd $(ROOT) && $(APP) --sd tmp/sd --theme themes/classic
 
 clean:
-	rm -rf $(DEPS)/prefix $(DEPS)/SDL_ttf.o $(APP)
+	rm -rf $(DEPS)/prefix $(DEPS)/SDL_ttf.o $(DEPS)/img $(APP)

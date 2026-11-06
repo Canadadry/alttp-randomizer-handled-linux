@@ -3,12 +3,13 @@
 ## Build
 
 ```sh
-brew install sdl12-compat freetype pkg-config
+brew install sdl12-compat freetype libpng pkg-config
 make -C targets/mac
 ```
 
-This builds SDL_ttf for SDL 1.2 in `tmp/sdl-deps` (Homebrew no longer has
-it), builds the app, and prepares `tmp/sd`, the fake SD card.
+This builds SDL_ttf and SDL_image (PNG only) for SDL 1.2 in
+`tmp/sdl-deps` (Homebrew no longer has them), builds the app, and prepares
+`tmp/sd`, the fake SD card.
 
 ## ROM
 
@@ -24,6 +25,9 @@ header if the ROM has one, and checks that it is the Japanese 1.0.
 ```sh
 make -C targets/mac run
 ```
+
+It runs the app with `--theme themes/classic`: its whole look, font
+included, comes from that theme folder.
 
 Seeds go to `tmp/sd/Roms/SFC/ALttPR/`, History records to
 `tmp/sd/App/ALttPR/history/`.
@@ -53,3 +57,7 @@ other key is held. Closing the window quits.
 Only the app is built, not the SDL tests: on macOS, `SDL_main.h` renames
 `main`, and the tests declare `main(void)`. `make check` does not cover this
 build.
+
+The SDL_image recipe was checked on Linux only (the same clone and compile
+against the host's SDL and libpng, the PC app linked to that archive), not
+on a Mac.
