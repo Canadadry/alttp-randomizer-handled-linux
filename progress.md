@@ -51,5 +51,9 @@
     - [x] Chunk 2 — The SDL renderer draws the help
     - [x] Chunk 3 — Mockup check and docs
   - [ ] Step 2.12 — The new theme's look
+    - [x] Chunk 1 — The art generator
+    - [ ] Chunk 2 — Measures in make theme-compare
+    - [ ] Chunk 3 — The art in the theme, first pass
+    - [ ] Chunk 4 — Tuning passes and the record
   - [ ] Step 2.13 — Default theme switched
   - [ ] Step 2.14 — skill: check-net

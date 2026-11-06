@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens mockups theme-compare sdl-arm package patch-header measure-compare check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -18,6 +18,8 @@ help:
 	@echo "make sdl-goldens    writes the SDL goldens once into tests/rando/sdl/goldens/, refused if any exist, kept out of check"
 	@echo "make mockups        the mockups of design/mockups/ checked: rendered offline by Chromium with the local font, kept out of check (needs sdl-pc's packages, node, Playwright's Chromium)"
 	@echo "make theme-compare  the mockups beside the app's captures with a diff and a score per mockup, into tests/rando/build/theme-compare/ (THEME=<dir>, default themes/alttp; needs Playwright's Chromium and sdl-pc's packages; no threshold)"
+	@echo "make theme-art      the art of themes/alttp re-rendered from design/mockups/ by Chromium and compared pixel by pixel (THEME=<dir>; needs node and Playwright's Chromium)"
+	@echo "make theme-art-write the art rendered twice, refused unless byte-identical, written into themes/alttp (THEME=<dir>; needs node and Playwright's Chromium)"
 	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
 	@echo "make package        the release zip tests/rando/build/package/ALttPR.zip: sdl-arm stripped, ABI-checked, with app/package/, data/base.bps and themes/classic as themes/default (needs docker)"
 	@echo "make patch-header   the base patch checked like make test checks data/base.bps (BPS=<file>, default data/base.bps), kept out of check"
@@ -87,6 +89,13 @@ mockups:
 THEME ?= themes/alttp
 theme-compare:
 	$(MAKE) -C tests/rando theme-compare COMPARE_THEME=$(abspath $(THEME))
+
+# Outside the net: needs node and Playwright's Chromium. THEME is relative to this directory.
+theme-art:
+	$(MAKE) -C tests/rando theme-art ART_THEME=$(abspath $(THEME))
+
+theme-art-write:
+	$(MAKE) -C tests/rando theme-art-write ART_THEME=$(abspath $(THEME))
 
 # Outside the net: needs docker.
 package:

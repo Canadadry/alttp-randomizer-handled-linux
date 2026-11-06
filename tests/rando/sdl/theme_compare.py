@@ -60,8 +60,8 @@ def unfilter(kind, line, prev, bpp):
     return row
 
 
-def decode_png(data):
-    """Returns (width, height, rows), rows a list of width * 3 RGB bytes."""
+def decode_png_rgba(data):
+    """Returns (width, height, rows), rows a list of width * 4 RGBA bytes (alpha 255 for colour type 2)."""
     if data[:8] != PNG_SIGNATURE:
         raise InputError("not a PNG")
     pos = 8
@@ -99,13 +99,24 @@ def decode_png(data):
     for y in range(height):
         start = y * (stride + 1)
         prev = unfilter(raw[start], raw[start + 1:start + 1 + stride], prev, bpp)
-        if bpp == 3:
+        if bpp == 4:
             rows.append(bytes(prev))
             continue
-        if prev[3::4] != b"\xff" * width:
+        rgba = bytearray(b"\xff" * (width * 4))
+        rgba[0::4], rgba[1::4], rgba[2::4] = prev[0::3], prev[1::3], prev[2::3]
+        rows.append(bytes(rgba))
+    return (width, height, rows)
+
+
+def decode_png(data):
+    """Returns (width, height, rows), rows a list of width * 3 RGB bytes; refused unless opaque."""
+    width, height, rgba_rows = decode_png_rgba(data)
+    rows = []
+    for row in rgba_rows:
+        if row[3::4] != b"\xff" * width:
             raise InputError("not opaque")
         rgb = bytearray(width * 3)
-        rgb[0::3], rgb[1::3], rgb[2::3] = prev[0::4], prev[1::4], prev[2::4]
+        rgb[0::3], rgb[1::3], rgb[2::3] = row[0::4], row[1::4], row[2::4]
         rows.append(bytes(rgb))
     return (width, height, rows)
 
@@ -194,9 +205,10 @@ def compose(panels):
     return (width, panels[0][1], rows)
 
 
-def encode_png(image):
+def encode_png(image, colour=2):
+    """colour 2: rows of width * 3 RGB bytes; colour 6: width * 4 RGBA bytes."""
     width, height, rows = image
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, colour, 0, 0, 0)
     idat = zlib.compress(b"".join(b"\0" + row for row in rows), 9)
     return PNG_SIGNATURE + png_chunk(b"IHDR", ihdr) + png_chunk(b"IDAT", idat) + png_chunk(b"IEND", b"")
 
