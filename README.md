@@ -388,6 +388,14 @@ tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
 with it, into `tests/rando/build/sdl/theme-states/alttp/` (a `.bmp` and a
 `.txt` per state); they are not compared with anything.
 
+The mockups load their font from `data/PressStart2P.ttf`, with ligatures
+off, and are paired with the app states that show them in
+`tests/rando/sdl/mockup_states.txt` (fixture, frame cap, flags, keys, page).
+`make mockups` (outside the net; needs `make sdl-pc`'s packages, node and
+Playwright's Chromium) renders them offline, plays every pairing into the
+SDL app and `ui_cli`, and compares each mockup's text with the app's,
+writing `tests/rando/build/mockups/`.
+
 A theme may hold an optional `[help]` section (the help line's font, x,
 baseline, right edge and colour); without it the theme has no help line, as
 `classic` has none.

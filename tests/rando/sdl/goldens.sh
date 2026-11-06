@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR
+# Usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE]
 # Plays every state of golden_states.txt into the SDL app (dummy video driver), each from a fresh copy
 # of its fixture, and checks the captured text holds the state's strings. --write renders every state
 # twice, refuses unless both runs agree byte for byte and DIR holds no BMP, then fills DIR with the
@@ -7,7 +7,8 @@
 # fingerprint, then renders each state once against DIR. golden_states.txt is tab-separated: name,
 # fixture, frame cap, extra alttpr flags, keys, strings joined by " | "; "-" for no cap or no flags.
 # --draw renders each state once into DIR with any theme, checks each BMP is a 640x480 picture of more
-# than one colour, and skips the strings, which are spelled on classic's grid.
+# than one colour, and skips the strings, which are spelled on classic's grid; --states plays FILE,
+# in the same format, instead of golden_states.txt (--draw only: goldens come from golden_states.txt).
 # Every alttpr run gets --theme THEME; the fingerprint holds one font line per *.ttf of THEME.
 set -eu
 set -f
@@ -15,11 +16,11 @@ export LC_ALL=C
 export SDL_VIDEODRIVER=dummy
 
 usage() {
-	echo "usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR" >&2
+	echo "usage: goldens.sh ALTTPR THEME SD_FIXTURE --write DIR | --compare DIR | --draw DIR [--states FILE]" >&2
 	exit 2
 }
 
-[ $# -eq 5 ] || usage
+[ $# -eq 5 ] || { [ $# -eq 7 ] && [ "$4" = --draw ] && [ "$6" = --states ]; } || usage
 case "$4" in --write | --compare | --draw) ;; *) usage ;; esac
 abs() {
 	echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
@@ -31,6 +32,10 @@ mode="$4"
 goldens="$5"
 here="$(cd "$(dirname "$0")" && pwd)"
 states="$here/golden_states.txt"
+if [ $# -eq 7 ]; then
+	[ -f "$7" ] || usage
+	states="$(abs "$7")"
+fi
 fingerprint_file=environment.txt
 work="$(dirname "$bin")/goldens-work"
 tmp="$(mktemp -d)"

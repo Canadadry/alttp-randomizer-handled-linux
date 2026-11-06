@@ -139,6 +139,21 @@ in `docs/`, then `README.md`.
 - `make sdl-goldens`, outside the net, writes the goldens once (every state
   rendered twice, refused unless byte-identical) and refuses a folder that
   already holds any: goldens are never regenerated to get green.
+- `make mockups`, outside the net, checks `design/mockups/` against the app
+  (`tests/rando/sdl/mockups.sh`): the comparator's self-test
+  (`mockup_text.py --self-test`), the render check's self-proof and its
+  offline Chromium render of every mockup with the local Press Start 2P and
+  no ligature (`mockup_render.js`), every mockup paired in
+  `tests/rando/sdl/mockup_states.txt` (seed 1, the golden runs' date),
+  `alttpr` with `themes/alttp` playing every pairing (`goldens.sh --draw
+  --states`), the `ui_cli` grid read from those captures, `ui_cli`
+  byte-identical to `alttpr` on the theme's page, and each mockup's text
+  compared with `ui_cli`'s (one `MISMATCH` line per difference; the rules
+  are in `mockup_text.py`'s docstring); it writes
+  `tests/rando/build/mockups/` and ends with one summary line. Without
+  python3, node, npm, Playwright or its Chromium (`NODE_PATH=$(npm root
+  -g)`, browsers in `/opt/pw-browsers`) or `make sdl-pc`'s packages it
+  prints a `setup:` line, a setup problem that verifies nothing.
 - `make package`, outside the net, needs docker: it runs `sdl-arm`, strips
   the binary with Onion's toolchain, checks it with `file` and `readelf`
   (32-bit ARM EABI5, dynamically linked, `/lib/ld-linux-armhf.so.3`,
@@ -152,7 +167,8 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
-  build are not `check`, nor are `make package` and `make sdl-goldens`.
+  build are not `check`, nor are `make package`, `make sdl-goldens` and
+  `make mockups`.
   `make patch-header` (the base patch's header, source CRC32, size cap and
   pipeline checks) checks any `BPS=<file>`; `make test` checks `data/base.bps`.
 - CI: `.github/workflows/check.yml` runs `make -k check`, in a job

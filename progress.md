@@ -36,7 +36,7 @@
     - [x] Chunk 1 — The text comparator
     - [x] Chunk 2 — Render check, make mockups, font edit
     - [x] Chunk 2 mockups — local font, no ligatures
-    - [ ] Chunk 3 — Pairing table and app-side checks
+    - [x] Chunk 3 — Pairing table and app-side checks
     - [ ] Chunk 4 — Mockup content edits
   - [ ] Step 2.10 — `make theme-compare`
   - [ ] Step 2.11 — Help text per value
