@@ -66,6 +66,29 @@ class PrePushTest(unittest.TestCase):
         subprocess.run(["sh", str(HOOK), "--install"], cwd=self.repo, env=self.env, check=True)
         self.assertIn("no_claude_branch.sh", hook.read_text())
 
+    def install(self):
+        return subprocess.run(["sh", str(HOOK), "--install"], cwd=self.repo, env=self.env,
+                              check=True, capture_output=True, text=True)
+
+    def test_install_leaves_a_hook_chaining_it_alone(self):
+        hook = self.repo / ".git" / "hooks" / "pre-push"
+        chain = ("#!/bin/sh\n# chained pre-push hook\n"
+                 "sh .claude/hooks/no_claude_branch.sh \"$@\" || status=1\nexit ${status:-0}\n")
+        hook.write_text(chain)
+        result = self.install()
+        self.assertEqual(hook.read_text(), chain)
+        self.assertIn("already chains no_claude_branch.sh, left alone", result.stderr)
+
+    def test_install_rewrites_its_own_hook_identically(self):
+        hook = self.repo / ".git" / "hooks" / "pre-push"
+        hook.unlink()
+        self.install()
+        own = hook.read_bytes()
+        result = self.install()
+        self.assertEqual(hook.read_bytes(), own)
+        self.assertEqual(result.stderr, "")
+        self.assertTrue(os.access(hook, os.X_OK))
+
 
 if __name__ == "__main__":
     unittest.main()

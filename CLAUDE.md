@@ -62,7 +62,8 @@ in `docs/`, then `README.md`.
   patched with `ladxr.patch` (order fixes only); the Python scripts that run
   it without a ROM (shared helpers `ladx_oracle.py`, unit-tested by
   `test_oracle.py`); Phase 2's ROM-free tools, each unit-tested by its
-  `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check), and
+  `test_<tool>.py` (`nintendo_bytes.py`, the Nintendo-bytes check;
+  `push_gate.py`, Phase 2's push gate), and
   `fetch_rom.sh`, the ROM fetcher, proved by its own run; the
   hand-written inputs `tier1.txt`,
   `determinism_cases.txt` and `order_audit.txt`; and the six fixtures they
@@ -155,6 +156,26 @@ in `docs/`, then `README.md`.
   SHA-1 once moved into place. A dead link (`download failed (curl exit
   <n>, HTTP <code>)`) or another SHA-1 (`refused, SHA-1 <x> ...`, the file
   deleted) is a `setup:` line, exit 2.
+- Phase 2's push gate, outside the net (git and python3; armed on the real
+  repository only from Phase 2 step 1): `python3 -I
+  tests/ladx/oracle/push_gate.py`, a pre-push hook chained after
+  `no_claude_branch.sh` (both fed the same ref lines, both always run). It
+  refuses a push when the link in `LADX_ROM_URL` is in `git log -p --text`
+  of a pushed commit (`the link is in commit <sha>`), when a blob the push
+  uploads, intermediate commits included, holds a literal run of the ROM
+  (`<path> (blob <sha>): literal run of <n> bytes at @<offset> (<view>)`),
+  or when an untracked file sits outside the git-ignored paths (`docs/prd/`
+  allowed, but searched for the link); it fails closed (no `LADX_ROM_URL`,
+  or no `tmp/ladx/base.gbc` of SHA-1 `d90ac17e…`: `push-gate: setup: …,
+  push refused`), never echoes the link or the bytes, else prints
+  `push-gate: ok, …`. `--self-test` makes 12 planted pushes through the
+  installed chain in a planted clone with a planted ROM and link
+  (`push-gate: self-test, 12 planted pushes as expected`, else one
+  `self-test failed: <case>` line each); `--install` runs it, then writes
+  the chain into the common hooks directory only over no hook,
+  `no_claude_branch.sh`'s own or the chain (else `the gate is NOT armed`,
+  exit 1), never touching `prepare-commit-msg`; `--uninstall` removes the
+  chain and runs `no_claude_branch.sh --install`.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -303,7 +324,8 @@ in `docs/`, then `README.md`.
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
   `gen_fixtures.sh`, `determinism.sh` and `audit_order.py` run only to
   regenerate or re-prove its fixtures; `nintendo_bytes.py` needs the ROM,
-  which only Phase 2 holds, and `fetch_rom.sh` fetches it. The SDL build (`make sdl`,
+  which only Phase 2 holds, `fetch_rom.sh` fetches it, and `push_gate.py`
+  guards Phase 2's pushes (its tests run in `make test`). The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and
@@ -382,6 +404,9 @@ hook `plan-pilot` installs (`.claude/skills/plan-pilot/scripts/progress_check.sh
   starts by writing a plan.
 - The pre-push hook `.claude/hooks/no_claude_branch.sh` refuses any push to
   a `claude/*` branch; the `SessionStart` hook of `.claude/settings.json`
-  installs it.
+  installs it, writing only over no hook or its own, so a hook chaining it
+  is left alone. From Phase 2 step 1 the pre-push hook is
+  `push_gate.py --install`'s chain (no_claude_branch.sh, then the gate);
+  `push_gate.py --uninstall` restores the plain one.
 - No pull request unless the owner asks for one; `plan-pilot` opens its own
   at the end of a finished plan.

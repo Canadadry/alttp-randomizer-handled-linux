@@ -29,7 +29,7 @@
   - [ ] Step 1.9 Phase 2's ROM-free tooling, self-proven
     - [x] Chunk 1: Nintendo-bytes check
     - [x] Chunk 2: fetch_rom.sh and the ground rule
-    - [ ] Chunk 3: push gate hook
+    - [x] Chunk 3: push gate hook
     - [ ] Chunk 4: read trace
     - [ ] Chunk 5: inventory checker and draft
   - [ ] Step 1.10 check-net
