@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare check
+.PHONY: help install test test-rando ui-cli test-template lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -24,6 +24,10 @@ help:
 	@echo "make package        the release zip tests/rando/build/package/ALttPR.zip: sdl-arm stripped, ABI-checked, with app/package/, data/base.bps and themes/alttp as themes/default (needs docker)"
 	@echo "make patch-header   the base patch checked like make test checks data/base.bps (BPS=<file>, default data/base.bps), kept out of check"
 	@echo "make measure-compare the generator timed against a worktree of 40314c3, interleaved, +-10% verdicts, kept out of check"
+	@echo "make mac            macOS: the SDL app and the fake SD card tmp/sd (targets/mac), kept out of check"
+	@echo "make mac-rom        macOS: ROM=<file.sfc> copied to tmp/sd, copier header stripped, JP 1.0 checked"
+	@echo "make mac-run        macOS: builds then runs the SDL app on tmp/sd"
+	@echo "make mac-clean      macOS: removes the local SDL_ttf and SDL_image builds and the app binary"
 	@echo "make check          the net: everything that must be green before a push"
 
 install:
@@ -104,6 +108,19 @@ package:
 # Outside the net; make test checks data/base.bps. BPS is relative to this directory.
 patch-header:
 	$(MAKE) -C tests/rando patch-header $(if $(BPS),BPS=$(abspath $(BPS)))
+
+# Outside the net: macOS only (targets/mac/README.md). ROM is relative to this directory.
+mac:
+	$(MAKE) -C targets/mac
+
+mac-rom:
+	$(MAKE) -C targets/mac rom $(if $(ROM),ROM=$(abspath $(ROM)))
+
+mac-run:
+	$(MAKE) -C targets/mac run
+
+mac-clean:
+	$(MAKE) -C targets/mac clean
 
 # Outside the net: creates or reuses tmp/measure-ref-40314c3.
 measure-compare:

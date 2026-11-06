@@ -196,6 +196,10 @@ in `docs/`, then `README.md`.
   `App/ALttPR/`, with the theme folder `PKG_THEME` (`themes/alttp`)
   shipped as `App/ALttPR/themes/default/`; the same commit gives the same
   zip bytes.
+- `make mac`, `mac-rom ROM=<file>`, `mac-run`, `mac-clean`, outside the
+  net, macOS only (`targets/mac/`): the SDL app on sdl12-compat with a
+  locally built SDL_ttf and SDL_image, and a fake SD card in `tmp/sd`; the owner runs
+  `mac-run`, never an agent.
 - Not in the net, on purpose: `tests/rando/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens. The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross

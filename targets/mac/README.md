@@ -4,7 +4,7 @@
 
 ```sh
 brew install sdl12-compat freetype libpng pkg-config
-make -C targets/mac
+make mac
 ```
 
 This builds SDL_ttf and SDL_image (PNG only) for SDL 1.2 in
@@ -14,7 +14,7 @@ This builds SDL_ttf and SDL_image (PNG only) for SDL 1.2 in
 ## ROM
 
 ```sh
-make -C targets/mac rom ROM=/path/to/your/rom.sfc
+make mac-rom ROM=/path/to/your/rom.sfc
 ```
 
 It copies the ROM to `tmp/sd/App/ALttPR/base.sfc`, strips the 512-byte
@@ -23,7 +23,7 @@ header if the ROM has one, and checks that it is the Japanese 1.0.
 ## Run
 
 ```sh
-make -C targets/mac run
+make mac-run
 ```
 
 It runs the app with `--theme themes/alttp`: its whole look, font
