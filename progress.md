@@ -7,7 +7,7 @@
     - [x] App folder App/ZeldaRando and its strings
     - [x] Binary zrando, package ZeldaRando.zip and CI
     - [x] Docs follow the new name
-  - [ ] Step 1.4 Per-game SD layout for ALttP
+  - [x] Step 1.4 Per-game SD layout for ALttP
     - [x] ALttP files under App/ZeldaRando/alttp, ROMs in Roms/SFC/ZeldaRando
   - [ ] Step 1.5 Onion facts for GBC
   - [ ] Step 1.6 Game-choice screen in the UI core
