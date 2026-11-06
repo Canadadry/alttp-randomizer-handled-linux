@@ -1,4 +1,4 @@
-- [ ] Phase 1 — Rename and game choice, ROM-free work
+- [x] Phase 1 — Rename and game choice, ROM-free work
   - [x] Step 1.1 Rename rando/ to alttp/ and tests/rando/ to tests/alttp/
     - [x] Move both trees and update every path token
   - [x] Step 1.2 Additive SDL golden write
@@ -32,7 +32,7 @@
     - [x] Chunk 3: push gate hook
     - [x] Chunk 4: read trace
     - [x] Chunk 5: inventory checker and draft
-  - [ ] Step 1.10 check-net
+  - [x] Step 1.10 check-net
 - [ ] Phase 2 — LADXR oracle, with the ROM
   - [ ] Step 2.1 Fetch and check the ROM
   - [ ] Step 2.2 Oracle and full-generation determinism
