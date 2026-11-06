@@ -3,9 +3,10 @@
 # For each mockup of design/mockups/, paired by mockup_states.txt: OUT/<mockup>.png, the mockup
 # rendered offline (mockup_render.js, into OUT/render/), the app's capture with THEME (goldens.sh
 # --draw, into OUT/app/) and their diff side by side, and a "theme-compare: <mockup>: score <s>"
-# line, also in OUT/scores.txt. A setup: line (exit 1) without the browser tools; then
+# line, also in OUT/scores.txt; then theme_compare.py offsets: its per-text lines, prefixed by the
+# mockup, into OUT/offsets.txt and a "theme-compare: <mockup>: <summary>" line. A setup: line (exit 1) without the browser tools; then
 # theme_compare.py's self-test and the pairing check. OUT is emptied first. Exit 1 when an image
-# could not be produced; never on a score.
+# could not be produced; never on a score or an offset.
 set -eu
 set -f
 export LC_ALL=C
@@ -48,11 +49,20 @@ node "$here/mockup_render.js" "$out/render" $svgs
 
 count=0
 : >"$out/scores.txt"
+: >"$out/offsets.txt"
 for svg in $svgs; do
 	name="$(basename "$svg" .svg)"
 	s="$(python3 -I "$compare_py" compare "$out/render/$name.png" "$out/app/$name.bmp" "$out/$name.png")" ||
 		{ echo "theme-compare: $name: no image"; exit 1; }
 	echo "theme-compare: $name: score $s" | tee -a "$out/scores.txt"
+	if python3 -I "$compare_py" offsets "$out/render/$name.png" "$out/app/$name.bmp" "$out/render/$name.texts.txt" \
+		>"$out/$name.offsets"; then
+		sed '$d' "$out/$name.offsets" | sed "s/^/$name: /" >>"$out/offsets.txt"
+		echo "theme-compare: $name: $(tail -n 1 "$out/$name.offsets")"
+	else
+		echo "theme-compare: $name: no offsets"
+	fi
+	rm -f "$out/$name.offsets"
 	count=$((count + 1))
 done
 echo "theme-compare: $count mockups compared with $(basename "$theme") in $out (mockup | app | diff; scores informational, no threshold)"

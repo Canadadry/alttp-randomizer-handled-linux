@@ -3,7 +3,8 @@
 // one "mockups: <name>: <problem>" line per failure, exit 1 if any: a request that is not file:
 // (aborted), no loaded "Press Start 2P" face, a <text> whose computed length is not its characters
 // times its computed font-size within 0.5 px (checked only once the face is loaded). Proves itself
-// first on four planted SVGs beside a byte copy of data/PressStart2P.ttf.
+// first on four planted SVGs beside a byte copy of data/PressStart2P.ttf. Also writes OUT/<name>.texts.txt:
+// per <text> outside defs, tab-separated, its getBBox x y width height, its computed fill rrggbb, its text.
 'use strict';
 
 const fs = require('fs');
@@ -45,11 +46,17 @@ async function check(browser, file, out) {
 			const loaded = faces.some(f => f.family === family && f.status === 'loaded');
 			const texts = [...document.querySelectorAll('text')]
 				.filter(t => !t.closest('defs'))
-				.map(t => ({
-					text: t.textContent.replace(/[\r\n\t]/g, '').replace(/ +/g, ' ').trim(),
-					length: t.getComputedTextLength(),
-					size: parseFloat(getComputedStyle(t).fontSize),
-				}));
+				.map(t => {
+					const box = t.getBBox();
+					const rgb = getComputedStyle(t).fill.match(/\d+/g) || [];
+					return {
+						text: t.textContent.replace(/[\r\n\t]/g, '').replace(/ +/g, ' ').trim(),
+						length: t.getComputedTextLength(),
+						size: parseFloat(getComputedStyle(t).fontSize),
+						box: [box.x, box.y, box.width, box.height],
+						fill: rgb.slice(0, 3).map(c => Number(c).toString(16).padStart(2, '0')).join(''),
+					};
+				});
 			return { loaded, texts };
 		}, FAMILY);
 		if (!seen.loaded) {
@@ -63,6 +70,8 @@ async function check(browser, file, out) {
 		}
 		fs.mkdirSync(out, { recursive: true });
 		await page.screenshot({ path: path.join(out, name + '.png') });
+		fs.writeFileSync(path.join(out, name + '.texts.txt'),
+			seen.texts.map(t => [...t.box, t.fill, t.text].join('\t') + '\n').join(''));
 	} finally {
 		await page.close();
 	}
@@ -114,6 +123,11 @@ async function selfTest(browser) {
 			if (!ok)
 				failures.push(`mockups: self-test: ${name}: want ${JSON.stringify(want || 'one text line')}, got ${JSON.stringify(got)}`);
 		}
+		const texts = fs.readFileSync(path.join(dir, 'out', 'clean.texts.txt'), 'utf8').split('\n').filter(Boolean)
+			.map(l => l.split('\t')).map(f => [f[0], Math.round(f[2]), f[4], f[5]].join(' '));
+		const wantTexts = ['30 128 f8f8f8 Generate', '30 156 f8f8f8 Enemy Shuffle'];
+		if (JSON.stringify(texts) !== JSON.stringify(wantTexts))
+			failures.push(`mockups: self-test: clean texts: want ${JSON.stringify(wantTexts)}, got ${JSON.stringify(texts)}`);
 	} finally {
 		fs.rmSync(dir, { recursive: true, force: true });
 	}

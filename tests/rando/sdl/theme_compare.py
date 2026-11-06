@@ -1,15 +1,23 @@
 """Usage: python3 -I theme_compare.py compare MOCKUP_PNG APP_BMP OUT_PNG
+       python3 -I theme_compare.py offsets MOCKUP_PNG APP_BMP TEXTS
        python3 -I theme_compare.py --self-test
 
 compare: writes OUT_PNG, three 640x480 panels mockup | app | diff with 8 px #808080 bars between
 them, and prints the score. Refused with one line on stderr, exit 1 and nothing written, when an
 image cannot be read, is not 640x480, the mockup's pixel (2, 2) is not #0c0c34, or the mockup
 scored against itself is not 0.
+offsets: TEXTS is mockup_render.js's <name>.texts.txt. A text's window is its box grown by 4 px on
+each side; a pixel is ink of a colour when each channel is within 48 of it. Prints, per text, dx and
+dy (app minus mockup, of the left and top of its colour's ink inside its window) or "not found"
+(no such ink in the app; "not found in mockup" when the mockup has none), then the summary: the
+pixels that differ outside every window, the worst |dx| and |dy|, the texts beyond 2 px, the not
+found. Refused like compare when an image cannot be read.
 --self-test: proves the decoders, the score, the diff and the composition on planted images; one
 line per failing case, exit 1 if any, nothing printed when all pass.
 """
 
 import contextlib
+import math
 import io
 import os
 import struct
@@ -244,6 +252,85 @@ def compare(mockup_path, app_path, out_path):
     return score(mockup, app)
 
 
+WINDOW_PX = 4
+INK_TOLERANCE = 48
+BEYOND_PX = 2
+
+
+def read_texts(path):
+    """Returns [(x, y, width, height, rgb bytes, text)]; raises InputError on a malformed line."""
+    texts = []
+    with open(path, encoding="utf-8") as f:
+        for number, line in enumerate(f, 1):
+            fields = line.rstrip("\n").split("\t")
+            try:
+                box = [float(v) for v in fields[:4]]
+                rgb = bytes.fromhex(fields[4])
+            except (ValueError, IndexError):
+                raise InputError("%s: line %d: want x y width height rrggbb text" % (path, number))
+            if len(fields) != 6 or len(rgb) != 3:
+                raise InputError("%s: line %d: want x y width height rrggbb text" % (path, number))
+            texts.append(tuple(box) + (rgb, fields[5]))
+    return texts
+
+
+def text_window(text, size):
+    x, y, width, height = text[:4]
+    return (max(0, math.floor(x - WINDOW_PX)), max(0, math.floor(y - WINDOW_PX)),
+            min(size[0], math.ceil(x + width + WINDOW_PX)), min(size[1], math.ceil(y + height + WINDOW_PX)))
+
+
+def ink_box(image, window, rgb):
+    """The (left, top) of the ink of rgb inside window, or None."""
+    x0, y0, x1, y1 = window
+    left = top = None
+    for y in range(y0, y1):
+        row = image[2][y]
+        for x in range(x0, x1):
+            if all(abs(row[3 * x + c] - rgb[c]) <= INK_TOLERANCE for c in range(3)):
+                if top is None:
+                    top = y
+                if left is None or x < left:
+                    left = x
+                break
+    return None if top is None else (left, top)
+
+
+def offsets(mockup, app, texts):
+    """Returns the per-text lines and the summary line."""
+    same_size(mockup, app)
+    width, height = mockup[:2]
+    inside = [bytearray(width) for _ in range(height)]
+    lines = []
+    worst_dx = worst_dy = beyond = missing = 0
+    for text in texts:
+        window = text_window(text, (width, height))
+        for y in range(window[1], window[3]):
+            inside[y][window[0]:window[2]] = b"\1" * (window[2] - window[0])
+        name = '"%s" #%s' % (text[5], text[4].hex())
+        want = ink_box(mockup, window, text[4])
+        got = ink_box(app, window, text[4])
+        if want is None or got is None:
+            missing += 1
+            lines.append("%s: not found%s" % (name, " in mockup" if want is None else ""))
+            continue
+        dx, dy = got[0] - want[0], got[1] - want[1]
+        worst_dx, worst_dy = max(worst_dx, abs(dx)), max(worst_dy, abs(dy))
+        if abs(dx) > BEYOND_PX or abs(dy) > BEYOND_PX:
+            beyond += 1
+        lines.append("%s: dx %d dy %d" % (name, dx, dy))
+    outside = 0
+    for y, (ra, rb) in enumerate(zip(mockup[2], app[2])):
+        if ra == rb:
+            continue
+        for x in range(width):
+            if not inside[y][x] and ra[3 * x:3 * x + 3] != rb[3 * x:3 * x + 3]:
+                outside += 1
+    summary = "outside %d px, %d texts, worst |dx| %d |dy| %d, %d beyond %d px, %d not found" % (
+        outside, len(texts), worst_dx, worst_dy, beyond, BEYOND_PX, missing)
+    return lines, summary
+
+
 def png_chunk(kind, body):
     return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body))
 
@@ -430,9 +517,82 @@ def self_test():
             if os.path.exists(path("refused.png")):
                 failures.append("theme_compare: self-test: %s: an image written" % case)
 
+    failures.extend(offsets_self_test())
     for line in failures:
         print(line)
     return 1 if failures else 0
+
+
+def offsets_self_test():
+    failures = []
+
+    def expect(case, want, got):
+        if want != got:
+            failures.append("theme_compare: self-test: offsets: %s: want %r, got %r" % (case, want, got))
+
+    background, white, red = (12, 12, 52), (248, 248, 248), (232, 56, 56)
+
+    def picture(inks, dots=()):
+        rows = [bytearray(bytes(background) * 40) for _ in range(30)]
+        for (x, y, w, h, rgb) in inks:
+            for yy in range(y, y + h):
+                rows[yy][3 * x:3 * (x + w)] = bytes(rgb) * w
+        for (x, y) in dots:
+            rows[y][3 * x:3 * x + 3] = b"\x00\x00\x00"
+        return (40, 30, [bytes(r) for r in rows])
+
+    text = (10.0, 8.0, 6.0, 4.0, bytes(white), "Hi")
+    mockup = picture([(10, 8, 6, 4, white)])
+    expect("equal images", (['"Hi" #f8f8f8: dx 0 dy 0'],
+                            "outside 0 px, 1 texts, worst |dx| 0 |dy| 0, 0 beyond 2 px, 0 not found"),
+           offsets(mockup, mockup, [text]))
+    expect("ink moved by (1, -2)", (['"Hi" #f8f8f8: dx 1 dy -2'],
+                                    "outside 0 px, 1 texts, worst |dx| 1 |dy| 2, 0 beyond 2 px, 0 not found"),
+           offsets(mockup, picture([(11, 6, 6, 4, white)]), [text]))
+    expect("ink moved by (3, 0)", (['"Hi" #f8f8f8: dx 3 dy 0'],
+                                   "outside 0 px, 1 texts, worst |dx| 3 |dy| 0, 1 beyond 2 px, 0 not found"),
+           offsets(mockup, picture([(13, 8, 6, 4, white)]), [text]))
+    expect("ink of the wrong colour", (['"Hi" #f8f8f8: not found'],
+                                       "outside 0 px, 1 texts, worst |dx| 0 |dy| 0, 0 beyond 2 px, 1 not found"),
+           offsets(mockup, picture([(10, 8, 6, 4, red)]), [text]))
+    expect("a pixel off inside the window, one outside every window",
+           (['"Hi" #f8f8f8: dx 0 dy 0'], "outside 1 px, 1 texts, worst |dx| 0 |dy| 0, 0 beyond 2 px, 0 not found"),
+           offsets(mockup, picture([(10, 8, 6, 4, white)], dots=[(6, 4), (5, 4)]), [text]))
+    expect("ink within 48 of its colour", (['"Hi" #f8f8f8: dx 0 dy 0'],
+                                           "outside 48 px, 1 texts, worst |dx| 0 |dy| 0, 0 beyond 2 px, 0 not found"),
+           offsets(mockup, picture([(10, 8, 6, 4, (200, 200, 200)), (30, 20, 8, 6, red)]), [text]))
+    expect("no ink in the mockup", (['"Hi" #f8f8f8: not found in mockup'],
+                                    "outside 0 px, 1 texts, worst |dx| 0 |dy| 0, 0 beyond 2 px, 1 not found"),
+           offsets(picture([]), picture([]), [text]))
+
+    with tempfile.TemporaryDirectory() as folder:
+        def path(name):
+            return os.path.join(folder, name)
+
+        big = [bytearray(bytes((0x0c, 0x0c, 0x34)) * 640) for _ in range(480)]
+        big[100][300:303] = bytes(white)
+        with open(path("mockup.png"), "wb") as f:
+            f.write(encode_png((640, 480, [bytes(r) for r in big])))
+        big[100][300:303] = bytes((0x0c, 0x0c, 0x34))
+        big[101][303:306] = bytes(white)
+        with open(path("app.bmp"), "wb") as f:
+            f.write(planted_bmp(640, 480, [bytes(r) for r in big]))
+        with open(path("texts.txt"), "w", encoding="utf-8") as f:
+            f.write("99.5\t99\t2\t2\tf8f8f8\tA b\n")
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            status = main(["offsets", path("mockup.png"), path("app.bmp"), path("texts.txt")])
+        expect("command", (0, '"A b" #f8f8f8: dx 1 dy 1\n'
+                              "outside 0 px, 1 texts, worst |dx| 1 |dy| 1, 0 beyond 2 px, 0 not found\n", ""),
+               (status, out.getvalue(), err.getvalue()))
+        with open(path("bad.txt"), "w", encoding="utf-8") as f:
+            f.write("1\t2\t3\n")
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            status = main(["offsets", path("mockup.png"), path("app.bmp"), path("bad.txt")])
+        expect("malformed texts", (1, "", "theme_compare: %s: line 1: want x y width height rrggbb text\n" % path("bad.txt")),
+               (status, out.getvalue(), err.getvalue()))
+    return failures
 
 
 def main(argv):
@@ -444,6 +604,16 @@ def main(argv):
         except (InputError, OSError) as e:
             print("theme_compare: %s" % e, file=sys.stderr)
             return 1
+        return 0
+    if len(argv) == 4 and argv[0] == "offsets":
+        try:
+            lines, summary = offsets(read_image(argv[1], decode_png), read_image(argv[2], decode_bmp),
+                                     read_texts(argv[3]))
+        except (InputError, OSError) as e:
+            print("theme_compare: %s" % e, file=sys.stderr)
+            return 1
+        for line in lines + [summary]:
+            print(line)
         return 0
     sys.stdout.write(__doc__)
     return 2
