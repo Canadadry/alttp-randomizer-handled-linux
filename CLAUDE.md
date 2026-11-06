@@ -92,7 +92,12 @@ in `docs/`, then `README.md`.
   `accessibility-goal+boomerang-default`) and the `settings.txt` fixture.
   Each seed is the first candidate `k` that clears the strict
   Nintendo-bytes check and gives `outcome ok` with the ROM (`ladx_cases.py
-  pick`, re-proven by `verify`). `tests/ladx/extract/` will hold the extraction fixtures
+  pick`, re-proven by `verify`). Each folder also holds its goldens,
+  written by `gen_golden.sh` (Phase 2 step 5): `run.txt`, `spoiler.json`
+  (absent on `race` cases) and `rom_writes.txt`, the write log (format v1,
+  every source byte a reference, its encoding rule, KS, `I` lines,
+  projection and decode documented in `tests/ladx/README.md`, the
+  reference for Phase 3's C logger). `tests/ladx/extract/` will hold the extraction fixtures
   the inventory's Extractions table names (Phase 2 step 7), under the
   Nintendo-bytes check's strict scope.
 
@@ -133,8 +138,8 @@ in `docs/`, then `README.md`.
   ROM`; plus `test-ladx-oracle` (`unittest discover` of
   `tests/ladx/oracle/test_*.py` under `python3 -I`: the LADX oracle's helpers
   and Phase 2's tools, no LADXR, no ROM, no network); plus `ladx-cases`.
-- `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check
-  --pending-goldens`, no ROM, no LADXR, no network; run by `make test`): it
+- `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check`,
+  no ROM, no LADXR, no network; run by `make test`): it
   proves itself on planted trees (a missing and an extra case, a config
   order swap and a wrong value, a seed not from the derivation, an
   uppercase seed, an extra file, a name in both directories, a missing
@@ -146,14 +151,13 @@ in `docs/`, then `README.md`.
   per case and 22 MiB in all, all golden files 34 MiB); one `MISSING`,
   `EXTRA`, `WRONG`, `BADSEED`, `STRAY`, `BOTH`, `NOGOLDEN`, `BADGOLDEN` or
   `BUDGET` line per mismatch (exit 1), else `ladx-cases: goldens in <n>
-  folders, [<p> pending, ]rom_writes.txt <b> bytes (limits ...), golden
+  folders, rom_writes.txt <b> bytes (limits ...), golden
   files <t> bytes (limit ...)` and one `skip <name>:
   validate sets <k=v>` line per skipped cell, one `refused <name>: LADXR
   refuses every seed, covered by <combo>...` line per refused single and
   `ladx-cases: <n> cases, <m> combos, <s> cells skipped by validate[, <r>
   singles refused by LADXR], every tier-1 value and cross cell covered`; a
-  malformed input exits 2. `--pending-goldens` accepts a folder holding no
-  golden file, until the goldens are committed (TODO: drop it then).
+  malformed input exits 2.
   `ladx_cases.py list [<name>...]`
   prints the case directories as `ladx_oracle.py cases` prints a case list,
   after the same comparison.
@@ -241,9 +245,9 @@ in `docs/`, then `README.md`.
   (...), driver equal to LADXR's CLI`; it fails when the runs did not vary
   in hash seed, checkout and the work root's `git describe`, and on a new
   untracked file (`STRAY <path>`). `determinism.sh --full` runs
-  `determinism_cases.txt` (passed to `gen_golden.sh` as `--cases`);
-  `determinism.sh --full --all` runs every case directory the same way
-  (about 5 minutes for 116 cases).
+  `determinism_cases.txt` (passed to `gen_golden.sh` as `--cases`; about
+  9 minutes); `determinism.sh --full --all` runs every case directory the
+  same way (about 55 minutes for 116 cases), `rom_writes.txt` included.
   `ladx_cases.py pick [<name>...]` (with the ROM and the checkout at the
   pin, else a `setup:` line, exit 2) writes each expected case that has no
   directory yet (a named one must not exist: it never touches a case; to

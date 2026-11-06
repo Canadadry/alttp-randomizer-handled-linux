@@ -62,9 +62,9 @@
     - [x] Chunk 3: bytes policy for case folders
     - [x] Chunk 4: inventory read ranges over all cases
     - [x] Chunk 5: gen_golden into case folders and verifier
-    - [ ] Chunk 6: goldens generated and committed
+    - [x] Chunk 6: goldens generated and committed
       - [x] KS-match, invariant clearance and budget
-      - [ ] Goldens committed, README and docs
+      - [x] Goldens committed, README and docs
   - [ ] Step 2.6 Patch tables
   - [ ] Step 2.7 Extraction fixtures
   - [ ] Step 2.8 Nintendo-bytes check over everything committed

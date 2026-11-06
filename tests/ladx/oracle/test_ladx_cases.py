@@ -299,11 +299,10 @@ class GoldenTest(unittest.TestCase):
     def at(self, *parts):
         return os.path.join(self.root, *parts)
 
-    def check(self, pending=False, limits=None):
+    def check(self, limits=None):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            status = ladx_cases.report(self.e, self.root,
-                                       goldens="pending" if pending else "required",
+            status = ladx_cases.report(self.e, self.root, goldens=True,
                                        limits=limits or ladx_cases.LIMITS)
         return status, out.getvalue().splitlines()
 
@@ -350,22 +349,6 @@ class GoldenTest(unittest.TestCase):
             "BUDGET golden files: %d bytes in all, limit 10"
             % (15 * len(LOG) + 15 * len("seed 00\noutcome ok\n") + 13 * len("{}\n"))])
 
-    def test_pending_accepts_folders_without_any_golden_but_checks_the_others(self):
-        root = self.root
-        for sub, entries in (("cases", self.e.cases), ("combos", self.e.combos)):
-            for name, _ in entries:
-                for f in ("run.txt", "rom_writes.txt", "spoiler.json"):
-                    if os.path.exists(os.path.join(root, sub, name, f)) and name != "race-1":
-                        os.remove(os.path.join(root, sub, name, f))
-        status, out = self.check(pending=True)
-        self.assertEqual(status, 0)
-        self.assertTrue(out[-2].startswith("ladx-cases: goldens in 1 folders, 14 pending,"))
-        status, out = self.check()
-        self.assertEqual((status, len(out)), (1, 14 * 2 + 13))
-        os.remove(self.at("cases", "race-1", "run.txt"))
-        status, out = self.check(pending=True)
-        self.assertEqual((status, out), (1, ["NOGOLDEN cases/race-1: run.txt missing"]))
-
     def test_the_golden_files_are_not_stray(self):
         self.assertEqual(ladx_cases.mismatches(self.e, self.root), [])
 
@@ -397,15 +380,12 @@ class CommandTest(unittest.TestCase):
         status, out, _ = self.main("check")
         self.assertEqual((status, len(out)), (1, 5))
 
-    def test_check_requires_the_goldens_unless_they_are_pending(self):
+    def test_check_requires_the_goldens(self):
         plant(self.root, expected())
         plant_goldens(self.root, expected(), skip=("race-1",))
         status, out, _ = self.main("check")
         self.assertEqual((status, out), (1, ["NOGOLDEN cases/race-1: run.txt missing",
                                              "NOGOLDEN cases/race-1: rom_writes.txt missing"]))
-        status, out, _ = self.main("check", "--pending-goldens")
-        self.assertEqual(status, 0)
-        self.assertTrue(out[-2].startswith("ladx-cases: goldens in 14 folders, 1 pending,"))
 
     def test_a_blind_golden_checker_fails_its_self_proof(self):
         plant(self.root, expected())
