@@ -50,7 +50,8 @@ class Pushes(unittest.TestCase):
         status, output = self.push(lambda r: r.commit("clean", [("a.txt", "text\n")]))
         self.assertEqual(status, 0, output)
         self.assertIn("push-gate: ok, 1 commits, 1 blobs, no link, 0 literal runs, cleared 0 "
-                      "trivial, 0 low-info, 0 ladxr-public, no stray untracked file", output)
+                      "trivial, 0 low-info, 0 ladxr-public, 0 computed, no stray untracked file",
+                      output)
 
     def test_cleared_runs_pass_and_are_counted(self):
         text = push_gate.planted_text(ROM)
@@ -60,6 +61,22 @@ class Pushes(unittest.TestCase):
             ("data/c.bin", ROM[0x2200:0x2220])]))
         self.assertEqual(status, 0, output)
         self.assertIn("0 literal runs, cleared 1 trivial, 1 low-info, 1 ladxr-public", output)
+
+    def test_a_computed_run_of_a_write_log_passes_and_is_counted(self):
+        log = push_gate._planted_log("maker", ROM[0x1080:0x1088])
+        status, output = self.push(lambda r: r.commit("log", [
+            ("tests/ladx/combos/c/rom_writes.txt", log)]))
+        self.assertEqual(status, 0, output)
+        self.assertIn("0 literal runs, cleared 0 trivial, 0 low-info, 0 ladxr-public, 1 computed",
+                      output)
+
+    def test_a_write_log_needing_a_missing_inventory_is_refused(self):
+        log = push_gate._planted_log("maker", ROM[0x1080:0x1088])
+        status, output = self.push(lambda r: r.commit("log", [
+            ("tests/ladx/cases/c/rom_writes.txt", log)], removed=[push_gate.INVENTORY_PATH]))
+        self.assertEqual(status, 1)
+        self.assertRegex(output, r"push-gate: refused: tests/ladx/cases/c/rom_writes.txt \(blob "
+                                 r"[0-9a-f]{12}\): setup: no inventory at ")
 
     def test_the_scope_follows_the_pushed_path(self):
         status, output = self.push(lambda r: r.commit("c", [("data/ladx/a.bin", ROM[300:305]),

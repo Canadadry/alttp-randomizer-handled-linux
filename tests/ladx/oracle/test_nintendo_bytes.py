@@ -30,6 +30,8 @@ ROM[DOWN:DOWN + 64] = bytes(range(200, 136, -1))
 ROM[THREE:THREE + 64] = bytes(_RNG.choice(b"\x11\x5a\xc3") for _ in range(64))
 ROM[TEXT:TEXT + len(TEXT_BYTES)] = TEXT_BYTES
 ROM[FOUR:FOUR + 64] = bytes(_RNG.choice(b"\x21\x6b\x90\xe7") for _ in range(64))
+NAME, NAME_BYTES = 3600, b"Koholint_Island-Wind_Fish.Egg"
+ROM[NAME:NAME + len(NAME_BYTES)] = NAME_BYTES
 ROM = bytes(ROM)
 
 
@@ -264,6 +266,201 @@ class MergedRuns(unittest.TestCase):
         self.assertEqual(check(STRICT, b"x" + ROM[700:704].hex().encode()[:7] + b"y"), ([], []))
 
 
+CASE = "tests/ladx/cases/c/"
+
+
+def log(*lines):
+    """A write log of lines after the version and tables lines."""
+    return ("ladx-rom-writes 1\ntables texts\n" + "".join(l + "\n" for l in lines)).encode()
+
+
+def reads(rows, coverage=(), tables=None):
+    return nintendo_bytes.ReadSets(nintendo_bytes.planted_inventory(rows, coverage), ROM,
+                                   tables or (lambda rom: {}))
+
+
+class CaseFolders(unittest.TestCase):
+    def test_a_case_folders_golden_files_have_their_own_scopes(self):
+        for folder in ("tests/ladx/cases/c/", "tests/ladx/combos/a+b/"):
+            self.assertEqual(nintendo_bytes.scope_of(folder + "run.txt"), "general")
+            self.assertEqual(nintendo_bytes.scope_of(folder + "spoiler.json"), "general")
+            self.assertEqual(nintendo_bytes.scope_of(folder + "rom_writes.txt"), "writes")
+            for other in ("seed", "config.txt", "meta.txt", "out.gbc"):
+                self.assertEqual(nintendo_bytes.scope_of(folder + other), "strict", other)
+        for path in ("tests/ladx/cases/run.txt", "tests/ladx/cases/c/d/run.txt",
+                     "tests/ladx/cases/c/d/rom_writes.txt", "data/ladx/rom_writes.txt",
+                     "tests/ladx/extract/run.txt"):
+            self.assertEqual(nintendo_bytes.scope_of(path), "strict", path)
+
+    def test_run_txt_and_spoiler_json_are_held_to_the_general_thresholds(self):
+        for name in ("run.txt", "spoiler.json"):
+            self.assertEqual(check(CASE + name, b"<" + ROM[100:115] + b">"), ([], []))
+            self.assertEqual(check(CASE + name, b"<" + ROM[100:116] + b">")[0],
+                             [("raw", 1, 16, "general")])
+            self.assertEqual(check(CASE + name, b"x " + ROM[200:207].hex().encode()), ([], []))
+
+    def test_the_seed_of_a_case_stays_strict(self):
+        self.assertEqual(check(CASE + "seed", ROM[200:204].hex().encode() + b"\n")[0],
+                         [("hex", 0, 4, "strict")])
+
+
+class WritesView(unittest.TestCase):
+    PATH = CASE + "rom_writes.txt"
+
+    def test_a_literal_token_is_checked_at_4_bytes_at_its_own_offset(self):
+        self.assertEqual(check(self.PATH, log("G g", "B 10 " + ROM[100:103].hex())), ([], []))
+        data = log("G g", "B 10 =2 " + ROM[100:104].hex())
+        at = data.index(ROM[100:104].hex().encode())
+        self.assertEqual(check(self.PATH, data), ([("writes", at, 4, "strict")], []))
+
+    def test_a_run_inside_a_longer_token_is_reported_at_its_byte(self):
+        data = log("G g", "T texts 2 " + "ab" * 3 + ROM[300:306].hex())
+        at = data.index(ROM[300:306].hex().encode())
+        self.assertEqual(check(self.PATH, data)[0], [("writes", at, 6, "strict")])
+
+    def test_a_misaligned_nibble_is_not_flagged(self):
+        token = "0" + ROM[400:420].hex() + "0"
+        decoded = bytes.fromhex(token)
+        windows = nintendo_bytes.RomIndex(ROM).windows(4)
+        self.assertFalse(any(decoded[i:i + 4] in windows for i in range(len(decoded) - 3)))
+        self.assertEqual(check(self.PATH, log("G g", "B 10 " + token)), ([], []))
+
+    def test_the_rest_of_the_text_is_held_to_the_general_thresholds(self):
+        self.assertEqual(check(self.PATH, log("G " + NAME_BYTES[:15].decode(), "B 10 00")),
+                         ([], []))
+        data = log("G " + NAME_BYTES[:16].decode(), "B 10 00")
+        self.assertEqual(check(self.PATH, data)[0], [("raw", data.index(b"Koholint"), 16,
+                                                       "general")])
+        copy = log("G g", "B 10 @%s+4" % ROM[200:207].hex())
+        self.assertEqual(check(self.PATH, copy), ([], []))
+        copy = log("G g", "B 10 @%s+4" % ROM[200:208].hex())
+        self.assertEqual(check(self.PATH, copy)[0], [("hex", copy.index(b"@") + 1, 8,
+                                                       "general")])
+
+    def test_literal_tokens_are_left_out_of_the_general_views(self):
+        data = log("G g", "B 10 =1 " + ROM[NAME:NAME + 20].hex() + " =1")
+        literals, _ = check(self.PATH, data)
+        self.assertEqual([view for view, _, _, _ in literals], ["writes"])
+
+    def test_an_unparseable_log_is_one_literal(self):
+        for data in (b"", log("G g", "B 10 0"), log("G g", "B 10 0A"), b"\xff\n",
+                     log("B 10 00")):
+            self.assertEqual(check(self.PATH, data), ([("writes", 0, len(data), "unparsed")],
+                                                      []), data)
+
+    def test_trivial_and_public_runs_of_a_token_are_cleared(self):
+        corpus = nintendo_bytes.Corpus([("names.py", b"'" + TEXT_BYTES[10:40] + b"'")])
+        data = log("G g", "B 10 " + ROM[ZEROS:ZEROS + 8].hex(), "B 20 " + TEXT_BYTES[10:40].hex())
+        self.assertEqual(check(self.PATH, data, corpus),
+                         ([], [("writes", 8, "trivial"), ("writes", 30, "ladxr-public")]))
+
+    def test_an_explicit_scope_selects_the_view(self):
+        data = log("G g", "B 10 " + ROM[100:104].hex())
+        self.assertEqual(check(GENERAL, data, scope="writes")[0][0][0], "writes")
+        self.assertEqual(check(self.PATH, data, scope="strict")[0][0][0], "hex")
+
+
+class Computed(unittest.TestCase):
+    PATH = CASE + "rom_writes.txt"
+    RUN = ROM[0x480:0x488]
+
+    def verdict(self, group, read_sets, run=RUN):
+        literals, cleared = check(self.PATH, log("G " + group, "B 10 " + run.hex()),
+                                  reads=read_sets)
+        return [view for view, _, _, _ in literals], cleared
+
+    def test_without_read_sets_nothing_is_cleared_computed(self):
+        self.assertEqual(self.verdict("g", None), (["writes"], []))
+
+    def test_a_run_its_group_never_read_is_cleared(self):
+        sets = reads([("g(rom)", "-", "g"), ("h(rom)", "bank 0x00 source 0x0400..0x04FF", "h")])
+        self.assertEqual(self.verdict("g", sets), ([], [("writes", 8, "computed")]))
+
+    def test_a_run_in_a_bank_range_its_group_read_is_not_cleared(self):
+        sets = reads([("g(rom)", "bank 0x00 source 0x0480..0x0487", "g")])
+        self.assertEqual(self.verdict("g", sets), (["writes"], []))
+        sets = reads([("g(rom)", "bank 0x00 source 0x0480..0x0486", "g")])
+        self.assertEqual(self.verdict("g", sets), ([], [("writes", 8, "computed")]))
+
+    def test_whole_banks_and_bank_ranges_are_read(self):
+        for cell in ("bank 0x00 source all", "bank 0x00..0x01 source 0x0400..0x0500"):
+            self.assertEqual(self.verdict("g", reads([("g(rom)", cell, "g")])),
+                             (["writes"], []), cell)
+
+    def test_two_rows_of_one_group_are_one_read_set(self):
+        sets = reads([("g(rom)", "bank 0x00 source 0x0400..0x0483", "g"),
+                      ("g2(rom)", "bank 0x00 source 0x0484..0x0490", "g")])
+        self.assertEqual(self.verdict("g", sets), (["writes"], []))
+
+    def test_a_table_range_reads_its_entries_source_spans(self):
+        tables = lambda rom: {"texts": {0: (0x100, 0x110), 1: (0x47C, 0x490), 2: 0x4123,
+                                        "Alt1": (0x900, 0x910)}}
+        for cell, cleared in (("table texts source 0x0001..0x0002", False),
+                              ("table texts source 0x0000..0x0000", True),
+                              ("table texts source all", False)):
+            got = self.verdict("g", reads([("g(rom)", cell, "g")], tables=tables))
+            self.assertEqual(got, ([], [("writes", 8, "computed")]) if cleared else
+                             (["writes"], []), cell)
+        alt = self.verdict("g", reads([("g(rom)", "table texts source all", "g")],
+                                      tables=tables), ROM[0x900:0x908])
+        self.assertEqual(alt, (["writes"], []))
+
+    def test_written_reads_follow_the_writers_read_sets(self):
+        sets = reads([("g(rom)", "bank 0x00 written:h 0x0010..0x0011", "g"),
+                      ("h(rom)", "bank 0x00 written:k 0x0020..0x0021", "h"),
+                      ("k(rom)", "bank 0x00 source 0x0480..0x0487; bank 0x00 written:g "
+                       "0x0030..0x0031", "k")])
+        self.assertEqual(self.verdict("g", sets), (["writes"], []))
+        sets = reads([("g(rom)", "bank 0x00 written:h 0x0480..0x0487", "g"), ("h(rom)", "-", "h")])
+        self.assertEqual(self.verdict("g", sets), ([], [("writes", 8, "computed")]))
+
+    def test_mixed_reads_are_source_and_followed(self):
+        sets = reads([("g(rom)", "bank 0x00 mixed:h 0x0480..0x0487", "g"), ("h(rom)", "-", "h")])
+        self.assertEqual(self.verdict("g", sets), (["writes"], []))
+        sets = reads([("g(rom)", "bank 0x00 mixed:h 0x0010..0x0011", "g"),
+                      ("h(rom)", "bank 0x00 source 0x0480..0x0487", "h")])
+        self.assertEqual(self.verdict("g", sets), (["writes"], []))
+
+    def test_a_computed_coverage_rows_reads_are_left_out(self):
+        rows = [("checksum(rom)", "bank 0x00 mixed:h all", "g"), ("h(rom)", "-", "h")]
+        sets = reads(rows, [("g", "`checksum(rom)`", "*", "computed")])
+        self.assertEqual(self.verdict("g", sets), ([], [("writes", 8, "computed")]))
+        sets = reads(rows, [("g", "*", "bank 0x00", "computed")])
+        self.assertEqual(self.verdict("g", sets), ([], [("writes", 8, "computed")]))
+        sets = reads(rows, [("g", "`checksum(rom)`", "*", "copy")])
+        self.assertEqual(self.verdict("g", sets), (["writes"], []))
+
+    def test_a_run_only_partly_in_the_read_set_is_cleared(self):
+        sets = reads([("g(rom)", "bank 0x00 source 0x0480..0x0485", "g")])
+        run = self.RUN[:4] + ROM[0x700:0x704]
+        self.assertEqual(self.verdict("g", sets, run), ([], [("writes", 8, "computed")]))
+        self.assertEqual(self.verdict("g", sets, run[:4]), (["writes"], []))
+
+    def test_each_token_is_judged_by_its_own_group(self):
+        sets = reads([("g(rom)", "bank 0x00 source 0x0480..0x0487", "g"), ("h(rom)", "-", "h")])
+        data = log("G h", "B 10 " + self.RUN.hex(), "G g", "B 20 " + self.RUN.hex())
+        literals, cleared = check(self.PATH, data, reads=sets)
+        self.assertEqual([(v, o) for v, o, _, _ in literals],
+                         [("writes", data.rindex(self.RUN.hex().encode()))])
+        self.assertEqual(cleared, [("writes", 8, "computed")])
+
+    def test_a_malformed_inventory_is_a_setup_error(self):
+        broken = nintendo_bytes.ReadSets("no tables here", ROM)
+        with self.assertRaises(nintendo_bytes.SetupError):
+            self.verdict("g", broken)
+        bad_cell = reads([("g(rom)", "bank 0x00 sourced 0x0480..0x0487", "g")])
+        with self.assertRaisesRegex(nintendo_bytes.SetupError, "Reads \\(trace\\)"):
+            self.verdict("g", bad_cell)
+
+    def test_the_inventory_is_read_only_when_a_run_needs_it(self):
+        def missing():
+            raise nintendo_bytes.SetupError("no inventory")
+        sets = nintendo_bytes.ReadSets(missing, ROM)
+        self.assertEqual(check(self.PATH, log("G g", "B 10 0001"), reads=sets), ([], []))
+        with self.assertRaises(nintendo_bytes.SetupError):
+            self.verdict("g", sets)
+
+
 @contextlib.contextmanager
 def patched(name, value):
     real = getattr(nintendo_bytes, name)
@@ -272,6 +469,11 @@ def patched(name, value):
         yield
     finally:
         setattr(nintendo_bytes, name, real)
+
+
+class NeverRead(nintendo_bytes.ReadSets):
+    def __contains__(self, item):
+        return False
 
 
 class SelfProof(unittest.TestCase):
@@ -292,7 +494,14 @@ class SelfProof(unittest.TestCase):
             ("THRESHOLDS", thresholds, "general-raw-below"),
             ("_is_text", lambda data: True, "general-binary-corpus"),
             ("scope_of", lambda path: "general", "strict-raw"),
+            ("scope_of", lambda path: "strict" if path.startswith(nintendo_bytes.STRICT_PREFIXES)
+             else "general", "case-run-general"),
+            ("WRITES_MIN", 5, "writes-in-read-set"),
+            ("ReadSets", NeverRead, "writes-literal"),
+            ("_check_writes", lambda data, index, corpus, min_len, reads:
+             real_writes(data, index, corpus, min_len, None), "writes-computed"),
         ]
+        real_writes = nintendo_bytes._check_writes
         for name, value, case in broken:
             with patched(name, value):
                 self.assertEqual(nintendo_bytes.self_test(), case, name)
@@ -326,10 +535,10 @@ class CommandLine(unittest.TestCase):
             code = nintendo_bytes.main(["--rom", self.rom, "--ladxr", self.ladxr, *args])
         return code, out.getvalue().splitlines()
 
-    def summary(self, files, literals, cleared=(0, 0, 0), override=""):
+    def summary(self, files, literals, cleared=(0, 0, 0), override="", computed=0):
         return (f"nintendo-bytes: {files} files, rom {hashlib.sha1(ROM).hexdigest()}, "
                 f"ladxr {self.short}, {override}{literals} literal runs, cleared {cleared[0]} "
-                f"trivial, {cleared[1]} low-info, {cleared[2]} ladxr-public")
+                f"trivial, {cleared[1]} low-info, {cleared[2]} ladxr-public, {computed} computed")
 
     def test_a_planted_directory_reports_each_run_sorted_by_path_then_offset(self):
         tree = os.path.join(self.dir, "tree")
@@ -385,6 +594,39 @@ class CommandLine(unittest.TestCase):
         self.assertEqual(code, 0)
         code, lines = self.run_main(f)
         self.assertEqual(lines[1:], [self.summary(1, 0, (1, 1, 1))])
+
+    def in_top(self, *files):
+        real = nintendo_bytes.TOP
+        nintendo_bytes.TOP = self.dir
+        self.addCleanup(setattr, nintendo_bytes, "TOP", real)
+        return [self.write(rel, data) for rel, data in files]
+
+    def test_a_case_folders_write_log_gets_the_writes_view_and_the_computed_clearance(self):
+        inventory = self.write("inv.md", nintendo_bytes.planted_inventory([
+            ("g(rom)", "bank 0x00 source 0x0480..0x0487", "g"), ("h(rom)", "-", "h")]).encode())
+        run = ROM[0x480:0x488].hex()
+        data = log("G h", "B 10 " + run, "G g", "B 20 " + run)
+        writes, spoiler = self.in_top(("tests/ladx/cases/c/rom_writes.txt", data),
+                                      ("tests/ladx/cases/c/spoiler.json", ROM[100:108]))
+        code, lines = self.run_main("--verbose", "--inventory", inventory, writes, spoiler)
+        first, second = data.index(run.encode()), data.rindex(run.encode())
+        self.assertEqual(lines[1:], [
+            f"CLEARED {writes} writes @{first} 8 bytes computed",
+            f"LITERAL {writes} writes @{second} 8 bytes strict",
+            self.summary(2, 1, computed=1),
+        ])
+        self.assertEqual(code, 1)
+
+    def test_a_missing_inventory_is_a_setup_line_only_when_a_run_needs_it(self):
+        clean, leak = self.in_top(("tests/ladx/cases/c/rom_writes.txt", log("G g", "B 10 00")),
+                                  ("tests/ladx/combos/c/rom_writes.txt",
+                                   log("G g", "B 10 " + ROM[0x480:0x488].hex())))
+        none = os.path.join(self.dir, "none.md")
+        code, lines = self.run_main("--inventory", none, clean)
+        self.assertEqual((code, lines[1:]), (0, [self.summary(1, 0)]))
+        code, lines = self.run_main("--inventory", none, leak)
+        self.assertEqual(code, 2)
+        self.assertEqual(lines[-1], f"setup: nintendo-bytes: no inventory at {none}")
 
     def test_no_line_holds_the_rom_bytes_or_their_hex(self):
         leak = self.write("leak.txt", ROM[1000:1032] + b" " + ROM[2000:2032].hex().encode()

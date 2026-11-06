@@ -229,19 +229,26 @@ in `docs/`, then `README.md`.
   or `-E` (both drop `PYTHONHASHSEED`).
 - The Nintendo-bytes check, outside the net (python3 and git):
   `python3 -I tests/ladx/oracle/nintendo_bytes.py [--rom <file>] [--ladxr
-  <dir>] [--scope strict|general] [--min <n>] [--verbose] <file-or-dir>...`
-  proves itself first on planted files against a planted synthetic ROM and
-  corpus, one per scope, view and clearance (`nintendo-bytes: self-test, 34
-  planted files as expected`, else `self-test failed: <case>`, exit 1). Then
+  <dir>] [--inventory <file>] [--scope strict|general|writes] [--min <n>]
+  [--verbose] <file-or-dir>...` proves itself first on planted files against
+  a planted synthetic ROM, corpus and inventory, one per scope, view and
+  clearance (`nintendo-bytes: self-test, 48 planted files as expected`, else
+  `self-test failed: <case>`, exit 1). Then
   it prints one `LITERAL <path> <view> @<offset> <length> bytes <scope>`
   line per uncleared run of a file that also occurs in the ROM (`--rom`,
   default `tmp/ladx/base.gbc`), never the bytes, then `nintendo-bytes: <n>
   files, rom <sha1>, ladxr <short>, <k> literal runs, cleared <t> trivial,
-  <l> low-info, <p> ladxr-public`; exit 1 when `k > 0`. Scope by
-  repository-relative path: `strict` under `data/ladx/`,
-  `tests/ladx/cases/`, `tests/ladx/combos/`, `tests/ladx/extract/` (the
-  ROM-derived artifacts), `general` for any
-  other path or a file outside the repository (`--scope` overrides). Views:
+  <l> low-info, <p> ladxr-public, <c> computed`; exit 1 when `k > 0`. Scope
+  by repository-relative path: in a case folder
+  (`tests/ladx/cases|combos/<case>/`) `run.txt` and `spoiler.json` are
+  `general` and `rom_writes.txt` is `writes`; else `strict` under
+  `data/ladx/`, `tests/ladx/cases/`, `tests/ladx/combos/`,
+  `tests/ladx/extract/` (the ROM-derived artifacts), `general` for any
+  other path or a file outside the repository (`--scope` overrides). Scope
+  `writes`: the file must parse as a write log (else one `writes ...
+  unparsed` literal), its literal tokens are checked at 4 bytes at their
+  byte alignment (view `writes`), the rest of its text at the general
+  thresholds. Views:
   `raw`; `hex` (maximal hex-digit runs, both nibble alignments); `bytelist`
   (lists of `0xNN`/`$NN` tokens separated by commas and whitespace).
   Minimum contiguous match: strict 4 bytes in every view; general raw 16,
@@ -251,7 +258,12 @@ in `docs/`, then `README.md`.
   (at most 3 distinct values, general scope only), `ladxr-public` (the
   whole run occurs in a text file, valid UTF-8 without NUL, tracked by the
   LADXR checkout at `4325207e`, or in its decoded hex-digit runs; binary
-  files left out). `--min <n>` is an experimental override of every
+  files left out), `computed` (view `writes` only: the run occurs nowhere
+  whole in the source bytes its token's group reads, from the inventory's
+  `Reads (trace)` ranges, `--inventory`, default `notes/ladx-inventory.md`,
+  `written:`/`mixed:` followed to the writers, `computed` coverage rows
+  left out; a missing inventory is a `setup:` line when a run needs it).
+  `--min <n>` is an experimental override of every
   threshold, shown as `min <n> (override)` in the summary, never used by
   the gate or a plan check. Directories are walked sorted, `.git` skipped.
   A missing ROM or input, or no LADXR checkout at the pin (`--ladxr`,
@@ -279,22 +291,28 @@ in `docs/`, then `README.md`.
   uploads, intermediate commits included, holds a literal run under the
   Nintendo-bytes check's policy, through the check's own `check_blob`, the
   scope taken from the blob's path (`<path> (blob <sha>): literal run of <n>
-  bytes at @<offset> (<view>, <scope>)`), or when an untracked file sits
+  bytes at @<offset> (<view>, <scope>)`; the `computed` clearance from the
+  working tree's `notes/ladx-inventory.md`, a blob needing it refused with
+  `setup:` when it is missing), or when an untracked file sits
   outside the git-ignored paths (`docs/prd/` allowed, but searched for the
   link); it fails closed (no `LADX_ROM_URL`, no `tmp/ladx/base.gbc` of
   SHA-1 `d90ac17e…`, or no LADXR checkout at `4325207e` in `LADXR_DIR`,
   default `tests/ladx/oracle/ladxr`: `push-gate: setup: …, push refused`),
   never echoes the link or the bytes, else prints `push-gate: ok, <c>
   commits, <b> blobs, no link, 0 literal runs, cleared <t> trivial, <l>
-  low-info, <p> ladxr-public, no stray untracked file`. While it is armed,
+  low-info, <p> ladxr-public, <c> computed, no stray untracked file`. While
+  it is armed,
   every push needs `LADX_ROM_URL` exported in the same shell command as
   `git push`, the ROM and the pinned LADXR checkout; a refusal for one of
-  them is a setup problem, not a bug. `--self-test` makes 16 planted pushes
+  them is a setup problem, not a bug. `--self-test` makes 20 planted pushes
   through the installed chain in a planted clone with a planted ROM, link
   and LADXR checkout (among them a 4-byte ROM run under a strict path, a
   16-byte one and an 8-byte `bytelist` under general paths, refused; a
   12-byte English coincidence and a run of the planted corpus, passing;
-  `push-gate: self-test, 16 planted pushes as expected`, else one
+  a case folder's `run.txt` under the general scope and a `computed` run of
+  its `rom_writes.txt`, passing, a literal token in the group's read set and
+  an unparseable log, refused;
+  `push-gate: self-test, 20 planted pushes as expected`, else one
   `self-test failed: <case>` line each); `--install` runs it, then writes
   the chain into the common hooks directory only over no hook,
   `no_claude_branch.sh`'s own or the chain (else `the gate is NOT armed`,

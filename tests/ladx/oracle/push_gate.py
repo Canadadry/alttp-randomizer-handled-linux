@@ -4,7 +4,8 @@
 Phase 2's push gate, a pre-push hook chained after .claude/hooks/no_claude_branch.sh. It refuses
 a push (exit 1) when the link held in LADX_ROM_URL is in `git log -p --text` of a pushed commit,
 when a blob the push uploads holds a literal run of the ROM under nintendo_bytes.py's policy (scope
-from the blob's path), or when an untracked file sits outside the git-ignored paths (docs/prd/
+from the blob's path; the `computed` clearance from the working tree's notes/ladx-inventory.md,
+a blob that needs it refused when it is missing), or when an untracked file sits outside the git-ignored paths (docs/prd/
 allowed, but searched for the link). It fails closed: no LADX_ROM_URL, no tmp/ladx/base.gbc of
 SHA-1 d90ac17e..., or no LADXR checkout at the pin (LADXR_DIR, default tests/ladx/oracle/ladxr)
 refuses. Its messages name commits, paths, blobs, views and scopes, never the link or the bytes.
@@ -32,6 +33,8 @@ GATE_PATH = "tests/ladx/oracle/push_gate.py"
 BYTES_PATH = "tests/ladx/oracle/nintendo_bytes.py"
 BRANCH_HOOK_PATH = ".claude/hooks/no_claude_branch.sh"
 LADXR_PATH = "tests/ladx/oracle/ladxr"
+INVENTORY_PATH = "notes/ladx-inventory.md"
+CHECK_MODULES = ("write_log.py", "inventory_check.py", "known_source.py")
 ALLOWED_UNTRACKED = "docs/prd/"
 MIN_LINK = 8
 
@@ -126,8 +129,15 @@ def check_push(top, ref_lines, link, rom, corpus):
                 findings.append(line)
         for obj, path in _pushed_blobs(top, sha):
             blobs.setdefault(obj, path)
+    reads = nintendo_bytes.ReadSets(
+        lambda: nintendo_bytes.read_inventory(os.path.join(top, INVENTORY_PATH)), rom)
     for obj, path in sorted(blobs.items(), key=lambda item: (item[1], item[0])):
-        literals, clears = nintendo_bytes.check_blob(path, _blob(top, obj), index, corpus)
+        try:
+            literals, clears = nintendo_bytes.check_blob(path, _blob(top, obj), index, corpus,
+                                                         reads=reads)
+        except nintendo_bytes.SetupError as e:
+            findings.append(f"push-gate: refused: {path} (blob {obj[:12]}): setup: {e}")
+            continue
         for view, off, length, scope in literals:
             findings.append(f"push-gate: refused: {path} (blob {obj[:12]}): literal run of "
                             f"{length} bytes at @{off} ({view}, {scope})")
@@ -233,8 +243,8 @@ def planted_text(rom):
 
 
 class PlantedRepo:
-    """A bare remote and a clone in base, with copies of the gate, nintendo_bytes.py and
-    no_claude_branch.sh at their repository paths, the gate's ROM SHA-1 constant rewritten to rom's,
+    """A bare remote and a clone in base, with copies of the gate, nintendo_bytes.py (and the
+    CHECK_MODULES it loads), a planted inventory and no_claude_branch.sh at their repository paths, the gate's ROM SHA-1 constant rewritten to rom's,
     rom at tmp/ladx/base.gbc, a planted LADXR checkout (git-ignored, one text file holding
     planted_text(rom)[20:70]) with the copy's LADXR pin rewritten to its commit, a planted
     prepare-commit-msg hook and the chain installed through the copy's install_chain. Branch main
@@ -269,6 +279,12 @@ class PlantedRepo:
         pin = f'"{nintendo_bytes.LADXR_PIN}"'
         assert checker.count(pin) == 1, "the LADXR pin constant must occur exactly once"
         self.write(BYTES_PATH, checker.replace(pin, f'"{ladxr_git("rev-parse", "HEAD")}"'))
+        for name in CHECK_MODULES:
+            self.write(os.path.join(os.path.dirname(BYTES_PATH), name),
+                       _read(os.path.join(HERE, name)))
+        self.write(INVENTORY_PATH, nintendo_bytes.planted_inventory([
+            ("reader(rom)", "bank 0x00 source 0x1000..0x10FF", "reader"),
+            ("maker(rom)", "-", "maker")]))
         self.write(BRANCH_HOOK_PATH, _read(os.path.join(TOP, BRANCH_HOOK_PATH)))
         self.write(".gitignore", f"tmp/\n{LADXR_PATH}/\n")
         self.write(ROM_PATH, rom)
@@ -324,6 +340,11 @@ class PlantedRepo:
             self.git("checkout", "-q", "main")
 
 
+def _planted_log(group, data):
+    """A write log of one segment of group writing data as one literal token at offset 0x10."""
+    return ("ladx-rom-writes 1\ntables texts\nG %s\nB 10 %s\n" % (group, data.hex())).encode()
+
+
 def _cases(rom):
     """[(name, setup, unset_link, expected substring or None for a pass)]."""
     link = PLANTED_LINK.encode()
@@ -352,6 +373,18 @@ def _cases(rom):
         ("general-bytelist-8",
          lambda r: r.commit("c", [("src/t.c", "u8 t[] = {" + bytelist + "};")]),
          False, "literal run of 8 bytes at @10 (bytelist, general)"),
+        ("case-run-general", lambda r: r.commit("run", [("tests/ladx/cases/c/run.txt",
+                                                          b"<" + rom[2000:2008] + b">")]),
+         False, None),
+        ("case-writes-leak", lambda r: r.commit("log", [("tests/ladx/cases/c/rom_writes.txt",
+                                                         _planted_log("reader", rom[0x1080:0x1088]))]),
+         False, "literal run of 8 bytes at @45 (writes, strict)"),
+        ("case-writes-computed", lambda r: r.commit("log", [(
+            "tests/ladx/cases/c/rom_writes.txt", _planted_log("maker", rom[0x1080:0x1088]))]),
+         False, None),
+        ("case-writes-unparsed", lambda r: r.commit("log", [("tests/ladx/cases/c/rom_writes.txt",
+                                                             b"ladx-rom-writes 2\n")]),
+         False, "(writes, unparsed)"),
         ("rom-slice-removed", lambda r: (r.commit("add", [("s.bin", rom[3000:3020])]),
                                          r.commit("drop", removed=["s.bin"])),
          False, "literal run of 20 bytes"),

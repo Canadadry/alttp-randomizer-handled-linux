@@ -59,7 +59,7 @@
   - [ ] Step 2.5 Golden format and goldens
     - [x] Chunk 1: write events with byte origins
     - [x] Chunk 2: write-log encoder and known-source map
-    - [ ] Chunk 3: bytes policy for case folders
+    - [x] Chunk 3: bytes policy for case folders
     - [ ] Chunk 4: inventory read ranges over all cases
     - [ ] Chunk 5: gen_golden into case folders and verifier
     - [ ] Chunk 6: goldens generated and committed
