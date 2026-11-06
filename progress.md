@@ -61,7 +61,7 @@
     - [x] Chunk 2: write-log encoder and known-source map
     - [x] Chunk 3: bytes policy for case folders
     - [x] Chunk 4: inventory read ranges over all cases
-    - [ ] Chunk 5: gen_golden into case folders and verifier
+    - [x] Chunk 5: gen_golden into case folders and verifier
     - [ ] Chunk 6: goldens generated and committed
   - [ ] Step 2.6 Patch tables
   - [ ] Step 2.7 Extraction fixtures

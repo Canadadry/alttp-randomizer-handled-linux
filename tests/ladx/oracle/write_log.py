@@ -40,7 +40,9 @@ inherits that byte's encoding when
 C can know it (a literal, or a reference into the C-knowable map), else is a literal. The
 replaced byte is the same offset's for a bank write; for a table entry the previous value, the
 new one aligned to it by common prefix, then common suffix, each stopping at a byte C cannot
-know. C bytes are encoded event by event
+know; between them, left to right, the longest run of at least 4 bytes without a carried origin
+equal to knowable bytes of the previous value, at its lowest index there, inherits their
+encoding. C bytes are encoded event by event
 against the state before; table groups' net bytes once their segment ends. Within a segment the
 writes collapse to their net effect.
 
@@ -270,8 +272,31 @@ class _Encoder:
                 atom = old[i]
             elif atom is None and i >= len(new) - suffix:
                 atom = old[len(old) - (len(new) - i)]
-            atoms.append(_lit(v) if atom is None else atom)
-        return atoms
+            atoms.append(atom)
+        self._inherit_middle(new, old, atoms, prefix, len(new) - suffix)
+        return [_lit(v) if atom is None else atom for v, atom in zip(new, atoms)]
+
+    def _inherit_middle(self, new, old, atoms, start, stop):
+        """Fills atoms[start:stop] left to right: where no atom is set, the longest run of at
+        least MIN_MATCH new bytes, none with an atom, equal to knowable old bytes, at its lowest
+        old index, inherits their encoding."""
+        rom = self.rom
+        values = [_value(a, rom) if self.knowable(a) else None for a in old]
+        i = start
+        while i < stop:
+            best, at = 0, None
+            for j in range(len(values)):
+                n = 0
+                while i + n < stop and j + n < len(values) and atoms[i + n] is None \
+                        and values[j + n] is not None and values[j + n] == new[i + n]:
+                    n += 1
+                if n > best:
+                    best, at = n, j
+            if best >= MIN_MATCH:
+                atoms[i:i + best] = old[at:at + best]
+                i += best
+            else:
+                i += 1
 
     def segment(self, group, events):
         side = self.sides.get(group)
@@ -537,19 +562,30 @@ def decode(text, rom):
     return bytes(out)
 
 
+def render(tables, segments):
+    """The log text of parse's (tables, segments)."""
+    lines = _header(tables)
+    for group, banks, entries in segments:
+        lines += _records(group, banks, entries, tables)
+    return "".join(line + "\n" for line in lines)
+
+
+def projections(text):
+    """{group: project(text, group)} for every group of the log, from one parse."""
+    tables, segments = parse(text)
+    net = {}
+    for name, seg_banks, seg_entries in segments:
+        banks, entries = net.setdefault(name, ({}, {}))
+        banks.update(seg_banks)
+        entries.update(seg_entries)
+    return {name: render(tables, [(name, banks, entries)])
+            for name, (banks, entries) in net.items()}
+
+
 def project(text, group):
     """One group's projection of a log: its segments replayed in order, as a log of at most one
     segment."""
-    tables, segments = parse(text)
-    banks, entries = {}, {}
-    for name, seg_banks, seg_entries in segments:
-        if name == group:
-            banks.update(seg_banks)
-            entries.update(seg_entries)
-    lines = _header(tables)
-    if banks or entries:
-        lines += _records(group, banks, entries, tables)
-    return "".join(line + "\n" for line in lines)
+    return projections(text).get(group) or render(parse(text)[0], [])
 
 
 def groups(text):
@@ -572,19 +608,26 @@ def compare_scrambled(events, rom, sides, known, scramble_known=None):
     """One `SCRAMBLED <group>` line per C group whose projection differs when the stream is
     re-encoded on rom with every byte outside scramble_known (default known) scrambled. The
     table groups keep their encoding from rom: C copies it from step 6's tables."""
+    return encode_scrambled(events, rom, sides, known, scramble_known)[1]
+
+
+def encode_scrambled(events, rom, sides, known, scramble_known=None):
+    """(encode's text, compare_scrambled's lines) from one encoding on the real rom."""
     real, fixed = _encode(events, rom, sides, known)
     other = _encode(events, scramble(rom, known if scramble_known is None else scramble_known),
                     sides, known, fixed)[0]
     lines = []
+    real_projections, other_projections = projections(real), projections(other)
     for group in groups(real):
         if sides.get(group) != "C":
             continue
-        a, b = project(real, group).splitlines(), project(other, group).splitlines()
+        a = real_projections[group].splitlines()
+        b = other_projections.get(group, "").splitlines()
         if a != b:
             first = next(n for n in range(max(len(a), len(b)))
                          if n >= len(a) or n >= len(b) or a[n] != b[n])
             lines.append("SCRAMBLED %s: projection differs from line %d" % (group, first + 1))
-    return lines
+    return real, lines
 
 
 # Command line ----------------------------------------------------------------------------------

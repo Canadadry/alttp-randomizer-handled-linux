@@ -6,7 +6,7 @@ help:
 	@echo "make test-rando     the randomizer's unit tests (tests/alttp)"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
 	@echo "make test-ladx-oracle the LADX oracle's helper unit tests (tests/ladx/oracle), no LADXR, no network, run by make test"
-	@echo "make ladx-cases     tests/ladx/cases/ and combos/ checked against tier1.txt and combos.txt, no ROM, no LADXR, run by make test"
+	@echo "make ladx-cases     tests/ladx/cases/ and combos/ checked against tier1.txt and combos.txt, their goldens and size budget (pending until generated), no ROM, no LADXR, run by make test"
 	@echo "make rom-guard      fails if git's index holds a .gb/.gbc/.sfc/.smc file or a LADX/ALttP ROM by digest, run by make test"
 	@echo "make ui-cli         builds tests/alttp/build/ui_cli, the agent's text view of the app"
 	@echo "make lint           alttp/ and app/ built as strict ISO C99 (-pedantic-errors)"
@@ -57,7 +57,7 @@ test-ladx-oracle:
 	python3 -I -B -m unittest discover -s tests/ladx/oracle -p 'test_*.py' -q
 
 ladx-cases:
-	python3 -I -B tests/ladx/oracle/ladx_cases.py check
+	python3 -I -B tests/ladx/oracle/ladx_cases.py check --pending-goldens
 
 ui-cli:
 	$(MAKE) -C tests/alttp ui-cli

@@ -133,18 +133,28 @@ in `docs/`, then `README.md`.
   ROM`; plus `test-ladx-oracle` (`unittest discover` of
   `tests/ladx/oracle/test_*.py` under `python3 -I`: the LADX oracle's helpers
   and Phase 2's tools, no LADXR, no ROM, no network); plus `ladx-cases`.
-- `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check`,
-  no ROM, no LADXR, no network; run by `make test`): it proves itself on planted trees (a missing
-  and an extra case, a config order swap and a wrong value, a seed not from
-  the derivation, an uppercase seed, an extra file, a name in both
-  directories), then compares `tests/ladx/cases/` and `tests/ladx/combos/`
-  with the expected list: one `MISSING`, `EXTRA`, `WRONG`, `BADSEED`,
-  `STRAY` or `BOTH` line per mismatch (exit 1), else one `skip <name>:
+- `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check
+  --pending-goldens`, no ROM, no LADXR, no network; run by `make test`): it
+  proves itself on planted trees (a missing and an extra case, a config
+  order swap and a wrong value, a seed not from the derivation, an
+  uppercase seed, an extra file, a name in both directories, a missing
+  golden, a spoiler on a race case, a malformed write log, a log over
+  budget), then compares `tests/ladx/cases/` and `tests/ladx/combos/` with
+  the expected list and checks each folder's goldens: `run.txt`,
+  `rom_writes.txt` (parsing, version line included) and `spoiler.json`
+  exactly when `race` is off, and the size budget (`rom_writes.txt` 192 KiB
+  per case and 12 MiB in all, all golden files 25 MiB); one `MISSING`,
+  `EXTRA`, `WRONG`, `BADSEED`, `STRAY`, `BOTH`, `NOGOLDEN`, `BADGOLDEN` or
+  `BUDGET` line per mismatch (exit 1), else `ladx-cases: goldens in <n>
+  folders, [<p> pending, ]rom_writes.txt <b> bytes (limits ...), golden
+  files <t> bytes (limit ...)` and one `skip <name>:
   validate sets <k=v>` line per skipped cell, one `refused <name>: LADXR
   refuses every seed, covered by <combo>...` line per refused single and
   `ladx-cases: <n> cases, <m> combos, <s> cells skipped by validate[, <r>
   singles refused by LADXR], every tier-1 value and cross cell covered`; a
-  malformed input exits 2. `ladx_cases.py list [<name>...]`
+  malformed input exits 2. `--pending-goldens` accepts a folder holding no
+  golden file, until the goldens are committed (TODO: drop it then).
+  `ladx_cases.py list [<name>...]`
   prints the case directories as `ladx_oracle.py cases` prints a case list,
   after the same comparison.
 - The LADX oracle, outside the net (it needs git, the network for GitHub and
@@ -164,19 +174,42 @@ in `docs/`, then `README.md`.
   `DIFFERENT <case>: line <n>: ...` per case, then `determinism: <n> cases
   identical (...)`, or fails when the two runs did not vary.
   With the ROM (`tmp/ladx/base.gbc`, SHA-1 `d90ac17e…`, else a `setup:`
-  line): `gen_golden.sh --out <dir> [--cases <file>] [--ladxr <dir>]
-  [--hashseed <n>] [--rom <file>] [--work <dir>] [<case>...]`, LADX's case
-  runner, runs each case (default the case directories, `tests/ladx/cases/`
-  then `tests/ladx/combos/`, through `ladx_cases.py list`; with `--cases`
-  that list file, e.g. `determinism_cases.txt`) through the
-  whole generator (`oracle_run.py --rom`, one process per case, LADXR in a
-  new directory under the work root) and writes `<dir>/<case>/`: `run.txt`
-  (the sections above, the trace covering `generateRom` and the spoiler,
-  then `rom_sha1`, `spoiler_sha1` and the outcome), `meta.txt`, and
-  `out.gbc` and `spoiler.json` when LADXR wrote them; it refuses a `<dir>`
-  outside `tmp/` (exit 2): ROM-derived outputs stay there. Without
-  `--cases` it exits 1 after its summary with `gen_golden: <n> cases not
-  ok` when a case's outcome is not `ok`; with `--cases` any outcome passes.
+  line): `gen_golden.sh [--out <dir> | --root <dir>] [--mirror <dir>]
+  [--cases <file>] [--ladxr <dir>] [--hashseed <n>] [--rom <file>] [--work
+  <dir>] [<case>...]`, LADX's case runner, runs each case (default the case
+  directories, `<root>/cases/` then `<root>/combos/`, through
+  `ladx_cases.py list`; with `--cases`, `--out` only, that list file, e.g.
+  `determinism_cases.txt`) through the whole generator (`oracle_run.py
+  --rom --reads`, one process per case, LADXR in a new directory under the
+  work root; about 10 s per case) and encodes each ok case's write log
+  (`write_log.py encode`). With `--out` it writes `<dir>/<case>/`:
+  `run.txt` (the sections above, the trace covering `generateRom` and the
+  spoiler, then `rom_sha1`, `spoiler_sha1` and the outcome), `meta.txt`,
+  `events.txt`, `reads.txt`, `writes.txt`, and `out.gbc`, `spoiler.json`
+  and `rom_writes.txt` when written. Without `--out` it writes the
+  goldens: every file into `<mirror>/<case>/` (default
+  `tmp/ladx-goldens/`), then only `run.txt`, `rom_writes.txt` and
+  `spoiler.json` into the case folder under `<root>` (default
+  `tests/ladx`; else inside `tmp/`), replacing its old ones, a case not ok
+  left untouched (`gen_golden: <n> goldens written to <root>`). It refuses
+  an `--out` or `--mirror` outside `tmp/` (exit 2): ROM-derived outputs
+  stay there. Without `--cases` it exits 1 after its summary with
+  `gen_golden: <n> cases not ok` when a case's outcome is not `ok` or its
+  log does not encode; with `--cases` any outcome passes.
+  `python3 -I tests/ladx/oracle/golden_check.py [--root <dir>] [--mirror
+  <dir>] [--rom <file>] [--ladxr <dir>] [--inventory <file>] [<case>...]`
+  verifies the goldens with the ROM, against the mirror's event streams:
+  per case `decode` (the log replayed onto the ROM gives `rom_sha1`),
+  `encode` (the golden is its stream's encoding), `tags` (every group a
+  `table` or `C` group of the inventory), `scrambled` (no C group's
+  projection changes with every byte outside the C-knowable map
+  scrambled), `projection` (dropping or changing another group's records
+  never changes a group's projection) and `nintendo` (the Nintendo-bytes
+  policy of a case folder, 0 literal runs); `ok <case>` or `BAD <case>:
+  <check>: <detail>` lines, with no case named the union of the goldens'
+  groups against the inventory's writing groups less `spoiler` (`BAD
+  tags: ...`), then `golden-check: <n> cases, <b> bad, <k> literal runs`;
+  about 12 s per case.
   `oracle_run.py --rom --dir <dir> --reads [--inventory <file>]` (off by
   default; `run.txt`, `out.gbc` and `spoiler.json` unchanged by it) also
   traces the whole run with `read_trace.py` and writes `reads.txt` and

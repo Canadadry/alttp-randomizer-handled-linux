@@ -6,6 +6,7 @@ and verify (the seeds, with the ROM) also load LADXR's Settings and run oracle_r
 
 import hashlib
 import os
+import shutil
 import sys
 import types
 
@@ -199,7 +200,10 @@ def expected_list(tier1_text, settings_text, validate_text, spec_text):
 
 
 DIRS = ("cases", "combos")
-ALLOWED = ("config.txt", "seed")
+GOLDENS = ("run.txt", "rom_writes.txt", "spoiler.json")
+ALLOWED = ("config.txt", "seed") + GOLDENS
+KB = 1024
+LIMITS = {"rom_writes_case": 192 * KB, "rom_writes_all": 12 * KB * KB, "all": 25 * KB * KB}
 
 
 def config_text(assignments):
@@ -344,9 +348,75 @@ def mismatches(e, root):
     return lines + ["BOTH " + name for name in both]
 
 
-def report(e, root):
-    """Prints the mismatches and returns 1, or the skips and the summary and returns 0."""
+def _size(path):
+    try:
+        return os.path.getsize(path)
+    except FileNotFoundError:
+        return None
+
+
+def golden_lines(e, root, pending=False, limits=LIMITS):
+    """(problems, summary) of the case folders' golden files: NOGOLDEN, BADGOLDEN and BUDGET
+    lines; with pending, a folder holding none of them is counted, not a problem."""
+    write_log = _write_log()
+    problems, folders, waiting, writes_total, total = [], 0, 0, 0, 0
+    for sub, entries in zip(DIRS, (e.cases, e.combos)):
+        for name, assignments in entries:
+            path, shown = os.path.join(root, sub, name), "%s/%s" % (sub, name)
+            if not os.path.isdir(path):
+                continue
+            sizes = {f: _size(os.path.join(path, f)) for f in GOLDENS}
+            if pending and all(n is None for n in sizes.values()):
+                waiting += 1
+                continue
+            folders += 1
+            race = "race=1" in assignments
+            for f in GOLDENS:
+                if sizes[f] is None and not (race and f == "spoiler.json"):
+                    problems.append("NOGOLDEN %s: %s missing" % (shown, f))
+            if race and sizes["spoiler.json"] is not None:
+                problems.append("BADGOLDEN %s: spoiler.json on a race case" % shown)
+            total += sum(n for n in sizes.values() if n is not None)
+            n = sizes["rom_writes.txt"]
+            if n is None:
+                continue
+            writes_total += n
+            try:
+                write_log.parse(_read(os.path.join(path, "rom_writes.txt")))
+            except write_log.WriteLogError as err:
+                problems.append("BADGOLDEN %s: rom_writes.txt: %s" % (shown, err))
+            if n > limits["rom_writes_case"]:
+                problems.append("BUDGET %s: rom_writes.txt %d bytes, limit %d"
+                                % (shown, n, limits["rom_writes_case"]))
+    if writes_total > limits["rom_writes_all"]:
+        problems.append("BUDGET rom_writes.txt: %d bytes in all, limit %d"
+                        % (writes_total, limits["rom_writes_all"]))
+    if total > limits["all"]:
+        problems.append("BUDGET golden files: %d bytes in all, limit %d" % (total, limits["all"]))
+    summary = ("ladx-cases: goldens in %d folders, %srom_writes.txt %d bytes (limits %d per "
+               "case, %d in all), golden files %d bytes (limit %d)"
+               % (folders, "%d pending, " % waiting if pending else "", writes_total,
+                  limits["rom_writes_case"], limits["rom_writes_all"], total, limits["all"]))
+    return problems, summary
+
+
+def _write_log():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ladx_cases_write_log",
+                                                  os.path.join(HERE, "write_log.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def report(e, root, goldens=None, limits=LIMITS):
+    """Prints the mismatches and returns 1, or the skips and the summary and returns 0. goldens
+    'required' or 'pending' adds golden_lines' problems, and its summary."""
     lines = mismatches(e, root)
+    golden_summary = None
+    if goldens is not None:
+        problems, golden_summary = golden_lines(e, root, goldens == "pending", limits)
+        lines += problems
     status = 1 if lines else 0
     if not lines:
         lines = ["skip %s: validate sets %s" % (name, ",".join(changes))
@@ -354,6 +424,8 @@ def report(e, root):
         lines += ["refused %s: LADXR refuses every seed, covered by %s" % (name, " ".join(covering))
                   for name, _, covering in e.refused]
         refused = ", %d singles refused by LADXR" % len(e.refused) if e.refused else ""
+        if golden_summary:
+            lines.append(golden_summary)
         lines.append("ladx-cases: %d cases, %d combos, %d cells skipped by validate%s, every "
                      "tier-1 value and cross cell covered"
                      % (len(e.cases), len(e.combos), len(e.skipped), refused))
@@ -397,8 +469,7 @@ def _plant_variants():
     def at(root, sub, name, file=None):
         return os.path.join(root, sub, name, *([file] if file else []))
     return [
-        ("missing", lambda r: os.remove(at(r, "cases", "race-1", "seed")) or
-         os.remove(at(r, "cases", "race-1", "config.txt")) or os.rmdir(at(r, "cases", "race-1")),
+        ("missing", lambda r: shutil.rmtree(at(r, "cases", "race-1")),
          ["MISSING cases/race-1"]),
         ("extra", lambda r: write_case(at(r, "combos", "race-1+goal-5-8"), ["race=1", "goal=5-8"],
                                        derive("race-1+goal-5-8", 0)),
@@ -420,7 +491,34 @@ def _plant_variants():
          ["STRAY cases/baseline/golden.txt"]),
         ("both", lambda r: write_case(at(r, "combos", "race-1"), ["race=1"], derive("race-1", 0)),
          ["BOTH race-1"]),
+        ("missing golden", lambda r: os.remove(at(r, "cases", "baseline", "rom_writes.txt")),
+         ["NOGOLDEN cases/baseline: rom_writes.txt missing"]),
+        ("race spoiler", lambda r: _overwrite(at(r, "cases", "race-1", "spoiler.json"), "{}\n"),
+         ["BADGOLDEN cases/race-1: spoiler.json on a race case"]),
+        ("bad write log", lambda r: _overwrite(at(r, "cases", "goal-5-8", "rom_writes.txt"),
+                                               _PLANT_LOG.replace("=2", "=0x2")),
+         ["BADGOLDEN cases/goal-5-8: rom_writes.txt: bad length '0x2'"]),
+        ("over budget", lambda r: _overwrite(at(r, "cases", "baseline", "rom_writes.txt"),
+                                             _PLANT_BIG_LOG),
+         ["BUDGET cases/baseline: rom_writes.txt %d bytes, limit %d"
+          % (len(_PLANT_BIG_LOG), _PLANT_LIMITS["rom_writes_case"]),
+          "BUDGET rom_writes.txt: %d bytes in all, limit %d"
+          % (len(_PLANT_BIG_LOG) + 4 * len(_PLANT_LOG), _PLANT_LIMITS["rom_writes_all"])]),
     ]
+
+
+_PLANT_LOG = "ladx-rom-writes 1\ntables texts\nG fixed\nB 10 =2 00\n"
+_PLANT_BIG_LOG = _PLANT_LOG + "".join("B %x 00\n" % (0x20 + 2 * i) for i in range(400))
+_PLANT_LIMITS = {"rom_writes_case": 1024, "rom_writes_all": 2048, "all": KB * KB}
+
+
+def _plant_goldens(root, e):
+    for sub, entries in zip(DIRS, (e.cases, e.combos)):
+        for case, assignments in entries:
+            for f, text in (("run.txt", "outcome ok\n"), ("rom_writes.txt", _PLANT_LOG),
+                            ("spoiler.json", None if "race=1" in assignments else "{}\n")):
+                if text is not None:
+                    _overwrite(os.path.join(root, sub, case, f), text)
 
 
 def self_test():
@@ -437,8 +535,9 @@ def self_test():
             for sub, entries in zip(DIRS, (e.cases, e.combos)):
                 for k, (case, assignments) in enumerate(entries):
                     write_case(os.path.join(root, sub, case), assignments, derive(case, k))
+            _plant_goldens(root, e)
             change(root)
-            if mismatches(e, root) != lines:
+            if mismatches(e, root) + golden_lines(e, root, False, _PLANT_LIMITS)[0] != lines:
                 return name
         finally:
             shutil.rmtree(root)
@@ -620,8 +719,13 @@ def verify(e, rom, names):
 
 USAGE = """usage: ladx_cases.py <command> [--root <dir>] [--inputs <dir>] [--rom <file>]
                     [--ladxr <dir>] ...
-  check             proves itself on planted trees, then compares <root>/cases/ and <root>/combos/
-                    with the expected list: exit 1 on a mismatch, 2 on a malformed input
+  check [--pending-goldens]
+                    proves itself on planted trees, then compares <root>/cases/ and <root>/combos/
+                    with the expected list and checks each case folder's goldens (run.txt,
+                    rom_writes.txt parsing with its version line, spoiler.json exactly when race
+                    is off) and the size budget (LIMITS), printing the totals: exit 1 on a
+                    mismatch, 2 on a malformed input; --pending-goldens accepts a folder holding
+                    no golden file (until the goldens are generated)
   list [<name>...]  after the same comparison (quiet unless it fails), the case directories as
                     `<name> <seed hex> <k=v ...>` lines, cases then combos
   pick [<name>...]  with the ROM: writes each case without a directory (or the named ones, which
@@ -640,6 +744,8 @@ def main(argv):
     args, options = [], {"--root": os.path.dirname(HERE), "--inputs": HERE,
                          "--rom": os.path.join(TOP, "tmp", "ladx", "base.gbc"),
                          "--ladxr": os.path.join(HERE, "ladxr")}
+    pending = "--pending-goldens" in argv
+    argv = [a for a in argv if a != "--pending-goldens"]
     while argv:
         if argv[0] in options and len(argv) >= 2:
             options[argv[0]] = argv[1]
@@ -648,7 +754,8 @@ def main(argv):
             args.append(argv[0])
             argv = argv[1:]
     command, names = (args[0], args[1:]) if args else (None, [])
-    if command not in ("check", "list", "pick", "verify") or (command == "check" and names):
+    if command not in ("check", "list", "pick", "verify") or (command == "check" and names) \
+            or (pending and command != "check"):
         print(USAGE, file=sys.stderr)
         return 2
     root = options["--root"]
@@ -672,7 +779,7 @@ def main(argv):
         if failed:
             print("ladx-cases: self-test failed: %s" % failed, file=sys.stderr)
             return 1
-        return report(e, root)
+        return report(e, root, "pending" if pending else "required")
     lines = mismatches(e, root)
     if lines:
         print("\n".join(lines), file=sys.stderr)

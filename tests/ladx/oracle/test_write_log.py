@@ -170,6 +170,23 @@ class Tables(unittest.TestCase):
         self.assertEqual(body(partial), ["G cg", "T texts 3 @80+1 %s1122%s"
                                          % (old[1:2].hex(), old[3:].hex())])
 
+    def test_between_prefix_and_suffix_an_entry_inherits_knowable_runs_of_its_previous_value(self):
+        old = self.rom[0x80:0x98]
+        new = old[:2] + b"\x11" + old[10:16] + b"\x22\x33" + old[4:7] + old[2:8] + old[-2:]
+        initial = [("texts", 3, old, tuple(range(0x80, 0x98)))]
+        log = encode([entry("cg", "texts", 3, new)], self.rom, known=range(0x80, 0x98),
+                     initial=initial)
+        self.assertEqual(body(log), ["G cg", "T texts 3 @80+2 11 @8a+6 2233%s @82+6 @96+2"
+                                     % old[4:7].hex()])
+        unknowable = encode([entry("cg", "texts", 3, new)], self.rom,
+                            known=set(range(0x80, 0x98)) - {0x8c}, initial=initial)
+        self.assertEqual(body(unknowable), ["G cg", "T texts 3 @80+2 11%s2233%s @82+6 @96+2"
+                                            % (old[10:16].hex(), old[4:7].hex())])
+        repeated = old[:12] + old[4:10] + old[12:]
+        log = encode([entry("cg", "texts", 3, repeated)], self.rom, known=range(0x80, 0x98),
+                     initial=initial)
+        self.assertEqual(body(log), ["G cg", "T texts 3 @80+c @84+6 @8c+c"])
+
     def test_an_entry_never_written_nor_parsed_has_nothing_to_inherit(self):
         log = encode([entry("cg", "texts", 3, self.rom[0x80:0x82])], self.rom,
                      known=range(0x80, 0x82))
@@ -245,6 +262,19 @@ class Projection(unittest.TestCase):
         self.assertEqual(body(write_log.project(log, "cg")),
                          ["G cg", "B 10 0103 =1", "T texts 2 05"])
         self.assertEqual(body(write_log.project(log, "nobody")), [])
+
+    def test_projections_give_every_group_s_projection_at_once(self):
+        log = encode([bank("cg", 0x10, b"\x01\x02"), bank("other", 0x30, b"\x09"),
+                      bank("cg", 0x11, b"\x03"), entry("fix", "texts", 1, b"\x07")], self.rom)
+        self.assertEqual(write_log.projections(log),
+                         {g: write_log.project(log, g) for g in ("cg", "other", "fix")})
+
+    def test_render_gives_back_the_parsed_log(self):
+        log = encode([bank("cg", 0x10, b"\x01\x02"), bank("other", 0x30, self.rom[0x30:0x34]),
+                      bank("cg", 0x11, self.rom[0x40:0x41], [0x40]),
+                      entry("fix", "texts", 1, b"\x07"), entry("cg", "rooms", "Alt06", b"\x08"),
+                      entry("cg", "texts", 0, 0x1234)], self.rom)
+        self.assertEqual(write_log.render(*write_log.parse(log)), log)
 
     def test_a_projection_ignores_other_groups_records(self):
         events = [bank("cg", 0x10, b"\x01"), bank("other", 0x30, b"\x09"),

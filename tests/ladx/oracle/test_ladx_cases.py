@@ -272,6 +272,104 @@ class CheckTest(unittest.TestCase):
         self.assertEqual(out[0], "MISSING cases/baseline")
 
 
+LOG = "ladx-rom-writes 1\ntables texts\nG fixed\nB 10 =2 00\n"
+
+
+def plant_goldens(root, e, skip=()):
+    """Every case folder's golden files (a spoiler unless race=1), a small valid write log."""
+    for sub, entries in (("cases", e.cases), ("combos", e.combos)):
+        for name, assignments in entries:
+            if name in skip:
+                continue
+            path = os.path.join(root, sub, name)
+            write(os.path.join(path, "run.txt"), "seed 00\noutcome ok\n")
+            write(os.path.join(path, "rom_writes.txt"), LOG)
+            if "race=1" not in assignments:
+                write(os.path.join(path, "spoiler.json"), "{}\n")
+
+
+class GoldenTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.root))
+        self.e = expected()
+        plant(self.root, self.e)
+        plant_goldens(self.root, self.e)
+
+    def at(self, *parts):
+        return os.path.join(self.root, *parts)
+
+    def check(self, pending=False, limits=None):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            status = ladx_cases.report(self.e, self.root,
+                                       goldens="pending" if pending else "required",
+                                       limits=limits or ladx_cases.LIMITS)
+        return status, out.getvalue().splitlines()
+
+    def test_a_tree_with_every_golden_prints_the_totals_against_the_budget(self):
+        status, out = self.check()
+        size = 15 * len(LOG) + 15 * len("seed 00\noutcome ok\n") + 13 * len("{}\n")
+        self.assertEqual(status, 0)
+        self.assertEqual(out[-2], "ladx-cases: goldens in 15 folders, rom_writes.txt %d bytes "
+                         "(limits %d per case, %d in all), golden files %d bytes (limit %d)"
+                         % (15 * len(LOG), 192 * 1024, 12 * 1024 * 1024, size,
+                            25 * 1024 * 1024))
+
+    def test_a_missing_golden_file_and_a_spoiler_on_a_race_case(self):
+        os.remove(self.at("cases", "baseline", "rom_writes.txt"))
+        os.remove(self.at("cases", "goal-maze", "spoiler.json"))
+        write(self.at("cases", "race-1", "spoiler.json"), "{}\n")
+        status, out = self.check()
+        self.assertEqual((status, out), (1, [
+            "NOGOLDEN cases/baseline: rom_writes.txt missing",
+            "BADGOLDEN cases/race-1: spoiler.json on a race case",
+            "NOGOLDEN cases/goal-maze: spoiler.json missing"]))
+
+    def test_a_malformed_write_log_or_one_without_its_version_line(self):
+        write(self.at("cases", "baseline", "rom_writes.txt"), LOG.replace("=2", "=0x2"))
+        write(self.at("cases", "race-1", "rom_writes.txt"), LOG.split("\n", 1)[1])
+        status, out = self.check()
+        self.assertEqual(status, 1)
+        self.assertEqual([line.split(":")[0] for line in out],
+                         ["BADGOLDEN cases/baseline", "BADGOLDEN cases/race-1"])
+        self.assertIn("rom_writes.txt: line 1: not `ladx-rom-writes 1`", out[1])
+
+    def test_the_budget_per_case_and_in_all(self):
+        limits = {"rom_writes_case": len(LOG) - 1, "rom_writes_all": 15 * len(LOG) - 1,
+                  "all": 10}
+        status, out = self.check(limits=limits)
+        self.assertEqual(status, 1)
+        self.assertEqual(out[0], "BUDGET cases/baseline: rom_writes.txt %d bytes, limit %d"
+                         % (len(LOG), len(LOG) - 1))
+        self.assertEqual(len([line for line in out if line.startswith(("BUDGET cases/", "BUDGET combos/"))]),
+                         15)
+        self.assertEqual(out[-2:], [
+            "BUDGET rom_writes.txt: %d bytes in all, limit %d" % (15 * len(LOG),
+                                                                 15 * len(LOG) - 1),
+            "BUDGET golden files: %d bytes in all, limit 10"
+            % (15 * len(LOG) + 15 * len("seed 00\noutcome ok\n") + 13 * len("{}\n"))])
+
+    def test_pending_accepts_folders_without_any_golden_but_checks_the_others(self):
+        root = self.root
+        for sub, entries in (("cases", self.e.cases), ("combos", self.e.combos)):
+            for name, _ in entries:
+                for f in ("run.txt", "rom_writes.txt", "spoiler.json"):
+                    if os.path.exists(os.path.join(root, sub, name, f)) and name != "race-1":
+                        os.remove(os.path.join(root, sub, name, f))
+        status, out = self.check(pending=True)
+        self.assertEqual(status, 0)
+        self.assertTrue(out[-2].startswith("ladx-cases: goldens in 1 folders, 14 pending,"))
+        status, out = self.check()
+        self.assertEqual((status, len(out)), (1, 14 * 2 + 13))
+        os.remove(self.at("cases", "race-1", "run.txt"))
+        status, out = self.check(pending=True)
+        self.assertEqual((status, out), (1, ["NOGOLDEN cases/race-1: run.txt missing"]))
+
+    def test_the_golden_files_are_not_stray(self):
+        self.assertEqual(ladx_cases.mismatches(self.e, self.root), [])
+
+
 class CommandTest(unittest.TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
@@ -290,12 +388,36 @@ class CommandTest(unittest.TestCase):
 
     def test_check_proves_itself_then_checks_the_tree(self):
         plant(self.root, expected())
+        plant_goldens(self.root, expected())
         status, out, _ = self.main("check")
         self.assertEqual(status, 0)
+        self.assertTrue(out[-2].startswith("ladx-cases: goldens in 15 folders, rom_writes.txt"))
         self.assertTrue(out[-1].startswith("ladx-cases: 10 cases, 5 combos, 1 cells skipped"))
         __import__("shutil").rmtree(os.path.join(self.root, "combos"))
         status, out, _ = self.main("check")
         self.assertEqual((status, len(out)), (1, 5))
+
+    def test_check_requires_the_goldens_unless_they_are_pending(self):
+        plant(self.root, expected())
+        plant_goldens(self.root, expected(), skip=("race-1",))
+        status, out, _ = self.main("check")
+        self.assertEqual((status, out), (1, ["NOGOLDEN cases/race-1: run.txt missing",
+                                             "NOGOLDEN cases/race-1: rom_writes.txt missing"]))
+        status, out, _ = self.main("check", "--pending-goldens")
+        self.assertEqual(status, 0)
+        self.assertTrue(out[-2].startswith("ladx-cases: goldens in 14 folders, 1 pending,"))
+
+    def test_a_blind_golden_checker_fails_its_self_proof(self):
+        plant(self.root, expected())
+        plant_goldens(self.root, expected())
+        real = ladx_cases.golden_lines
+        ladx_cases.golden_lines = lambda *a, **k: ([], "")
+        try:
+            status, out, err = self.main("check")
+        finally:
+            ladx_cases.golden_lines = real
+        self.assertEqual(status, 1)
+        self.assertIn("ladx-cases: self-test failed: missing golden", err)
 
     def test_a_blind_checker_fails_its_self_proof(self):
         plant(self.root, expected())
