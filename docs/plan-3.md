@@ -217,3 +217,7 @@ The ROM stays in `tmp/ladx/` for the oracle and `rom-check`; `make check` never 
 - None from the grilling. Phase 2's inventory may surface seed-dependent code that reads Nintendo data. Each such case becomes either an extraction or a scope cut, and the owner reviews it at the PR.
 
 ## 6. Step notes
+
+### Step 1.1
+
+`git mv rando alttp` and `git mv tests/rando tests/alttp` (827 renames, 811 pure); path tokens updated in the root and `tests/alttp` Makefiles, `measure.sh`, `gen_golden.sh`, CI, `.gitignore`, `targets/mac/Makefile`, `CLAUDE.md`, README, `docs/onion.md`, `docs/toolchain.md`, the `check-e2e` and `rework-comments` skills, and three unit-test comments. Identifiers (`rando_*`, `RANDO_*`, `librando*.a`, `test-rando`) unchanged. e2e + e2e-combos output identical before and after (76 lines); `make check` and `make sdl-pc` green (13 goldens pixel-identical). SDL dev packages installed with apt for `make sdl-pc`. The path-token grep keeps 8 matches, each on purpose: `CLAUDE.md:16` names upstream `alttp-ds`'s own folders; `tests/alttp/Makefile:363` and `measure_compare.sh:132,134` point into the frozen `40314c3` reference worktree, which predates the rename; `measure.sh:41,42,69,76` match the shell variable `$rando` (its value is now `$root/alttp`), not a directory.
