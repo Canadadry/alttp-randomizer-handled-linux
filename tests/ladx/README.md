@@ -453,6 +453,57 @@ the text at the general thresholds.
 case, 22 MiB in all; all golden files (`run.txt`, `spoiler.json`,
 `rom_writes.txt`) 34 MiB in all.
 
+## Full-ROM check
+
+`make -C tests/ladx rom-check [LADX_ROM=<file>] [LADX_GEN=<binary>]
+[CASES="<case> ..."]` (driver `oracle/rom_check.py`, outside the net) runs
+a generator on every case and combo (or the named ones) with the base ROM
+and compares the SHA-1 of each output with the `rom_sha1` line of the
+case's `run.txt`. It is the whole-output proof the write-log claims do not
+give. Every run first proves the driver on a synthetic 64 KiB ROM, a
+planted case tree and a fake generator (`make -C tests/ladx
+rom-check-selftest` runs only that; `make test` runs it too).
+
+Defaults: `LADX_ROM` `tmp/ladx/base.gbc`, `LADX_GEN`
+`tests/ladx/build/ladx_patch`, both repository-relative. The work
+directory is `tmp/ladx-rom-check/<case>/` (`out.gbc`, deleted when `ok`,
+and `gen.log`), emptied at the start.
+
+### Generator contract
+
+The interface Phase 3's `ladx_patch` implements; the driver and its
+self-test change with it, in one commit.
+
+- Invocation: `<gen> --base <rom> --out <file> --seed <32 lowercase hex>
+  [<key>=<value> ...]`, the settings being the case's non-default
+  assignments in LADXR's order, as `config.txt` holds them (none for the
+  baseline). `<rom>` and `<file>` are absolute paths.
+- Exit 0 with `<file>` written: a generated ROM, hashed.
+- Exit 3: the base was refused (missing, or not SHA-1 `d90ac17e…`), no
+  output; reported as `REFUSED`, never as a mismatch.
+- Any other exit, a signal, more than 120 s, or exit 0 with no file: a
+  failure (`FAILED`).
+- It runs in its case's work directory, with `LADX_ROM_URL` removed from
+  its environment; its stdout and stderr go to `gen.log`, never to the
+  terminal.
+
+### Output
+
+- `rom-check: base <sha1> (the LADX English 1.0 ROM | not the LADX ROM),
+  generator <path>` (a base that is not the ROM is still run: the
+  generator's own check is what gets exercised);
+- per case: `ok <case>`, `MISMATCH <case>: sha1 <got>, golden <want>`
+  (the output kept, to diff against the mirror's `out.gbc`), `REFUSED
+  <case>: base refused (exit 3)`, `FAILED <case>: <exit <n> | signal <n> |
+  timeout <s> s | no output>`, `NOGOLDEN <case>: <reason>` (no `rom_sha1`,
+  or an outcome other than `ok`; the generator is not run);
+- `rom-check: <n> cases, <m> combos: <a> ok, <b> mismatched, <c> refused,
+  <d> failed, <e> no golden`.
+
+Exit 0 when every case is `ok`, else 1; a missing ROM or generator is a
+`setup:` line and a usage error (an unknown case, a `--work` outside
+`tmp/`) exits 2. Only digests are printed, never ROM bytes.
+
 ## Regenerate and verify
 
 Goldens are ROM-derived: never edited by hand, regenerated only with the

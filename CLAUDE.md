@@ -86,7 +86,8 @@ in `docs/`, then `README.md`.
   `ks_rebuild`, the ROM-free model of `PointerTable.store`
   `store_table` and of `ROMWithTables.save`'s stores `store_model`,
   `check`, and with the ROM `generate`, driven by `gen_extract.sh`, and
-  `verify`),
+  `verify`); `rom_check.py`, the full-ROM check's driver (Phase 2 step 9;
+  its generator contract in `tests/ladx/README.md`, "Full-ROM check"),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
   hand-written inputs `tier1.txt`,
@@ -128,6 +129,9 @@ in `docs/`, then `README.md`.
   `room-objects`, `boss-sources`, `backgrounds`, `save-layout`,
   `source-flags`, each `<name>.txt`, numeric only, about 2.6 MB), under the
   Nintendo-bytes check's strict scope, written only by `gen_extract.sh`.
+  `tests/ladx/Makefile` holds LADX's own targets, outside the net (`help`,
+  the default; `rom-check`, `rom-check-selftest`); Phase 3 adds its
+  targets there.
 
 ## Checks
 
@@ -165,7 +169,8 @@ in `docs/`, then `README.md`.
   no work tree gives a `setup:` line; else `rom_guard: <n> tracked files, no
   ROM`; plus `test-ladx-oracle` (`unittest discover` of
   `tests/ladx/oracle/test_*.py` under `python3 -I`: the LADX oracle's helpers
-  and Phase 2's tools, no LADXR, no ROM, no network); plus `ladx-cases`; plus `ladx-tables`;
+  and Phase 2's tools, `rom_check.py`'s self-test included, no LADXR, no
+  ROM, no network); plus `ladx-cases`; plus `ladx-tables`;
   plus `ladx-extract`.
 - `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check`,
   no ROM, no LADXR, no network; run by `make test`): it
@@ -596,6 +601,42 @@ in `docs/`, then `README.md`.
   `read-check: <n> findings`, exit 1. A `cut:<id>` coverage needs its id in
   `notes/plan3-scope-cuts.md`. `--print` writes the inventory with its
   `Reads (trace)` cells and Depends on column taken from the traces.
+- The full-ROM check, outside the net (python3; the ROM and Phase 3's
+  generator, else a `setup:` line): `make -C tests/ladx rom-check
+  [LADX_ROM=<file>] [LADX_GEN=<binary>] [CASES="<case> ..."]` (`python3 -I
+  tests/ladx/oracle/rom_check.py`, run from the repository's root, paths
+  repository-relative; `LADX_ROM` default `tmp/ladx/base.gbc`, `LADX_GEN`
+  default `tests/ladx/build/ladx_patch`, `CASES` empty for every case and
+  combo) proves itself first on a synthetic 64 KiB ROM, a planted case tree
+  and a fake generator (17 planted runs: ok, a planted SHA-1 mismatch,
+  refused, exit 1, no output, timeout, two `NOGOLDEN`s, the arguments and
+  environment passed, no link and no ROM run printed, the setup and
+  `--work` refusals; `rom-check: self-test, <n> planted runs as expected`,
+  else one `rom-check: self-test failed: <case>` line each, exit 1;
+  `make -C tests/ladx rom-check-selftest` stops there). Then it takes the
+  cases from `ladx_cases.py`'s checked listing (a tree unlike the expected
+  list: its `MISSING`/`EXTRA`/... lines, exit 1; an unknown name exit 2),
+  runs the generator on each, cases then combos, under
+  `tmp/ladx-rom-check/<case>/` (`--work`, refused outside the repository's
+  `tmp/` or over the ROM or generator; emptied at the start; `out.gbc` and
+  `gen.log`, the generator's stdout and stderr, never echoed; an `ok`
+  case's `out.gbc` deleted) and compares each output's SHA-1 with
+  `run.txt`'s `rom_sha1`. Generator contract: `<gen> --base <rom> --out
+  <file> --seed <32 lowercase hex> [<key>=<value> ...]` (the case's
+  non-default settings in LADXR's order), exit 0 with the file written,
+  exit 3 for a refused base, anything else a failure; run in its case
+  directory, `LADX_ROM_URL` removed from its environment, 120 s per case
+  (`--timeout`). Lines: `rom-check: base <sha1> (the LADX English 1.0 ROM
+  | not the LADX ROM), generator <path>`; per case `ok <case>`, `MISMATCH
+  <case>: sha1 <got>, golden <want>`, `REFUSED <case>: base refused (exit
+  3)`, `FAILED <case>: <exit <n> | signal <n> | timeout <s> s | no
+  output>`, `NOGOLDEN <case>: <reason>` (no `rom_sha1`, or an outcome not
+  `ok`); then `rom-check: <n> cases, <m> combos: <a> ok, <b> mismatched,
+  <c> refused, <d> failed, <e> no golden`; exit 0 when every case is `ok`,
+  else 1; a missing ROM (`setup: rom-check: no ROM at <path> ...`) or
+  generator (`setup: rom-check: no generator at <path> ...`) or a usage
+  error exits 2. Digests only, never ROM bytes or the link. Until Phase 3
+  builds `ladx_patch`, it ends on the `no generator` line.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -749,8 +790,9 @@ in `docs/`, then `README.md`.
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
   `key_trace.py` its settings and constant reads,
   `inventory_check.py` diffs the inventory against LADXR, and
-  `inventory_trace.sh` and `read_check.py` check it on real reads (their
-  tests run in `make test`). The SDL build (`make sdl`,
+  `inventory_trace.sh` and `read_check.py` check it on real reads, and
+  `make -C tests/ladx rom-check` needs the ROM and Phase 3's generator
+  (their tests run in `make test`). The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and
