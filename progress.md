@@ -90,6 +90,7 @@
     - [x] Chunk 2: pyrandom against the fixture
     - [x] Chunk 3: fast make test, unit-arm, docs
   - [ ] Step 3.2 Settings table
+    - [x] Settings table, validate and unsupported values
   - [ ] Step 3.3 Logic and locations
   - [ ] Step 3.4 Item pool and fill
   - [ ] Step 3.5 Table application

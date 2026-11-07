@@ -459,7 +459,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `ladx/src/`; pure C99, no allocation, no platform library, nothing of
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
-(`test_sha512`, `test_pyrandom`), failing through `unit/support.h`'s
+(`test_sha512`, `test_pyrandom`, `test_settings`), failing through `unit/support.h`'s
 `test_fail` (`<test>: FAIL <message>`, exit 1). Every LADX build, host,
 lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -471,7 +471,10 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
   from `tests/ladx` (fixture paths are relative: `test_pyrandom` reads
-  `oracle/pyrandom_vectors.txt`, always, with no flag), then prints
+  `oracle/pyrandom_vectors.txt`, always, with no flag; `test_settings`
+  reads `oracle/settings.txt`, `oracle/settings_validate.txt`,
+  `oracle/tier1.txt`, every `cases/*/config.txt` and `combos/*/config.txt`
+  and `../../notes/plan3-scope-cuts.md`), then prints
   `test: <n> LADX unit tests ran`. `test_sha512` prints `test_sha512:
   FIPS 180-4 vectors, padding boundaries and streaming splits ok`;
   `test_pyrandom` replays every fixture line and fails on an unknown kind
@@ -480,6 +483,30 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   hand-written `uniform(-7.3, 12.9)` vectors, from CPython, are the FMA
   proof: the fixture's `uniform` lines have `a = 0`, where a fused and an
   unfused result round alike, but 4 of these 8 draws differ when fused.
+  `test_settings` checks `ladx_settings` (LADXR's `settings.py` at the
+  pin, less `seed` and `forwardfactor`) through its header only: the
+  table equal to `settings.txt` in order, field by field (key, category,
+  short key, type, default, aesthetic, `visible_if`, each option's value
+  and short; a boolean's values `0` and `1`); the `key=value` parser's
+  statuses (unknown key, unknown value, malformed; a refused assignment
+  changes nothing); every `validate` line of `settings_validate.txt`
+  replayed through the parser on fresh defaults, the settings validate
+  changed and the short string after it compared; the unsupported values
+  and the pair equal both ways to plan 3's section 2 list written out in
+  the test, every `tier1.txt` value supported alone and every other value
+  unsupported but the default of a setting `tier1.txt` leaves out; the
+  `goal-bingo` reason id a heading of `notes/plan3-scope-cuts.md`; the
+  whole-set check (defaults supported, `boomerang=default` with
+  `accessibility=all` refused as `ladxr-refuses`, supported with
+  `accessibility=goal`); and every case and combo `config.txt` parsed,
+  unchanged by validate and supported. It prints `test_settings: table
+  equal to oracle/settings.txt (<n> settings, <o> options, seed and
+  forwardfactor left out)`, `test_settings: <n> validate lines replayed
+  from oracle/settings_validate.txt (<r> rewritten), short strings
+  equal`, `test_settings: <v> values and <p> pair unsupported, as plan 3
+  section 2 lists`, `test_settings: <t> tier-1 values supported alone,
+  every other non-default value unsupported` and `test_settings: <c>
+  cases and <m> combos parse, survive validate and are supported`.
 - `make -C tests/ladx lint` (run by the root `make lint`, after
   `tests/alttp`'s): every `ladx/src` source compiled with `-pedantic-errors`
   added, then `lint: <n> ladx/ sources build with -pedantic-errors`.

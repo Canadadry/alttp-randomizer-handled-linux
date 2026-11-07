@@ -19,7 +19,9 @@ in `docs/`, then `README.md`.
   spoiler JSON, the playthrough, the output, and the generator's `main`
   (`host/main/rando_gen.c`).
 - `ladx/` is LADX's C library (Phase 3): `include/` its public headers,
-  `src/` its sources (`sha512.c`, `pyrandom.c`, CPython's `random.Random`);
+  `src/` its sources (`sha512.c`, `pyrandom.c`, CPython's `random.Random`;
+  `settings.c`, LADXR's settings table, parsing, `validate`, short string
+  and the unsupported values and pair with their reason ids);
   pure C99 like `alttp/`, built with only `ladx/include` on the include path,
   never including `alttp/` or `app/`.
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
