@@ -32,7 +32,11 @@ in `docs/`, then `README.md`.
   `test_world_setup`; `itempool.c`, `ItemPool` with Python's dict order,
   `ladx_itempool.h`, tested by `test_itempool`; `placer.c`,
   `RandomItemPlacer`, `ladx_placer_*` in `ladx_randomizer.h`, tested by
-  `test_fill`; contract in `tests/ladx/README.md`, "Unit tests and lint");
+  `test_fill`; `wlog.c`, the write-log builder `ladx_wlog.h`, tested by
+  `test_wlog`; `tables.c`, the patch tables' reader, key, walk, records
+  and applier, `ladx_tables.h`, tested by `test_tables`, contract in
+  `tests/ladx/README.md`, "Table application"; contract in
+  `tests/ladx/README.md`, "Unit tests and lint");
   pure C99 like `alttp/`, built with only `ladx/include` on the include path,
   never including `alttp/` or `app/`. `ladx/host/` is host-side code on top
   of it (C99, stdio allowed, `ladx/include` and itself on the include path):

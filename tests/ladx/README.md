@@ -278,6 +278,79 @@ goldens by `gen_golden.sh` like any case. A sample mismatch in
 runs under `tmp/ladx-tables/`); `gen_tables.sh --check` rebuilds them with
 another hash seed on a fresh clone and compares every file byte for byte.
 
+## Table application
+
+The library applies `data/ladx/` (above) with no allocation, no file
+access and no stdio: the caller hands it the files' text.
+
+**Opening** (`ladx_tables.h`, `ladx_tables_open`): `order.txt` and the
+group files as byte spans the caller owns and keeps alive; the library
+indexes them into a caller-owned `LadxTables` and copies no payload. It
+checks what C relies on, not everything `tables.py check` checks: the
+version lines, `section`, `table` and `C` rows, each group file's `group`
+and `tables` lines (every group file's identical: it is the write log's
+`tables` line), `unit` lines (a component a setting key, one of the 0/1
+`asm:` constants below or `count`, none repeated), `E` lines with one
+value per component (`""` or a name), each entry's `B` and `T` records
+(write-log v1 tokens, a known table, a canonical offset or index key) or
+`nothing`, every file ending with a newline. A `table` row whose group
+has no file, a unit missing from its group file, a repeated unit or
+group, or a capacity exceeded is an error. An error has a status
+(`ladx_tables_status_name`: `bad-version`, `bad-line`, `bad-component`,
+`bad-values`, `bad-token`, `tables-differ`, `dup-group`, `dup-unit`,
+`no-group-file`, `no-unit`, `overflow`, `no-entry`, `buffer`, `range`),
+the caller's file name and the 1-based line; nothing is half-opened.
+Capacities: 16 groups, 256 units, 512 `order.txt` rows, 2048 entries, 12
+components per unit (today 5, 91, 147, 676 and 6).
+
+**Key.** From validated, supported settings and the spot count: a
+setting renders `ladx_setting_value_name`'s name, `""` for the empty
+string (a setting outside tier 1, `overworld` or `shopsanity`, at its
+validated value); `asm:<NAME>` is `0` or `1` as `generateRom`'s
+`assembler.const` rows compute it: `HARD_MODE` (`hardmode` not `none`),
+`DUNGEON_CHAIN` (`overworld` `dungeonchain`), `ITEM_DIALOGS` (`textmode`
+not `notextbox`), `KEYSANITY_KEYS`, `KEYSANITY_NIGHTMARE_KEYS`,
+`KEYSANITY_BEAKS`, `KEYSANITY_MAPS` (`dungeon_keys`, `nightmare_keys`,
+`dungeon_beaks`, `dungeon_maps` `keysanity`); `INV_SIZE` is no component.
+`count` is decimal: `ladx_tables_spot_count`, the finished logic's spots
+whose kind is not exactly `KeyLocation`, `addFrameCounter`'s argument.
+
+**Walk** (`ladx_tables_walk_*`), as `tables.select`: at a `table` row
+that starts its unit, a step with the group, the unit and the entry the
+key selects (`ladx_tables_select`); a later row of the same unit, nothing;
+at a `C` row, a step with its group and call and no entry. A unit with no
+entry for the key stops the walk with `no-entry`, its unit id and the
+key's values as an `E` line writes them: never a skip.
+
+**Records** (`ladx_tables_records_*`): an entry's records in order, each
+`B <offset>` or `T <table> <key>` (an index or an alt key), its payload
+decoded into the caller's buffer as atoms (a source reference q as q,
+keep tokens resolved to the record's own offsets; a literal b as
+`-1 - b`) or an integer pointer; a payload over the buffer is `buffer`.
+**Applier** (`ladx_tables_apply`): a `B` record's bytes written onto the
+output ROM, each a literal or the source ROM's byte at its reference
+(never the output's); an offset beyond the output or a reference beyond
+the source is `range`, nothing written; a `T` record writes nothing (the
+tables reach the ROM through `save`).
+
+**Write log** (`ladx_wlog.h`): `ladx_wlog_begin` writes `ladx-rom-writes
+1` and the `tables` line; each `ladx_wlog_bank`, `ladx_wlog_table` or
+`ladx_wlog_pointer` record of a group merges into the open segment when
+it is the same group, else closes it and opens the group's; the segment
+keeps its net effect (bank bytes last write wins, a table entry replaced
+whole). Closing renders `G <group>`, then `B` records over maximal runs
+of contiguous offsets, then `T` records in table order, index keys
+ascending before alt keys in byte order, with `write_log.render`'s
+canonical tokens ("`rom_writes.txt`, version 1"); a segment with no
+record is never written, and no `I` line ever. Text goes to the caller's
+sink in pieces, so no buffer bounds a record. Capacities per open
+segment: 32768 bank bytes, 4096 table entries, 65536 table atoms (a
+replaced entry's atoms reclaimed first; today's largest table-group
+projections 9,953 bank bytes, 1,035 entries and 34,094 table bytes); an
+overflow is returned by that call and every later one. A refused record
+(an empty bank record, a literal over `ff`, a bad name, table or alt key)
+changes nothing.
+
 ## Extraction fixtures
 
 `extract/` holds the source ROM's structure that the inventory's
@@ -460,7 +533,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -572,6 +645,44 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   ...` on the first mismatch), then prints `test_fill: <n> runs of
   oracle/fill_outcomes.txt replayed, same outcome and fill projection
   (<o> ok, <e> error, <c> crash)`; about 4 s on the host.
+  `test_wlog` checks the write-log builder (`ladx_wlog.h`, "Table
+  application" below) on synthetic segments, each expected text written
+  once by `write_log.render` on the same net maps: touching records
+  merged into one `B`, a copy on its own offsets as `=n`, continuing
+  references merged, adjacent literals joined, the last write winning, a
+  write back to its own source byte kept as `=1`, `T` order (table
+  order, index keys ascending, alt keys after in byte order), a pointer
+  entry, an overwritten entry, a group change closing the segment, a
+  record longer than any internal buffer, an empty log's two header
+  lines; refused records (an empty bank record, a literal over `ff`, a
+  bad name, table or alt key) leaving the log unchanged with no segment;
+  and each capacity's overflow (bank bytes, entries, atoms, a replaced
+  entry's atoms reclaimed first) returned by every later call. It prints
+  `test_wlog: write_log.render's texts of synthetic segments, refused
+  records and overflows (<c> checks)`.
+  `test_tables` checks `ladx_tables.h` on synthetic tables: a walk
+  interleaving `table` and `C` rows (a `C` step's call), a fused unit
+  yielded once at its first row, `nothing`, `""`, booleans, `count`, a
+  setting outside tier 1 at its validated value, each 0/1 `asm:` constant
+  flipped by one setting, `no-entry` with its unit, values, file and
+  line; open errors with their file and line (version lines, unknown or
+  repeated components, a unit missing from its group file, a group with
+  no file, a repeated unit or group, value counts, bad tokens, differing
+  `tables` lines, misplaced lines, a file not ending with a newline, one
+  unit over capacity); records decoded into atoms (`=n`, `@q+n`,
+  literals, a pointer, an alt key, a payload over the caller's buffer);
+  the applier (bytes copied from the source, never the output; `T`
+  records and refused records write nothing); and the spot count on a
+  hand-built graph with `KeyLocation` spots and an unreached one. Then
+  it opens the real
+  `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
+  file): 5 groups, 91 units, 676 entries, one unit keyed by `count`; and
+  for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
+  supported, every unit without `count` selects an entry. It prints
+  `test_tables: data/ladx opened (5 groups, 91 units, 676 entries); <n>
+  cases and <m> combos select <e> entries`, then `test_tables: synthetic
+  walks, keys, open errors, records, applier and spot count (<c>
+  checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
