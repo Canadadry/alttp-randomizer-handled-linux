@@ -1,4 +1,4 @@
-.PHONY: help test lint logic unit-arm rom-check rom-check-selftest
+.PHONY: help test lint logic unit-arm selftest e2e e2e-combos rom-check rom-check-selftest
 
 CC ?= gcc
 # -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
@@ -21,9 +21,15 @@ UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 SUPPORT_OBJ := $(BUILD)/support.o
 LOGIC_FIXTURE_OBJ := $(BUILD)/logic_fixture.o
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
+MAIN_SRC := $(wildcard $(LADX)/host/main/*.c)
+GEN := $(BUILD)/ladx_gen
+GEN_DIR := $(BUILD)/gen
+GEN_OBJ := $(patsubst $(LADX)/src/%.c,$(GEN_DIR)/%.o,$(LADX_SRC)) \
+	$(patsubst $(LADX)/host/%.c,$(GEN_DIR)/host/%.o,$(HOST_SRC))
 LINT_DIR := $(BUILD)/lint
 LINT_OBJ := $(patsubst $(LADX)/src/%.c,$(LINT_DIR)/%.o,$(LADX_SRC)) \
-	$(patsubst $(LADX)/host/%.c,$(LINT_DIR)/host/%.o,$(HOST_SRC))
+	$(patsubst $(LADX)/host/%.c,$(LINT_DIR)/host/%.o,$(HOST_SRC)) \
+	$(patsubst $(LADX)/host/main/%.c,$(LINT_DIR)/host/main/%.o,$(MAIN_SRC))
 
 TOOLCHAIN := ../../onion-toolchain.sh
 ONION_CFLAGS := -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve
@@ -39,8 +45,21 @@ help:
 	@echo "make logic             LADX's LOGIC_TESTS run with --fixtures from tests/ladx: the oracle's logic fixtures replayed"
 	@echo "make lint              every ladx/ source, ladx/host/ included, built as strict ISO C99 (-pedantic-errors)"
 	@echo "make unit-arm          LADX's unit tests built by Onion's toolchain (-ffp-contract=off kept) and run under qemu-arm from tests/ladx (needs docker, qemu-user)"
-	@echo "make rom-checkthe generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
+	@echo "make selftest          the e2e driver run_e2e.py's self-test on planted runs and fake generators"
+	@echo "make e2e               build/ladx_gen on every case of cases/ (or CASES=\"a b\"), its run.txt's stage projection diffed against the golden's at claims.txt's stage"
+	@echo "make e2e-combos        the same on every case of combos/"
+	@echo "make rom-check          the generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
 	@echo "make rom-check-selftest rom_check.py's self-test alone: a synthetic ROM, a planted case tree and fake generators, no ROM"
+
+selftest:
+	@python3 -I -B run_e2e.py --self-test
+
+e2e: $(GEN)
+	@python3 -I -B run_e2e.py --cases cases --gen $(GEN) $(CASES)
+
+e2e-combos: $(GEN)
+	@echo "e2e-combos: the combination cases"
+	@python3 -I -B run_e2e.py --cases combos --gen $(GEN) $(CASES)
 
 # Paths are repository-relative: the driver runs from the repository's root.
 rom-check:
@@ -61,7 +80,7 @@ logic: $(LOGIC_BINS)
 	@echo "logic: $(words $(LOGIC_TESTS)) LADX unit tests replayed the oracle fixtures"
 
 lint: $(LINT_OBJ)
-	@echo "lint: $(words $(LADX_SRC)) ladx/ sources and $(words $(HOST_SRC)) ladx/host/ sources build with -pedantic-errors"
+	@echo "lint: $(words $(LADX_SRC)) ladx/ sources and $(words $(HOST_SRC) $(MAIN_SRC)) ladx/host/ sources build with -pedantic-errors"
 
 # _FILE_OFFSET_BITS=64 as tests/alttp's: under qemu-arm a 32-bit readdir fails with EOVERFLOW on ext4.
 unit-arm:
@@ -110,10 +129,25 @@ $(BUILD)/test_run_text: unit/test_run_text.c unit/support.h $(SUPPORT_OBJ) $(HOS
 $(BUILD)/test_%: unit/test_%.c unit/support.h $(SUPPORT_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(LADX_LIB)
 
+$(GEN_DIR)/%.o: $(LADX)/src/%.c $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -c -o $@ $<
+
+$(GEN_DIR)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -c -o $@ $<
+
+$(GEN): $(MAIN_SRC) $(GEN_OBJ) $(HOST_HDR) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -o $@ $(MAIN_SRC) $(GEN_OBJ) -lm
+
 $(LINT_DIR)/%.o: $(LADX)/src/%.c $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors -I$(LADX)/include -c -o $@ $<
 
 $(LINT_DIR)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors -I$(LADX)/include -I$(LADX)/host -c -o $@ $<
+
+$(LINT_DIR)/host/main/%.o: $(LADX)/host/main/%.c $(HOST_HDR) $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors -I$(LADX)/include -I$(LADX)/host -c -o $@ $<

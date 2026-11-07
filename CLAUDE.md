@@ -31,7 +31,10 @@ in `docs/`, then `README.md`.
   never including `alttp/` or `app/`. `ladx/host/` is host-side code on top
   of it (C99, stdio allowed, `ladx/include` and itself on the include path):
   `run_text.c`, `run.txt`'s line renderer with CPython's `float.hex`
-  (contract in `tests/ladx/README.md`, "Unit tests and lint").
+  (contract in `tests/ladx/README.md`, "Unit tests and lint"), and
+  `main/ladx_gen.c`, the host generator `ladx_gen` (`randomizer.c`'s
+  `ladx_randomize` run on a case, its `run.txt` written; contract in
+  `tests/ladx/README.md`, "Generator `ladx_gen`").
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
   like the library, built with only `alttp/include` and itself on the include
   path, no SDL; the app opens on its game-choice screen (`ui_games.c`), A
@@ -149,6 +152,10 @@ in `docs/`, then `README.md`.
   `tests/ladx/Makefile` holds LADX's own targets (`help`, the default;
   `test`, `lint` and `logic`, run by the root `make test`, `make lint`
   and `make logic`;
+  `selftest`, `e2e` and `e2e-combos`, run by the root ones after
+  `tests/alttp`'s: LADX's e2e driver `run_e2e.py`, its claims
+  `claims.txt`, contract in `tests/ladx/README.md`, "Stage projection" and
+  "E2E driver and claims";
   `unit-arm`, `rom-check`, `rom-check-selftest`, outside the net); Phase 3
   adds its targets there.
 
@@ -675,10 +682,12 @@ in `docs/`, then `README.md`.
   contract in `tests/ladx/README.md`, "Unit tests and lint"), `logic` (unit tests replaying the oracle fixtures
   of both games: `tests/alttp`'s, then `make -C tests/ladx logic`, contract in
   `tests/ladx/README.md`, "Unit tests and lint"),
-  `selftest` (the e2e driver's own self-test), `e2e` (every case diffed
+  `selftest` (the e2e drivers' own self-tests), `e2e` (every case diffed
   against its golden, one `DIVERGENT <case>` line per failure) and
   `e2e-combos` (every combination case diffed against its golden, kept out
-  of `e2e`). Run
+  of `e2e`), each `tests/alttp`'s then LADX's (`make -C tests/ladx
+  selftest|e2e|e2e-combos`, contract in `tests/ladx/README.md`, "E2E
+  driver and claims"). Run
   `make -k check` to see every failure at once.
 - `make -C tests/alttp measure`, outside the net, gives the per-case times
   every later budget is measured against, the whole pipeline's time

@@ -1,6 +1,7 @@
 #ifndef LADX_RUN_TEXT_H
 #define LADX_RUN_TEXT_H
 
+#include "ladx_randomizer.h"
 #include "ladx_rng.h"
 
 #include <stddef.h>
@@ -27,6 +28,12 @@ size_t ladx_run_text_seed_line(char *buf, size_t cap, const uint8_t *seed, size_
 
 /* `settings <short string>`, `""` when empty; same return as ladx_run_text_trace_line. */
 size_t ladx_run_text_settings_line(char *buf, size_t cap, const char *short_string);
+
+/*
+ * `outcome ok | error <message> | crash <type> <message>`, `""` for an empty
+ * message; same return as ladx_run_text_trace_line, 0 for an UNFINISHED run.
+ */
+size_t ladx_run_text_outcome_line(char *buf, size_t cap, const LadxOutcome *outcome);
 
 /* A trace sink numbering the records from 0 and writing each line to out. */
 typedef struct LadxRunTextTrace {

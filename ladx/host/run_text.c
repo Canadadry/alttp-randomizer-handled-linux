@@ -102,6 +102,11 @@ static void put_hex(Text *t, const uint8_t *bytes, size_t size)
 		put(t, "%02x", bytes[i]);
 }
 
+static const char *field(const char *text)
+{
+	return *text ? text : "\"\"";
+}
+
 size_t ladx_run_text_trace_line(char *buf, size_t cap, unsigned long n, const LadxRngRecord *r)
 {
 	const char *gen = ladx_rng_gen_name(r->gen);
@@ -167,7 +172,28 @@ size_t ladx_run_text_settings_line(char *buf, size_t cap, const char *short_stri
 	Text t;
 
 	open_text(&t, buf, cap);
-	put(&t, "settings %s", *short_string ? short_string : "\"\"");
+	put(&t, "settings %s", field(short_string));
+	return finish(&t);
+}
+
+size_t ladx_run_text_outcome_line(char *buf, size_t cap, const LadxOutcome *outcome)
+{
+	Text t;
+
+	open_text(&t, buf, cap);
+	switch (outcome->kind) {
+	case LADX_OUTCOME_OK:
+		put(&t, "outcome ok");
+		break;
+	case LADX_OUTCOME_ERROR:
+		put(&t, "outcome error %s", field(outcome->message));
+		break;
+	case LADX_OUTCOME_CRASH:
+		put(&t, "outcome crash %s %s", outcome->type, field(outcome->message));
+		break;
+	default:
+		t.over = 1;
+	}
 	return finish(&t);
 }
 

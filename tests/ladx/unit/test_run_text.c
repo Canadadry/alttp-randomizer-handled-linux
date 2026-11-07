@@ -1,3 +1,4 @@
+#include "ladx_randomizer.h"
 #include "ladx_rng.h"
 #include "ladx_run_text.h"
 #include "support.h"
@@ -271,11 +272,48 @@ static void test_sink(void)
 		   "sink: lines numbered across both generators");
 }
 
+static void outcome_line(char *line, size_t cap, LadxOutcomeKind kind, const char *type, const char *message)
+{
+	LadxOutcome o;
+
+	o.kind = kind;
+	o.type = type;
+	o.message = message;
+	if (ladx_run_text_outcome_line(line, cap, &o) == 0)
+		test_fail(TEST, "outcome line not rendered");
+}
+
+static void test_outcome_lines(void)
+{
+	char line[LADX_RUN_TEXT_MAX_LINE];
+	LadxOutcome o;
+
+	outcome_line(line, sizeof line, LADX_OUTCOME_OK, NULL, NULL);
+	check_golden(BASELINE, "outcome ", line);
+	outcome_line(line, sizeof line, LADX_OUTCOME_ERROR, NULL, "Failed to place an item for a bunch of retries");
+	check_text(line, "outcome error Failed to place an item for a bunch of retries", "error outcome");
+	outcome_line(line, sizeof line, LADX_OUTCOME_CRASH, "IndexError", "Cannot choose from an empty sequence");
+	check_text(line, "outcome crash IndexError Cannot choose from an empty sequence", "crash outcome");
+	outcome_line(line, sizeof line, LADX_OUTCOME_CRASH, "AssertionError", "");
+	check_text(line, "outcome crash AssertionError \"\"", "crash with an empty message");
+	outcome_line(line, sizeof line, LADX_OUTCOME_ERROR, NULL, "");
+	check_text(line, "outcome error \"\"", "error with an empty message");
+
+	o.kind = LADX_OUTCOME_UNFINISHED;
+	o.type = NULL;
+	o.message = NULL;
+	check(ladx_run_text_outcome_line(line, sizeof line, &o) == 0 && line[0] == '\0',
+	      "an unfinished run has no outcome line");
+	o.kind = LADX_OUTCOME_OK;
+	check(ladx_run_text_outcome_line(line, 5, &o) == 0 && line[0] == '\0', "outcome line over capacity");
+}
+
 int main(void)
 {
 	test_float_hex();
 	test_golden_trace();
 	test_other_lines();
+	test_outcome_lines();
 	test_capacity();
 	test_sink();
 	printf("%s: float.hex as CPython's, %d golden lines rendered byte-identical, sink numbering ok (%d checks)\n",

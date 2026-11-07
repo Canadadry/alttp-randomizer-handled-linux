@@ -520,7 +520,10 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   negative `randint` bounds, a `choices` with `k` 3 and 0; a record of
   256 weights and picks fitting `LADX_RUN_TEXT_MAX_LINE`, a line over its
   buffer or an unknown method rendering nothing; and the trace sink
-  numbering lines from 0 across both generators. It prints
+  numbering lines from 0 across both generators; the `outcome` line
+  (`ok`, read from `baseline`; `error <message>`, `crash <type>
+  <message>`, `""` for an empty message; nothing for an unfinished run or
+  over its buffer). It prints
   `test_run_text: float.hex as CPython's, <g> golden lines rendered
   byte-identical, sink numbering ok (<c> checks)`.
   `test_settings` checks `ladx_settings` (LADXR's `settings.py` at the
@@ -693,7 +696,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   with `--fixtures` from `tests/ladx`, then prints `logic: <n> LADX unit
   tests replayed the oracle fixtures`.
 - `make -C tests/ladx lint` (run by the root `make lint`, after
-  `tests/alttp`'s): every `ladx/src` and `ladx/host` source compiled with
+  `tests/alttp`'s): every `ladx/src`, `ladx/host` and `ladx/host/main` source compiled with
   `-pedantic-errors` added, then `lint: <n> ladx/ sources and <h>
   ladx/host/ sources build with -pedantic-errors`.
 - `make -C tests/ladx unit-arm` (run by the root `make unit-arm`, after
@@ -712,6 +715,104 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   <n> LADX unit tests and <m> fixture replays passed under qemu-arm`; any
   failure exits
   non-zero.
+
+## Generator `ladx_gen`
+
+`ladx/host/main/ladx_gen.c`, built `-O2` (library and host objects in
+`build/gen/`) into `tests/ladx/build/ladx_gen` by `make -C tests/ladx
+e2e` and `e2e-combos`.
+
+- `ladx_gen <case_dir> <out_dir>` reads `<case_dir>/config.txt` (one
+  `key=value` per line through `ladx_settings_set`, then `validate`) and
+  `<case_dir>/seed` (32 lowercase hex digits, one optional newline),
+  refuses unsupported settings (`ladx_settings_supported`), runs
+  `ladx_randomize` (`ladx/include/ladx_randomizer.h`, `Randomizer.__init__`
+  as far as it is ported: so far the seeding and the `race` draw) with the
+  run-text trace sink, and writes `<out_dir>/run.txt` in the oracle's
+  format, already in its fill projection's form (below): `seed`,
+  `settings`, the sections of the stages ported, the trace, then the
+  `outcome` line once LADXR's outcome is known (none while the run stops
+  at the end of the ported stages, `LADX_OUTCOME_UNFINISHED`).
+- `ladx_gen --time <case_dir>` runs the same with no sink and prints only
+  the run's elapsed microseconds (`CLOCK_MONOTONIC`), no file.
+- Exit 0 with the file written, whatever LADXR's outcome (it is in the
+  file); 2 on a usage error, a malformed or missing input, unsupported
+  settings (`ladx_gen: unsupported settings: <reason id>`) or a broken run
+  (`LADX_RANDOMIZE_BROKEN`, a C bug); 1 on an I/O failure. Messages go to
+  stderr, prefixed `ladx_gen: `.
+
+## Stage projection
+
+A run's stage projection keeps the lines of `run.txt` a stage claims, in
+file order (`run_e2e.py`'s `project`, the one definition). Stages, in
+order: `init`, `ws`, `pool`, `fill`.
+
+- Sections: `init` keeps `seed` and `settings`; `ws` adds the `ws` lines;
+  `pool` adds `words_before`, `pool`, `words_after` and `placer_pool`;
+  `fill` adds the `place` lines.
+- Trace: the longest prefix of the `trace` lines whose stage (the 4th
+  field) is in the stage's set: `init` `randomizer:Randomizer.__init__`;
+  `ws` adds `worldSetup:WorldSetup.randomize` and `patches.maze:buildMaze`;
+  `pool` adds `itempool:ItemPool.__randomizeRupees`; `fill` adds
+  `randomizer:RandomItemPlacer.run`, `.placeSpecificItem` and
+  `.__placeItem`. A trace line of the `fill` set after the `fill`
+  prefix makes the file malformed.
+- Outcome: the `outcome` line is kept at a stage exactly when that
+  stage's completion marker is absent (`init`: no `ws` line; `ws`: no
+  `words_before`; `pool`: no `placer_pool`; `fill`: no `place` line), i.e.
+  LADXR stopped in that stage or before it. An ok golden's `outcome ok`
+  belongs to the whole run and is never claimed by these stages.
+- Everything else (`rom_sha1`, `spoiler_sha1`, `rom none`, `spoiler none`,
+  the trace of `generateRom` and the spoiler) is in no stage. Any other
+  line kind, a second `outcome` or a trace line with fewer than 5 fields
+  is malformed.
+- The projection is idempotent; the driver projects C's `run.txt` too,
+  so lines C writes beyond the claimed stage never fail a case.
+
+## E2E driver and claims
+
+`tests/ladx/claims.txt` holds one `stage <name>` line (one of the four
+stages; blank lines and `#` comments skipped) that applies to every case
+of the directory run, cases and combos alike. An unknown stage, a second
+`stage` line, no `stage` line or any other line exits 2. Stage claimed
+now: `init`.
+
+`python3 -I -B tests/ladx/run_e2e.py [--cases <dir>] [--claims <file>]
+[--gen <binary>] [<case>...]` (defaults `tests/ladx/cases`,
+`tests/ladx/claims.txt`, `tests/ladx/build/ladx_gen`) projects every
+golden first (a missing or malformed golden, an unknown named case: exit
+2), then runs `<gen> <case_dir> <out_dir>` per case (the named ones only
+when given), sorted by name, in parallel, each in a fresh temporary
+directory, 120 s each, and prints per case `PASS <case> (<stage>)` or
+`DIVERGENT <case>` followed by indented detail lines: the first differing
+projection line as `<section>: line <n>:` (`n` counted in the
+projection), `golden: <line>`, `c: <line>` (`<end>` past the end); or
+`c generator exited <code>` and the first lines of its stderr; `c wrote no
+run.txt`; `c run.txt malformed: <reason>`; `c generator timed out after
+<s> s`; `no C generator: <path>` (every case, when the binary is
+missing). Then `e2e: <p> pass, <d> divergent`; exit 0, 1 when a case is
+divergent, 2 on a usage, claims or golden-format error.
+
+`run_e2e.py --self-test` builds planted case trees from `cases/baseline`'s
+golden and fake generators (Python scripts copying a planted `run.txt`)
+and checks 18 verdicts: identical, a changed `generateRom` trace line, a
+changed `rom_sha1` or `spoiler_sha1`, a claim at `ws` with a changed
+`place` line, and a claim at `init` with C stopping after the seeding
+(no outcome line) each `PASS`; a changed `place` line, a changed
+fill-stage trace line, C's trace one line short, one extra C fill-stage
+trace line, a changed `ws` line, a non-zero exit, no `run.txt`, no
+generator, a claim at `init` with C's `outcome ok` and no `ws` line, and
+a golden `outcome error` with no `place` against C's places each
+`DIVERGENT`; a golden fill-stage line after a `generateRom` line and an
+unknown claimed stage each exit 2. It prints `e2e: self-test, 18 planted
+runs as expected`, else one `e2e: self-test failed: <case> (expected
+<v>, got <w>)` line each, exit 1.
+
+`make -C tests/ladx selftest` runs the self-test; `make -C tests/ladx e2e
+[CASES="<case> ..."]` builds `ladx_gen` and runs the driver on `cases/`;
+`e2e-combos` prints `e2e-combos: the combination cases`, then runs it on
+`combos/`. The root `make selftest`, `e2e` and `e2e-combos` run
+`tests/alttp`'s target, then LADX's.
 
 ## Full-ROM check
 

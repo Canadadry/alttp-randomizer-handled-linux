@@ -101,7 +101,7 @@
     - [x] Chunk 7: every configuration and explorer vector
   - [ ] Step 3.4 Item pool and fill
     - [x] Chunk 1: traced generator and run.txt renderer
-    - [ ] Chunk 2: ladx_gen, e2e driver and the init claim
+    - [x] Chunk 2: ladx_gen, e2e driver and the init claim
     - [ ] Chunk 3: world setup and maze: the ws claim
     - [ ] Chunk 4: item pool: the pool claim
     - [ ] Chunk 5: item placer: the fill claim

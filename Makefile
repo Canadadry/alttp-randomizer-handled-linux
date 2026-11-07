@@ -14,9 +14,9 @@ help:
 	@echo "make ui-cli         builds tests/alttp/build/ui_cli, the agent's text view of the app"
 	@echo "make lint           alttp/, ladx/ and app/ built as strict ISO C99 (-pedantic-errors)"
 	@echo "make logic          unit tests replaying the oracle fixtures of both games (tests/alttp/oracle, tests/ladx/oracle)"
-	@echo "make selftest       the e2e driver's own self-test"
-	@echo "make e2e            every case of tests/alttp/cases diffed against its golden"
-	@echo "make e2e-combos     every case of tests/alttp/combos diffed against its golden, kept out of e2e"
+	@echo "make selftest       the e2e drivers' own self-tests (tests/alttp, then tests/ladx)"
+	@echo "make e2e            every case of tests/alttp/cases, then tests/ladx/cases, diffed against its golden"
+	@echo "make e2e-combos     every case of tests/alttp/combos, then tests/ladx/combos, diffed against its golden, kept out of e2e"
 	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make unit-arm       every unit test of both games (tests/alttp, tests/ladx) on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
@@ -84,12 +84,15 @@ logic:
 
 selftest:
 	$(MAKE) -C tests/alttp selftest
+	$(MAKE) -C tests/ladx selftest
 
 e2e:
 	$(MAKE) -C tests/alttp e2e
+	$(MAKE) -C tests/ladx e2e
 
 e2e-combos:
 	$(MAKE) -C tests/alttp e2e-combos
+	$(MAKE) -C tests/ladx e2e-combos
 
 # Outside the net: needs docker and qemu-user.
 e2e-arm:
