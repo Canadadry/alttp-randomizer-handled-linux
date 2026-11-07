@@ -228,4 +228,43 @@ LadxEntrancesStatus ladx_entrances_change(LadxEncoder *enc, LadxSpan group, Ladx
 					  const LadxEntranceInfo *info, size_t count, const int *mapping,
 					  LadxOutcome *raised);
 
+/*
+ * The bosses group (patches/enemies.py changeBosses on the world setup's
+ * boss_mapping, then changeMiniBosses on its miniboss_mapping;
+ * tests/ladx/README.md, "Pipeline"), with data/ladx/bosses.txt's assembled
+ * patches (3 units). Needs p->rom; draws nothing; returns 0 with p->raised
+ * set where LADXR raises, 0 alone on a room it cannot load or store.
+ */
+int ladx_group_bosses(LadxEncoder *enc, LadxPipeline *p);
+
+/* changeBosses' assembled instructions, each written whole with its operand replaced (bosses.txt units 2 and 3). */
+typedef struct LadxBossesAsm {
+	uint8_t genie[2];	 /* bank 4 0x0521: ld [hl], $91 */
+	uint8_t eagle_check[2];	 /* bank 2 0x1FC8: cp n */
+	uint8_t fish_flag[3];	 /* bank 3 0x1A0F: ld hl, nn */
+	uint8_t eagle_flag[3];	 /* bank 3 0x1A04: ld hl, nn */
+	uint8_t facade[3][2];	 /* bank 4 0x121D, 0x1226, 0x127F: cp $00 */
+} LadxBossesAsm;
+
+#define LADX_BOSS_ROOM_COUNT 9
+
+/* enemies.py BOSS_ROOMS[dungeon] at the pin; -1 out of range. */
+int ladx_boss_room(int dungeon);
+/* MINIBOSS_ROOMS of miniboss_mapping's key i (ladx_miniboss_key's order); -1 out of range. */
+int ladx_miniboss_room(int key);
+
+typedef enum LadxBossesStatus {
+	LADX_BOSSES_OK = 0,
+	LADX_BOSSES_RAISED, /* LADXR's KeyError or IndexError: *raised filled */
+	LADX_BOSSES_FAILED  /* a mapping value out of range, a room that does not load or store, the encoder refused */
+} LadxBossesStatus;
+
+/* changeBosses(rom, mapping), mapping LADX_BOSS_ROOM_COUNT targets 0..8; room is the scratch the rooms are edited in. */
+LadxBossesStatus ladx_bosses_change(LadxEncoder *enc, LadxSpan group, LadxRoom *room, const LadxBossesAsm *code,
+				    const int *mapping, LadxOutcome *raised);
+
+/* changeMiniBosses(rom, mapping) after its fixed patches (bosses.txt unit 1, the caller's), mapping LADX_MINIBOSS_KEY_COUNT minibosses. */
+LadxBossesStatus ladx_minibosses_change(LadxEncoder *enc, LadxSpan group, LadxRoom *room, const LadxMiniboss *mapping,
+					LadxOutcome *raised);
+
 #endif

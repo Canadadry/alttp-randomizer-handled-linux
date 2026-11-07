@@ -811,21 +811,40 @@ def const_group(group, order, components, runs, own, rom, known, variants=False)
     return tables.render(tables.Group(group, list(order), units))
 
 
-def calls_group(group, order, runs, owns, rom, known):
+def _kept(group, k, events, keep):
+    """events' bank writes inside keep [(absolute offset, length)], each range required whole;
+    TablesPlanError on a write straddling a range's edge or a range not written whole."""
+    kept = []
+    for start, n in keep:
+        inside = [e for e in events if e[0] == "B" and start <= e[1] and e[1] + len(e[2]) <= start + n]
+        if any(e[0] == "B" and e[1] < start + n and start < e[1] + len(e[2]) and e not in inside
+               for e in events):
+            raise TablesPlanError("%s: call %d straddles B %x+%x" % (group, k, start, n))
+        if set(_net(inside)) != {("B", start + i) for i in range(n)}:
+            raise TablesPlanError("%s: call %d never writes B %x+%x" % (group, k, start, n))
+        kept += inside
+    return [e for e in events if e in kept]
+
+
+def calls_group(group, order, runs, owns, rom, known, keeps=None):
     """The text of a C group's constants file in calls mode: runs [[write]], one per call in
     order, owns [[("T", table, key) or ("B", offset)]] each call's writes C makes itself, left
-    out and required. Each call's other writes form its own unit <group>.<k+1>, no component,
-    one entry (`nothing` when empty); there is no fixed unit. TablesPlanError on an own write a
-    call misses."""
+    out and required; keeps, per call, None or [(absolute offset, length)], the only bank ranges
+    its unit keeps (_kept). Each call's other writes form its own unit <group>.<k+1>, no
+    component, one entry (`nothing` when empty); there is no fixed unit. TablesPlanError on an
+    own write a call misses."""
     rom = _IndexedRom(rom)
     units = []
-    for k, (events, own) in enumerate(zip(runs, owns), 1):
+    keeps = keeps or [None] * len(runs)
+    for k, (events, own, keep) in enumerate(zip(runs, owns, keeps), 1):
         for o in own:
             if not any(e[:len(o)] == tuple(o) for e in events):
                 raise TablesPlanError("%s: call %d never writes %s" % (
                     group, k, " ".join(o[:1] + tuple("%x" % x if isinstance(x, int) else x
                                                      for x in o[1:]))))
         kept = [e for e in events if not any(e[:len(o)] == tuple(o) for o in own)]
+        if keep is not None:
+            kept = _kept(group, k, kept, keep)
         unit = tables.Unit("", [], [tables.Entry([], _const_records(_net(kept), rom, known, order),
                                                  {}, {})])
         unit.id = "%s.%d" % (group, k)
@@ -838,8 +857,8 @@ class ConstSpec:
     LADXR's files): call, its text evaluated in generator.py's namespace with the seed-dependent
     arguments None; components, ordered as a unit's; own, the writes C makes itself; variants,
     the dotted name of the module whose one choice the call draws (no component), or None;
-    calls, a list of (call, own) run once each with no component (calls_group), call and own
-    then unused."""
+    calls, a list of (call, own) or (call, own, keep) run once each with no component
+    (calls_group), call and own then unused."""
 
     def __init__(self, call, components, own, variants=None, calls=None):
         self.call, self.components, self.own, self.variants = call, components, own, variants
@@ -891,6 +910,20 @@ def _items_calls():
     return calls
 
 
+def _bosses_calls():
+    """bosses' calls: changeMiniBosses' fixed patches; changeBosses' genie patch and eagle check
+    (identity); its fish and eagle flags and facade patches (a mapping placing all three)."""
+    bank = BANK_SIZE
+    return [
+        ("patches.enemies.changeMiniBosses(rom, {})", []),
+        ("patches.enemies.changeBosses(rom, list(range(9)))", [],
+         [(4 * bank + 0x0521, 2), (2 * bank + 0x1FC8, 2)]),
+        ("patches.enemies.changeBosses(rom, [3, 6, 5, 0, 4, 2, 1, 7, 8])", [],
+         [(3 * bank + 0x1A0F, 3), (3 * bank + 0x1A04, 3), (4 * bank + 0x121D, 2),
+          (4 * bank + 0x1226, 2), (4 * bank + 0x127F, 2)]),
+    ]
+
+
 def variant_runs(module, call):
     """[call()'s result], one per element of the sequence call draws from module.choice, the
     k-th with that choice returning the k-th element; module.choice restored after.
@@ -932,6 +965,7 @@ CONST_GROUPS = {
         + [("patches.goal.setSpecificInstruments(rom, %r)" % lst, _GOAL_TEXT)
            for lst in _specific_lists()])),
     "items": ConstSpec(None, [], [], calls=_items_calls()),
+    "bosses": ConstSpec(None, [], [], calls=_bosses_calls()),
 }
 ASM_CONSTS_GROUP = "asm-consts"
 BANK_SIZE = 0x4000
@@ -1022,8 +1056,8 @@ def const_runs(spec, model, statements, rom_path, table_names):
     if spec.calls:
         (values, witness), = found
         runs = []
-        for call, _ in spec.calls:
-            runs.append(one(witness, call))
+        for c in spec.calls:
+            runs.append(one(witness, c[0]))
         return runs
     runs = []
     for values, witness in found:
@@ -1044,7 +1078,8 @@ def const_files(model, inventory_text, rom_path, rom, known, table_names):
         runs = const_runs(spec, model, statements, rom_path, table_names)
         if spec.calls:
             files["%s.txt" % group] = calls_group(group, table_names, runs,
-                                                  [own for _, own in spec.calls], rom, known)
+                                                  [c[1] for c in spec.calls], rom, known,
+                                                  [c[2] if len(c) > 2 else None for c in spec.calls])
         else:
             files["%s.txt" % group] = const_group(group, table_names, spec.components, runs,
                                                   spec.own, rom, known,

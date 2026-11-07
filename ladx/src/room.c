@@ -127,6 +127,11 @@ static void set_warp(LadxRoomObject *o, int warp_type, int map_nr, int room_nr, 
 	o->target_y = target_y;
 }
 
+void ladx_room_warp(LadxRoomObject *o, int warp_type, int map_nr, int room_nr, int target_x, int target_y)
+{
+	set_warp(o, warp_type, map_nr, room_nr, target_x, target_y);
+}
+
 static LadxRoomStatus parse_objects(LadxRoom *r, const uint8_t *raw, const int32_t *origins, size_t n)
 {
 	size_t idx = 2;

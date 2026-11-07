@@ -250,7 +250,7 @@ follow the table groups' encoding rule, the fragment rule included
   `tables <table>...` (ROMWithTables' tables in their order, as in a write
   log), then its units.
 - `<group>.txt` for a `C` group, its **constants file** (today
-  `bank3e.txt`, `endscreen.txt`, `goal.txt` and `items.txt`): the settings-only writes of the
+  `bank3e.txt`, `bosses.txt`, `endscreen.txt`, `goal.txt` and `items.txt`): the settings-only writes of the
   group's call that C cannot compute (LADXR's assembler, LADXR's binary
   files), in the same format; below.
 
@@ -358,7 +358,10 @@ scope, their coincidences as references read back from the user's ROM.
 A group in **calls** mode (`ConstSpec.calls`, `calls_group`) lists
 `(call, own)` pairs, each run once on a fresh parse (no component), its
 writes less its own positions forming its own unit `<group>.<k>` in list
-order (`nothing` when empty), with no common unit. `goal` (265 units,
+order (`nothing` when empty), with no common unit. A call given as
+`(call, own, keep)` keeps only its bank writes inside `keep`'s
+`(offset, length)` ranges, every other write dropped; a range not
+written whole, or a write straddling a range's edge, is refused. `goal` (265 units,
 28,499 bytes): `goal.1` is `patchMaze(rom, [], [])` less room 6's three
 stores (entities 6, `rooms_overworld_top` 6, its overlay at bank 0x26
 0x1E0): the zeroed sign tables at bank 0x0C 0x3800..0x39FF, the egg
@@ -383,7 +386,15 @@ and 0x225 and the item byte at bank 0x19 0x072B; `items.6` keyhole
 the hook (bank 2 0x3831, bank 0x15 0x00E9); `items.8` to `items.12`
 keyholes 0x0D3, 0x0B5, 0x02B, 0x08C, 0x00E less their item byte, the
 hook and the target word (each one's handler at slot 0, bank 2
-0x3FEF). `tables.py check`
+0x3FEF). `bosses` (3 units, 74 bytes): `bosses.1` is
+`changeMiniBosses(rom, {})`, its seven fixed patches (bank 3 0x0BE0,
+bank 6 0x0533, bank 0x14 0x14AC and 0x3FE0, bank 0x36 0x14F7, 0x153B and
+0x1C14); `bosses.2` is `changeBosses(rom, list(range(9)))` kept at the
+genie's `ld [hl], $91` (bank 4 0x0521) and the eagle check `cp $06`
+(bank 2 0x1FC8); `bosses.3` is `changeBosses(rom, [3, 6, 5, 0, 4, 2, 1,
+7, 8])` kept at the fish's and the eagle's `ld hl` (bank 3 0x1A0F and
+0x1A04, their operands placeholders) and the facade's three `cp $00`
+(bank 4 0x121D, 0x1226, 0x127F). `tables.py check`
 accepts at most one such file per `C` group of the inventory (any other
 name is `EXTRA`), checks its domains and duplicates, and matches its
 units to no row.
@@ -518,7 +529,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -530,7 +541,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -719,10 +730,10 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   hand-built graph with `KeyLocation` spots and an unreached one. Then
   it opens the real
   `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
-  file): 9 groups (`bank3e.txt`, `endscreen.txt`, `goal.txt` and `items.txt` included), 394 units, 1003 entries, one unit keyed by `count`; and
+  file): 10 groups (`bank3e.txt`, `bosses.txt`, `endscreen.txt`, `goal.txt` and `items.txt` included), 397 units, 1006 entries, one unit keyed by `count`; and
   for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
   supported, every unit without `count` selects an entry. It prints
-  `test_tables: data/ladx opened (9 groups, 394 units, 1003 entries); <n>
+  `test_tables: data/ladx opened (10 groups, 397 units, 1006 entries); <n>
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
@@ -780,7 +791,7 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   reads a unit's resolved bank bytes (keep, copy and literal; inside a
   record) and gives 0 for bytes it does not all write, a unit or a group
   out of range; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `title` then `endscreen`,
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `title` then `endscreen`,
   `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
@@ -941,6 +952,33 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   multichest; a file without 12 units fails the group. It prints
   `test_items: setMultiChest and every location kind's patch on a
   synthetic ROM and planted constants (<c> checks)`.
+  `test_bosses` drives `ladx_bosses_change` and `ladx_minibosses_change`
+  on a synthetic ROM, its encoder without KS, after planted rooms (every
+  boss room with a warp, stairs, lava, D1 pits, an open door and kept
+  objects; rooms 0x1EF, 0x2F8, 0x22E, 0x22C; every miniboss room with two
+  warp entities), planted color-dungeon warp bytes and boss items, with
+  invented instruction bytes: the identity (the zero warps made 0xFF but
+  the two exempt, genie and eagle check written, no room stored); the
+  fish into D1 and D1's boss into D4 (event flags, the cleaned rooms, the
+  stairs and 0x1EF's warp back, the flag operand, the generic map made
+  `MAP1` with no origin, the second item a source copy, D4's two objects
+  and four blocks); the fish from D7 and the eagle into D4 (0x22E's warps,
+  the 0xDA2E operand, an item's identity carried, the stairs, tileset and
+  0x2F8's warp back); the eagle into the color dungeon (its flag, map
+  0xFF, the check 0xFF); the facade, the slime eel in D2 and Hot Head in
+  D7 (patches, wall tiles, rows 0 and 1 cleared, D7's map bytes, rooms
+  0x22E and 0x22C, the masked floor, door, stairs and warp); `KeyError
+  'MAP9'` and `'STONE_BEAK9'`, `IndexError` on an empty 0x1EF, a
+  malformed room and a target out of range; every miniboss special
+  (warp entities kept, Ghoma's collision but in D5, Blaino's warp in D2,
+  D8, the color dungeon and the moblin cave and not over a warp, Rolling
+  Bones' patch, written, already applied or failing, Dodongo's floor, Cue
+  Ball's platform, room 0x228 but for Grim Creeper, Hinox's entity); the
+  group in the pipeline with a planted `bosses.txt` (the world setup's
+  mappings, the units written, a file without 3 units failing) and the
+  registry (right after `entrances`, ROM, no draw). It prints
+  `test_bosses: changeBosses and changeMiniBosses on planted rooms of a
+  synthetic ROM (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1189,7 +1227,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `title` and `endscreen`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `title` and `endscreen`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1457,6 +1495,59 @@ door), and stored: objects, entities for an index room, overlay (about
 state on the stack (no allocation). It needs the ROM (`rom-group
 entrances`), draws nothing and has no `draw`.
 
+**`bosses`** (`patches.enemies.changeBosses(rom, world_setup.boss_mapping)`
+then `changeMiniBosses(rom, world_setup.miniboss_mapping)`,
+`ladx_group_bosses`), on the mappings `WorldSetup.randomize` drew in the
+fill (identity unless `boss` or `miniboss` is set), with
+`data/ladx/bosses.txt` ("Patch tables", 3 units). `ladx_bosses_change`
+takes the instructions (`LadxBossesAsm`, read with
+`ladx_pipeline_const_bank`) and the mapping, `ladx_minibosses_change`
+the miniboss mapping, so unit tests drive any mapping. `changeBosses`:
+each byte of bank 0x14 0x04E0..0x051F now 0x00 but 0x04F9 and 0x0512
+made 0xFF; the genie patch; the eagle check `cp` with the first dungeon
+mapped to 6 (0xFF when none or 8). Then per dungeon `d` whose target
+differs, in order: the **fish** (target 3) from D7 makes room 0x22E's
+warps type 2, map 3, room 0x1EF, (24, 16) and 0x1EF's last object a warp
+back (1, 6, 0x22E, 24, 16); from another dungeon, the event flag bank
+0x14 `room - 0x100` 0x2A, the cleaned boss room with stairs (4, 4, 0xBE)
+and a warp (2, 3, 0x1EF, 24, 16), and 0x1EF's last object a warp back
+(1, `d` or 0xFF, the room, 72, 80); then the fish's `ld hl` at bank 3
+0x1A0F with the boss room's status flag (0xD800 + room, 0xDDE0 - 0x300 +
+room for the color dungeon; 0xDA2E from D7), and the boss items. The
+**eagle** (6): flag 0x2A, `ld hl` at bank 3 0x1A04, the cleaned room with
+the stairs objects and a warp (2, 6, 0x2F8, 72, 80), tileset bank 0x20
+0x2EB3 + `room - 0x100` made 0, 0x2F8's last object the warp back, the
+items. Any **other**: flag 0x21, the cleaned room with the target's
+entity; the slime eel (4) sets that tileset to 0x06 and, in D2, removes
+(3, 3), (6, 3) and rows 0 and 1; the facade (5) writes its three `cp`
+patches (a second facade's are LADXR's already-applied skip: the same
+bytes). The **cleaned room** (`getCleanBossRoom`) drops warps, stairs
+0xBE and lava 0x06, makes pits 0x1C, 0x1E, 0x1F and doors 0xF5 into
+0x01, 0xAF, 0xB0 and 0xF1, keeps D4's first two objects and adds four
+blocks, empties the entities; for D7 it first edits bank 0x14's map
+bytes, room 0x22E (last object a warp to 0x223, (4, 0) removed), its
+event flag 0x12E, room 0x22C ((0, 7) and (2, 7) made 0x03), then masks
+the floor to its low nibble and adds a door, stairs and a warp to 0x22E.
+Those edits precede loading room 0x223, which they do not touch, so the
+single room scratch suffices. The **boss items**, bank 0x3E 0x3800 and
+0x3300 + room, are copied to + 0x1FF (fish) or + 0x2E8 (eagle) through
+`fixDungeonItem` (a generic map, compass, key, nightmare key or beak made
+the dungeon's own, `KeyError '<NAME>9'` for the color dungeon), with the
+read byte's origin when unchanged, none when mapped. `changeMiniBosses`:
+unit `bosses.1`, then per key in dict order (0 to 7, c1, c2, moblin
+cave, armos temple) its room keeps only its warp entities 0x61 and gets
+the miniboss's; room 0x228 loses objects at x 3..6, y 0..2 but for Grim
+Creeper; Ghoma outside D5 writes bank 3 0x034F 0xD5; Cue Ball adds its
+platform; Blaino in a room without a warp adds one to its dungeon's
+entrance (the start house by default); Dodongo drops floor tiles 0xDF;
+Rolling Bones in D3 patches bank 3 0x0372 0x84 to 0x95 (skipped when
+already 0x95, else the group fails); each room is stored. LADXR's
+`NIGHTMARE_*` targets are unreachable in tier 1 and not ported. Every
+computed byte, object and entity has no origin. A room that does not
+load or store, or a mapping out of range, fails the group; a raise ends
+the walk `RAISED`. It needs the ROM (`rom-group bosses`), draws nothing
+and has no `draw`.
+
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
 0x3E 0x2F00, then, unless `race`, the short settings string's length
@@ -1467,8 +1558,8 @@ not matter, since no two writes of the call share a position.
 ## Room editor
 
 `ladx/include/ladx_room.h`: `roomEditor.py`'s `RoomEditor` at the pin,
-for every `C` group that edits rooms (`goal`, `items`, `entrances`, and later
-`bosses`, `enemizer`, `warp-home`, `sprites`). Caller-owned (`LadxRoom`,
+for every `C` group that edits rooms (`goal`, `items`, `entrances`,
+`bosses`, and later `enemizer`, `warp-home`, `sprites`). Caller-owned (`LadxRoom`,
 about 10 KB; the pipeline holds one as `p->room`), no allocation.
 `ladx_room_load(r, enc, room, alt)` reads, from the encoder's current
 state, an index room (0..0x31F: objects from `rooms_overworld_top`
@@ -1491,7 +1582,9 @@ origin (`ladx_enc_bank_value`). The floor's and each object's type's
 origins are kept, as LADXR's parsed ints carry them. The helpers are
 LADXR's (insert, add, remove and test entities; test, change, remove and
 move objects, a warp never matching an x, y or type; `updateOverlay`),
-an overlay index Python refuses giving `RANGE`, a negative one wrapping.
+an overlay index Python refuses giving `RANGE`, a negative one wrapping;
+`ladx_room_warp` builds an `ObjectWarp`, its room offset by its map as
+LADXR's constructor does.
 `ladx_room_store(r, enc, group, new_room, new_alt)` (`-1, NULL`: its own
 room) writes, in LADXR's order, the objects entry (the header, each
 object's export, 0xFE), for an index room below 0x100 the set tileset

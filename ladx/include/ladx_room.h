@@ -73,6 +73,9 @@ LadxRoomStatus ladx_room_load(LadxRoom *r, const LadxEncoder *enc, int room, con
 /* r.store(rom, new_room_nr): new_room -1 with new_alt NULL stores under r's own room. */
 LadxRoomStatus ladx_room_store(LadxRoom *r, LadxEncoder *enc, LadxSpan group, int new_room, const char *new_alt);
 
+/* ObjectWarp(warp_type, map_nr, room_nr, target_x, target_y) into *o, room_nr offset by map as LADXR's constructor does. */
+void ladx_room_warp(LadxRoomObject *o, int warp_type, int map_nr, int room_nr, int target_x, int target_y);
+
 /* entities.insert(index, (x, y, type_id)) (index clamped as Python's); FULL when full. */
 LadxRoomStatus ladx_room_insert_entity(LadxRoom *r, size_t index, int x, int y, int type_id);
 LadxRoomStatus ladx_room_add_entity(LadxRoom *r, int x, int y, int type_id);

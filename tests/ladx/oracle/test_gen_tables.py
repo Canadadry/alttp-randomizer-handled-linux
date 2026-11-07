@@ -738,6 +738,24 @@ class ConstGroups(unittest.TestCase):
                                    [[("T", "texts", 3)], [("T", "texts", 3)]], bytes(ROM), None)
 
 
+    def test_kept_ranges_keep_only_those_bank_writes_each_required_and_never_straddled(self):
+        runs = [[("B", 0x800, b"\xF1\xF2"), ("B", 0x900, b"\xE1"), ("T", "texts", 3, b"\x01"),
+                 ("B", 0x10, b"\xF0")]]
+        text = gen_tables.calls_group("g", self.ORDER, runs, [[]], bytes(ROM), None,
+                                      keeps=[[(0x800, 2), (0x10, 1)]])
+        self.assertEqual(text, "ladx-tables 1\ngroup g\ntables texts entities\n"
+                               "unit g.1\nE\nB 10 f0\nB 800 f1f2\n")
+        with self.assertRaisesRegex(gen_tables.TablesPlanError, "call 1 never writes B 900\\+2"):
+            gen_tables.calls_group("g", self.ORDER, [[("B", 0x900, b"\xE1")]], [[]], bytes(ROM), None,
+                                   keeps=[[(0x900, 2)]])
+        with self.assertRaisesRegex(gen_tables.TablesPlanError, "call 1 straddles B 801\\+2"):
+            gen_tables.calls_group("g", self.ORDER, [[("B", 0x800, b"\xF1\xF2")]], [[]], bytes(ROM),
+                                   None, keeps=[[(0x801, 2)]])
+        self.assertIn("unit g.1\nE\nB 900 e1\n",
+                      gen_tables.calls_group("g", self.ORDER, [[("B", 0x900, b"\xE1")]], [[]],
+                                             bytes(ROM), None, keeps=[None]))
+
+
 class VariantRuns(unittest.TestCase):
     """variant_runs: a call drawing once from a module's choice, run once per element."""
 
