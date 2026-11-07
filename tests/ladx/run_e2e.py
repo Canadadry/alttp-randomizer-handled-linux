@@ -1,13 +1,15 @@
 """LADX's e2e driver: runs the C generator (ladx_gen) on every case of a directory and compares,
 per case, the golden's and C's stage projection of run.txt at the stage claims.txt names, then
 each claimed group's write-log projection (write_log.py's). --projections compares C's projection
-of every golden (ladx_gen --project) with write_log.py's, group by group. Contract in
-tests/ladx/README.md, "Stage projection" and "E2E driver and claims". Standard library only; run
-with python3 -I -B.
+of every golden (ladx_gen --project) with write_log.py's, group by group. --rom runs the same with
+the source ROM (e2e-rom): C's KS span list against known_source.build's, then every group and
+rom-group claimed. Contract in tests/ladx/README.md, "Stage projection", "E2E driver and claims"
+and "ROM-present e2e". Standard library only; run with python3 -I -B.
 """
 
 import argparse
 import concurrent.futures
+import hashlib
 import io
 import os
 import shutil
@@ -19,6 +21,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TOP = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(HERE, "oracle"))
 import write_log  # noqa: E402
+
+LADX_SHA1 = "d90ac17e9bf17b6c61624ad9f05447bdb5efc01a"
+WORK = os.path.join(TOP, "tmp", "ladx-e2e-rom")
 
 TIMEOUT = 120
 DETAIL_MAX = 200
@@ -103,31 +108,44 @@ def read_lines(path):
         return f.read().splitlines()
 
 
+class Claims:
+    """claims.txt: the stage, the group lines and the rom-group lines, in file order."""
+
+    def __init__(self, stage, groups, rom_groups):
+        self.stage, self.groups, self.rom_groups = stage, groups, rom_groups
+
+
 def read_claims(path, inventory):
-    """(stage, [group]) of claims.txt; Usage on a malformed file. The inventory (a path) is
-    read only when a group is claimed."""
+    """The Claims of claims.txt; Usage on a malformed file or a group line only the ROM can
+    verify (Evidence `rom`). The inventory (a path) is read only when a group is claimed."""
     try:
         lines = read_lines(path)
     except OSError as e:
         raise Usage("cannot read claims %s: %s" % (path, e.strerror))
     stage = None
-    groups = []
-    sides = None
+    groups, rom_groups = [], []
+    table = None
     for n, line in enumerate(lines, 1):
         text = line.strip()
         if not text or text.startswith("#"):
             continue
         fields = text.split()
-        if len(fields) != 2 or fields[0] not in ("stage", "group"):
+        if len(fields) != 2 or fields[0] not in ("stage", "group", "rom-group"):
             raise Usage("%s:%d: malformed line" % (path, n))
-        if fields[0] == "group":
-            if sides is None:
-                sides = read_sides(inventory)
-            if sides.get(fields[1]) not in ("table", "C") or fields[1] == "spoiler":
-                raise Usage("%s:%d: not a claimable group %r" % (path, n, fields[1]))
-            if fields[1] in groups:
-                raise Usage("%s:%d: group %s claimed twice" % (path, n, fields[1]))
-            groups.append(fields[1])
+        if fields[0] in ("group", "rom-group"):
+            if table is None:
+                table = read_groups_table(inventory)
+            group = fields[1]
+            side, evidence = table.get(group, (None, ()))
+            sides = ("table", "C") if fields[0] == "group" else ("C",)
+            if side not in sides or group == "spoiler":
+                raise Usage("%s:%d: not a claimable %s %r" % (path, n, fields[0], group))
+            if group in groups or group in rom_groups:
+                raise Usage("%s:%d: group %s claimed twice" % (path, n, group))
+            if fields[0] == "group" and "rom" in evidence:
+                raise Usage("%s:%d: group %s needs the ROM (its Evidence lists rom): claim it as a rom-group"
+                            % (path, n, group))
+            (groups if fields[0] == "group" else rom_groups).append(group)
             continue
         if fields[1] not in STAGES:
             raise Usage("%s:%d: unknown stage %r" % (path, n, fields[1]))
@@ -136,23 +154,45 @@ def read_claims(path, inventory):
         stage = fields[1]
     if stage is None:
         raise Usage("%s: no stage line" % path)
-    return stage, groups
+    return Claims(stage, groups, rom_groups)
 
 
-def read_sides(inventory):
+def read_groups_table(inventory):
+    """{group: (side, (evidence item, ...))} of the inventory's Groups table."""
+    import inventory_check
     try:
         with open(inventory, encoding="utf-8") as f:
-            return write_log.sides_of(f.read())
+            named, bad = inventory_check.parse_named(f.read())
     except OSError as e:
         raise Usage("cannot read inventory %s: %s" % (inventory, e.strerror))
-    except write_log.WriteLogError as e:
-        raise Usage("%s: %s" % (inventory, e))
+    if bad:
+        raise Usage("%s: %s" % (inventory, bad[0]))
+    return {row["Group"]: (row["Side"], tuple(item.strip() for item in row["Evidence"].split(",")))
+            for row in named["Groups"]}
+
+
+def source_references(segments, group):
+    """The source offsets the group's records reference (keeps and copies), in log order."""
+    refs = []
+    for name, banks, entries in segments:
+        if name != group:
+            continue
+        refs += [a for a in banks.values() if a >= 0]
+        for atoms in entries.values():
+            if isinstance(atoms, list):
+                refs += [a for a in atoms if a >= 0]
+    return refs
 
 
 def log_projections(text, groups):
     """{group: projection lines} of a write log's text for each of groups; WriteLogError when
     the log is malformed."""
-    tables, segments = write_log.parse(text)
+    return parsed_projections(write_log.parse(text), groups)
+
+
+def parsed_projections(parsed, groups):
+    """log_projections of write_log.parse's (tables, segments)."""
+    tables, segments = parsed
     net = {g: ({}, {}) for g in groups}
     for name, banks, entries in segments:
         if name in net:
@@ -168,57 +208,81 @@ def _cut(line):
     return "%s ... (%d chars)" % (line[:DETAIL_MAX], len(line))
 
 
-def compare(golden, c):
-    """None when equal, else the detail lines of the first difference."""
+def record_head(line):
+    """A write-log line with its tokens left out: the record's head and its token count."""
+    fields = line.split(" ")
+    head = {"B": 2, "T": 3}.get(fields[0])
+    if head is None or len(fields) < head:
+        return line if fields[0] in ("G", "tables", "ladx-rom-writes") else "%s (%d fields)" % (fields[0], len(fields))
+    return "%s (%d tokens)" % (" ".join(fields[:head]), len(fields) - head)
+
+
+def compare(golden, c, show=None):
+    """None when equal, else the detail lines of the first difference, each line shown through
+    show (default whole)."""
+    show = show or (lambda line: line)
     for i in range(max(len(golden), len(c))):
         g = golden[i] if i < len(golden) else None
         x = c[i] if i < len(c) else None
         if g != x:
             section = (g or x)[0]
             return ["%s: line %d:" % (section, i + 1),
-                    "  " + _cut("golden: %s" % (g[1] if g else "<end>")),
-                    "  " + _cut("c: %s" % (x[1] if x else "<end>"))]
+                    "  " + _cut("golden: %s" % (show(g[1]) if g else "<end>")),
+                    "  " + _cut("c: %s" % (show(x[1]) if x else "<end>"))]
     return None
 
 
-def compare_group(group, golden, c):
+def compare_group(group, golden, c, redact=False):
     """None when the projections' lines are equal, else the detail lines of the first
-    difference."""
-    return compare([(group, line) for line in golden], [(group, line) for line in c])
+    difference; redact: record heads only (the ROM is present)."""
+    return compare([(group, line) for line in golden], [(group, line) for line in c],
+                   record_head if redact else None)
 
 
-def run_case(gen, tables, case_dir, stage, golden, groups, golden_logs):
-    """The detail lines of a DIVERGENT case, or None when it passes."""
+def run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom=None, out_root=None):
+    """The detail lines of a DIVERGENT case, or None when it passes. With rom, the generator gets
+    --rom and writes into out_root/<case>/, the detail lines redacted."""
     if not os.path.isfile(gen) or not os.access(gen, os.X_OK):
         return ["no C generator: %s" % gen]
-    with tempfile.TemporaryDirectory(prefix="ladx-e2e-") as out_dir:
-        try:
-            proc = subprocess.run([gen, "--tables", tables, case_dir, out_dir], stdin=subprocess.DEVNULL,
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=TIMEOUT)
-        except subprocess.TimeoutExpired:
-            return ["c generator timed out after %d s" % TIMEOUT]
-        if proc.returncode != 0:
-            err = proc.stderr.decode("utf-8", "replace").splitlines()[:5]
-            return ["c generator exited %d" % proc.returncode] + ["  " + _cut(line) for line in err]
-        path = os.path.join(out_dir, "run.txt")
+    if rom is None:
+        with tempfile.TemporaryDirectory(prefix="ladx-e2e-") as out_dir:
+            return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, None, out_dir)
+    out_dir = os.path.join(out_root, os.path.basename(case_dir))
+    os.makedirs(out_dir)
+    return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir)
+
+
+def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir):
+    args = [gen, "--tables", tables] + (["--rom", rom] if rom else []) + [case_dir, out_dir]
+    try:
+        proc = subprocess.run(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return ["c generator timed out after %d s" % TIMEOUT]
+    if proc.returncode != 0:
+        err = proc.stderr.decode("utf-8", "replace").splitlines()[:5]
+        return ["c generator exited %d" % proc.returncode] + ["  " + _cut(line) for line in err]
+    path = os.path.join(out_dir, "run.txt")
+    if not os.path.isfile(path):
+        return ["c wrote no run.txt"]
+    try:
+        c = project(read_lines(path), stage)
+    except FormatError as e:
+        return ["c run.txt malformed: %s" % e]
+    detail = compare(golden, c) or []
+    if groups:
+        path = os.path.join(out_dir, "rom_writes.txt")
         if not os.path.isfile(path):
-            return ["c wrote no run.txt"]
+            return detail + ["c wrote no rom_writes.txt"]
         try:
-            c = project(read_lines(path), stage)
-        except FormatError as e:
-            return ["c run.txt malformed: %s" % e]
-        detail = compare(golden, c) or []
-        if groups:
-            path = os.path.join(out_dir, "rom_writes.txt")
-            if not os.path.isfile(path):
-                return detail + ["c wrote no rom_writes.txt"]
-            try:
-                with open(path, encoding="utf-8", errors="replace") as f:
-                    c_logs = log_projections(f.read(), groups)
-            except write_log.WriteLogError as e:
-                return detail + [_cut("c rom_writes.txt malformed: %s" % e)]
-            for group in groups:
-                detail += compare_group(group, golden_logs[group], c_logs[group]) or []
+            with open(path, encoding="utf-8", errors="replace") as f:
+                c_logs = log_projections(f.read(), groups)
+        except write_log.WriteLogError as e:
+            # With the ROM present a parse message may quote a token: its line number only.
+            reason = str(e).split(":")[0] if rom else str(e)
+            return detail + [_cut("c rom_writes.txt malformed: %s" % reason)]
+        for group in groups:
+            detail += compare_group(group, golden_logs[group], c_logs[group], rom is not None) or []
     return detail or None
 
 
@@ -234,54 +298,224 @@ def list_cases(cases_dir, names):
     return sorted(set(names))
 
 
-def run(cases_dir, claims, gen, names, out, tables, inventory):
-    """Prints the verdicts to out; returns the exit code."""
+class RomMode:
+    """e2e-rom's inputs: the ROM's path, the work root, whether KS is compared, and the two
+    injectable parts the self-test plants (the accepted SHA-1, the oracle's span list)."""
+
+    def __init__(self, rom, work=WORK, ks=True, sha1=LADX_SHA1, ks_oracle=None):
+        self.rom, self.work, self.ks, self.sha1 = rom, work, ks, sha1
+        self.ks_oracle = ks_oracle or oracle_spans
+
+
+def oracle_spans(rom):
+    """known_source.build's span list text of the ROM's bytes."""
+    import known_source
+    return known_source.spans(known_source.build(rom))
+
+
+def read_rom(path, sha1):
+    """The ROM's bytes; Usage (a setup line) when missing or of another SHA-1."""
     try:
-        stage, groups = read_claims(claims, inventory)
-        cases = list_cases(cases_dir, names)
-        goldens = {}
-        golden_logs = {}
+        with open(path, "rb") as f:
+            data = f.read()
+    except OSError:
+        raise Usage("setup: e2e-rom: no ROM at %s (tests/ladx/oracle/fetch_rom.sh fetches it)" % path)
+    digest = hashlib.sha1(data).hexdigest()
+    if digest != sha1:
+        raise Usage("setup: e2e-rom: %s is not the LADX English 1.0 ROM (SHA-1 %s)" % (path, digest))
+    return data
+
+
+def _span_label(line):
+    fields = line.split(" ")
+    if fields[0] == "failure" or len(fields) < 3:
+        return line
+    return " ".join(fields[2:])
+
+
+def compare_ks(oracle, c):
+    """The `KS DIFFERENT: line <n>: <label>` lines of two span lists, labels only."""
+    a, b = oracle.splitlines(), c.splitlines()
+    out = []
+    for i in range(max(len(a), len(b))):
+        x = a[i] if i < len(a) else None
+        y = b[i] if i < len(b) else None
+        if x != y:
+            label = _span_label(x) if x is not None else "<end>, c has %s" % _span_label(y)
+            out.append("KS DIFFERENT: line %d: %s" % (i + 1, label))
+    return out
+
+
+def ks_counts(text):
+    """(spans, distinct bytes, failures) of a span list."""
+    spans, failures, covered = 0, 0, set()
+    for line in text.splitlines()[1:]:
+        fields = line.split(" ")
+        if fields[0] == "failure":
+            failures += 1
+            continue
+        start, length = int(fields[0], 16), int(fields[1], 16)
+        spans += 1
+        covered.update(range(start, start + length))
+    return spans, len(covered), failures
+
+
+def run_ks(gen, mode, data, out):
+    """e2e-rom's KS comparison; returns 0 when equal, else 1."""
+    oracle = mode.ks_oracle(data)
+    oracle_path = os.path.join(mode.work, "ks-oracle.txt")
+    c_path = os.path.join(mode.work, "ks-c.txt")
+    with open(oracle_path, "w") as f:
+        f.write(oracle)
+    if not os.path.isfile(gen) or not os.access(gen, os.X_OK):
+        print("e2e-rom: KS: no C generator: %s" % gen, file=out)
+        return 1
+    try:
+        proc = subprocess.run([gen, "--rom", mode.rom, "--ks-spans", c_path], stdin=subprocess.DEVNULL,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        print("e2e-rom: KS: c generator timed out after %d s" % TIMEOUT, file=out)
+        return 1
+    if proc.returncode != 0 or not os.path.isfile(c_path):
+        print("e2e-rom: KS: c generator exited %d" % proc.returncode, file=out)
+        return 1
+    with open(c_path, encoding="utf-8", errors="replace") as f:
+        diffs = compare_ks(oracle, f.read())
+    for line in diffs:
+        print(line, file=out)
+    if diffs:
+        return 1
+    print("e2e-rom: KS equal, %d spans, %d bytes, %d not rebuilt" % ks_counts(oracle), file=out)
+    return 0
+
+
+def _empty(path):
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
+
+
+def load_goldens(cases_dir, cases, stage, with_logs):
+    """({case: run.txt projection}, {case: write_log.parse of rom_writes.txt}) (logs only
+    with_logs); Usage on a missing or malformed golden."""
+    goldens, logs = {}, {}
+    for case in cases:
+        path = os.path.join(cases_dir, case, "run.txt")
+        try:
+            goldens[case] = project(read_lines(path), stage)
+        except OSError:
+            raise Usage("%s: no golden run.txt" % case)
+        except FormatError as e:
+            raise Usage("%s: golden run.txt: %s" % (case, e))
+        if not with_logs:
+            continue
+        path = os.path.join(cases_dir, case, "rom_writes.txt")
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                logs[case] = write_log.parse(f.read())
+        except OSError:
+            raise Usage("%s: no golden rom_writes.txt" % case)
+        except write_log.WriteLogError as e:
+            raise Usage("%s: golden rom_writes.txt: %s" % (case, e))
+    return goldens, logs
+
+
+def check_needs_rom(claims, inventory, cases, logs):
+    """Usage when a C group claimed by a group line holds a source reference in a golden."""
+    if not claims.groups:
+        return
+    table = read_groups_table(inventory)
+    for group in claims.groups:
+        if table[group][0] != "C":
+            continue
         for case in cases:
-            path = os.path.join(cases_dir, case, "run.txt")
-            try:
-                goldens[case] = project(read_lines(path), stage)
-            except OSError:
-                raise Usage("%s: no golden run.txt" % case)
-            except FormatError as e:
-                raise Usage("%s: golden run.txt: %s" % (case, e))
-            if not groups:
-                continue
-            path = os.path.join(cases_dir, case, "rom_writes.txt")
-            try:
-                with open(path, encoding="utf-8", errors="replace") as f:
-                    golden_logs[case] = log_projections(f.read(), groups)
-            except OSError:
-                raise Usage("%s: no golden rom_writes.txt" % case)
-            except write_log.WriteLogError as e:
-                raise Usage("%s: golden rom_writes.txt: %s" % (case, e))
+            if source_references(logs[case][1], group):
+                raise Usage("group %s holds source references in %s's golden: it needs the ROM to encode, "
+                            "claim it as a rom-group" % (group, case))
+
+
+def run(cases_dir, claims, gen, names, out, tables, inventory, rom=None):
+    """Prints the verdicts to out; returns the exit code. rom: a RomMode (e2e-rom)."""
+    prefix = "e2e-rom" if rom else "e2e"
+    try:
+        claimed = read_claims(claims, inventory)
+        stage = claimed.stage
+        groups = claimed.groups + (claimed.rom_groups if rom else [])
+        cases = list_cases(cases_dir, names)
+        goldens, logs = load_goldens(cases_dir, cases, stage, bool(claimed.groups or claimed.rom_groups))
+        check_needs_rom(claimed, inventory, cases, logs)
+        golden_logs = {case: parsed_projections(logs[case], groups) for case in logs}
+        data = read_rom(rom.rom, rom.sha1) if rom else None
     except Usage as e:
-        print("run_e2e: %s" % e, file=out)
+        print(str(e) if str(e).startswith("setup:") else "run_e2e: %s" % e, file=out)
         return 2
     if not cases:
-        print("e2e: no cases", file=out)
+        print("%s: no cases" % prefix, file=out)
         return 2
-    print("e2e: claims stage %s, groups %s" % (stage, " ".join(groups) or "none"), file=out)
+    out_root = None
+    if rom:
+        _empty(rom.work if rom.ks else os.path.join(rom.work, "runs", os.path.basename(cases_dir.rstrip("/"))))
+        if rom.ks and run_ks(gen, rom, data, out):
+            return 1
+        out_root = os.path.join(rom.work, "runs", os.path.basename(cases_dir.rstrip("/")))
+        os.makedirs(out_root, exist_ok=True)
+    header = "%s: claims stage %s, groups %s" % (prefix, stage, " ".join(claimed.groups) or "none")
+    if claimed.rom_groups:
+        header += ", rom-groups %s%s" % (" ".join(claimed.rom_groups), "" if rom else " skipped")
+    print(header, file=out)
     workers = min(len(cases), os.cpu_count() or 1)
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         results = list(pool.map(lambda c: run_case(gen, tables, os.path.join(cases_dir, c), stage, goldens[c],
-                                                   groups, golden_logs.get(c)), cases))
+                                                   groups, golden_logs.get(c), rom and os.path.abspath(rom.rom),
+                                                   out_root), cases))
     divergent = 0
-    claimed = "%s + %d groups" % (stage, len(groups)) if groups else stage
+    label = "%s + %d groups" % (stage, len(groups)) if groups else stage
     for case, detail in zip(cases, results):
         if detail is None:
-            print("PASS %s (%s)" % (case, claimed), file=out)
+            print("PASS %s (%s)" % (case, label), file=out)
             continue
         divergent += 1
         print("DIVERGENT %s" % case, file=out)
         for line in detail:
             print("  " + line, file=out)
-    print("e2e: %d pass, %d divergent" % (len(cases) - divergent, divergent), file=out)
+    print("%s: %d pass, %d divergent" % (prefix, len(cases) - divergent, divergent), file=out)
     return 1 if divergent else 0
+
+
+def run_ks_groups(cases_dir, names, out, inventory, rom=None):
+    """--ks-groups: per C group without rom in its Evidence, the goldens holding source
+    references (inside and outside KS when rom, a RomMode, is given); returns the exit code."""
+    try:
+        table = read_groups_table(inventory)
+        cases = list_cases(cases_dir, names)
+        _, logs = load_goldens(cases_dir, cases, "fill", True)
+        data = read_rom(rom.rom, rom.sha1) if rom else None
+    except Usage as e:
+        print(str(e) if str(e).startswith("setup:") else "run_e2e: %s" % e, file=out)
+        return 2
+    ks = None
+    if data is not None:
+        import known_source
+        ks = known_source.build(data)
+    found = []
+    for group in sorted(g for g, (side, evidence) in table.items()
+                        if side == "C" and g != "spoiler" and "rom" not in evidence):
+        holding = [case for case in cases if source_references(logs[case][1], group)]
+        if not holding:
+            print("ks-groups: %s: no golden of %d holds a source reference" % (group, len(cases)), file=out)
+            continue
+        found.append(group)
+        line = "ks-groups: %s: %d of %d goldens hold source references, first %s" % (
+            group, len(holding), len(cases), holding[0])
+        if ks is not None:
+            inside = sum(1 for case in holding if any(q in ks for q in source_references(logs[case][1], group)))
+            outside = sum(1 for case in holding
+                          if any(q not in ks for q in source_references(logs[case][1], group)))
+            line += " (%d with references into KS, %d outside)" % (inside, outside)
+        print(line, file=out)
+    print("ks-groups: %d groups without rom in their Evidence hold source references: %s"
+          % (len(found), " ".join(found) or "none"), file=out)
+    return 0
 
 
 # --- C's projections of the goldens ----------------------------------------------------------
@@ -568,6 +802,115 @@ def _wrong_projection(projections):
     return out
 
 
+PLANTED_SPANS = "ladx-ks-spans 1\n10 4 texts 1\n12 1 boss item 3\nfailure texts bank 1\n"
+
+
+def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=None, rom=None, rom_log=None,
+                     spans=PLANTED_SPANS):
+    """run's (code, text) on one planted case tree whose fake generator writes c_log, or rom_log
+    when it receives --rom, and the planted spans for --ks-spans. rom: "ok", "other" (a ROM of
+    another SHA-1) or "missing" for e2e-rom mode, None for e2e."""
+    case = os.path.join(root, "cases", "planted")
+    os.makedirs(case)
+    shutil.copy(config, case)
+    run_path = os.path.join(case, "run.txt")
+    _write(run_path, "".join(line + "\n" for line in golden))
+    _write(os.path.join(case, "rom_writes.txt"), gold_log)
+    paths = {}
+    for name, text in (("log", c_log), ("rom-log", rom_log or c_log), ("spans", spans)):
+        paths[name] = os.path.join(root, "c-" + name)
+        _write(paths[name], text)
+    gen = os.path.join(root, "gen")
+    _write(gen, "#!%s\nimport os, shutil, sys\nargs = sys.argv[1:]\n"
+                "if '--ks-spans' in args:\n    shutil.copy(%r, args[args.index('--ks-spans') + 1])\n    sys.exit(0)\n"
+                "shutil.copy(%r, os.path.join(args[-1], 'run.txt'))\n"
+                "shutil.copy(%r if '--rom' in args else %r, os.path.join(args[-1], 'rom_writes.txt'))\n"
+           % (sys.executable, paths["spans"], run_path, paths["rom-log"], paths["log"]))
+    os.chmod(gen, 0o755)
+    claims_path = os.path.join(root, "claims.txt")
+    _write(claims_path, claims)
+    mode = None
+    if rom:
+        rom_path = os.path.join(root, "planted.gbc")
+        if rom != "missing":
+            _write(rom_path, "planted rom")
+        sha1 = hashlib.sha1(b"planted rom").hexdigest() if rom == "ok" else LADX_SHA1
+        mode = RomMode(rom_path, os.path.join(root, "work"), True, sha1, lambda data: PLANTED_SPANS)
+    out = io.StringIO()
+    code = run(os.path.join(root, "cases"), claims_path, gen, [], out, os.path.join(TOP, "data", "ladx"),
+               inventory or os.path.join(TOP, "notes", "ladx-inventory.md"), mode)
+    return code, out.getvalue()
+
+
+def _rom_checks(tmp, config, golden, golden_log):
+    """[(name, failure or None)]: rom-group lines, the two group refusals, e2e-rom mode and the KS
+    comparator."""
+    tables, segments = write_log.parse(golden_log)
+    bank3e = max(i for i, (name, _, _) in enumerate(segments) if name == "bank3e")
+    changed = _changed(tables, segments, bank3e)
+    plain = write_log.render(tables, segments)
+    with_copy = write_log.render(tables, segments + [("hints", {0x100 + i: 0x2000 + i for i in range(4)}, {})])
+    with open(os.path.join(TOP, "notes", "ladx-inventory.md"), encoding="utf-8") as f:
+        inventory = f.read()
+    row = next(line for line in inventory.splitlines() if line.startswith("| hints | C |"))
+    planted_inventory = os.path.join(tmp, "inventory.md")
+    _write(planted_inventory, inventory.replace(row, row[:-2] + ", rom |", 1))
+    fill = "stage fill\n"
+    runs = [
+        # (name, kwargs, expected verdict, a line the output must hold)
+        ("rom-group divergent in its group, skipped by e2e",
+         dict(gold_log=golden_log, c_log=changed, claims=fill + "rom-group bank3e\n"), "PASS",
+         "e2e: claims stage fill, groups none, rom-groups bank3e skipped"),
+        ("the same run claimed by e2e-rom, the generator given --rom",
+         dict(gold_log=golden_log, c_log=golden_log, rom_log=changed, claims=fill + "rom-group bank3e\n",
+              rom="ok"), "DIVERGENT", "e2e-rom: KS equal, 2 spans, 4 bytes, 1 not rebuilt"),
+        ("e2e-rom's divergent line shows the record's head only",
+         dict(gold_log=golden_log, c_log=golden_log, rom_log=changed, claims=fill + "rom-group bank3e\n",
+              rom="ok"), "DIVERGENT", " tokens)"),
+        ("e2e-rom with KS different", dict(gold_log=golden_log, c_log=golden_log, claims=fill, rom="ok",
+                                          spans=PLANTED_SPANS.replace("12 1", "12 2")),
+         "exit 1", "KS DIFFERENT: line 3: boss item 3"),
+        ("e2e-rom with a ROM of another SHA-1", dict(gold_log=golden_log, c_log=golden_log, claims=fill,
+                                                     rom="other"), "exit 2", "setup: e2e-rom: "),
+        ("e2e-rom with no ROM", dict(gold_log=golden_log, c_log=golden_log, claims=fill, rom="missing"),
+         "exit 2", "setup: e2e-rom: no ROM"),
+        ("group on a C group with no source reference",
+         dict(gold_log=golden_log, c_log=plain, claims=fill + "group hints\n"), "PASS", None),
+        ("group on a group whose Evidence lists rom",
+         dict(gold_log=golden_log, c_log=plain, claims=fill + "group hints\n", inventory=planted_inventory),
+         "exit 2", "needs the ROM (its Evidence lists rom)"),
+        ("group on a C group whose golden holds a copy",
+         dict(gold_log=with_copy, c_log=with_copy, claims=fill + "group hints\n"), "exit 2",
+         "group hints holds source references in planted's golden"),
+        ("rom-group on a table group", dict(gold_log=golden_log, c_log=golden_log,
+                                            claims=fill + "rom-group fixed\n"), "exit 2", None),
+        ("group and rom-group on one group", dict(gold_log=golden_log, c_log=golden_log,
+                                                  claims=fill + "group marin\nrom-group marin\n"), "exit 2", None),
+        ("rom-group twice", dict(gold_log=golden_log, c_log=golden_log,
+                                 claims=fill + "rom-group marin\nrom-group marin\n"), "exit 2", None),
+    ]
+    out = []
+    for k, (name, kwargs, expected, line) in enumerate(runs):
+        code, text = _planted_rom_run(os.path.join(tmp, "r%d" % k), config, golden, **kwargs)
+        got = _verdict(code, text)
+        if got == expected:
+            ok = line is None or line in text
+            out.append((name, None if ok else "expected the line %r" % line))
+        else:
+            out.append((name, "expected %s, got %s" % (expected, got)))
+    lines = PLANTED_SPANS.splitlines(True)
+    for name, c, want in (
+            ("KS comparator, equal span lists", PLANTED_SPANS, []),
+            ("KS comparator, one span changed", PLANTED_SPANS.replace("10 4", "10 5"),
+             ["KS DIFFERENT: line 2: texts 1"]),
+            ("KS comparator, one span missing", "".join(lines[:1] + lines[2:]),
+             ["KS DIFFERENT: line 2: texts 1", "KS DIFFERENT: line 3: boss item 3",
+              "KS DIFFERENT: line 4: failure texts bank 1"])):
+        got = compare_ks(PLANTED_SPANS, c)
+        out.append((name, None if got == want else "got %r" % got))
+    return out
+
+
 def self_test():
     golden = read_lines(os.path.join(HERE, "cases", "baseline", "run.txt"))
     with open(os.path.join(HERE, "cases", "baseline", "rom_writes.txt"), encoding="utf-8") as f:
@@ -593,6 +936,10 @@ def self_test():
             if got_code != code or not ("\n" + text).count("\n" + line):
                 failed.append("%s (expected exit %d and %r, got exit %d)" % (name, code, line, got_code))
         planted += projected
+        for name, failure in _rom_checks(tmp, config, golden, golden_log):
+            planted.append(name)
+            if failure:
+                failed.append("%s (%s)" % (name, failure))
     for case in failed:
         print("e2e: self-test failed: %s" % case)
     if failed:
@@ -610,6 +957,10 @@ def main(argv):
     parser.add_argument("--gen", default=os.path.join(HERE, "build", "ladx_gen"))
     parser.add_argument("--tables", default=os.path.join(TOP, "data", "ladx"))
     parser.add_argument("--inventory", default=os.path.join(TOP, "notes", "ladx-inventory.md"))
+    parser.add_argument("--rom")
+    parser.add_argument("--work", default=WORK)
+    parser.add_argument("--no-ks", action="store_true")
+    parser.add_argument("--ks-groups", action="store_true")
     parser.add_argument("case", nargs="*")
     try:
         args = parser.parse_args(argv)
@@ -619,8 +970,11 @@ def main(argv):
         return self_test()
     if args.projections:
         return run_projections(args.cases, os.path.abspath(args.gen), args.case, sys.stdout)
+    rom = RomMode(args.rom, os.path.abspath(args.work), not args.no_ks) if args.rom else None
+    if args.ks_groups:
+        return run_ks_groups(args.cases, args.case, sys.stdout, args.inventory, rom)
     return run(args.cases, args.claims, os.path.abspath(args.gen), args.case, sys.stdout,
-               os.path.abspath(args.tables), args.inventory)
+               os.path.abspath(args.tables), args.inventory, rom)
 
 
 if __name__ == "__main__":

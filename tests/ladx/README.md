@@ -438,7 +438,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -450,7 +450,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -679,6 +679,16 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   prints `test_encoder: 216 vectors of oracle/encoder_vectors.txt
   replayed byte for byte (16 hand-written, 200 random, 68 with ks
   none)`.
+  `test_pipeline` checks `ladx_pipeline.h` ("Pipeline") on synthetic
+  tables (a table group's two units around `C` rows of three groups, one
+  twice, one unregistered) and two planted groups: without a ROM only the
+  ROM-free group runs, once, at its first `C` row, its write between the
+  table entries in `order.txt`'s order; with `unit/synth_rom.c`'s ROM
+  parsed and its KS built, the group needing the ROM runs too, after it,
+  receiving the parse; a unit with no entry for the key stops the walk
+  as a tables error naming the unit; a group's failure stops it naming
+  the group; the library's registry is empty. It prints `test_pipeline:
+  <c> checks ok`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -903,6 +913,28 @@ item <room>`, a key in hex or its alt name. On the LADX ROM both give
 list derives from the ROM: it is written only under `tmp/`, never
 committed.
 
+## Pipeline
+
+`ladx/include/ladx_pipeline.h`: generateRom's walk of `order.txt` in the
+library, shared by `ladx_gen`, step 7's `ladx_assemble` and Phase 4.
+`ladx_pipeline_run` takes the opened tables, the validated settings and
+spot count (the key, "Table application"), the randomizer's result, the
+parsed ROM (`LadxPipelineRom`: bytes, `LadxRomTables` and KS; NULL for
+none), a registry of `C` groups (`{name, needs_rom, run}`, at most 32)
+and a caller-begun encoder over the same ROM. It walks `order.txt`: at
+a table unit's first row, its entry's records through
+`ladx_enc_fixed_bank`, `_table` and `_pointer` (no origins: fresh write
+identities); at a `C` row, the registered group of the row's group,
+once, at its group's first `C` row, skipped when none is registered or
+when it needs the ROM and none is given; then `ladx_enc_end`. A group's
+`run` gets the encoder, the randomizer and the parsed ROM, and returns
+1 on success. Statuses: `TABLES` (a key or record error, with its
+`LadxTablesError`), `ENCODER` (the encoder's status), `GROUP` (a run
+returned 0, the group named), `BAD_INPUT` (over 32 groups).
+`ladx_pipeline_groups` is the library's registry, in which each `C`
+group's sub-step adds its group, `needs_rom` true exactly for a
+`rom-group` of `claims.txt`; empty today.
+
 ## Generator `ladx_gen`
 
 `ladx/host/main/ladx_gen.c`, built `-O2` (library and host objects in
@@ -934,18 +966,32 @@ e2e` and `e2e-combos`.
   `<out_dir>/rom_writes.txt`: the tables of `<dir>` (`order.txt` and every
   other `.txt` file, read whole, 2 MiB in all at most; today 534,590
   bytes) opened, the key of the validated settings and the placed logic's
-  spot count, the walk ("Table application") logging each selected
-  entry's records into `ladx_wlog` under its unit's group, `C` rows
-  skipped (nothing written at them yet), so consecutive entries of one
-  group merge into one segment across them. The file is a valid version-1
-  write log holding only the table groups' segments, no `I` line; the
-  version and `tables` lines are written even when nothing else is. An
+  spot count, the library's pipeline ("Pipeline") walks `order.txt`:
+  each selected entry's records through the encoder's `fixed` calls
+  under its unit's group, and at `C` rows the library's ported groups
+  (none yet, so consecutive entries of one group merge into one segment
+  across the `C` rows). The file is a valid version-1 write log, no `I`
+  line; the version and `tables` lines are written even when nothing
+  else is. Without `--rom` the encoder has no ROM, KS or parsed tables
+  and only the groups that need no ROM run. An
   error outcome of the fill writes no `rom_writes.txt`. A tables open,
   key or walk error, or a log overflow, exits 2 with `ladx_gen: tables:
   <status> <file>:<line>` or `ladx_gen: tables: unit <id>: no entry for
   <values>` (or `write log overflow`), the partial `rom_writes.txt`
-  removed. Opening and walking the tables and writing the log adds about
-  9 ms per run on the host (slowest case, `sample-05`).
+  removed. Opening the tables and walking them through the encoder adds
+  about 12 ms per run on the host (slowest case, `sample-05`); `--rom`'s
+  read, check, parse and KS about 30 ms more.
+- `ladx_gen --tables <dir> --rom <file> <case_dir> <out_dir>` does the
+  same with the source ROM: the file is read whole and refused unless it
+  is 1 MiB with SHA-1 `d90ac17e…` (`ladx_rom_check`; else `ladx_gen:
+  --rom: not the LADX English 1.0 ROM (SHA-1 <hex>)`, the whole file's
+  digest, exit 3, as `rom-check`'s refused base; a missing file exits 2),
+  its tables parsed (`ladx_rom_tables_parse`), KS built (`ladx_ks_build`),
+  and all three given to the encoder and to every ported group. Today
+  its `rom_writes.txt` is the same as without `--rom`.
+- `ladx_gen --rom <file> --ks-spans <out>` checks and parses the ROM the
+  same way and writes C's KS span list ("KS span list") to `<out>`,
+  nothing else; exit 0, else as above.
 - `ladx_gen --time <case_dir>` runs the same with no sink and prints only
   the run's elapsed microseconds (`CLOCK_MONOTONIC`), no file.
 - `ladx_gen --project <rom_writes.txt> <out_dir>` reads the log whole (4
@@ -995,16 +1041,28 @@ order: `init`, `ws`, `pool`, `fill`.
 ## E2E driver and claims
 
 `tests/ladx/claims.txt` holds one `stage <name>` line (one of the four
-stages) and zero or more `group <name>` lines (blank lines and `#`
-comments skipped), all applying to every case of the directory run,
-cases and combos alike. A group must be in the inventory's Groups table
-(`--inventory`, default `notes/ladx-inventory.md`, read through
-`write_log.py`'s `sides_of` only when a group is claimed) with side
-`table` or `C`, and not `spoiler` (its claim is `spoiler.json`). An
+stages) and zero or more `group <name>` and `rom-group <name>` lines
+(blank lines and `#` comments skipped), all applying to every case of
+the directory run, cases and combos alike. A group must be in the
+inventory's Groups table (`--inventory`, default
+`notes/ladx-inventory.md`, its Side and Evidence columns read through
+`inventory_check.parse_named` only when a group is claimed), and not
+`spoiler` (its claim is `spoiler.json`): a `group` line's with side
+`table` or `C`, a `rom-group` line's with side `C`. A `rom-group` is a
+group that needs the ROM to encode: `e2e` and `e2e-combos` skip it (the
+header line names it, `, rom-groups <names> skipped`) and `e2e-rom`
+("ROM-present e2e") claims it. Two refusals keep a ROM-only claim out of
+a `group` line, in every mode: its group's Evidence lists `rom` (an
+item exactly `rom`), or it is a `C` group and a golden of the directory
+run holds a source reference (a keep or a copy, inside KS or not) in one
+of its records (`run_e2e: group <g> holds source references in <case>'s
+golden: it needs the ROM to encode, claim it as a rom-group`). An
 unknown stage, a second `stage` line, no `stage` line, an unknown,
-repeated or `spoiler` group or any other line exits 2. Claimed now:
-stage `fill`, groups `fixed`, `frame-counter`, `goal-fixed`,
-`music-fixed` and `options` (the five table groups).
+repeated or `spoiler` group, a group both `group` and `rom-group`, a
+`rom-group` of another side, either refusal or any other line exits 2.
+Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
+`goal-fixed`, `music-fixed` and `options` (the five table groups); no
+`rom-group` (no `C` group is ported yet).
 
 `python3 -I -B tests/ladx/run_e2e.py [--cases <dir>] [--claims <file>]
 [--gen <binary>] [--tables <dir>] [--inventory <file>] [<case>...]`
@@ -1050,9 +1108,20 @@ goldens, <d> differences from write_log.py's` (exit 1). A missing golden
 `projections: 88 goldens, 1413 group projections equal to write_log.py's`
 and `projections: 40 goldens, 655 ...`, about 5 s and 2 s.
 
+`run_e2e.py --ks-groups [--cases <dir>] [--rom <file>] [<case>...]`
+prints, per `C` group without `rom` in its Evidence (not `spoiler`),
+`ks-groups: <g>: <n> of <m> goldens hold source references, first
+<case>` (with `--rom`, the ROM checked as `e2e-rom` checks it, then `
+(<i> with references into KS, <o> outside)`, KS from
+`known_source.build`) or `ks-groups: <g>: no golden of <m> holds a source
+reference`, then `ks-groups: <k> groups without rom in their Evidence
+hold source references: <names>`; exit 0, 2 on a missing or malformed
+golden. On the 128 goldens: `bank3e`, `endscreen`, `header`, `marin` in
+all of them, `music` in 2, `hints` in none.
+
 `run_e2e.py --self-test` builds planted case trees from `cases/baseline`'s
 golden and fake generators (Python scripts copying a planted `run.txt`
-and, when planted, `rom_writes.txt`) and checks 36 verdicts. With no
+and, when planted, `rom_writes.txt`) and checks 51 verdicts. With no
 group claimed (18): identical, a changed `generateRom` trace line, a
 changed `rom_sha1` or `spoiler_sha1`, a claim at `ws` with a changed
 `place` line, and a claim at `init` with C stopping after the seeding
@@ -1079,8 +1148,24 @@ claimed, each exit 2. With `--projections`, on the baseline's
 `rom_writes.txt` and a fake generator copying planted projection files
 (3): `write_log.py`'s own projections exit 0; one projection with a
 changed `G` line, and one group's file missing, each exit 1 with a
-`PROJECTION planted` line. It prints `e2e: self-test, 36 planted runs as
-expected`, else one `e2e: self-test failed: <case> (expected <v>, got
+`PROJECTION planted` line. ROM-present and refusals (15), with a fake
+generator writing a planted log, another one when it receives `--rom`,
+and a planted span list for `--ks-spans`, a planted 11-byte ROM and its
+SHA-1 injected as the accepted one, and a planted span list as the
+oracle's: a `rom-group bank3e` whose last segment C changed `PASS`es
+under `e2e`, its header naming it skipped; the same claimed by `e2e-rom`
+(the changed log written only on `--rom`) is `DIVERGENT` after `KS
+equal, 2 spans, 4 bytes, 1 not rebuilt`, its detail lines holding `
+tokens)`; a different span list exits 1 with `KS DIFFERENT: line 3:
+boss item 3`; a ROM of another SHA-1 and no ROM exit 2 with a `setup:
+e2e-rom:` line; `group hints` (no source reference) `PASS`es; `group
+hints` with a planted inventory adding `rom` to its Evidence exits 2;
+`group hints` with a planted golden copying 4 source bytes in a `hints`
+segment exits 2 naming the case; `rom-group fixed`, `group marin` with
+`rom-group marin`, and `rom-group marin` twice each exit 2; and the KS
+comparator on equal lists (no line), one span's length changed (`line
+2: texts 1`) and one span missing (lines 2 to 4). It prints `e2e:
+self-test, 51 planted runs as expected`, else one `e2e: self-test failed: <case> (expected <v>, got
 <w>)` line each, exit 1.
 
 `make -C tests/ladx selftest` runs the self-test; `make -C tests/ladx e2e
@@ -1089,6 +1174,49 @@ then the driver on `cases/` with `--tables` the repository's `data/ladx`;
 `e2e-combos` prints `e2e-combos: the combination cases`, then runs both on
 `combos/`. The root `make selftest`, `e2e` and `e2e-combos` run
 `tests/alttp`'s target, then LADX's.
+
+## ROM-present e2e
+
+`make -C tests/ladx e2e-rom [LADX_ROM=<file>]` (default
+`tmp/ladx/base.gbc`, repository-relative; outside the net) builds
+`ladx_gen`, then runs, from the repository's root, `run_e2e.py --rom
+<file> --cases tests/ladx/cases`, then `run_e2e.py --rom <file> --no-ks
+--cases tests/ladx/combos`, both with `--tables data/ladx`; it stops at
+the first that fails, so exit 0 means KS equal and every case and combo
+passing.
+
+`run_e2e.py --rom <file> [--work <dir>] [--no-ks] [--cases <dir>]
+[--claims <file>] [--gen <binary>] [--tables <dir>] [--inventory <file>]
+[<case>...]`:
+
+- Loads the claims and the goldens as `e2e` does (both refusals
+  included), then reads the ROM: a missing file (`setup: e2e-rom: no ROM
+  at <path> ...`) or a SHA-1 other than `d90ac17e…` (`setup: e2e-rom:
+  <path> is not the LADX English 1.0 ROM (SHA-1 <hex>)`) exits 2.
+- Empties the work root (`--work`, default `tmp/ladx-e2e-rom/`; with
+  `--no-ks` only its `runs/<directory>/`).
+- Unless `--no-ks`, compares KS: `known_source.build`'s span list ("KS
+  span list") written to `<work>/ks-oracle.txt`, `<gen> --rom <file>
+  --ks-spans <work>/ks-c.txt`, the two compared line by line: one `KS
+  DIFFERENT: line <n>: <label>` line per differing line (the oracle's
+  label, or `<end>, c has <label>` past its end), exit 1, no case run;
+  else `e2e-rom: KS equal, <n> spans, <b> bytes, <f> not rebuilt` (bytes:
+  distinct offsets).
+- Runs `<gen> --tables <dir> --rom <file> <case_dir>
+  <work>/runs/<directory>/<case>` per case, in parallel, kept there,
+  claiming the stage, every `group` and every `rom-group`, with `e2e`'s
+  verdict lines prefixed `e2e-rom:`. A divergent projection line shows
+  only the record's head and its token count (`B <offset> (<k>
+  tokens)`, `T <table> <key> (<k> tokens)`; `G`, `tables` and version
+  lines whole), and a malformed C log only the parse message's line
+  number, so a C bug writing ROM bytes as literals never reaches the
+  terminal.
+
+Nothing is committed: the span lists and C's runs stay under `tmp/`;
+only counts, labels, offsets and digests are printed. With the ROM:
+`e2e-rom: KS equal, 6105 spans, 59971 bytes, 186 not rebuilt`, then
+`e2e-rom: 88 pass, 0 divergent` and `e2e-rom: 40 pass, 0 divergent`,
+about 12 s.
 
 ## Fill-outcome fixture
 

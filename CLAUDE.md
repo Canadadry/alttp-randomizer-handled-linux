@@ -41,7 +41,10 @@ in `docs/`, then `README.md`.
   `tables.c`), tested by `test_wlog`; `encoder.c`, the write-log
   encoder `ladx_encoder.h` (the C-group rule, KS-match, the fragment rule,
   table groups' atoms passed through), tested by `test_encoder`, which
-  replays `encoder_vectors.txt` with `--fixtures`; `tables.c`, the patch tables' reader, key, walk, records
+  replays `encoder_vectors.txt` with `--fixtures`; `pipeline.c`, the
+  walk of `order.txt` through the encoder with the registry of ported `C`
+  groups, `ladx_pipeline.h`, tested by `test_pipeline` (contract in
+  `tests/ladx/README.md`, "Pipeline"); `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
@@ -170,7 +173,8 @@ in `docs/`, then `README.md`.
   "E2E driver and claims";
   `unit-arm`, `measure` (the run stopped after the fill timed on every
   case, projected onto the Cortex-A7; contract in `tests/ladx/README.md`,
-  "Measure"), `rom-check`, `rom-check-selftest`, outside the net); Phase 3
+  "Measure"), `rom-check`, `rom-check-selftest`, `e2e-rom`, outside the
+  net); Phase 3
   adds its targets there. `tests/ladx/oracle/fill_outcomes.txt`, LADXR's
   fill outcomes on seeds that are not case seeds, is written only by
   `gen_fill_outcomes.py` (`--check` re-renders it), replayed by
@@ -678,6 +682,11 @@ in `docs/`, then `README.md`.
   --projections`; contract in `tests/ladx/README.md`, "E2E
   driver and claims"). Run
   `make -k check` to see every failure at once.
+- `make -C tests/ladx e2e-rom [LADX_ROM=<file>]`, outside the net (the
+  ROM, else a `setup:` line, exit 2): C's KS span list against
+  `known_source.build`'s, then `ladx_gen --rom` on every case and combo,
+  every `group` and `rom-group` of `claims.txt` claimed; contract in
+  `tests/ladx/README.md`, "ROM-present e2e".
 - `make -C tests/alttp measure`, outside the net, gives the per-case times
   every later budget is measured against, the whole pipeline's time
   (`rando_assemble` on the synthetic base) and its Cortex-A7 projection

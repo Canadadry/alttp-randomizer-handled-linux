@@ -1,4 +1,4 @@
-.PHONY: help test lint logic unit-arm selftest e2e e2e-combos measure rom-check rom-check-selftest
+.PHONY: help test lint logic unit-arm selftest e2e e2e-combos e2e-rom measure rom-check rom-check-selftest
 
 CC ?= gcc
 # -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
@@ -7,7 +7,7 @@ LADX := ../../ladx
 BUILD := build
 
 UNIT_TESTS := test_sha512 test_sha1 test_rom test_ks test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
-	test_itempool test_fill test_wlog test_tables test_encoder
+	test_itempool test_fill test_wlog test_tables test_encoder test_pipeline
 # Run again with --fixtures by make logic and unit-arm.
 LOGIC_TESTS := test_logic test_itempool test_fill test_encoder
 # Linked with the host layer ladx/host/ too.
@@ -25,7 +25,7 @@ SUPPORT_OBJ := $(BUILD)/support.o
 LOGIC_FIXTURE_OBJ := $(BUILD)/logic_fixture.o
 SYNTH_ROM_OBJ := $(BUILD)/synth_rom.o
 # Linked with the synthetic ROM builder unit/synth_rom.c.
-SYNTH_TESTS := test_rom test_ks
+SYNTH_TESTS := test_rom test_ks test_pipeline
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
 MAIN_SRC := $(wildcard $(LADX)/host/main/*.c)
 GEN := $(BUILD)/ladx_gen
@@ -55,6 +55,7 @@ help:
 	@echo "make selftest          the e2e driver run_e2e.py's self-test on planted runs and fake generators"
 	@echo "make e2e               build/ladx_gen --project's projection of every golden rom_writes.txt of cases/ compared with write_log.py's, then build/ladx_gen on every case of cases/ (or CASES=\"a b\"), its run.txt's stage projection and claimed groups' rom_writes.txt projections (tables TABLES, default data/ladx) diffed against the golden's per claims.txt"
 	@echo "make e2e-combos        the same on every case of combos/"
+	@echo "make e2e-rom           with LADX_ROM (default tmp/ladx/base.gbc): C's KS span list compared with known_source.build's, then build/ladx_gen --rom on every case of cases/ and combos/, every group and rom-group of claims.txt claimed; work in tmp/ladx-e2e-rom/; outside the net"
 	@echo "make measure           build/ladx_gen --time (the run stopped after the fill) 3 times on every case and combo, the minimum kept, projected onto the Cortex-A7; report in build/measure/report.txt; outside the net"
 	@echo "make rom-check          the generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
 	@echo "make rom-check-selftest rom_check.py's self-test alone: a synthetic ROM, a planted case tree and fake generators, no ROM"
@@ -70,6 +71,11 @@ e2e-combos: $(GEN)
 	@echo "e2e-combos: the combination cases"
 	@python3 -I -B run_e2e.py --projections --cases combos --gen $(GEN) $(CASES)
 	@python3 -I -B run_e2e.py --cases combos --gen $(GEN) --tables $(TABLES) $(CASES)
+
+# Paths are repository-relative: the driver runs from the repository's root.
+e2e-rom: $(GEN)
+	@cd $(TOP) && python3 -I -B tests/ladx/run_e2e.py --rom $(LADX_ROM) --cases tests/ladx/cases --gen tests/ladx/$(GEN) --tables data/ladx
+	@cd $(TOP) && python3 -I -B tests/ladx/run_e2e.py --rom $(LADX_ROM) --no-ks --cases tests/ladx/combos --gen tests/ladx/$(GEN) --tables data/ladx
 
 measure: $(GEN)
 	@CC='$(CC)' ./measure.sh $(GEN) $(BUILD)/measure

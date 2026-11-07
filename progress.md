@@ -126,8 +126,8 @@
       - [x] Chunk 5: encoder fixture
       - [x] Chunk 6: encoder core rules
       - [x] Chunk 7: KS-match and fragment rule
-      - [ ] Chunk 8: pipeline and ladx_gen --rom
-      - [ ] Chunk 9: driver, e2e-rom and the real-ROM run
+      - [x] Chunk 8: pipeline and ladx_gen --rom
+      - [x] Chunk 9: driver, e2e-rom and the real-ROM run
     - [ ] Step 3.6.3 bank3e
     - [ ] Step 3.6.4 title
     - [ ] Step 3.6.5 marin

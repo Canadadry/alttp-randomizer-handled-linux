@@ -1,6 +1,9 @@
 #define _POSIX_C_SOURCE 199309L
 
+#include "ladx_ks.h"
+#include "ladx_pipeline.h"
 #include "ladx_randomizer.h"
+#include "ladx_rom.h"
 #include "ladx_run_text.h"
 #include "ladx_settings.h"
 #include "ladx_tables.h"
@@ -18,12 +21,12 @@
 /* data/ladx/ in all: 534,590 bytes today. */
 #define TABLES_TEXT_MAX (2 * 1024 * 1024)
 #define TABLES_NAME_MAX 64
-#define RECORD_ATOMS_MAX 65536
 /* rom_writes.txt: 224 KiB per case at most (the goldens' budget). */
 #define LOG_TEXT_MAX (4 * 1024 * 1024)
 #define LOG_GROUPS_MAX 64
 
-static const char usage[] = "usage: ladx_gen [--tables <dir>] <case_dir> <out_dir>\n"
+static const char usage[] = "usage: ladx_gen [--tables <dir> [--rom <file>]] <case_dir> <out_dir>\n"
+			    "       ladx_gen --rom <file> --ks-spans <out>\n"
 			    "       ladx_gen --time <case_dir>\n"
 			    "       ladx_gen --project <rom_writes.txt> <out_dir>\n";
 
@@ -141,7 +144,6 @@ static size_t tables_text_len;
 static char tables_names[LADX_TABLES_GROUP_MAX][TABLES_NAME_MAX];
 static LadxTables tables;
 static LadxWlog wlog;
-static LadxAtom record_atoms[RECORD_ATOMS_MAX];
 
 /* The file's text appended to tables_text; 0 when unreadable or too large. */
 static int read_tables_file(const char *dir, const char *name, LadxTablesFile *file)
@@ -242,46 +244,51 @@ static int tables_error(const LadxTablesError *err)
 	return 0;
 }
 
-/* Every table entry the key selects, logged under its unit's group; C rows write nothing yet. */
-static int log_tables(const LadxSettings *settings, int spot_count)
+static LadxEncoder encoder;
+static LadxPipeline pipeline;
+static uint8_t rom_bytes[LADX_ROM_SIZE];
+static LadxRomTables rom_tables;
+static LadxKs ks;
+static LadxPipelineRom rom;
+
+/* The pipeline's walk into the open log: table entries and the ported C groups (with --rom, every one). */
+static int run_pipeline(const LadxSettings *settings, const LadxRandomizer *r, const LadxPipelineRom *given)
 {
-	LadxTablesWalk w;
-	LadxTablesStep step;
-	LadxTablesError err;
-	LadxWlogStatus st = LADX_WLOG_OK;
+	LadxPipelineError err;
 
-	ladx_tables_walk_init(&w, &tables, settings, spot_count);
-	while (st == LADX_WLOG_OK && ladx_tables_walk_next(&w, &step, &err)) {
-		LadxTablesRecords it;
-		LadxTablesRecord rec;
-
-		if (step.c_row)
-			continue;
-		ladx_tables_records_init(&it, &tables, &step);
-		while (st == LADX_WLOG_OK && ladx_tables_records_next(&it, &rec, record_atoms, RECORD_ATOMS_MAX, &err)) {
-			if (!rec.table_record)
-				st = ladx_wlog_bank(&wlog, step.group, rec.offset, rec.atoms, rec.n);
-			else if (rec.pointer)
-				st = ladx_wlog_pointer(&wlog, step.group, rec.table, rec.key, rec.value);
-			else
-				st = ladx_wlog_table(&wlog, step.group, rec.table, rec.key, rec.atoms, rec.n);
-		}
-		if (st == LADX_WLOG_OK && err.status != LADX_TABLES_OK)
-			return tables_error(&err);
-	}
-	if (st == LADX_WLOG_OK && err.status != LADX_TABLES_OK)
-		return tables_error(&err);
-	if (st == LADX_WLOG_OK)
-		st = ladx_wlog_end(&wlog);
-	if (st != LADX_WLOG_OK) {
-		fprintf(stderr, "ladx_gen: tables: write log %s\n", st == LADX_WLOG_OVERFLOW ? "overflow" : "bad input");
+	if (ladx_enc_init(&encoder, given ? given->bytes : NULL, given ? given->len : 0, given ? given->ks : NULL,
+			  given ? given->tables : NULL, &wlog) != LADX_ENC_OK) {
+		fprintf(stderr, "ladx_gen: tables: write log bad input\n");
 		return 0;
 	}
-	return 1;
+	pipeline.tables = &tables;
+	pipeline.settings = settings;
+	pipeline.spot_count = ladx_tables_spot_count(ladx_randomizer_placement(r));
+	pipeline.randomizer = r;
+	pipeline.rom = given;
+	pipeline.groups = ladx_pipeline_groups(&pipeline.group_count);
+	pipeline.ctx = NULL;
+	switch (ladx_pipeline_run(&pipeline, &encoder, &err)) {
+	case LADX_PIPELINE_OK:
+		return 1;
+	case LADX_PIPELINE_TABLES:
+		return tables_error(&err.tables);
+	case LADX_PIPELINE_ENCODER:
+		fprintf(stderr, "ladx_gen: tables: write log %s\n",
+			err.encoder == LADX_ENC_OVERFLOW ? "overflow" : "bad input");
+		return 0;
+	case LADX_PIPELINE_GROUP:
+		fprintf(stderr, "ladx_gen: group %s failed\n", err.group);
+		return 0;
+	default:
+		fprintf(stderr, "ladx_gen: over %d groups\n", LADX_PIPELINE_GROUP_MAX);
+		return 0;
+	}
 }
 
-/* <out_dir>/rom_writes.txt of the table groups: 0 on an I/O failure (1), -1 on a tables error (2). */
-static int write_rom_writes(const char *out_dir, const LadxSettings *settings, const LadxLogic *placement)
+/* <out_dir>/rom_writes.txt: 0 on an I/O failure (1), -1 on a tables error (2). */
+static int write_rom_writes(const char *out_dir, const LadxSettings *settings, const LadxRandomizer *r,
+			    const LadxPipelineRom *given)
 {
 	char path[MAX_PATH];
 	FileSink sink;
@@ -296,7 +303,7 @@ static int write_rom_writes(const char *out_dir, const LadxSettings *settings, c
 		return 0;
 	}
 	ok = ladx_wlog_begin(&wlog, ladx_tables_names(&tables), file_sink, &sink) == LADX_WLOG_OK &&
-	     log_tables(settings, ladx_tables_spot_count(placement));
+	     run_pipeline(settings, r, given);
 	if (fclose(sink.f) != 0)
 		sink.failed = 1;
 	if (!ok) {
@@ -310,7 +317,75 @@ static int write_rom_writes(const char *out_dir, const LadxSettings *settings, c
 	return 1;
 }
 
-static int generate(const char *case_dir, const char *out_dir, const char *tables_dir)
+/* The ROM at path into rom_bytes, checked, parsed and its KS built: 0, else the exit code (3 for another ROM). */
+static int read_rom(const char *path)
+{
+	uint8_t digest[LADX_SHA1_SIZE], buf[4096];
+	size_t n = 0, k;
+	LadxSha1 sha;
+	int i;
+	FILE *f = fopen(path, "rb");
+
+	if (!f) {
+		fprintf(stderr, "ladx_gen: --rom: cannot open %s\n", path);
+		return 2;
+	}
+	ladx_sha1_init(&sha);
+	while ((k = fread(buf, 1, sizeof buf, f)) > 0) {
+		ladx_sha1_update(&sha, buf, k);
+		if (n < sizeof rom_bytes)
+			memcpy(rom_bytes + n, buf, k < sizeof rom_bytes - n ? k : sizeof rom_bytes - n);
+		n += k;
+	}
+	ladx_sha1_final(&sha, digest);
+	if (ferror(f)) {
+		fprintf(stderr, "ladx_gen: --rom: cannot read %s\n", path);
+		fclose(f);
+		return 1;
+	}
+	fclose(f);
+	if (n != LADX_ROM_SIZE || ladx_rom_check(rom_bytes, n, digest) != LADX_ROM_OK) {
+		fprintf(stderr, "ladx_gen: --rom: not the LADX English 1.0 ROM (SHA-1 ");
+		for (i = 0; i < LADX_SHA1_SIZE; i++)
+			fprintf(stderr, "%02x", digest[i]);
+		fprintf(stderr, ")\n");
+		return 3;
+	}
+	if (ladx_rom_tables_parse(rom_bytes, n, &rom_tables) != LADX_ROM_PARSE_OK ||
+	    ladx_ks_build(&ks, rom_bytes, n, &rom_tables) != LADX_KS_OK) {
+		fprintf(stderr, "ladx_gen: --rom: the LADX ROM's tables do not parse\n");
+		return 2;
+	}
+	rom.bytes = rom_bytes;
+	rom.len = n;
+	rom.tables = &rom_tables;
+	rom.ks = &ks;
+	return 0;
+}
+
+/* C's KS span list (tests/ladx/README.md, "KS span list") into out. */
+static int write_ks_spans(const char *rom_path, const char *out_path)
+{
+	FileSink sink;
+	int st = read_rom(rom_path);
+
+	if (st)
+		return st;
+	sink.f = fopen(out_path, "w");
+	sink.failed = 0;
+	if (!sink.f) {
+		fprintf(stderr, "ladx_gen: cannot write %s\n", out_path);
+		return 1;
+	}
+	ladx_ks_render_spans(&ks, file_sink, &sink);
+	if (fclose(sink.f) != 0 || sink.failed) {
+		fprintf(stderr, "ladx_gen: cannot write %s\n", out_path);
+		return 1;
+	}
+	return 0;
+}
+
+static int generate(const char *case_dir, const char *out_dir, const char *tables_dir, const char *rom_path)
 {
 	static LadxRandomizer r;
 	LadxRunTextTrace sink;
@@ -323,6 +398,8 @@ static int generate(const char *case_dir, const char *out_dir, const char *table
 		return 2;
 	if (tables_dir && !open_tables(tables_dir))
 		return 2;
+	if (rom_path && (ok = read_rom(rom_path)) != 0)
+		return ok;
 	trace = tmpfile();
 	if (!trace) {
 		fprintf(stderr, "ladx_gen: cannot open a temporary file\n");
@@ -357,7 +434,7 @@ static int generate(const char *case_dir, const char *out_dir, const char *table
 		return 1;
 	}
 	if (tables_dir && ladx_randomizer_placement(&r)) {
-		ok = write_rom_writes(out_dir, &c.settings, ladx_randomizer_placement(&r));
+		ok = write_rom_writes(out_dir, &c.settings, &r, rom_path ? &rom : NULL);
 		if (ok <= 0)
 			return ok < 0 ? 2 : 1;
 	}
@@ -453,10 +530,14 @@ int main(int argc, char **argv)
 		return project_log(argv[2], argv[3]);
 	if (argc == 3 && strcmp(argv[1], "--time") == 0)
 		return time_run(argv[2]);
+	if (argc == 5 && strcmp(argv[1], "--rom") == 0 && strcmp(argv[3], "--ks-spans") == 0)
+		return write_ks_spans(argv[2], argv[4]);
 	if (argc == 3 && argv[1][0] != '-')
-		return generate(argv[1], argv[2], NULL);
+		return generate(argv[1], argv[2], NULL, NULL);
 	if (argc == 5 && strcmp(argv[1], "--tables") == 0 && argv[3][0] != '-')
-		return generate(argv[3], argv[4], argv[2]);
+		return generate(argv[3], argv[4], argv[2], NULL);
+	if (argc == 7 && strcmp(argv[1], "--tables") == 0 && strcmp(argv[3], "--rom") == 0 && argv[5][0] != '-')
+		return generate(argv[5], argv[6], argv[2], argv[4]);
 	fputs(usage, stderr);
 	return 2;
 }
