@@ -48,6 +48,22 @@ typedef struct LfConfig {
 	char explore[LF_EXPLORE_COUNT][LF_EXPLORE_MAX];
 } LfConfig;
 
+/* An explore line: the inventory, in its order, and the expected texts. */
+typedef struct LfExplore {
+	int item[LADX_ITEM_COUNT];
+	int count[LADX_ITEM_COUNT];
+	int items;
+	char reached[LF_EXPLORE_MAX];  /* index ranges, "-" when empty */
+	char required[LF_EXPLORE_MAX]; /* sorted names, comma-separated, "-" when empty */
+} LfExplore;
+
+/* "<item=count,...|-> -> <reached>\t<required>"; a malformed line or an
+ * unknown item fails under config's name. */
+void lf_explore_parse(const char *test, const char *config, const char *line, LfExplore *out);
+/* index_ranges' inverse: member[0..count) set from "0-2,5" ("-" empty);
+ * 0 for a malformed text or an index out of range. */
+int lf_index_ranges_parse(const char *text, bool *member, int count);
+
 /* Opens oracle/logic_vectors.txt-style text, skipping its # header. */
 FILE *lf_vectors_open(const char *test, const char *path);
 /* The next configuration, 0 at the end; a malformed one fails. */

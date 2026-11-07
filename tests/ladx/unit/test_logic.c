@@ -1,5 +1,6 @@
 #include "ladx_logic.h"
 #include "ladx_logic_builder.h"
+#include "ladx_sha512.h"
 #include "logic_fixture.h"
 #include "support.h"
 
@@ -1121,8 +1122,145 @@ static bool ws_logic_defaults(const LadxWorldSetup *ws)
 	return ws->goal == d.goal && ws->goal_count == d.goal_count;
 }
 
+/* The largest counts any configuration reached, against the capacities. */
+typedef struct Maxima {
+	int locations, edges, spots, options, suffix, spot_options, nodes, terms, todo;
+} Maxima;
+
+static Maxima maxima;
+
+static void max_into(int *m, int v)
+{
+	if (v > *m)
+		*m = v;
+}
+
+static void measure_graph(void)
+{
+	const LadxReqArena *a = ladx_logic_arena(&logic);
+	int i, edges = 0, suffix = 0;
+
+	max_into(&maxima.locations, ladx_logic_location_count(&logic));
+	for (i = 0; i < ladx_logic_location_count(&logic); i++)
+		edges += ladx_logic_location(&logic, i)->edge_count;
+	max_into(&maxima.edges, edges);
+	max_into(&maxima.spots, ladx_logic_spot_count(&logic));
+	for (i = 0; i < ladx_logic_spot_count(&logic); i++) {
+		max_into(&maxima.spot_options, ladx_logic_spot_options(&logic, i, NULL, 0));
+		max_into(&maxima.suffix, ladx_logic_spot(&logic, i)->suffix_count);
+		suffix += ladx_logic_spot(&logic, i)->suffix_count;
+	}
+	max_into(&maxima.options, suffix);
+	max_into(&maxima.nodes, a->node_count);
+	max_into(&maxima.terms, a->term_count);
+}
+
+static const char *sha512_hex(const char *bytes, size_t len, char hex[129])
+{
+	uint8_t digest[LADX_SHA512_SIZE];
+	int i;
+
+	ladx_sha512((const uint8_t *)bytes, len, digest);
+	for (i = 0; i < LADX_SHA512_SIZE; i++)
+		sprintf(hex + 2 * i, "%02x", digest[i]);
+	return hex;
+}
+
+/* The graph of a configuration: built, rendered, its SHA-512 the fixture's. */
+static void replay_graph(const LfConfig *c)
+{
+	char path[LF_NAME_MAX + 32], hex[129];
+	size_t len;
+
+	checks++;
+	if (ladx_logic_build(&logic, &c->settings, &c->ws) != LADX_LOGIC_OK)
+		test_fail(TEST, "config %s: the build fails", c->name);
+	len = lf_graph_text(TEST, &logic, text, sizeof text);
+	if (strcmp(sha512_hex(text, len, hex), c->graph_sha512) != 0) {
+		write_mismatch(c->name, text, len, path, sizeof path);
+		test_fail(TEST,
+			  "config %s: graph SHA-512 %.16s..., fixture %.16s...; C's text in %s, LADXR's from python3 "
+			  "tests/ladx/oracle/extract_logic.py --graph '%s' --out tmp/ladx-logic tests/ladx/oracle/ladxr",
+			  c->name, hex, c->graph_sha512, path, c->name);
+	}
+	measure_graph();
+}
+
+static LfExplore explore;
+
+/* Python's sorted() on the item names. */
+static int name_cmp(const void *x, const void *y)
+{
+	return strcmp(*(const char *const *)x, *(const char *const *)y);
+}
+
+/* "BOW,SWORD", "-" when empty; the k-th name in names[k]. */
+static int split_names(char *list, const char **names, int cap)
+{
+	int n = 0;
+	char *p = list, *comma;
+
+	if (strcmp(list, "-") == 0)
+		return 0;
+	for (;;) {
+		comma = strchr(p, ',');
+		if (comma)
+			*comma = '\0';
+		if (n < cap)
+			names[n] = p;
+		n++;
+		if (!comma)
+			return n;
+		p = comma + 1;
+	}
+}
+
+/* explore line k: a new Explorer, the inventory added in order, then
+ * visit(start); the reached ranges and the sorted required items. */
+static void replay_explore(const LfConfig *c, int k)
+{
+	static bool want[LADX_LOGIC_LOCATION_CAP], got[LADX_LOGIC_LOCATION_CAP];
+	static char want_req[LF_EXPLORE_MAX];
+	const char *want_names[LADX_ITEM_COUNT + 1], *got_names[LADX_ITEM_COUNT];
+	int count = ladx_logic_location_count(&logic), nw, ng, i;
+	LadxItemSet set;
+
+	lf_explore_parse(TEST, c->name, c->explore[k], &explore);
+	ladx_explorer_init(&explorer);
+	for (i = 0; i < explore.items; i++)
+		ladx_explorer_add_item(&explorer, explore.item[i], explore.count[i]);
+	checks++;
+	if (!ladx_explorer_visit(&explorer, &logic, ladx_logic_start(&logic)))
+		test_fail(TEST, "config %s: explore %d: the start is not visited", c->name, k);
+	max_into(&maxima.todo, explorer.todo_count);
+	if (!lf_index_ranges_parse(explore.reached, want, count))
+		test_fail(TEST, "config %s: explore %d: malformed reached ranges %s", c->name, k, explore.reached);
+	for (i = 0; i < count; i++) {
+		got[i] = ladx_explorer_reached(&explorer, i);
+		checks++;
+		if (got[i] != want[i])
+			test_fail(TEST, "config %s: explore %d: location %d (%s) %s, LADXR's %s", c->name, k, i,
+				  ladx_logic_location(&logic, i)->name ? ladx_logic_location(&logic, i)->name : "None",
+				  got[i] ? "reached" : "not reached", want[i] ? "reached" : "not reached");
+	}
+	ladx_explorer_required_next(&explorer, &logic, &set);
+	for (i = 0, ng = 0; i < LADX_ITEM_COUNT; i++)
+		if (set.has[i])
+			got_names[ng++] = ladx_item_name(i);
+	qsort(got_names, (size_t)ng, sizeof got_names[0], name_cmp);
+	strcpy(want_req, explore.required);
+	nw = split_names(want_req, want_names, LADX_ITEM_COUNT + 1);
+	for (i = 0; i < nw || i < ng; i++) {
+		checks++;
+		if (i >= nw || i >= ng || strcmp(want_names[i], got_names[i]) != 0)
+			test_fail(TEST, "config %s: explore %d: required item %d is %s, LADXR's %s", c->name, k, i,
+				  i < ng ? got_names[i] : "(end)", i < nw ? want_names[i] : "(end)");
+	}
+}
+
 /* logic_vectors.txt: every configuration's settings parsed, validated and
- * supported, its ws lines read into LadxWorldSetup and rendered back. */
+ * supported, its ws lines read into LadxWorldSetup and rendered back, its
+ * graph's SHA-512 and its explore vectors LADXR's. */
 static void replay_vectors(void)
 {
 	FILE *f = lf_vectors_open(TEST, VECTORS);
@@ -1158,6 +1296,9 @@ static void replay_vectors(void)
 				test_fail(TEST, "config %s: ws read back as %s, fixture %s", config.name, lines[i],
 					  config.ws_lines[i]);
 		}
+		replay_graph(&config);
+		for (i = 0; i < LF_EXPLORE_COUNT; i++)
+			replay_explore(&config, i);
 	}
 	fclose(f);
 	expect(n == 425, "425 configurations in " VECTORS);
@@ -1166,6 +1307,13 @@ static void replay_vectors(void)
 	       "(%d refused only as a pair LADXR's fill refuses), %d ws lines read back unchanged, the %d "
 	       "baselines' world setup WorldSetup()'s\n",
 	       TEST, n, VECTORS, pairs, 13 * n, baselines);
+	printf("%s: %d configurations, graphs equal, %d explore vectors equal\n", TEST, n, n * LF_EXPLORE_COUNT);
+	printf("%s: maxima over %d configurations: %d/%d locations, %d/%d edges, %d/%d spots, %d/%d options "
+	       "appended (at most %d on one spot, %d options on one spot), %d/%d requirement nodes, %d/%d terms, "
+	       "%d/%d explorer todo\n",
+	       TEST, n, maxima.locations, LADX_LOGIC_LOCATION_CAP, maxima.edges, LADX_LOGIC_EDGE_CAP, maxima.spots,
+	       LADX_LOGIC_SPOT_CAP, maxima.options, LADX_LOGIC_OPTION_CAP, maxima.suffix, maxima.spot_options,
+	       maxima.nodes, LADX_REQ_NODE_CAP, maxima.terms, LADX_REQ_TERM_CAP, maxima.todo, LADX_LOGIC_EDGE_CAP);
 }
 
 int main(int argc, char **argv)

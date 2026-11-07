@@ -91,11 +91,24 @@ static const char *field(const char *s)
 
 static char line[64 * 1024];
 
+/* append's strlen of out made the 425-graph replay quadratic: 4 minutes
+ * under qemu-arm. */
+static void emit(const char *test, char *out, size_t cap, size_t *len)
+{
+	size_t n = strlen(line);
+
+	if (*len + n + 1 > cap)
+		test_fail(test, "rendered text longer than %zu bytes", cap);
+	memcpy(out + *len, line, n + 1);
+	*len += n;
+}
+
 size_t lf_graph_text(const char *test, const LadxLogic *logic, char *out, size_t cap)
 {
 	int i, j, n;
 	int options[LADX_ITEM_COUNT * 4];
 	char num[64];
+	size_t len = 0;
 
 	if (cap == 0)
 		test_fail(test, "no room for the graph text");
@@ -109,7 +122,7 @@ size_t lf_graph_text(const char *test, const LadxLogic *logic, char *out, size_t
 			sprintf(line, "loc %d %d\t", i, loc->dungeon);
 		append(test, line, sizeof line, loc->name ? field(loc->name) : "-");
 		append(test, line, sizeof line, "\n");
-		append(test, out, cap, line);
+		emit(test, out, cap, &len);
 	}
 	for (i = 0; i < ladx_logic_spot_count(logic); i++) {
 		const LadxSpot *spot = ladx_logic_spot(logic, i);
@@ -133,7 +146,7 @@ size_t lf_graph_text(const char *test, const LadxLogic *logic, char *out, size_t
 		append(test, line, sizeof line, "\t");
 		append(test, line, sizeof line, field(ladx_spot_metadata_area(spot)));
 		append(test, line, sizeof line, "\n");
-		append(test, out, cap, line);
+		emit(test, out, cap, &len);
 	}
 	for (i = 0; i < ladx_logic_location_count(logic); i++) {
 		const LadxLocation *loc = ladx_logic_location(logic, i);
@@ -145,10 +158,10 @@ size_t lf_graph_text(const char *test, const LadxLogic *logic, char *out, size_t
 			strcpy(line, num);
 			lf_requirement_text(test, ladx_logic_arena(logic), edge->req, line, sizeof line);
 			append(test, line, sizeof line, "\n");
-			append(test, out, cap, line);
+			emit(test, out, cap, &len);
 		}
 	}
-	return strlen(out);
+	return len;
 }
 
 void lf_index_ranges(const char *test, const bool *member, int count, char *out, size_t cap)
@@ -477,6 +490,80 @@ int lf_vectors_next(const char *test, FILE *f, LfConfig *c)
 		strcpy(c->explore[i], vline + 8);
 	}
 	return 1;
+}
+
+void lf_explore_parse(const char *test, const char *config, const char *line, LfExplore *out)
+{
+	char buf[LF_EXPLORE_MAX];
+	char *arrow, *tab, *p, *comma, *eq, *end;
+	long count;
+
+	if (strlen(line) >= sizeof buf)
+		test_fail(test, "config %s: explore line too long", config);
+	strcpy(buf, line);
+	arrow = strstr(buf, " -> ");
+	tab = arrow ? strchr(arrow, '\t') : NULL;
+	if (!tab || strchr(tab + 1, '\t') || !tab[1] || tab == arrow + 4)
+		test_fail(test, "config %s: malformed explore line %s", config, line);
+	*arrow = '\0';
+	*tab = '\0';
+	strcpy(out->reached, arrow + 4);
+	strcpy(out->required, tab + 1);
+	out->items = 0;
+	if (strcmp(buf, "-") == 0)
+		return;
+	for (p = buf;; p = comma + 1) {
+		comma = strchr(p, ',');
+		if (comma)
+			*comma = '\0';
+		eq = strchr(p, '=');
+		if (!eq || out->items == LADX_ITEM_COUNT)
+			test_fail(test, "config %s: malformed explore inventory entry %s", config, p);
+		*eq = '\0';
+		count = strtol(eq + 1, &end, 10);
+		if (end == eq + 1 || *end || count < 1 || count > 1000000)
+			test_fail(test, "config %s: malformed explore count %s=%s", config, p, eq + 1);
+		out->item[out->items] = ladx_item_find(p);
+		if (out->item[out->items] == LADX_ITEM_NONE)
+			test_fail(test, "config %s: unknown explore item %s", config, p);
+		out->count[out->items++] = (int)count;
+		if (!comma)
+			break;
+	}
+}
+
+int lf_index_ranges_parse(const char *text, bool *member, int count)
+{
+	const char *p = text;
+	char *end;
+	long first, last;
+	int i;
+
+	for (i = 0; i < count; i++)
+		member[i] = false;
+	if (strcmp(text, "-") == 0)
+		return 1;
+	for (;;) {
+		first = strtol(p, &end, 10);
+		if (end == p || first < 0)
+			return 0;
+		last = first;
+		if (*end == '-') {
+			p = end + 1;
+			last = strtol(p, &end, 10);
+			if (end == p || last < first)
+				return 0;
+		}
+		if (last >= count)
+			return 0;
+		for (i = (int)first; i <= (int)last; i++)
+			member[i] = true;
+		if (!*end)
+			return 1;
+		if (*end != ',')
+			return 0;
+		p = end + 1;
+	}
 }
 
 FILE *lf_graphs_open(const char *test, const char *path)

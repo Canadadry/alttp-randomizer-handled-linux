@@ -23,7 +23,9 @@ in `docs/`, then `README.md`.
   `settings.c`, LADXR's settings table, parsing, `validate`, short string
   and the unsupported values and pair with their reason ids; `items.c`,
   LADXR's item names; `requirements.c`, its requirement nodes and the
-  explorer's inventory);
+  explorer's inventory; the logic graph, its location kinds, dungeons,
+  overworld and explorer, `ladx_logic.h`, tested by `test_logic`, contract
+  in `tests/ladx/README.md`, "Unit tests and lint");
   pure C99 like `alttp/`, built with only `ladx/include` on the include path,
   never including `alttp/` or `app/`.
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
@@ -141,7 +143,8 @@ in `docs/`, then `README.md`.
   `source-flags`, each `<name>.txt`, numeric only, about 2.6 MB), under the
   Nintendo-bytes check's strict scope, written only by `gen_extract.sh`.
   `tests/ladx/Makefile` holds LADX's own targets (`help`, the default;
-  `test` and `lint`, run by the root `make test` and `make lint`;
+  `test`, `lint` and `logic`, run by the root `make test`, `make lint`
+  and `make logic`;
   `unit-arm`, `rom-check`, `rom-check-selftest`, outside the net); Phase 3
   adds its targets there.
 

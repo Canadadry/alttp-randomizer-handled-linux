@@ -624,7 +624,31 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   oracle/logic_vectors.txt read: settings kept by validate, every value
   supported alone (<p> refused only as a pair LADXR's fill refuses), <w>
   ws lines read back unchanged, the 5 baselines' world setup
-  WorldSetup()'s`.
+  WorldSetup()'s`. For each configuration it also builds the graph
+  (`ladx_logic_build` with the configuration's settings and world
+  setup), renders its canonical text and compares the text's SHA-512
+  (`ladx_sha512`) with the `graph` line; a difference writes C's text to
+  `build/logic/<config>.txt` (`/` as `+`) and fails with `config <name>:
+  graph SHA-512 <16 hex>..., fixture <16 hex>...; C's text in <file>,
+  LADXR's from python3 tests/ladx/oracle/extract_logic.py --graph
+  '<name>' --out tmp/ladx-logic tests/ladx/oracle/ladxr`. Then it replays
+  the six `explore` lines on that graph: a new `LadxExplorer`, each
+  `item=count` added in order (`ladx_explorer_add_item`), then
+  `ladx_explorer_visit` of the start; every location's reached flag must
+  equal the line's index ranges and `ladx_explorer_required_next`, sorted
+  by name as Python's `sorted`, its required items. A difference fails
+  with `config <name>: explore <k>: location <i> (<name>) reached|not
+  reached, LADXR's ...` (the first differing index) or `config <name>:
+  explore <k>: required item <i> is <got>, LADXR's <want>` (`(end)` past
+  a list's end). It prints `test_logic: <n> configurations, graphs equal,
+  <v> explore vectors equal` (425 and 2550) and the largest counts any
+  configuration reached against the library's capacities: `test_logic:
+  maxima over <n> configurations: <l>/<cap> locations, <e>/<cap> edges,
+  <s>/<cap> spots, <o>/<cap> options appended (at most <a> on one spot,
+  <w> options on one spot), <r>/<cap> requirement nodes, <t>/<cap> terms,
+  <d>/<cap> explorer todo` (nodes and terms as created in the arena, the
+  todo list's largest length after a visit). The replay takes about 3 s
+  on the host and 25 s under `qemu-arm`, so it stays out of `make test`.
 - `make -C tests/ladx logic` (run by the root `make logic`, after
   `tests/alttp`'s, part of `make check`): runs each `LOGIC_TESTS` binary
   with `--fixtures` from `tests/ladx`, then prints `logic: <n> LADX unit

@@ -98,7 +98,7 @@
     - [x] Chunk 4: requirement settings and dungeons 1 to 4
     - [x] Chunk 5: dungeons 5 to 8 and the colour dungeon
     - [x] Chunk 6: overworld and the full logic
-    - [ ] Chunk 7: every configuration and explorer vector
+    - [x] Chunk 7: every configuration and explorer vector
   - [ ] Step 3.4 Item pool and fill
   - [ ] Step 3.5 Table application
   - [ ] Step 3.6 Seed-dependent writes
