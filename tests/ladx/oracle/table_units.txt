@@ -1,0 +1,6 @@
+# Forced fusions of the LADX patch tables' units, hand-written; read by gen_tables.py
+# (read_fusions), which fails on a line it cannot place. One line each, tab-separated:
+#   <call>	<call>	<reason>
+# Two `table` rows of one group, each named by its Call key in notes/ladx-inventory.md (` #<k>`
+# included), fused into one unit with every row of the group between them, in addition to the
+# fusions gen_tables.py finds in the coverage runs' encodings.

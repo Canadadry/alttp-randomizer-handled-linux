@@ -1,0 +1,897 @@
+seed a4246805a0097519f83a06ba8ea89ad2
+settings LghsHTWRkkl
+ws entrance_mapping identity
+ws boss_mapping 0,1,2,3,4,5,6,7,8
+ws miniboss_mapping 0=ROLLING_BONES,1=HINOX,2=DODONGO,3=CUE_BALL,4=GHOMA,5=SMASHER,6=GRIM_CREEPER,7=BLAINO,c1=AVALAUNCH,c2=GIANT_BUZZ_BLOB,moblin_cave=MOBLIN_KING,armos_temple=ARMOS_KNIGHT
+ws goal vanilla
+ws goal_count 8
+ws bingo_goals -
+ws sign_maze -
+ws multichest RUPEES_20
+ws map -
+ws dungeon_chain -
+ws inside_to_outside 1
+ws keep_two_way 1
+ws one_on_one 1
+words_before 2
+pool SWORD=2 FEATHER=1 HOOKSHOT=1 BOW=1 BOMB=5 MAGIC_POWDER=1 MAGIC_ROD=1 OCARINA=1 PEGASUS_BOOTS=1 POWER_BRACELET=2 SHIELD=2 SHOVEL=1 ROOSTER=1 TOADSTOOL=1 TAIL_KEY=1 SLIME_KEY=1 ANGLER_KEY=1 FACE_KEY=1 BIRD_KEY=1 GOLD_LEAF=5 FLIPPERS=1 BOWWOW=1 SONG1=1 SONG2=1 SONG3=1 BLUE_TUNIC=1 RED_TUNIC=1 MAX_ARROWS_UPGRADE=1 MAX_BOMBS_UPGRADE=1 MAX_POWDER_UPGRADE=1 HEART_CONTAINER=8 HEART_PIECE=12 RUPEES_100=3 RUPEES_20=2 RUPEES_200=3 RUPEES_50=17 SEASHELL=26 MEDICINE=3 GEL=4 MESSAGE=1 COMPASS1=1 COMPASS2=1 COMPASS3=1 COMPASS4=1 COMPASS5=1 COMPASS6=1 COMPASS7=1 COMPASS8=1 COMPASS0=1 KEY1=3 KEY2=5 KEY3=9 KEY4=5 KEY5=3 KEY6=3 KEY7=3 KEY8=7 KEY0=3 MAP1=1 MAP2=1 MAP3=1 MAP4=1 MAP5=1 MAP6=1 MAP7=1 MAP8=1 MAP0=1 NIGHTMARE_KEY1=1 NIGHTMARE_KEY2=1 NIGHTMARE_KEY3=1 NIGHTMARE_KEY4=1 NIGHTMARE_KEY5=1 NIGHTMARE_KEY6=1 NIGHTMARE_KEY7=1 NIGHTMARE_KEY8=1 NIGHTMARE_KEY0=1 STONE_BEAK1=1 STONE_BEAK2=1 STONE_BEAK3=1 STONE_BEAK4=1 STONE_BEAK5=1 STONE_BEAK6=1 STONE_BEAK7=1 STONE_BEAK8=1 STONE_BEAK0=1 INSTRUMENT1=1 INSTRUMENT2=1 INSTRUMENT3=1 INSTRUMENT4=1 INSTRUMENT5=1 INSTRUMENT6=1 INSTRUMENT7=1 INSTRUMENT8=1 TRADING_ITEM_YOSHI_DOLL=1 TRADING_ITEM_RIBBON=1 TRADING_ITEM_DOG_FOOD=1 TRADING_ITEM_BANANAS=1 TRADING_ITEM_STICK=1 TRADING_ITEM_HONEYCOMB=1 TRADING_ITEM_PINEAPPLE=1 TRADING_ITEM_HIBISCUS=1 TRADING_ITEM_LETTER=1 TRADING_ITEM_BROOM=1 TRADING_ITEM_FISHING_HOOK=1 TRADING_ITEM_NECKLACE=1 TRADING_ITEM_SCALE=1 TRADING_ITEM_MAGNIFYING_GLASS=1 MEDICINE2=1 TOADSTOOL2=1 RAFT=1 TAIL_CAVE_OPENED=1 KEY_CAVERN_OPENED=1 ANGLER_TUNNEL_OPENED=1 FACE_SHRINE_OPENED=1 CASTLE_GATE_OPENED=1 EAGLE_TOWER_OPENED=1 BOOMERANG=1 D3_BOMBWALL=1 D3_GEL_CLEAR=1 D3_STALFOS_CLEAR=1 D3_ZOLS_CLEAR=1 SWITCH3=1 D4_BOSS_CLEAR=1 D4_PITKEY=1 D4_PUZZLE_CLUE=1 D5_ZOL_CLEAR=1 MS1_KILL=1 MS2_KILL=1 MS3_KILL=1 D6_THREE_WIZROBE_CLEAR=1 SWITCH6A=1 SWITCH6A_RANGE=1 SWITCH6B_MIDRANGE=1 SWITCH6B_RANGE=1 SWITCH6C=1 SWITCH6D=1 SWITCH6E=1 SWITCH6F=1 D7_BALL=1 D7_BOSS_CLEAR=1 D7_PILLAR=4 D7_TOAK_CLEAR=1 SWITCH7A=1 SWITCH7A_RANGE=1 SWITCH7B=1 SWITCH7B_RANGE=1 SWITCH7C=1 SWITCH7C_MIDRANGE=1 SWITCH7C_RANGE=1 SWITCH8=1 ARROWS_10=1 SINGLE_ARROW=1
+words_after 26
+placer_pool SWORD=2 FEATHER=1 HOOKSHOT=1 BOW=1 BOMB=5 MAGIC_POWDER=1 MAGIC_ROD=1 OCARINA=1 PEGASUS_BOOTS=1 POWER_BRACELET=2 SHIELD=2 SHOVEL=1 ROOSTER=1 TOADSTOOL=1 TAIL_KEY=1 SLIME_KEY=1 ANGLER_KEY=1 FACE_KEY=1 BIRD_KEY=1 GOLD_LEAF=5 FLIPPERS=1 BOWWOW=1 SONG1=1 SONG2=1 SONG3=1 BLUE_TUNIC=1 RED_TUNIC=1 MAX_ARROWS_UPGRADE=1 MAX_BOMBS_UPGRADE=1 MAX_POWDER_UPGRADE=1 HEART_CONTAINER=8 HEART_PIECE=12 RUPEES_100=3 RUPEES_20=2 RUPEES_200=3 RUPEES_50=17 SEASHELL=26 MEDICINE=3 GEL=4 MESSAGE=1 COMPASS1=1 COMPASS2=1 COMPASS3=1 COMPASS4=1 COMPASS5=1 COMPASS6=1 COMPASS7=1 COMPASS8=1 COMPASS0=1 KEY1=3 KEY2=5 KEY3=9 KEY4=5 KEY5=3 KEY6=3 KEY7=3 KEY8=7 KEY0=3 MAP1=1 MAP2=1 MAP3=1 MAP4=1 MAP5=1 MAP6=1 MAP7=1 MAP8=1 MAP0=1 NIGHTMARE_KEY1=1 NIGHTMARE_KEY2=1 NIGHTMARE_KEY3=1 NIGHTMARE_KEY4=1 NIGHTMARE_KEY5=1 NIGHTMARE_KEY6=1 NIGHTMARE_KEY7=1 NIGHTMARE_KEY8=1 NIGHTMARE_KEY0=1 STONE_BEAK1=1 STONE_BEAK2=1 STONE_BEAK3=1 STONE_BEAK4=1 STONE_BEAK5=1 STONE_BEAK6=1 STONE_BEAK7=1 STONE_BEAK8=1 STONE_BEAK0=1 INSTRUMENT1=0 INSTRUMENT2=0 INSTRUMENT3=0 INSTRUMENT4=0 INSTRUMENT5=0 INSTRUMENT6=0 INSTRUMENT7=0 INSTRUMENT8=0 TRADING_ITEM_YOSHI_DOLL=1 TRADING_ITEM_RIBBON=1 TRADING_ITEM_DOG_FOOD=1 TRADING_ITEM_BANANAS=1 TRADING_ITEM_STICK=1 TRADING_ITEM_HONEYCOMB=1 TRADING_ITEM_PINEAPPLE=1 TRADING_ITEM_HIBISCUS=1 TRADING_ITEM_LETTER=1 TRADING_ITEM_BROOM=1 TRADING_ITEM_FISHING_HOOK=1 TRADING_ITEM_NECKLACE=1 TRADING_ITEM_SCALE=1 TRADING_ITEM_MAGNIFYING_GLASS=1 MEDICINE2=0 TOADSTOOL2=0 RAFT=0 TAIL_CAVE_OPENED=0 KEY_CAVERN_OPENED=0 ANGLER_TUNNEL_OPENED=0 FACE_SHRINE_OPENED=0 CASTLE_GATE_OPENED=0 EAGLE_TOWER_OPENED=0 BOOMERANG=1 D3_BOMBWALL=0 D3_GEL_CLEAR=0 D3_STALFOS_CLEAR=0 D3_ZOLS_CLEAR=0 SWITCH3=0 D4_BOSS_CLEAR=0 D4_PITKEY=0 D4_PUZZLE_CLUE=0 D5_ZOL_CLEAR=0 MS1_KILL=0 MS2_KILL=0 MS3_KILL=0 D6_THREE_WIZROBE_CLEAR=0 SWITCH6A=0 SWITCH6A_RANGE=0 SWITCH6B_MIDRANGE=0 SWITCH6B_RANGE=0 SWITCH6C=0 SWITCH6D=0 SWITCH6E=0 SWITCH6F=0 D7_BALL=0 D7_BOSS_CLEAR=0 D7_PILLAR=0 D7_TOAK_CLEAR=0 SWITCH7A=0 SWITCH7A_RANGE=0 SWITCH7B=0 SWITCH7B_RANGE=0 SWITCH7C=0 SWITCH7C_MIDRANGE=0 SWITCH7C_RANGE=0 SWITCH8=0 ARROWS_10=1 SINGLE_ARROW=1
+place 0 StartItem 0x2A3 HOOKSHOT
+place 1 HeartPiece 0x2A4 TRADING_ITEM_SCALE
+place 2 FishingMinigame 0x2B1 HEART_CONTAINER
+place 3 Seashell 0x0A3 SEASHELL
+place 4 Seashell 0x0D2 SEASHELL
+place 5 Song 0x092 SEASHELL
+place 6 KeyHole 0x0D3 TAIL_CAVE_OPENED
+place 7 Chest 0x2BF KEY7
+place 8 Chest 0x2BE SEASHELL
+place 9 BeachSword 0x0F2 BOMB
+place 10 TradeSequenceItem 0x2FE-Trade KEY3
+place 11 Chest 0x0E5 BOMB
+place 12 Seashell 0x0E9 KEY4
+place 13 Seashell 0x0F8 KEY0
+place 14 MadBatter 0x1E0 HEART_PIECE
+place 15 HeartPiece 0x044 TRADING_ITEM_BROOM
+place 16 Toadstool 0x050 SEASHELL
+place 17 KeyLocation TOADSTOOL2 TOADSTOOL2
+place 18 Chest 0x2BD MAX_BOMBS_UPGRADE
+place 19 HeartPiece 0x2AB RUPEES_50
+place 20 Chest 0x034 KEY3
+place 21 DungeonChest 0x136 RUPEES_100
+place 22 DungeonChest 0x12E RUPEES_50
+place 23 DroppedKey 0x132 TRADING_ITEM_YOSHI_DOLL
+place 24 DungeonChest 0x137 MEDICINE
+place 25 DungeonChest 0x138 ARROWS_10
+place 26 DungeonChest 0x139 NIGHTMARE_KEY2
+place 27 DroppedKey 0x134 SEASHELL
+place 28 DungeonChest 0x126 MAGIC_ROD
+place 29 DungeonChest 0x121 MAP2
+place 30 DungeonChest 0x120 KEY1
+place 31 DungeonChest 0x122 COMPASS2
+place 32 DungeonChest 0x127 STONE_BEAK2
+place 33 HeartContainer 0x12B RUPEES_50
+place 34 Instrument 0x12A INSTRUMENT2
+place 35 Chest 0x041 KEY3
+place 36 Chest 0x2AE GEL
+place 37 Chest 0x2AF KEY1
+place 38 TradeSequenceItem 0x2A8-Trade SEASHELL
+place 39 Chest 0x2BB HEART_PIECE
+place 40 KeyHole 0x02B ANGLER_TUNNEL_OPENED
+place 41 KeyHole 0x2C3 CASTLE_GATE_OPENED
+place 42 GoldLeaf 0x2D2 KEY4
+place 43 GoldLeaf 0x2C5 TRADING_ITEM_MAGNIFYING_GLASS
+place 44 GoldLeaf 0x2C6 KEY2
+place 45 GoldLeaf 0x05A RUPEES_50
+place 46 GoldLeaf 0x058 SHIELD
+place 47 HeartPiece 0x1F2 SONG3
+place 48 Chest 0x05C SEASHELL
+place 49 Chest 0x05D GOLD_LEAF
+place 50 TradeSequenceItem 0x0CD-Trade MEDICINE
+place 51 TradeSequenceItem 0x297-Trade FACE_KEY
+place 52 Seashell 0x0DA POWER_BRACELET
+place 53 AnglerKey 0x0CE KEY3
+place 54 HeartPiece 0x1E8 SEASHELL
+place 55 Seashell 0x0FF RUPEES_50
+place 56 HeartPiece 0x2E6 KEY5
+place 57 Chest 0x2FC KEY8
+place 58 FaceKey 0x27F TRADING_ITEM_STICK
+place 59 TradeSequenceItem 0x2D9-Trade SEASHELL
+place 60 TradeSequenceItem 0x2D7-Trade SEASHELL
+place 61 KeyHole 0x08C FACE_SHRINE_OPENED
+place 62 KeyLocation SWITCH6A SWITCH6A
+place 63 KeyLocation SWITCH6A_RANGE SWITCH6A_RANGE
+place 64 DungeonChest 0x1CF RUPEES_200
+place 65 DungeonChest 0x1C9 KEY0
+place 66 DungeonChest 0x1CE STONE_BEAK6
+place 67 KeyLocation D6_THREE_WIZROBE_CLEAR D6_THREE_WIZROBE_CLEAR
+place 68 KeyLocation SWITCH6B_MIDRANGE SWITCH6B_MIDRANGE
+place 69 KeyLocation SWITCH6B_RANGE SWITCH6B_RANGE
+place 70 DungeonChest 0x1B9 TRADING_ITEM_FISHING_HOOK
+place 71 DungeonChest 0x1C0 FEATHER
+place 72 KeyLocation SWITCH6C SWITCH6C
+place 73 DungeonChest 0x1B3 KEY4
+place 74 DroppedKey 0x1B4 TRADING_ITEM_LETTER
+place 75 DungeonChest 0x1B0 HEART_CONTAINER
+place 76 KeyLocation SWITCH6D SWITCH6D
+place 77 Chest 0x06C HEART_PIECE
+place 78 DroppedKey 0x1C3 KEY6
+place 79 DungeonChest 0x1B1 BOOMERANG
+place 80 KeyLocation SWITCH6E SWITCH6E
+place 81 DungeonChest 0x1BE COMPASS6
+place 82 DungeonChest 0x1B6 MAP6
+place 83 KeyLocation SWITCH6F SWITCH6F
+place 84 HeartContainer 0x1BC SEASHELL
+place 85 Instrument 0x1B5 INSTRUMENT6
+place 86 DungeonChest 0x1D1 NIGHTMARE_KEY6
+place 87 KeyLocation RAFT RAFT
+place 88 Song 0x2FD KEY8
+place 89 DungeonChest 0x179 MAP4
+place 90 DungeonChest 0x16A KEY6
+place 91 DungeonChest 0x178 SEASHELL
+place 92 DungeonChest 0x17B GEL
+place 93 DungeonChest 0x175 STONE_BEAK4
+place 94 KeyLocation D4_PITKEY D4_PITKEY
+place 95 DungeonChest 0x16D KEY5
+place 96 DungeonChest 0x168 HEART_CONTAINER
+place 97 DungeonChest 0x176 COMPASS4
+place 98 HeartContainer 0x166 KEY8
+place 99 KeyLocation D4_BOSS_CLEAR D4_BOSS_CLEAR
+place 100 Instrument 0x162 INSTRUMENT4
+place 101 DungeonChest 0x16E GEL
+place 102 KeyLocation D4_PUZZLE_CLUE D4_PUZZLE_CLUE
+place 103 DungeonChest 0x160 NIGHTMARE_KEY4
+place 104 DroppedKey 0x169 BIRD_KEY
+place 105 DungeonChest 0x171 MAX_POWDER_UPGRADE
+place 106 DungeonChest 0x165 HEART_PIECE
+place 107 Seashell 0x00C FLIPPERS
+place 108 Chest 0x004 HEART_PIECE
+place 109 DungeonChest 0x24D RUPEES_200
+place 110 DroppedKey 0x24C KEY2
+place 111 DungeonChest 0x25C SEASHELL
+place 112 DungeonChest 0x246 NIGHTMARE_KEY8
+place 113 DungeonChest 0x255 MAP8
+place 114 DungeonChest 0x259 SHIELD
+place 115 DroppedKey 0x25A STONE_BEAK8
+place 116 DungeonChest 0x25F HEART_CONTAINER
+place 117 KeyLocation SWITCH8 SWITCH8
+place 118 HeartContainer 0x234 KEY2
+place 119 Instrument 0x230 INSTRUMENT8
+place 120 DroppedKey 0x23E COMPASS8
+place 121 DungeonChest 0x23D RUPEES_100
+place 122 HeartPiece 0x000 TOADSTOOL
+place 123 DungeonChest 0x237 RUPEES_50
+place 124 DungeonChest 0x240 SEASHELL
+place 125 DroppedKey 0x241 TRADING_ITEM_NECKLACE
+place 126 DungeonChest 0x23A HEART_PIECE
+place 127 DungeonChest 0x232 MAX_ARROWS_UPGRADE
+place 128 DungeonChest 0x235 KEY2
+place 129 DungeonChest 0x24F KEY3
+place 130 MadBatter 0x1E2 BOMB
+place 131 HeartPiece 0x2BA KEY8
+place 132 BirdKey 0x27A BOW
+place 133 Chest 0x01D SEASHELL
+place 134 KeyHole 0x00E EAGLE_TOWER_OPENED
+place 135 DroppedKey 0x210 KEY8
+place 136 KeyLocation D7_BALL D7_BALL
+place 137 DungeonChest 0x209 RUPEES_50
+place 138 KeyLocation SWITCH7A SWITCH7A
+place 139 KeyLocation SWITCH7A_RANGE SWITCH7A_RANGE
+place 140 KeyLocation D7_PILLAR D7_PILLAR
+place 141 KeyLocation SWITCH7C SWITCH7C
+place 142 KeyLocation D7_PILLAR D7_PILLAR
+place 143 KeyLocation D7_PILLAR D7_PILLAR
+place 144 DungeonChest 0x201 KEY7
+place 145 DroppedKey 0x21B GOLD_LEAF
+place 146 KeyLocation D7_TOAK_CLEAR D7_TOAK_CLEAR
+place 147 KeyLocation SWITCH7C_MIDRANGE SWITCH7C_MIDRANGE
+place 148 KeyLocation SWITCH7C_RANGE SWITCH7C_RANGE
+place 149 DungeonChest 0x204 STONE_BEAK7
+place 150 KeyLocation SWITCH7B SWITCH7B
+place 151 DungeonChest 0x21A COMPASS7
+place 152 DungeonChest 0x224 RUPEES_50
+place 153 DungeonChest 0x220 HEART_PIECE
+place 154 HeartContainer 0x223 MAP7
+place 155 KeyLocation D7_BOSS_CLEAR D7_BOSS_CLEAR
+place 156 Instrument 0x22C INSTRUMENT7
+place 157 DungeonChest 0x21C RUPEES_50
+place 158 KeyLocation D7_PILLAR D7_PILLAR
+place 159 DungeonChest 0x211 KEY2
+place 160 DungeonChest 0x212 NIGHTMARE_KEY7
+place 161 KeyLocation SWITCH7B_RANGE SWITCH7B_RANGE
+place 162 TradeSequenceItem 0x019-Trade KEY3
+place 163 Chest 0x28A RUPEES_50
+place 164 Chest 0x018 SONG1
+place 165 Chest 0x2E2 BOWWOW
+place 166 HeartPiece 0x2DF HEART_CONTAINER
+place 167 Seashell 0x074 SEASHELL
+place 168 DungeonChest 0x30F ROOSTER
+place 169 DroppedKey 0x308 MAP0
+place 170 DungeonChest 0x311 SLIME_KEY
+place 171 DungeonChest 0x314 MEDICINE
+place 172 DungeonChest 0x302 STONE_BEAK0
+place 173 DungeonChest 0x306 NIGHTMARE_KEY0
+place 174 DroppedKey 0x307 SEASHELL
+place 175 TunicFairy 0x301-0 COMPASS0
+place 176 TunicFairy 0x301-1 KEY5
+place 177 TradeSequenceItem 0x07B-Trade SHOVEL
+place 178 TradeSequenceItem 0x087-Trade BOMB
+place 179 KeyHole 0x0B5 KEY_CAVERN_OPENED
+place 180 Seashell 0x0A5 RUPEES_50
+place 181 DungeonChest 0x153 HEART_PIECE
+place 182 DungeonChest 0x151 STONE_BEAK3
+place 183 KeyLocation D3_GEL_CLEAR D3_GEL_CLEAR
+place 184 DungeonChest 0x150 NIGHTMARE_KEY3
+place 185 DungeonChest 0x14F GOLD_LEAF
+place 186 DungeonChest 0x14E KEY3
+place 187 DungeonChest 0x14C KEY6
+place 188 DroppedKey 0x154 OCARINA
+place 189 KeyLocation SWITCH3 SWITCH3
+place 190 DroppedKey 0x158 RUPEES_20
+place 191 DroppedKey 0x155 RUPEES_50
+place 192 DroppedKey 0x14D GOLD_LEAF
+place 193 DroppedKey 0x148 RUPEES_100
+place 194 KeyLocation D3_ZOLS_CLEAR D3_ZOLS_CLEAR
+place 195 KeyLocation D3_STALFOS_CLEAR D3_STALFOS_CLEAR
+place 196 DungeonChest 0x144 MAP3
+place 197 KeyLocation D3_BOMBWALL D3_BOMBWALL
+place 198 DroppedKey 0x141 HEART_CONTAINER
+place 199 DungeonChest 0x146 SWORD
+place 200 DungeonChest 0x142 RUPEES_50
+place 201 DungeonChest 0x147 TRADING_ITEM_PINEAPPLE
+place 202 DroppedKey 0x15B COMPASS3
+place 203 HeartContainer 0x15A BOMB
+place 204 Instrument 0x159 INSTRUMENT3
+place 205 Seashell 0x0A6 SWORD
+place 206 Seashell 0x08B KEY4
+place 207 Seashell 0x0A4 ANGLER_KEY
+place 208 Seashell 0x0B9 RUPEES_20
+place 209 SlimeKey 0x0C6 SEASHELL
+place 210 Chest 0x2C8 TRADING_ITEM_BANANAS
+place 211 Chest 0x1FD SINGLE_ARROW
+place 212 Chest 0x2CD RUPEES_50
+place 213 Chest 0x2F4 GOLD_LEAF
+place 214 HeartPiece 0x2E5 RUPEES_200
+place 215 Song 0x2FB SEASHELL
+place 216 SeashellMansionBonus 0x2E9-0 SEASHELL
+place 217 SeashellMansionBonus 0x2E9-1 KEY3
+place 218 SeashellMansion 0x2E9 MAGIC_POWDER
+place 219 Seashell 0x0A8 SEASHELL
+place 220 TradeSequenceItem 0x2F5-Trade KEY1
+place 221 TradeSequenceItem 0x0C9-Trade SEASHELL
+place 222 DungeonChest 0x1A0 TRADING_ITEM_HIBISCUS
+place 223 DungeonChest 0x19E NIGHTMARE_KEY5
+place 224 DroppedKey 0x181 BLUE_TUNIC
+place 225 HookshotDrop 0x180 COMPASS5
+place 226 DungeonChest 0x19B HEART_PIECE
+place 227 DungeonChest 0x197 GEL
+place 228 HeartContainer 0x185 MAP5
+place 229 Instrument 0x182 INSTRUMENT5
+place 230 KeyLocation MS1_KILL MS1_KILL
+place 231 DungeonChest 0x196 KEY7
+place 232 DungeonChest 0x18E TRADING_ITEM_RIBBON
+place 233 DungeonChest 0x18F KEY3
+place 234 DungeonChest 0x188 TAIL_KEY
+place 235 KeyLocation D5_ZOL_CLEAR D5_ZOL_CLEAR
+place 236 DungeonChest 0x186 STONE_BEAK5
+place 237 KeyLocation MS3_KILL MS3_KILL
+place 238 DungeonChest 0x183 PEGASUS_BOOTS
+place 239 KeyLocation MS2_KILL MS2_KILL
+place 240 HeartPiece 0x078 TRADING_ITEM_HONEYCOMB
+place 241 Seashell 0x1E3 SEASHELL
+place 242 BoomerangGuy 0x1F5 HEART_PIECE
+place 243 TradeSequenceItem 0x2A6-Trade POWER_BRACELET
+place 244 DroppedKey 0x1E4 SONG2
+place 245 ShopItem 0x2A1-0 HEART_CONTAINER
+place 246 ShopItem 0x2A1-1 SEASHELL
+place 247 Seashell 0x2B2 RUPEES_50
+place 248 TradeSequenceItem 0x2B2-Trade SEASHELL
+place 249 TradeSequenceItem 0x2A0-Trade KEY4
+place 250 DroppedKey 0x116 STONE_BEAK1
+place 251 DungeonChest 0x115 HEART_PIECE
+place 252 DungeonChest 0x113 COMPASS1
+place 253 DungeonChest 0x114 HEART_CONTAINER
+place 254 DungeonChest 0x10E RUPEES_50
+place 255 DungeonChest 0x10D KEY8
+place 256 DungeonChest 0x108 KEY8
+place 257 DungeonChest 0x11D NIGHTMARE_KEY1
+place 258 DungeonChest 0x10A MAP1
+place 259 HeartContainer 0x106 HEART_PIECE
+place 260 Instrument 0x102 INSTRUMENT1
+place 261 DungeonChest 0x10C RUPEES_50
+place 262 Chest 0x071 RED_TUNIC
+place 263 Chest 0x2B3 TRADING_ITEM_DOG_FOOD
+place 264 MadBatter 0x1E1 KEY0
+place 265 Witch 0x2A2 MESSAGE
+place 266 KeyLocation MEDICINE2 MEDICINE2
+trace 0 rnd randomizer:Randomizer.__init__ seed a4246805a0097519f83a06ba8ea89ad2 -> - [0]
+trace 1 rnd worldSetup:WorldSetup.randomize choices 12 20,20,20,50,50,20,10,5,5,20,10,10 1 -> 4 [2]
+trace 2 rnd randomizer:Randomizer.__init__ getstate - -> - [0]
+trace 3 global randomizer:Randomizer.__init__ setstate - -> - [0]
+trace 4 rnd itempool:ItemPool.__randomizeRupees choices 5 10,5,10,10,1 1 -> 0 [2]
+trace 5 rnd itempool:ItemPool.__randomizeRupees choices 2 6,19 1 -> 0 [2]
+trace 6 rnd itempool:ItemPool.__randomizeRupees choices 5 10,5,10,10,1 1 -> 0 [2]
+trace 7 rnd itempool:ItemPool.__randomizeRupees choices 2 6,19 1 -> 0 [2]
+trace 8 rnd itempool:ItemPool.__randomizeRupees choices 5 10,5,10,10,1 1 -> 2 [2]
+trace 9 rnd itempool:ItemPool.__randomizeRupees choices 2 6,19 1 -> 0 [2]
+trace 10 rnd itempool:ItemPool.__randomizeRupees choices 5 10,5,10,10,1 1 -> 0 [2]
+trace 11 rnd itempool:ItemPool.__randomizeRupees choices 2 6,19 1 -> 1 [2]
+trace 12 rnd itempool:ItemPool.__randomizeRupees choices 5 10,5,10,10,1 1 -> 1 [2]
+trace 13 rnd itempool:ItemPool.__randomizeRupees choices 2 6,19 1 -> 1 [2]
+trace 14 rnd itempool:ItemPool.__randomizeRupees choices 5 10,5,10,10,1 1 -> 0 [2]
+trace 15 rnd itempool:ItemPool.__randomizeRupees choices 2 6,19 1 -> 0 [2]
+trace 16 rnd randomizer:RandomItemPlacer.run shuffle 9 -> 0,2,4,3,1,8,7,5,6 [18]
+trace 17 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 11 -> 7 [1]
+trace 18 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 18 -> 2 [3]
+trace 19 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 13 -> 1 [1]
+trace 20 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 14 -> 10 [1]
+trace 21 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 13 -> 5 [1]
+trace 22 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 9 -> 7 [2]
+trace 23 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 9 -> 5 [1]
+trace 24 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 18 -> 3 [1]
+trace 25 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 14 -> 13 [1]
+trace 26 rnd randomizer:RandomItemPlacer.placeSpecificItem choice 12 -> 11 [2]
+trace 27 rnd randomizer:RandomItemPlacer.__placeItem choice 205 -> 180 [1]
+trace 28 rnd randomizer:RandomItemPlacer.__placeItem choice 64 -> 46 [1]
+trace 29 rnd randomizer:RandomItemPlacer.__placeItem choice 204 -> 22 [1]
+trace 30 rnd randomizer:RandomItemPlacer.__placeItem choice 68 -> 13 [1]
+trace 31 rnd randomizer:RandomItemPlacer.__placeItem choice 203 -> 94 [1]
+trace 32 rnd randomizer:RandomItemPlacer.__placeItem choice 63 -> 37 [1]
+trace 33 rnd randomizer:RandomItemPlacer.__placeItem choice 202 -> 14 [1]
+trace 34 rnd randomizer:RandomItemPlacer.__placeItem choice 62 -> 48 [1]
+trace 35 rnd randomizer:RandomItemPlacer.__placeItem choice 201 -> 38 [2]
+trace 36 rnd randomizer:RandomItemPlacer.__placeItem choice 61 -> 1 [1]
+trace 37 rnd randomizer:RandomItemPlacer.__placeItem choice 200 -> 23 [1]
+trace 38 rnd randomizer:RandomItemPlacer.__placeItem choice 66 -> 4 [6]
+trace 39 rnd randomizer:RandomItemPlacer.__placeItem choice 199 -> 161 [2]
+trace 40 rnd randomizer:RandomItemPlacer.__placeItem choice 60 -> 52 [1]
+trace 41 rnd randomizer:RandomItemPlacer.__placeItem choice 198 -> 143 [1]
+trace 42 rnd randomizer:RandomItemPlacer.__placeItem choice 65 -> 46 [1]
+trace 43 rnd randomizer:RandomItemPlacer.__placeItem choice 197 -> 52 [2]
+trace 44 rnd randomizer:RandomItemPlacer.__placeItem choice 64 -> 52 [1]
+trace 45 rnd randomizer:RandomItemPlacer.__placeItem choice 196 -> 12 [1]
+trace 46 rnd randomizer:RandomItemPlacer.__placeItem choice 59 -> 50 [2]
+trace 47 rnd randomizer:RandomItemPlacer.__placeItem choice 195 -> 74 [1]
+trace 48 rnd randomizer:RandomItemPlacer.__placeItem choice 62 -> 16 [1]
+trace 49 rnd randomizer:RandomItemPlacer.__placeItem choice 194 -> 33 [1]
+trace 50 rnd randomizer:RandomItemPlacer.__placeItem choice 58 -> 48 [1]
+trace 51 rnd randomizer:RandomItemPlacer.__placeItem choice 193 -> 147 [2]
+trace 52 rnd randomizer:RandomItemPlacer.__placeItem choice 59 -> 30 [1]
+trace 53 rnd randomizer:RandomItemPlacer.__placeItem choice 192 -> 58 [1]
+trace 54 rnd randomizer:RandomItemPlacer.__placeItem choice 61 -> 26 [1]
+trace 55 rnd randomizer:RandomItemPlacer.__placeItem choice 191 -> 90 [1]
+trace 56 rnd randomizer:RandomItemPlacer.__placeItem choice 60 -> 31 [1]
+trace 57 rnd randomizer:RandomItemPlacer.__placeItem choice 190 -> 128 [1]
+trace 58 rnd randomizer:RandomItemPlacer.__placeItem choice 57 -> 5 [1]
+trace 59 rnd randomizer:RandomItemPlacer.__placeItem choice 189 -> 101 [1]
+trace 60 rnd randomizer:RandomItemPlacer.__placeItem choice 58 -> 57 [1]
+trace 61 rnd randomizer:RandomItemPlacer.__placeItem choice 188 -> 145 [2]
+trace 62 rnd randomizer:RandomItemPlacer.__placeItem choice 53 -> 21 [1]
+trace 63 rnd randomizer:RandomItemPlacer.__placeItem choice 187 -> 115 [1]
+trace 64 rnd randomizer:RandomItemPlacer.__placeItem choice 58 -> 11 [1]
+trace 65 rnd randomizer:RandomItemPlacer.__placeItem choice 186 -> 138 [1]
+trace 66 rnd randomizer:RandomItemPlacer.__placeItem choice 53 -> 13 [1]
+trace 67 rnd randomizer:RandomItemPlacer.__placeItem choice 185 -> 158 [4]
+trace 68 rnd randomizer:RandomItemPlacer.__placeItem choice 57 -> 12 [1]
+trace 69 rnd randomizer:RandomItemPlacer.__placeItem choice 184 -> 20 [1]
+trace 70 rnd randomizer:RandomItemPlacer.__placeItem choice 56 -> 25 [1]
+trace 71 rnd randomizer:RandomItemPlacer.__placeItem choice 183 -> 28 [1]
+trace 72 rnd randomizer:RandomItemPlacer.__placeItem choice 52 -> 44 [1]
+trace 73 rnd randomizer:RandomItemPlacer.__placeItem choice 182 -> 50 [1]
+trace 74 rnd randomizer:RandomItemPlacer.__placeItem choice 55 -> 5 [1]
+trace 75 rnd randomizer:RandomItemPlacer.__placeItem choice 181 -> 147 [1]
+trace 76 rnd randomizer:RandomItemPlacer.__placeItem choice 52 -> 25 [1]
+trace 77 rnd randomizer:RandomItemPlacer.__placeItem choice 180 -> 177 [1]
+trace 78 rnd randomizer:RandomItemPlacer.__placeItem choice 49 -> 40 [1]
+trace 79 rnd randomizer:RandomItemPlacer.__placeItem choice 179 -> 115 [2]
+trace 80 rnd randomizer:RandomItemPlacer.__placeItem choice 47 -> 5 [1]
+trace 81 rnd randomizer:RandomItemPlacer.__placeItem choice 178 -> 134 [2]
+trace 82 rnd randomizer:RandomItemPlacer.__placeItem choice 46 -> 15 [2]
+trace 83 rnd randomizer:RandomItemPlacer.__placeItem choice 177 -> 78 [1]
+trace 84 rnd randomizer:RandomItemPlacer.__placeItem choice 49 -> 46 [1]
+trace 85 rnd randomizer:RandomItemPlacer.__placeItem choice 176 -> 71 [1]
+trace 86 rnd randomizer:RandomItemPlacer.__placeItem choice 46 -> 8 [1]
+trace 87 rnd randomizer:RandomItemPlacer.__placeItem choice 175 -> 89 [1]
+trace 88 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 2 [1]
+trace 89 rnd randomizer:RandomItemPlacer.__placeItem choice 174 -> 171 [2]
+trace 90 rnd randomizer:RandomItemPlacer.__placeItem choice 46 -> 30 [1]
+trace 91 rnd randomizer:RandomItemPlacer.__placeItem choice 173 -> 103 [1]
+trace 92 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 20 [2]
+trace 93 rnd randomizer:RandomItemPlacer.__placeItem choice 172 -> 0 [2]
+trace 94 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 3 [1]
+trace 95 rnd randomizer:RandomItemPlacer.__placeItem choice 171 -> 91 [1]
+trace 96 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 41 [1]
+trace 97 rnd randomizer:RandomItemPlacer.__placeItem choice 170 -> 167 [1]
+trace 98 rnd randomizer:RandomItemPlacer.__placeItem choice 43 -> 21 [1]
+trace 99 rnd randomizer:RandomItemPlacer.__placeItem choice 169 -> 79 [1]
+trace 100 rnd randomizer:RandomItemPlacer.__placeItem choice 44 -> 13 [1]
+trace 101 rnd randomizer:RandomItemPlacer.__placeItem choice 168 -> 63 [1]
+trace 102 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 38 [5]
+trace 103 rnd randomizer:RandomItemPlacer.__placeItem choice 167 -> 53 [1]
+trace 104 rnd randomizer:RandomItemPlacer.__placeItem choice 44 -> 38 [1]
+trace 105 rnd randomizer:RandomItemPlacer.__placeItem choice 166 -> 48 [1]
+trace 106 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 31 [2]
+trace 107 rnd randomizer:RandomItemPlacer.__placeItem choice 165 -> 61 [3]
+trace 108 rnd randomizer:RandomItemPlacer.__placeItem choice 44 -> 21 [1]
+trace 109 rnd randomizer:RandomItemPlacer.__placeItem choice 164 -> 146 [2]
+trace 110 rnd randomizer:RandomItemPlacer.__placeItem choice 40 -> 0 [4]
+trace 111 rnd randomizer:RandomItemPlacer.__placeItem choice 164 -> 36 [1]
+trace 112 rnd randomizer:RandomItemPlacer.__placeItem choice 39 -> 7 [1]
+trace 113 rnd randomizer:RandomItemPlacer.__placeItem choice 163 -> 110 [3]
+trace 114 rnd randomizer:RandomItemPlacer.__placeItem choice 42 -> 11 [1]
+trace 115 rnd randomizer:RandomItemPlacer.__placeItem choice 162 -> 56 [1]
+trace 116 rnd randomizer:RandomItemPlacer.__placeItem choice 42 -> 36 [1]
+trace 117 rnd randomizer:RandomItemPlacer.__placeItem choice 161 -> 10 [2]
+trace 118 rnd randomizer:RandomItemPlacer.__placeItem choice 38 -> 33 [1]
+trace 119 rnd randomizer:RandomItemPlacer.__placeItem choice 160 -> 132 [1]
+trace 120 rnd randomizer:RandomItemPlacer.__placeItem choice 42 -> 15 [1]
+trace 121 rnd randomizer:RandomItemPlacer.__placeItem choice 159 -> 126 [1]
+trace 122 rnd randomizer:RandomItemPlacer.__placeItem choice 38 -> 3 [1]
+trace 123 rnd randomizer:RandomItemPlacer.__placeItem choice 158 -> 136 [1]
+trace 124 rnd randomizer:RandomItemPlacer.__placeItem choice 41 -> 2 [1]
+trace 125 rnd randomizer:RandomItemPlacer.__placeItem choice 157 -> 92 [1]
+trace 126 rnd randomizer:RandomItemPlacer.__placeItem choice 37 -> 18 [1]
+trace 127 rnd randomizer:RandomItemPlacer.__placeItem choice 156 -> 61 [1]
+trace 128 rnd randomizer:RandomItemPlacer.__placeItem choice 39 -> 15 [1]
+trace 129 rnd randomizer:RandomItemPlacer.__placeItem choice 155 -> 101 [2]
+trace 130 rnd randomizer:RandomItemPlacer.__placeItem choice 38 -> 14 [2]
+trace 131 rnd randomizer:RandomItemPlacer.__placeItem choice 154 -> 20 [1]
+trace 132 rnd randomizer:RandomItemPlacer.__placeItem choice 38 -> 27 [1]
+trace 133 rnd randomizer:RandomItemPlacer.__placeItem choice 153 -> 30 [4]
+trace 134 rnd randomizer:RandomItemPlacer.__placeItem choice 33 -> 17 [1]
+trace 135 rnd randomizer:RandomItemPlacer.__placeItem choice 152 -> 104 [2]
+trace 136 rnd randomizer:RandomItemPlacer.__placeItem choice 35 -> 5 [2]
+trace 137 rnd randomizer:RandomItemPlacer.__placeItem choice 151 -> 17 [2]
+trace 138 rnd randomizer:RandomItemPlacer.__placeItem choice 35 -> 17 [1]
+trace 139 rnd randomizer:RandomItemPlacer.__placeItem choice 150 -> 140 [1]
+trace 140 rnd randomizer:RandomItemPlacer.__placeItem choice 35 -> 7 [2]
+trace 141 rnd randomizer:RandomItemPlacer.__placeItem choice 150 -> 118 [1]
+trace 142 rnd randomizer:RandomItemPlacer.__placeItem choice 31 -> 25 [1]
+trace 143 rnd randomizer:RandomItemPlacer.__placeItem choice 149 -> 124 [5]
+trace 144 rnd randomizer:RandomItemPlacer.__placeItem choice 35 -> 30 [1]
+trace 145 rnd randomizer:RandomItemPlacer.__placeItem choice 148 -> 146 [1]
+trace 146 rnd randomizer:RandomItemPlacer.__placeItem choice 31 -> 16 [1]
+trace 147 rnd randomizer:RandomItemPlacer.__placeItem choice 147 -> 14 [4]
+trace 148 rnd randomizer:RandomItemPlacer.__placeItem choice 31 -> 25 [1]
+trace 149 rnd randomizer:RandomItemPlacer.__placeItem choice 146 -> 123 [1]
+trace 150 rnd randomizer:RandomItemPlacer.__placeItem choice 34 -> 17 [2]
+trace 151 rnd randomizer:RandomItemPlacer.__placeItem choice 145 -> 0 [2]
+trace 152 rnd randomizer:RandomItemPlacer.__placeItem choice 29 -> 21 [2]
+trace 153 rnd randomizer:RandomItemPlacer.__placeItem choice 144 -> 34 [2]
+trace 154 rnd randomizer:RandomItemPlacer.__placeItem choice 28 -> 24 [1]
+trace 155 rnd randomizer:RandomItemPlacer.__placeItem choice 143 -> 29 [1]
+trace 156 rnd randomizer:RandomItemPlacer.__placeItem choice 27 -> 4 [1]
+trace 157 rnd randomizer:RandomItemPlacer.__placeItem choice 142 -> 4 [1]
+trace 158 rnd randomizer:RandomItemPlacer.__placeItem choice 28 -> 26 [1]
+trace 159 rnd randomizer:RandomItemPlacer.__placeItem choice 141 -> 83 [3]
+trace 160 rnd randomizer:RandomItemPlacer.__placeItem choice 26 -> 14 [1]
+trace 161 rnd randomizer:RandomItemPlacer.__placeItem choice 140 -> 89 [1]
+trace 162 rnd randomizer:RandomItemPlacer.__placeItem choice 29 -> 23 [1]
+trace 163 rnd randomizer:RandomItemPlacer.__placeItem choice 139 -> 94 [2]
+trace 164 rnd randomizer:RandomItemPlacer.__placeItem choice 29 -> 24 [1]
+trace 165 rnd randomizer:RandomItemPlacer.__placeItem choice 138 -> 23 [1]
+trace 166 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 22 [1]
+trace 167 rnd randomizer:RandomItemPlacer.__placeItem choice 137 -> 7 [2]
+trace 168 rnd randomizer:RandomItemPlacer.__placeItem choice 25 -> 2 [1]
+trace 169 rnd randomizer:RandomItemPlacer.__placeItem choice 136 -> 31 [1]
+trace 170 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 16 [1]
+trace 171 rnd randomizer:RandomItemPlacer.__placeItem choice 135 -> 34 [3]
+trace 172 rnd randomizer:RandomItemPlacer.__placeItem choice 27 -> 6 [1]
+trace 173 rnd randomizer:RandomItemPlacer.__placeItem choice 135 -> 65 [1]
+trace 174 rnd randomizer:RandomItemPlacer.__placeItem choice 23 -> 2 [1]
+trace 175 rnd randomizer:RandomItemPlacer.__placeItem choice 134 -> 61 [1]
+trace 176 rnd randomizer:RandomItemPlacer.__placeItem choice 25 -> 18 [1]
+trace 177 rnd randomizer:RandomItemPlacer.__placeItem choice 133 -> 26 [1]
+trace 178 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 0 [2]
+trace 179 rnd randomizer:RandomItemPlacer.__placeItem choice 132 -> 56 [1]
+trace 180 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 18 [1]
+trace 181 rnd randomizer:RandomItemPlacer.__placeItem choice 131 -> 5 [1]
+trace 182 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 2 [1]
+trace 183 rnd randomizer:RandomItemPlacer.__placeItem choice 130 -> 94 [3]
+trace 184 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 20 [1]
+trace 185 rnd randomizer:RandomItemPlacer.__placeItem choice 129 -> 26 [2]
+trace 186 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 10 [1]
+trace 187 rnd randomizer:RandomItemPlacer.__placeItem choice 128 -> 32 [6]
+trace 188 rnd randomizer:RandomItemPlacer.__placeItem choice 25 -> 17 [2]
+trace 189 rnd randomizer:RandomItemPlacer.__placeItem choice 127 -> 91 [1]
+trace 190 rnd randomizer:RandomItemPlacer.__placeItem choice 21 -> 3 [1]
+trace 191 rnd randomizer:RandomItemPlacer.__placeItem choice 126 -> 109 [1]
+trace 192 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 10 [1]
+trace 193 rnd randomizer:RandomItemPlacer.__placeItem choice 125 -> 94 [1]
+trace 194 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 4 [1]
+trace 195 rnd randomizer:RandomItemPlacer.__placeItem choice 124 -> 78 [1]
+trace 196 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 3 [1]
+trace 197 rnd randomizer:RandomItemPlacer.__placeItem choice 124 -> 43 [1]
+trace 198 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 20 [2]
+trace 199 rnd randomizer:RandomItemPlacer.__placeItem choice 123 -> 100 [1]
+trace 200 rnd randomizer:RandomItemPlacer.__placeItem choice 25 -> 19 [1]
+trace 201 rnd randomizer:RandomItemPlacer.__placeItem choice 122 -> 11 [1]
+trace 202 rnd randomizer:RandomItemPlacer.__placeItem choice 25 -> 7 [1]
+trace 203 rnd randomizer:RandomItemPlacer.__placeItem choice 121 -> 83 [1]
+trace 204 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 14 [1]
+trace 205 rnd randomizer:RandomItemPlacer.__placeItem choice 120 -> 72 [1]
+trace 206 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 22 [1]
+trace 207 rnd randomizer:RandomItemPlacer.__placeItem choice 119 -> 63 [1]
+trace 208 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 7 [2]
+trace 209 rnd randomizer:RandomItemPlacer.__placeItem choice 118 -> 55 [1]
+trace 210 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 18 [1]
+trace 211 rnd randomizer:RandomItemPlacer.__placeItem choice 117 -> 91 [1]
+trace 212 rnd randomizer:RandomItemPlacer.__placeItem choice 25 -> 3 [1]
+trace 213 rnd randomizer:RandomItemPlacer.__placeItem choice 117 -> 65 [1]
+trace 214 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 18 [2]
+trace 215 rnd randomizer:RandomItemPlacer.__placeItem choice 116 -> 65 [1]
+trace 216 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 17 [1]
+trace 217 rnd randomizer:RandomItemPlacer.__placeItem choice 115 -> 6 [2]
+trace 218 rnd randomizer:RandomItemPlacer.__placeItem choice 21 -> 12 [1]
+trace 219 rnd randomizer:RandomItemPlacer.__placeItem choice 114 -> 34 [1]
+trace 220 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 10 [1]
+trace 221 rnd randomizer:RandomItemPlacer.__placeItem choice 113 -> 66 [1]
+trace 222 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 5 [1]
+trace 223 rnd randomizer:RandomItemPlacer.__placeItem choice 112 -> 73 [1]
+trace 224 rnd randomizer:RandomItemPlacer.__placeItem choice 23 -> 7 [1]
+trace 225 rnd randomizer:RandomItemPlacer.__placeItem choice 111 -> 28 [1]
+trace 226 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 8 [1]
+trace 227 rnd randomizer:RandomItemPlacer.__placeItem choice 110 -> 65 [2]
+trace 228 rnd randomizer:RandomItemPlacer.__placeItem choice 23 -> 21 [2]
+trace 229 rnd randomizer:RandomItemPlacer.__placeItem choice 109 -> 93 [1]
+trace 230 rnd randomizer:RandomItemPlacer.__placeItem choice 19 -> 17 [1]
+trace 231 rnd randomizer:RandomItemPlacer.__placeItem choice 108 -> 39 [2]
+trace 232 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 11 [1]
+trace 233 rnd randomizer:RandomItemPlacer.__placeItem choice 107 -> 56 [2]
+trace 234 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 4 [1]
+trace 235 rnd randomizer:RandomItemPlacer.__placeItem choice 106 -> 73 [2]
+trace 236 rnd randomizer:RandomItemPlacer.__placeItem choice 23 -> 2 [1]
+trace 237 rnd randomizer:RandomItemPlacer.__placeItem choice 105 -> 16 [1]
+trace 238 rnd randomizer:RandomItemPlacer.__placeItem choice 21 -> 11 [1]
+trace 239 rnd randomizer:RandomItemPlacer.__placeItem choice 104 -> 53 [1]
+trace 240 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 19 [1]
+trace 241 rnd randomizer:RandomItemPlacer.__placeItem choice 103 -> 39 [1]
+trace 242 rnd randomizer:RandomItemPlacer.__placeItem choice 21 -> 5 [4]
+trace 243 rnd randomizer:RandomItemPlacer.__placeItem choice 103 -> 101 [1]
+trace 244 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 16 [1]
+trace 245 rnd randomizer:RandomItemPlacer.__placeItem choice 102 -> 21 [1]
+trace 246 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 4 [1]
+trace 247 rnd randomizer:RandomItemPlacer.__placeItem choice 101 -> 99 [1]
+trace 248 rnd randomizer:RandomItemPlacer.__placeItem choice 18 -> 2 [1]
+trace 249 rnd randomizer:RandomItemPlacer.__placeItem choice 100 -> 34 [1]
+trace 250 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 10 [1]
+trace 251 rnd randomizer:RandomItemPlacer.__placeItem choice 99 -> 47 [1]
+trace 252 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 15 [2]
+trace 253 rnd randomizer:RandomItemPlacer.__placeItem choice 98 -> 62 [2]
+trace 254 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 5 [1]
+trace 255 rnd randomizer:RandomItemPlacer.__placeItem choice 97 -> 28 [2]
+trace 256 rnd randomizer:RandomItemPlacer.__placeItem choice 18 -> 2 [1]
+trace 257 rnd randomizer:RandomItemPlacer.__placeItem choice 97 -> 48 [2]
+trace 258 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 5 [1]
+trace 259 rnd randomizer:RandomItemPlacer.__placeItem choice 96 -> 90 [1]
+trace 260 rnd randomizer:RandomItemPlacer.__placeItem choice 18 -> 9 [2]
+trace 261 rnd randomizer:RandomItemPlacer.__placeItem choice 95 -> 26 [1]
+trace 262 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 15 [2]
+trace 263 rnd randomizer:RandomItemPlacer.__placeItem choice 94 -> 84 [1]
+trace 264 rnd randomizer:RandomItemPlacer.__placeItem choice 19 -> 15 [2]
+trace 265 rnd randomizer:RandomItemPlacer.__placeItem choice 93 -> 11 [1]
+trace 266 rnd randomizer:RandomItemPlacer.__placeItem choice 19 -> 17 [1]
+trace 267 rnd randomizer:RandomItemPlacer.__placeItem choice 92 -> 44 [1]
+trace 268 rnd randomizer:RandomItemPlacer.__placeItem choice 16 -> 15 [1]
+trace 269 rnd randomizer:RandomItemPlacer.__placeItem choice 91 -> 75 [2]
+trace 270 rnd randomizer:RandomItemPlacer.__placeItem choice 16 -> 11 [3]
+trace 271 rnd randomizer:RandomItemPlacer.__placeItem choice 90 -> 81 [2]
+trace 272 rnd randomizer:RandomItemPlacer.__placeItem choice 19 -> 15 [1]
+trace 273 rnd randomizer:RandomItemPlacer.__placeItem choice 89 -> 38 [1]
+trace 274 rnd randomizer:RandomItemPlacer.__placeItem choice 18 -> 1 [1]
+trace 275 rnd randomizer:RandomItemPlacer.__placeItem choice 88 -> 10 [1]
+trace 276 rnd randomizer:RandomItemPlacer.__placeItem choice 17 -> 7 [4]
+trace 277 rnd randomizer:RandomItemPlacer.__placeItem choice 87 -> 20 [6]
+trace 278 rnd randomizer:RandomItemPlacer.__placeItem choice 15 -> 4 [2]
+trace 279 rnd randomizer:RandomItemPlacer.__placeItem choice 86 -> 81 [2]
+trace 280 rnd randomizer:RandomItemPlacer.__placeItem choice 16 -> 1 [1]
+trace 281 rnd randomizer:RandomItemPlacer.__placeItem choice 86 -> 59 [1]
+trace 282 rnd randomizer:RandomItemPlacer.__placeItem choice 15 -> 11 [1]
+trace 283 rnd randomizer:RandomItemPlacer.__placeItem choice 85 -> 81 [1]
+trace 284 rnd randomizer:RandomItemPlacer.__placeItem choice 17 -> 14 [1]
+trace 285 rnd randomizer:RandomItemPlacer.__placeItem choice 84 -> 16 [2]
+trace 286 rnd randomizer:RandomItemPlacer.__placeItem choice 14 -> 11 [1]
+trace 287 rnd randomizer:RandomItemPlacer.__placeItem choice 83 -> 31 [2]
+trace 288 rnd randomizer:RandomItemPlacer.__placeItem choice 16 -> 6 [4]
+trace 289 rnd randomizer:RandomItemPlacer.__placeItem choice 82 -> 50 [1]
+trace 290 rnd randomizer:RandomItemPlacer.__placeItem choice 16 -> 2 [2]
+trace 291 rnd randomizer:RandomItemPlacer.__placeItem choice 81 -> 17 [1]
+trace 292 rnd randomizer:RandomItemPlacer.__placeItem choice 12 -> 0 [1]
+trace 293 rnd randomizer:RandomItemPlacer.__placeItem choice 81 -> 47 [1]
+trace 294 rnd randomizer:RandomItemPlacer.__placeItem choice 12 -> 0 [1]
+trace 295 rnd randomizer:RandomItemPlacer.__placeItem choice 81 -> 72 [1]
+trace 296 rnd randomizer:RandomItemPlacer.__placeItem choice 15 -> 13 [1]
+trace 297 rnd randomizer:RandomItemPlacer.__placeItem choice 80 -> 7 [1]
+trace 298 rnd randomizer:RandomItemPlacer.__placeItem choice 12 -> 7 [2]
+trace 299 rnd randomizer:RandomItemPlacer.__placeItem choice 79 -> 50 [1]
+trace 300 rnd randomizer:RandomItemPlacer.__placeItem choice 14 -> 3 [1]
+trace 301 rnd randomizer:RandomItemPlacer.__placeItem choice 78 -> 39 [1]
+trace 302 rnd randomizer:RandomItemPlacer.__placeItem choice 13 -> 2 [2]
+trace 303 rnd randomizer:RandomItemPlacer.__placeItem choice 78 -> 32 [1]
+trace 304 rnd randomizer:RandomItemPlacer.__placeItem choice 13 -> 7 [2]
+trace 305 rnd randomizer:RandomItemPlacer.__placeItem choice 77 -> 54 [2]
+trace 306 rnd randomizer:RandomItemPlacer.__placeItem choice 11 -> 2 [1]
+trace 307 rnd randomizer:RandomItemPlacer.__placeItem choice 77 -> 23 [1]
+trace 308 rnd randomizer:RandomItemPlacer.__placeItem choice 11 -> 10 [1]
+trace 309 rnd randomizer:RandomItemPlacer.__placeItem choice 76 -> 8 [2]
+trace 310 rnd randomizer:RandomItemPlacer.__placeItem choice 13 -> 4 [2]
+trace 311 rnd randomizer:RandomItemPlacer.__placeItem choice 75 -> 44 [1]
+trace 312 rnd randomizer:RandomItemPlacer.__placeItem choice 13 -> 11 [1]
+trace 313 rnd randomizer:RandomItemPlacer.__placeItem choice 74 -> 72 [1]
+trace 314 rnd randomizer:RandomItemPlacer.__placeItem choice 12 -> 5 [3]
+trace 315 rnd randomizer:RandomItemPlacer.__placeItem choice 73 -> 44 [1]
+trace 316 rnd randomizer:RandomItemPlacer.__placeItem choice 12 -> 1 [1]
+trace 317 rnd randomizer:RandomItemPlacer.__placeItem choice 72 -> 32 [1]
+trace 318 rnd randomizer:RandomItemPlacer.__placeItem choice 11 -> 3 [2]
+trace 319 rnd randomizer:RandomItemPlacer.__placeItem choice 71 -> 11 [1]
+trace 320 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 7 [1]
+trace 321 rnd randomizer:RandomItemPlacer.__placeItem choice 70 -> 15 [1]
+trace 322 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 8 [2]
+trace 323 rnd randomizer:RandomItemPlacer.__placeItem choice 69 -> 62 [2]
+trace 324 rnd randomizer:RandomItemPlacer.__placeItem choice 10 -> 5 [1]
+trace 325 rnd randomizer:RandomItemPlacer.__placeItem choice 68 -> 21 [4]
+trace 326 rnd randomizer:RandomItemPlacer.__placeItem choice 11 -> 1 [1]
+trace 327 rnd randomizer:RandomItemPlacer.__placeItem choice 68 -> 31 [1]
+trace 328 rnd randomizer:RandomItemPlacer.__placeItem choice 10 -> 0 [3]
+trace 329 rnd randomizer:RandomItemPlacer.__placeItem choice 68 -> 59 [2]
+trace 330 rnd randomizer:RandomItemPlacer.__placeItem choice 10 -> 2 [1]
+trace 331 rnd randomizer:RandomItemPlacer.__placeItem choice 67 -> 9 [1]
+trace 332 rnd randomizer:RandomItemPlacer.__placeItem choice 10 -> 8 [4]
+trace 333 rnd randomizer:RandomItemPlacer.__placeItem choice 66 -> 54 [2]
+trace 334 rnd randomizer:RandomItemPlacer.__placeItem choice 10 -> 4 [1]
+trace 335 rnd randomizer:RandomItemPlacer.__placeItem choice 65 -> 43 [3]
+trace 336 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 0 [1]
+trace 337 rnd randomizer:RandomItemPlacer.__placeItem choice 65 -> 15 [2]
+trace 338 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 3 [2]
+trace 339 rnd randomizer:RandomItemPlacer.__placeItem choice 64 -> 53 [3]
+trace 340 rnd randomizer:RandomItemPlacer.__placeItem choice 10 -> 2 [2]
+trace 341 rnd randomizer:RandomItemPlacer.__placeItem choice 63 -> 33 [1]
+trace 342 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 1 [5]
+trace 343 rnd randomizer:RandomItemPlacer.__placeItem choice 62 -> 28 [1]
+trace 344 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 2 [1]
+trace 345 rnd randomizer:RandomItemPlacer.__placeItem choice 61 -> 13 [1]
+trace 346 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 6 [1]
+trace 347 rnd randomizer:RandomItemPlacer.__placeItem choice 60 -> 11 [1]
+trace 348 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 3 [1]
+trace 349 rnd randomizer:RandomItemPlacer.__placeItem choice 59 -> 32 [1]
+trace 350 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 6 [3]
+trace 351 rnd randomizer:RandomItemPlacer.__placeItem choice 58 -> 37 [1]
+trace 352 rnd randomizer:RandomItemPlacer.__placeItem choice 10 -> 0 [1]
+trace 353 rnd randomizer:RandomItemPlacer.__placeItem choice 58 -> 20 [1]
+trace 354 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 5 [5]
+trace 355 rnd randomizer:RandomItemPlacer.__placeItem choice 57 -> 31 [1]
+trace 356 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 4 [1]
+trace 357 rnd randomizer:RandomItemPlacer.__placeItem choice 57 -> 4 [1]
+trace 358 rnd randomizer:RandomItemPlacer.__placeItem choice 6 -> 2 [1]
+trace 359 rnd randomizer:RandomItemPlacer.__placeItem choice 56 -> 12 [1]
+trace 360 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 4 [1]
+trace 361 rnd randomizer:RandomItemPlacer.__placeItem choice 55 -> 41 [1]
+trace 362 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 6 [1]
+trace 363 rnd randomizer:RandomItemPlacer.__placeItem choice 54 -> 39 [1]
+trace 364 rnd randomizer:RandomItemPlacer.__placeItem choice 6 -> 1 [2]
+trace 365 rnd randomizer:RandomItemPlacer.__placeItem choice 53 -> 41 [1]
+trace 366 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 3 [1]
+trace 367 rnd randomizer:RandomItemPlacer.__placeItem choice 52 -> 24 [1]
+trace 368 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 1 [3]
+trace 369 rnd randomizer:RandomItemPlacer.__placeItem choice 51 -> 21 [1]
+trace 370 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 1 [2]
+trace 371 rnd randomizer:RandomItemPlacer.__placeItem choice 50 -> 0 [1]
+trace 372 rnd randomizer:RandomItemPlacer.__placeItem choice 6 -> 4 [1]
+trace 373 rnd randomizer:RandomItemPlacer.__placeItem choice 49 -> 34 [1]
+trace 374 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 0 [9]
+trace 375 rnd randomizer:RandomItemPlacer.__placeItem choice 49 -> 5 [1]
+trace 376 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 1 [2]
+trace 377 rnd randomizer:RandomItemPlacer.__placeItem choice 48 -> 3 [1]
+trace 378 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 4 [1]
+trace 379 rnd randomizer:RandomItemPlacer.__placeItem choice 47 -> 28 [1]
+trace 380 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 3 [2]
+trace 381 rnd randomizer:RandomItemPlacer.__placeItem choice 46 -> 38 [1]
+trace 382 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 1 [1]
+trace 383 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 0 [1]
+trace 384 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 0 [3]
+trace 385 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 22 [1]
+trace 386 rnd randomizer:RandomItemPlacer.__placeItem choice 6 -> 0 [1]
+trace 387 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 36 [2]
+trace 388 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 0 [3]
+trace 389 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 27 [1]
+trace 390 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 2 [2]
+trace 391 rnd randomizer:RandomItemPlacer.__placeItem choice 45 -> 13 [1]
+trace 392 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 3 [1]
+trace 393 rnd randomizer:RandomItemPlacer.__placeItem choice 44 -> 4 [1]
+trace 394 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 1 [2]
+trace 395 rnd randomizer:RandomItemPlacer.__placeItem choice 43 -> 17 [1]
+trace 396 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 1 [5]
+trace 397 rnd randomizer:RandomItemPlacer.__placeItem choice 42 -> 28 [1]
+trace 398 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 3 [1]
+trace 399 rnd randomizer:RandomItemPlacer.__placeItem choice 41 -> 29 [1]
+trace 400 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 4 [1]
+trace 401 rnd randomizer:RandomItemPlacer.__placeItem choice 40 -> 15 [1]
+trace 402 rnd randomizer:RandomItemPlacer.__placeItem choice 6 -> 3 [1]
+trace 403 rnd randomizer:RandomItemPlacer.__placeItem choice 39 -> 37 [1]
+trace 404 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 0 [1]
+trace 405 rnd randomizer:RandomItemPlacer.__placeItem choice 39 -> 34 [3]
+trace 406 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 3 [1]
+trace 407 rnd randomizer:RandomItemPlacer.__placeItem choice 38 -> 16 [1]
+trace 408 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 0 [1]
+trace 409 rnd randomizer:RandomItemPlacer.__placeItem choice 38 -> 7 [1]
+trace 410 rnd randomizer:RandomItemPlacer.__placeItem choice 6 -> 5 [1]
+trace 411 rnd randomizer:RandomItemPlacer.__placeItem choice 37 -> 5 [2]
+trace 412 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 1 [1]
+trace 413 rnd randomizer:RandomItemPlacer.__placeItem choice 36 -> 24 [3]
+trace 414 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 3 [1]
+trace 415 rnd randomizer:RandomItemPlacer.__placeItem choice 35 -> 12 [2]
+trace 416 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 4 [1]
+trace 417 rnd randomizer:RandomItemPlacer.__placeItem choice 34 -> 16 [3]
+trace 418 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 2 [1]
+trace 419 rnd randomizer:RandomItemPlacer.__placeItem choice 33 -> 1 [2]
+trace 420 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 0 [1]
+trace 421 rnd randomizer:RandomItemPlacer.__placeItem choice 33 -> 14 [2]
+trace 422 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 1 [1]
+trace 423 rnd randomizer:RandomItemPlacer.__placeItem choice 32 -> 24 [3]
+trace 424 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 4 [3]
+trace 425 rnd randomizer:RandomItemPlacer.__placeItem choice 31 -> 11 [1]
+trace 426 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 3 [1]
+trace 427 rnd randomizer:RandomItemPlacer.__placeItem choice 30 -> 14 [1]
+trace 428 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 0 [1]
+trace 429 rnd randomizer:RandomItemPlacer.__placeItem choice 30 -> 4 [1]
+trace 430 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [2]
+trace 431 rnd randomizer:RandomItemPlacer.__placeItem choice 29 -> 10 [1]
+trace 432 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 433 rnd randomizer:RandomItemPlacer.__placeItem choice 28 -> 6 [2]
+trace 434 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 2 [1]
+trace 435 rnd randomizer:RandomItemPlacer.__placeItem choice 27 -> 20 [1]
+trace 436 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [1]
+trace 437 rnd randomizer:RandomItemPlacer.__placeItem choice 27 -> 19 [1]
+trace 438 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 0 [3]
+trace 439 rnd randomizer:RandomItemPlacer.__placeItem choice 27 -> 5 [1]
+trace 440 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 2 [7]
+trace 441 rnd randomizer:RandomItemPlacer.__placeItem choice 26 -> 2 [1]
+trace 442 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 2 [1]
+trace 443 rnd randomizer:RandomItemPlacer.__placeItem choice 25 -> 4 [1]
+trace 444 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 2 [1]
+trace 445 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 1 [1]
+trace 446 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [2]
+trace 447 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 20 [1]
+trace 448 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 0 [4]
+trace 449 rnd randomizer:RandomItemPlacer.__placeItem choice 24 -> 3 [1]
+trace 450 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 1 [2]
+trace 451 rnd randomizer:RandomItemPlacer.__placeItem choice 23 -> 5 [1]
+trace 452 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [1]
+trace 453 rnd randomizer:RandomItemPlacer.__placeItem choice 23 -> 13 [1]
+trace 454 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 2 [3]
+trace 455 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 7 [1]
+trace 456 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [2]
+trace 457 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 19 [1]
+trace 458 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 1 [1]
+trace 459 rnd randomizer:RandomItemPlacer.__placeItem choice 22 -> 8 [1]
+trace 460 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 461 rnd randomizer:RandomItemPlacer.__placeItem choice 21 -> 8 [2]
+trace 462 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 463 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 1 [1]
+trace 464 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [2]
+trace 465 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 9 [1]
+trace 466 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 1 [1]
+trace 467 rnd randomizer:RandomItemPlacer.__placeItem choice 20 -> 17 [2]
+trace 468 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 3 [2]
+trace 469 rnd randomizer:RandomItemPlacer.__placeItem choice 19 -> 14 [2]
+trace 470 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 471 rnd randomizer:RandomItemPlacer.__placeItem choice 18 -> 2 [1]
+trace 472 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 2 [1]
+trace 473 rnd randomizer:RandomItemPlacer.__placeItem choice 17 -> 13 [2]
+trace 474 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [1]
+trace 475 rnd randomizer:RandomItemPlacer.__placeItem choice 17 -> 15 [1]
+trace 476 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 2 [1]
+trace 477 rnd randomizer:RandomItemPlacer.__placeItem choice 16 -> 1 [3]
+trace 478 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 0 [1]
+trace 479 rnd randomizer:RandomItemPlacer.__placeItem choice 16 -> 2 [1]
+trace 480 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [4]
+trace 481 rnd randomizer:RandomItemPlacer.__placeItem choice 16 -> 14 [2]
+trace 482 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 2 [1]
+trace 483 rnd randomizer:RandomItemPlacer.__placeItem choice 15 -> 14 [1]
+trace 484 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [2]
+trace 485 rnd randomizer:RandomItemPlacer.__placeItem choice 15 -> 7 [2]
+trace 486 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 487 rnd randomizer:RandomItemPlacer.__placeItem choice 14 -> 8 [1]
+trace 488 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 489 rnd randomizer:RandomItemPlacer.__placeItem choice 13 -> 1 [1]
+trace 490 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [5]
+trace 491 rnd randomizer:RandomItemPlacer.__placeItem choice 12 -> 8 [1]
+trace 492 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [1]
+trace 493 rnd randomizer:RandomItemPlacer.__placeItem choice 12 -> 8 [1]
+trace 494 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [3]
+trace 495 rnd randomizer:RandomItemPlacer.__placeItem choice 12 -> 0 [1]
+trace 496 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 497 rnd randomizer:RandomItemPlacer.__placeItem choice 11 -> 1 [1]
+trace 498 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 2 [1]
+trace 499 rnd randomizer:RandomItemPlacer.__placeItem choice 10 -> 9 [1]
+trace 500 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [2]
+trace 501 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 2 [2]
+trace 502 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [3]
+trace 503 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 0 [1]
+trace 504 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [2]
+trace 505 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 7 [3]
+trace 506 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [1]
+trace 507 rnd randomizer:RandomItemPlacer.__placeItem choice 9 -> 1 [1]
+trace 508 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 509 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 6 [1]
+trace 510 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 511 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 6 [1]
+trace 512 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [3]
+trace 513 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 0 [2]
+trace 514 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 0 [1]
+trace 515 rnd randomizer:RandomItemPlacer.__placeItem choice 8 -> 5 [3]
+trace 516 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 0 [1]
+trace 517 rnd randomizer:RandomItemPlacer.__placeItem choice 7 -> 6 [1]
+trace 518 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [2]
+trace 519 rnd randomizer:RandomItemPlacer.__placeItem choice 6 -> 0 [1]
+trace 520 rnd randomizer:RandomItemPlacer.__placeItem choice 1 -> 0 [2]
+trace 521 rnd randomizer:RandomItemPlacer.__placeItem choice 5 -> 3 [6]
+trace 522 rnd randomizer:RandomItemPlacer.__placeItem choice 1 -> 0 [1]
+trace 523 rnd randomizer:RandomItemPlacer.__placeItem choice 4 -> 2 [1]
+trace 524 rnd randomizer:RandomItemPlacer.__placeItem choice 1 -> 0 [2]
+trace 525 rnd randomizer:RandomItemPlacer.__placeItem choice 3 -> 2 [1]
+trace 526 rnd randomizer:RandomItemPlacer.__placeItem choice 1 -> 0 [1]
+trace 527 rnd randomizer:RandomItemPlacer.__placeItem choice 2 -> 1 [1]
+trace 528 rnd randomizer:RandomItemPlacer.__placeItem choice 1 -> 0 [1]
+trace 529 rnd randomizer:RandomItemPlacer.__placeItem choice 1 -> 0 [1]
+trace 530 rnd randomizer:RandomItemPlacer.__placeItem choice 1 -> 0 [2]
+trace 531 rnd patches.aesthetics:getMarinStartingText choice 480 -> 312 [1]
+trace 532 rnd hints:addHints shuffle 37 -> 7,17,0,1,35,16,18,10,24,32,36,8,11,2,12,20,22,9,33,15,21,28,25,34,14,3,29,27,30,5,6,31,13,26,23,19,4 [45]
+trace 533 rnd hints:addHints randint 0 35 -> 15 [3]
+trace 534 rnd hints:addHints choice 5 -> 0 [1]
+trace 535 rnd hints:addHints randint 0 34 -> 26 [1]
+trace 536 rnd hints:addHints choice 5 -> 0 [2]
+trace 537 rnd hints:addHints randint 0 33 -> 32 [1]
+trace 538 rnd hints:addHints choice 5 -> 4 [1]
+trace 539 rnd hints:addHints randint 0 32 -> 1 [1]
+trace 540 rnd hints:addHints choice 5 -> 3 [1]
+trace 541 rnd hints:addHints randint 0 31 -> 27 [1]
+trace 542 rnd hints:addHints choice 5 -> 0 [1]
+trace 543 rnd hints:addHints randint 0 30 -> 20 [2]
+trace 544 rnd hints:addHints choice 5 -> 2 [1]
+trace 545 rnd hints:addHints randint 0 29 -> 9 [1]
+trace 546 rnd hints:addHints choice 5 -> 3 [3]
+trace 547 rnd hints:addHints randint 0 28 -> 12 [1]
+trace 548 rnd hints:addHints choice 5 -> 2 [2]
+trace 549 rnd hints:addHints randint 0 27 -> 4 [1]
+trace 550 rnd hints:addHints choice 5 -> 4 [1]
+trace 551 rnd hints:addHints randint 0 26 -> 23 [1]
+trace 552 rnd hints:addHints choice 5 -> 4 [1]
+trace 553 rnd hints:addHints randint 0 25 -> 24 [2]
+trace 554 rnd hints:addHints choice 5 -> 4 [1]
+trace 555 rnd hints:addHints randint 0 24 -> 16 [3]
+trace 556 rnd hints:addHints choice 5 -> 0 [1]
+trace 557 rnd hints:addHints randint 0 23 -> 22 [1]
+trace 558 rnd hints:addHints choice 5 -> 2 [1]
+trace 559 rnd hints:addHints randint 0 22 -> 10 [2]
+trace 560 rnd hints:addHints choice 5 -> 3 [1]
+trace 561 rnd hints:addHints randint 0 21 -> 20 [1]
+trace 562 rnd hints:addHints choice 5 -> 2 [2]
+trace 563 rnd hints:addHints randint 0 20 -> 19 [1]
+trace 564 rnd hints:addHints choice 5 -> 1 [1]
+trace 565 rnd hints:addHints randint 0 19 -> 5 [1]
+trace 566 rnd hints:addHints choice 5 -> 0 [2]
+trace 567 rnd hints:addHints randint 0 18 -> 14 [1]
+trace 568 rnd hints:addHints choice 5 -> 2 [1]
+trace 569 rnd hints:addHints randint 0 17 -> 9 [1]
+trace 570 rnd hints:addHints choice 5 -> 0 [1]
+trace 571 rnd hints:addHints randint 0 16 -> 13 [1]
+trace 572 rnd hints:addHints choice 5 -> 0 [1]
+trace 573 rnd hints:addHints randint 0 15 -> 4 [2]
+trace 574 rnd hints:addHints choice 5 -> 3 [3]
+trace 575 rnd hints:addHints randint 0 14 -> 3 [1]
+trace 576 rnd hints:addHints choice 5 -> 1 [1]
+trace 577 rnd hints:addHints randint 0 13 -> 5 [1]
+trace 578 rnd hints:addHints choice 5 -> 2 [1]
+trace 579 rnd hints:addHints randint 0 12 -> 10 [1]
+trace 580 rnd hints:addHints choice 5 -> 2 [2]
+trace 581 rnd hints:addHints randint 0 11 -> 11 [1]
+trace 582 rnd hints:addHints choice 5 -> 3 [1]
+trace 583 rnd hints:addHints randint 0 10 -> 6 [2]
+trace 584 rnd hints:addHints choice 5 -> 4 [1]
+trace 585 rnd hints:addHints randint 0 9 -> 0 [1]
+trace 586 rnd hints:addHints choice 5 -> 3 [4]
+trace 587 rnd hints:addHints randint 0 8 -> 5 [1]
+trace 588 rnd hints:addHints choice 5 -> 4 [1]
+trace 589 rnd hints:addHints randint 0 7 -> 2 [1]
+trace 590 rnd hints:addHints choice 5 -> 3 [2]
+trace 591 rnd hints:addHints randint 0 6 -> 6 [1]
+trace 592 rnd hints:addHints choice 5 -> 1 [1]
+trace 593 rnd hints:addHints randint 0 5 -> 4 [1]
+trace 594 rnd hints:addHints choice 5 -> 3 [1]
+trace 595 rnd hints:addHints randint 0 4 -> 3 [1]
+trace 596 rnd hints:addHints choice 5 -> 4 [3]
+trace 597 rnd hints:addHints randint 0 3 -> 0 [7]
+trace 598 rnd hints:addHints choice 5 -> 2 [3]
+trace 599 rnd hints:addHints randint 0 2 -> 2 [1]
+trace 600 rnd hints:addHints choice 5 -> 4 [1]
+trace 601 rnd hints:addHints randint 0 1 -> 1 [1]
+trace 602 rnd hints:addHints choice 5 -> 1 [2]
+trace 603 rnd hints:addHints randint 0 0 -> 0 [1]
+trace 604 rnd hints:addHints choice 5 -> 3 [4]
+trace 605 rnd hints:addHints choice 5 -> 0 [1]
+trace 606 rnd hints:addHints choice 8 -> 3 [1]
+trace 607 global patches.endscreen:updateEndScreen choice 24 -> 0 [1]
+rom_sha1 418f571cbd0552ac7ea3290172155848d0d27c31
+spoiler_sha1 b561b113966a56d912b4bb0ac40bb84f2c59ddfa
+outcome ok

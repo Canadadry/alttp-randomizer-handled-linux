@@ -1,0 +1,218 @@
+# Every setting of LADXR's settings.py, tier 1 or not, in LADXR's order, each followed by its
+# options in LADXR's order; written by gen_settings.py (gen_fixtures.sh). Tab-separated fields:
+#   setting <key>\t<category>\t<short>\t<bool|str|float>\t<default>\t<label>\t<aesthetic 0|1>\t<visible_if>
+#   option <key>\t<value>\t<short>\t<label>\t<meta>
+# Values: a bool as 0 or 1, a float as float.hex, "" for the empty string. <visible_if>: LADXR's
+# list comma-separated (the controlling key, then the values that show the setting), - when none.
+# <label>/<meta>: the option label split at its first | as toJson does, <meta> - when it has none.
+# gfxmod's options are LADXR's own sorted gfx/ names.
+setting seed	Main	<	str	""	Seed	0	-
+setting logic	Main	L	str	""	Logic	0	-
+option logic	casual	c	Casual	-
+option logic	""	""	Normal	-
+option logic	hard	h	Hard	-
+option logic	glitched	g	Glitched	-
+option logic	hell	H	Hell	-
+setting forwardfactor	Main	F	float	0x0.0p+0	Forward Factor	0	-
+setting accessibility	Main	A	str	all	Accessibility	0	-
+option accessibility	all	a	100% Locations	-
+option accessibility	goal	g	Beatable	-
+setting race	Main	V	bool	0	Race mode	0	-
+setting heartpiece	Items	h	bool	1	Randomize heart pieces	0	-
+setting seashells	Items	s	bool	1	Randomize hidden seashells	0	-
+setting heartcontainers	Items	H	bool	1	Randomize heart containers	0	-
+setting instruments	Items	I	bool	0	Randomize instruments	0	-
+setting tradequest	Items	T	bool	1	Randomize trade quest	0	-
+setting witch	Items	W	bool	1	Randomize item given by the witch	0	-
+setting rooster	Items	R	bool	1	Add the rooster	0	-
+setting boomerang	Items	Z	str	gift	Boomerang trade	0	-
+option boomerang	default	d	Normal	-
+option boomerang	trade	t	Trade	-
+option boomerang	gift	g	Gift	-
+setting dungeon_keys	Dungeon Items	k	str	""	Dungeon keys	0	-
+option dungeon_keys	""	""	Standard	-
+option dungeon_keys	keysanity	k	Keysanity	-
+option dungeon_keys	removed	r	Removed	-
+setting nightmare_keys	Dungeon Items	n	str	""	Nightmare keys	0	-
+option nightmare_keys	""	""	Standard	-
+option nightmare_keys	keysanity	k	Keysanity	-
+option nightmare_keys	removed	r	Removed	-
+setting dungeon_beaks	Dungeon Items	Y	str	""	Dungeon beaks	0	-
+option dungeon_beaks	""	""	Standard	-
+option dungeon_beaks	keysanity	k	Keysanity	-
+option dungeon_beaks	removed	r	Removed	-
+setting dungeon_maps	Dungeon Items	D	str	""	Dungeon map/compass	0	-
+option dungeon_maps	""	""	Standard	-
+option dungeon_maps	keysanity	k	Keysanity	-
+option dungeon_maps	removed	r	Removed	-
+setting randomstartlocation	Entrances	r	bool	0	Random start location	0	-
+setting dungeonshuffle	Entrances	u	bool	0	Dungeon shuffle	0	-
+setting entranceshuffle	Entrances	E	str	none	Entrance randomizer	0	-
+option entranceshuffle	none	""	Default	-
+option entranceshuffle	simple	s	Simple	-
+option entranceshuffle	split	S	Split	-
+option entranceshuffle	mixed	m	Mixed	-
+option entranceshuffle	wild	w	Wild	-
+option entranceshuffle	chaos	c	Chaos	-
+option entranceshuffle	insane	i	Insane	-
+option entranceshuffle	madness	M	Madness	-
+setting shufflejunk	Entrances	j	bool	0	Shuffle itemless entrances	0	entranceshuffle,simple,split,mixed,wild,chaos,insane,madness
+setting shuffleannoying	Entrances	a	bool	0	Shuffle annoying entrances	0	entranceshuffle,simple,split,mixed,wild,chaos,insane,madness
+setting shufflewater	Entrances	w	bool	0	Shuffle water entrances	0	entranceshuffle,simple,split,mixed,wild,chaos,insane,madness
+setting boss	Gameplay	B	str	default	Boss shuffle	0	-
+option boss	default	""	Normal	-
+option boss	shuffle	s	Shuffle	-
+option boss	random	r	Randomize	-
+setting miniboss	Gameplay	b	str	default	Miniboss shuffle	0	-
+option miniboss	default	""	Normal	-
+option miniboss	shuffle	s	Shuffle	-
+option miniboss	random	r	Randomize	-
+setting enemies	Gameplay	e	str	default	Enemizer	0	-
+option enemies	default	""	None	-
+option enemies	overworld	o	Overworld	-
+setting goal	Gameplay	G	str	vanilla	Goal	0	-
+option goal	vanilla	v	Vanilla	-
+option goal	instruments	i	X instruments	-
+option goal	specific	s	X specific instruments	-
+option goal	open	O	Egg already open	-
+option goal	open-4	<	Random short game (0-4)	-
+option goal	5-8	>	Random long game (5-8)	-
+option goal	seashells	S	Seashell hunt (20)	-
+option goal	bingo	b	Bingo!	-
+option goal	bingo-double	d	Double Bingo!	-
+option goal	bingo-triple	t	Triple Bingo!	-
+option goal	bingo-full	B	Bingo-25!	-
+option goal	maze	m	Sign Maze	-
+setting goalcount	Gameplay	i	str	4	Goal count	0	goal,instruments,specific
+option goalcount	7	7	7 instruments	-
+option goalcount	6	6	6 instruments	-
+option goalcount	5	5	5 instruments	-
+option goalcount	4	4	4 instruments	-
+option goalcount	3	3	3 instruments	-
+option goalcount	2	2	2 instruments	-
+option goalcount	1	1	1 instrument	-
+option goalcount	0	0	No instruments	-
+option goalcount	random	R	Random instrument count	-
+setting itempool	Gameplay	P	str	""	Item pool	0	-
+option itempool	""	""	Normal	-
+option itempool	casual	c	Casual	-
+option itempool	pain	p	Path of Pain	-
+option itempool	keyup	k	More keys	-
+setting hpmode	Gameplay	m	str	default	Health mode	0	-
+option hpmode	default	""	Normal	-
+option hpmode	inverted	i	Inverted	-
+option hpmode	1	1	Start with 1 heart	-
+option hpmode	low	l	Low max	-
+option hpmode	5hit	5	5Hit Challenge	-
+setting hardmode	Gameplay	X	str	none	Hard mode	0	-
+option hardmode	none	""	Disabled	-
+option hardmode	oracle	O	Oracle	-
+option hardmode	hero	H	Hero	-
+option hardmode	ohko	1	One hit KO	-
+setting steal	Gameplay	t	str	default	Stealing from the shop	0	-
+option steal	always	a	Always	-
+option steal	never	n	Never	-
+option steal	default	""	Normal	-
+option steal	ggs	g	GGS	-
+setting evilshop	Special	v	str	""	Evil shop	0	-
+option evilshop	""	""	Disabled	-
+option evilshop	enabled	e	Enabled	-
+setting bowwow	Special	g	str	normal	Good boy mode	0	-
+option bowwow	normal	""	Disabled	-
+option bowwow	always	a	Enabled	-
+option bowwow	swordless	s	Enabled (swordless)	-
+setting overworld	Special	O	str	normal	Overworld	0	-
+option overworld	normal	""	Normal	-
+option overworld	dungeondive	D	Dungeon dive	-
+option overworld	nodungeons	N	No dungeons	-
+option overworld	dungeonchain	C	Dungeon chain	-
+option overworld	random	R	Randomized	-
+option overworld	alttp	A	ALttP	-
+setting dungeonchainlength	Special	d	str	5	Chain length	0	overworld,dungeonchain
+option dungeonchainlength	3	3	3 Dungeons	-
+option dungeonchainlength	4	4	4 Dungeons	-
+option dungeonchainlength	5	5	5 Dungeons	-
+option dungeonchainlength	6	6	6 Dungeons	-
+option dungeonchainlength	7	7	7 Dungeons	-
+option dungeonchainlength	8	8	8 Dungeons	-
+setting owlstatues	Special	o	str	""	Owl statues	0	-
+option owlstatues	""	""	Never	-
+option owlstatues	dungeon	D	In dungeons	-
+option owlstatues	overworld	O	On the overworld	-
+option owlstatues	both	B	Dungeons and Overworld	-
+setting keyholesanity	Special	K	bool	0	Keyhole sanity	0	-
+setting shopsanity	Special	N	str	""	Shopsanity	0	-
+option shopsanity	""	""	Disabled	-
+option shopsanity	basic	b	Basic	-
+option shopsanity	important	i	Important	-
+setting superweapons	Special	q	bool	0	Enable super weapons	0	-
+setting quickswap	User options	Q	str	none	Quickswap	1	-
+option quickswap	none	""	Disabled	-
+option quickswap	a	a	Swap A button	-
+option quickswap	b	b	Swap B button	-
+setting textmode	User options	f	str	fast	Text mode	1	-
+option textmode	fast	""	Fast	-
+option textmode	default	d	Normal	-
+option textmode	none	n	No-text	-
+option textmode	notextbox	b	No text boxes	-
+setting lowhpbeep	User options	p	str	slow	Low HP beeps	1	-
+option lowhpbeep	none	D	Disabled	-
+option lowhpbeep	slow	S	Slow	-
+option lowhpbeep	default	N	Normal	-
+setting noflash	User options	l	bool	1	Remove flashing lights	1	-
+setting nagmessages	User options	S	bool	0	Show nag messages	1	-
+setting gfxmod	User options	c	str	""	Graphics	1	-
+option gfxmod	""	""	Default	-
+option gfxmod	AgesGirl.bin	AgesGirl.bin>	AgesGirl	Zero Meaning
+option gfxmod	Bowwow.bin	Bowwow.bin>	Bowwow	Linker
+option gfxmod	Braixen.bin	Braixen.bin>	Braixen	WildCard78
+option gfxmod	Bunny.bin	Bunny.bin>	Bunny	Linker
+option gfxmod	GrandmaUlrira.bin	GrandmaUlrira.bin>	GrandmaUlrira	Zero Meaning
+option gfxmod	Kirby.bin	Kirby.bin>	Kirby	Zero Meaning
+option gfxmod	Kris.bin	Kris.bin>	Kris	Mystical
+option gfxmod	LuckwurstJoe.bin	LuckwurstJoe.bin>	LuckwurstJoe	Nekoni, LuckwurstJoe
+option gfxmod	Luigi.bin	Luigi.bin>	Luigi	Linker
+option gfxmod	MMLink.bin	MMLink.bin>	MMLink	Spikey-Valentine, Thunder Wool, and Techokami
+option gfxmod	Marin.bin	Marin.bin>	Marin	Zero Meaning
+option gfxmod	MarinAlpha.bin	MarinAlpha.bin>	MarinAlpha	Zero Meaning
+option gfxmod	Mario.bin	Mario.bin>	Mario	Linker
+option gfxmod	Martha.bin	Martha.bin>	Martha	Zero Meaning
+option gfxmod	Matty.bin	Matty.bin>	Matty	Madam Materia
+option gfxmod	Meme.bin	Meme.bin>	Meme	Linker
+option gfxmod	Moblin.bin	Moblin.bin>	Moblin	-
+option gfxmod	NESLink.bin	NESLink.bin>	NESLink	Zero Meaning
+option gfxmod	Ninten.bin	Ninten.bin>	Ninten	Swordy
+option gfxmod	Noelle.bin	Noelle.bin>	Noelle	-
+option gfxmod	Ralsei.bin	Ralsei.bin>	Ralsei	Mystical
+option gfxmod	Richard.bin	Richard.bin>	Richard	Linker
+option gfxmod	Ricky.bin	Ricky.bin>	Ricky	-
+option gfxmod	Rooster.bin	Rooster.bin>	Rooster	Zero Meaning
+option gfxmod	Rosa.bin	Rosa.bin>	Rosa	Jill
+option gfxmod	Saria.bin	Saria.bin>	Saria	MoonSuccubus
+option gfxmod	Sig.bin	Sig.bin>	Sig	Madam Materia and Techokami
+option gfxmod	SpongeBob.bin	SpongeBob.bin>	SpongeBob	PK Kim
+option gfxmod	Subrosian.bin	Subrosian.bin>	Subrosian	Zero Meaning
+option gfxmod	Tarin.bin	Tarin.bin>	Tarin	Linker
+option gfxmod	X.bin	X.bin>	X	AhziDahaka
+setting follower	User options	x	str	""	Follower	1	-
+option follower	""	""	None	-
+option follower	fox	f	Fox	-
+option follower	navi	n	Navi	-
+option follower	ghost	g	Ghost	-
+option follower	yipyip	y	YipYip	-
+setting linkspalette	User options	C	str	-1	Link's color	1	-
+option linkspalette	-1	-	Normal	-
+option linkspalette	0	0	Green	-
+option linkspalette	1	1	Yellow	-
+option linkspalette	2	2	Red	-
+option linkspalette	3	3	Blue	-
+option linkspalette	4	4	Inverted Red	-
+option linkspalette	5	5	Inverted Blue	-
+option linkspalette	6	6	?? C	-
+option linkspalette	7	7	?? D	-
+setting music	User options	M	str	""	Music	1	-
+option music	""	""	Default	-
+option music	random	r	Random	-
+option music	off	o	Disable	-
+option music	shifted	s	Tone shifted	-
+option music	ffa	f	FinalFantasyAdventure	-

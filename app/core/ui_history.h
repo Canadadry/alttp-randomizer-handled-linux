@@ -56,6 +56,7 @@ typedef void (*UiHistoryDeleteFn)(void *ctx, const UiHistoryEntry *entry, UiHist
 
 typedef enum UiHistoryEvent {
 	UI_HISTORY_NONE,
+	UI_HISTORY_BACK,
 	UI_HISTORY_QUIT,
 	UI_HISTORY_TAB_NEXT,
 	UI_HISTORY_TAB_PREV

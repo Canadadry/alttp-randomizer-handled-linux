@@ -1,7 +1,8 @@
 # Onion facts
 
 What the app needs from OnionOS, its menu and its RetroArch, each fact cited
-from the source at a pinned commit. The cross toolchain is in
+from the source at a pinned commit; section 11 adds the Game Boy Color list
+for plan 3's LADX seeds. The cross toolchain is in
 [`docs/toolchain.md`](toolchain.md) and is not repeated here.
 
 ## Pinned sources
@@ -43,6 +44,19 @@ from the source at a pinned commit. The cross toolchain is in
   The source at that commit:
   [`libretro/supafaust@75c658cce454e58ae04ea252f53a31c60d61548e`](https://github.com/libretro/supafaust/tree/75c658cce454e58ae04ea252f53a31c60d61548e)
   (2022-12-12).
+- **The GBC core.** The shipped
+  `static/build/RetroArch/.retroarch/cores/gambatte_libretro.so` contains the
+  strings `Gambatte` and `v0.5.0 04e73b8`, its `library_name` and its
+  `library_version` (`"v0.5.0" GIT_VERSION`, `GIT_VERSION` being
+  `git rev-parse --short HEAD`). `04e73b8` is not in
+  `libretro/gambatte-libretro`: it is Onion's fork,
+  [`schmurtzm/gambatte-libretro@04e73b8215601b61fd414c66ab20db5a99d65001`](https://github.com/schmurtzm/gambatte-libretro/tree/04e73b8215601b61fd414c66ab20db5a99d65001)
+  (2023-04-12, "fix palette struct name", branch
+  `advanced-color-organisation`), the fork Onion's GBC page names
+  ([`06-nintendo-gbc.md` line 16](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/website/docs/04-emulators/03-handhelds/06-nintendo-gbc.md#L16)).
+  The binary was last changed by Onion commit
+  [`d937d44f`](https://github.com/OnionUI/Onion/commit/d937d44f4beb4d682cf20ac50a062d6eab8c9880)
+  (2023-05-29) and is the same file at both Onion commits.
 
 ## 1. Device and Onion version
 
@@ -114,7 +128,7 @@ from the source at a pinned commit. The cross toolchain is in
   ([Guest Mode](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/packages/App/Guest%20Mode/App/Guest_Mode/config.json#L3)).
   No packaged app keeps its icon inside its own folder, so that case is
   **not stated in the sources**; an absolute path such as
-  `/mnt/SDCARD/App/ALttPR/icon.png` follows a form Onion ships.
+  `/mnt/SDCARD/App/ZeldaRando/icon.png` follows a form Onion ships.
 - **`launch.sh` runs from the app folder.** The start command is
   `cd <app dir>; chmod a+x ./<launch>; LD_PRELOAD=/mnt/SDCARD/miyoo/app/../lib/libpadsp.so ./<launch>`
   ([`apps.h` lines 132–138](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/src/common/utils/apps.h#L132-L138)),
@@ -150,7 +164,7 @@ from the source at a pinned commit. The cross toolchain is in
     `/mnt/SDCARD/App.temp/` and back in label order
     ([`app_sorter.sh` lines 1–33](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/build/.tmp_update/script/app_sorter.sh#L1-L33);
     [`src/tweaks/tools.h` lines 153, 158](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/src/tweaks/tools.h#L153-L158)):
-    files inside the folder move with it, so app data inside `App/ALttPR/`
+    files inside the folder move with it, so app data inside `App/ZeldaRando/`
     survives, but its absolute path is briefly elsewhere.
   - Icon packs rewrite `icon` and `iconsel` in `config.json`, but only when
     the pack has an icon with the same base name as the current one
@@ -332,7 +346,7 @@ Sources:
   374–378 at `2bab767e`)
   ([`runtime.sh` lines 458–494](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/build/.tmp_update/runtime.sh#L458-L494);
   [lines 472–508 at `2bab767e`](https://github.com/OnionUI/Onion/blob/2bab767e4a17b1b489f02c9fb6af8dde310d4c3e/static/build/.tmp_update/runtime.sh#L472-L508)).
-  For `Roms/SFC/ALttPR/X.sfc` that file is `Roms/SFC/ALttPR/.game_config/X.cfg`;
+  For `Roms/SFC/ZeldaRando/X.sfc` that file is `Roms/SFC/ZeldaRando/.game_config/X.cfg`;
   it exists only if the user changes the core for that ROM.
 - **Subfolders: one level deep, no apostrophe, not with `miyoogamelist.xml`.**
   "Subfolders can be used inside your rom folders but ONLY one level deep
@@ -418,7 +432,7 @@ Sources:
   ([`libretro-common/file/file_path.c` lines 420–427, 665–673](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/libretro-common/file/file_path.c#L420-L427)).
   The content's subfolder is used only with `sort_*_by_content_enable`
   ([`runloop.c` lines 8205–8209, 8253–8258](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/runloop.c#L8205-L8258)),
-  off in Onion's config. So `ALttPR/` is ignored, and two ROMs with the same
+  off in Onion's config. So `ZeldaRando/` is ignored, and two ROMs with the same
   file name in different SNES folders would share one save. Before launch,
   `runtime.sh` resolves the ROM path with `realpath`
   ([`runtime.sh` lines 335–337](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/build/.tmp_update/runtime.sh#L335-L337);
@@ -449,7 +463,7 @@ Sources:
     off in Onion's config;
   - compression sets a flag on the same file, with no extra extension
     ([`tasks/task_save.c` lines 1181–1184](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/tasks/task_save.c#L1181-L1184)).
-- **Worked example: `Roms/SFC/ALttPR/Open-Ganon-1CA10A.sfc`**, base name
+- **Worked example: `Roms/SFC/ZeldaRando/Open-Ganon-1CA10A.sfc`**, base name
   `Open-Ganon-1CA10A`, with Onion's shipped config:
   - save: `/mnt/SDCARD/Saves/CurrentProfile/saves/Supafaust/Open-Ganon-1CA10A.srm`;
   - states, in `/mnt/SDCARD/Saves/CurrentProfile/states/Supafaust/`:
@@ -499,7 +513,7 @@ Recorded only; Phase 3 step 6 decides what a delete touches.
   only under `CurrentProfile` (section 7). The build ships `GuestProfile` as a
   copy of `CurrentProfile`
   ([`Makefile` line 202](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/Makefile#L202)).
-- The app's own files under `App/ALttPR/` and the ROMs under `Roms/` are not
+- The app's own files under `App/ZeldaRando/` and the ROMs under `Roms/` are not
   per profile.
 
 ## 10. Checked against the plan
@@ -508,7 +522,7 @@ Each path or layout of `docs/plan-1.md` §2, against sections 1–9. The two SD
 directories are spelled once in code, as `RANDO_SD_ROM_DIR` and
 `RANDO_SD_HISTORY_DIR` (`app/sd/rando_seed_save.h`, relative to the SD
 root; `git grep` finds no other spelling outside `docs/`). The ROM name is
-`<Mode>-<Goal>-<code>[-<n>].sfc` (`rando/src/name.c`): ASCII letters, digits
+`<Mode>-<Goal>-<code>[-<n>].sfc` (`alttp/src/name.c`): ASCII letters, digits
 and `-`, lower-case `.sfc`, at most 36 characters
 (`Inverted-Completionist-XXXXXX-99.sfc`) against `RANDO_NAME_ROM_MAX` 48.
 Every fact used below is the same at `07505ea5` and `2bab767e` (section
@@ -516,10 +530,10 @@ Every fact used below is the same at `07505ea5` and `2bab767e` (section
 
 | §2 path or layout | §2 text | Code | Facts | Verdict |
 |---|---|---|---|---|
-| `App/ALttPR/` as an Onion app (`config.json`, `launch.sh`, icon) | "An Onion app (`App/ALttPR/`)" | none yet (Phase 4 step 2's zip) | A folder under `App/` with a `config.json` is an app, named by `label`, started by `launch`, run from its own folder; the app sorter moves it whole; icon packs rewrite only a matching icon; an icon inside the app folder is not shown in a shipped app, an absolute path is a shipped form ([§2](#2-app-folder)) | MATCH, with a consequence (C1, C2) |
-| `App/ALttPR/base.sfc` | "placed once at `App/ALttPR/base.sfc`" | none yet (Phase 3 step 5 reads it) | App data inside the folder moves with it and is not per profile; nothing outside `Roms/` is listed as a game ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH |
-| `App/ALttPR/history/` | "History records go to `App/ALttPR/history/<code>.json`" | `RANDO_SD_HISTORY_DIR` `"App/ALttPR/history"` | Same as `base.sfc`; not per profile ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH, with a consequence (C3) |
-| `Roms/SFC/ALttPR/` as a folder of the SNES list, played by the default core | "Generated ROMs go to `Roms/SFC/ALttPR/…`, a subfolder of Onion's SNES list"; played "from Onion's SNES list with Onion's own SNES core" | `RANDO_SD_ROM_DIR` `"Roms/SFC/ALttPR"` | `Emu/SFC` has `rompath` `../../Roms/SFC` and starts `mednafen_supafaust_libretro.so`; subfolders one level deep, no apostrophe, flattened with `miyoogamelist.xml`; the list is cached in `Roms/SFC/SFC_cache6.db` and a new ROM shows only after a refresh, which Onion's scripts force by deleting that file ([§6](#6-snes-list)) | MATCH, with a consequence (C3, C4) |
+| `App/ZeldaRando/` as an Onion app (`config.json`, `launch.sh`, icon) | "An Onion app (`App/ZeldaRando/`)" | none yet (Phase 4 step 2's zip) | A folder under `App/` with a `config.json` is an app, named by `label`, started by `launch`, run from its own folder; the app sorter moves it whole; icon packs rewrite only a matching icon; an icon inside the app folder is not shown in a shipped app, an absolute path is a shipped form ([§2](#2-app-folder)) | MATCH, with a consequence (C1, C2) |
+| `App/ZeldaRando/alttp/base.sfc` | "placed once at `App/ZeldaRando/alttp/base.sfc`" | none yet (Phase 3 step 5 reads it) | App data inside the folder moves with it and is not per profile; nothing outside `Roms/` is listed as a game ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH |
+| `App/ZeldaRando/alttp/history/` | "History records go to `App/ZeldaRando/alttp/history/<code>.json`" | `RANDO_SD_HISTORY_DIR` `"App/ZeldaRando/alttp/history"` | Same as `base.sfc`; not per profile ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH, with a consequence (C3) |
+| `Roms/SFC/ZeldaRando/` as a folder of the SNES list, played by the default core | "Generated ROMs go to `Roms/SFC/ZeldaRando/…`, a subfolder of Onion's SNES list"; played "from Onion's SNES list with Onion's own SNES core" | `RANDO_SD_ROM_DIR` `"Roms/SFC/ZeldaRando"` | `Emu/SFC` has `rompath` `../../Roms/SFC` and starts `mednafen_supafaust_libretro.so`; subfolders one level deep, no apostrophe, flattened with `miyoogamelist.xml`; the list is cached in `Roms/SFC/SFC_cache6.db` and a new ROM shows only after a refresh, which Onion's scripts force by deleting that file ([§6](#6-snes-list)) | MATCH, with a consequence (C3, C4) |
 | The ROM name as a content name | "`<Mode>-<Goal>-<code>.sfc` (e.g. `Open-FastGanon-4F2A9C.sfc`)" | `rando_name_make`, `RANDO_NAME_ROM_MAX` | `extlist` holds lower-case `sfc` and is case-sensitive; the card is FAT32; RetroArch's base name is the file name without its last extension, so `Open-Ganon-1CA10A.sfc` gives `Open-Ganon-1CA10A` unchanged ([§6](#6-snes-list), [§7](#7-saves-and-states)) | MATCH |
 | The `.srm` location | Delete "removes the ROM, its RetroArch `.srm` save" | none yet (Phase 3 step 6) | `Saves/CurrentProfile/saves/Supafaust/<base>.srm`: `savefile_directory`, sorted by the core's `library_name` `Supafaust`, not by content folder, not next to the content ([§7](#7-saves-and-states)); `CurrentProfile` is the active profile, the other one is `MainProfile` or `GuestProfile` ([§9](#9-profiles)) | MATCH, with a consequence (C5, C6, C7) |
 | The save-state location | Delete removes "its RetroArch save states" | none yet (Phase 3 step 6) | `Saves/CurrentProfile/states/Supafaust/`: `<base>.state`, `<base>.stateN` (0…10 by auto-index, any N by hand), `<base>.state.auto`, each with an optional `.png`; all start with `<base>.state`, which no `-<n>` sibling does; compression adds no extension ([§7](#7-saves-and-states)) | MATCH, with a consequence (C5, C6, C8) |
@@ -528,19 +542,19 @@ No row is a `MISMATCH`.
 
 ### Consequences
 
-- **C1 (Phase 4 step 2).** The zip's `App/ALttPR/config.json` needs `label`
+- **C1 (Phase 4 step 2).** The zip's `App/ZeldaRando/config.json` needs `label`
   and `launch` (`"launch.sh"`); give `icon` as the absolute
-  `/mnt/SDCARD/App/ALttPR/<file>.png`, the shipped absolute form, until
+  `/mnt/SDCARD/App/ZeldaRando/<file>.png`, the shipped absolute form, until
   device check 6 confirms it. `launch.sh` does `cd $(dirname "$0")` like
   Onion's apps. No `full_resolution` file, so the app gets 640×480.
 - **C2 (Phase 4 step 2, Phase 3 step 5).** The binary finds the SD root
-  from its folder (`../..` of `App/ALttPR/`, or `/mnt/SDCARD`) to join
+  from its folder (`../..` of `App/ZeldaRando/`, or `/mnt/SDCARD`) to join
   `RANDO_SD_ROM_DIR` and `RANDO_SD_HISTORY_DIR`; `launch.sh` starts it in
-  `App/ALttPR/`.
+  `App/ZeldaRando/`.
 - **C3 (Phase 3 step 5 or Phase 4 step 2).** `rando_seed_save` creates no
-  directory: `App/ALttPR/history/` ships in the zip or is created at start,
-  and `Roms/SFC/ALttPR/` is created before the first save (it is not in the
-  zip, which holds only `App/ALttPR/`).
+  directory: `App/ZeldaRando/alttp/history/` ships in the zip or is created
+  at start, and `Roms/SFC/ZeldaRando/` is created before the first save (it is
+  not in the zip, which holds only `App/ZeldaRando/`, with `alttp/base.bps`).
 - **C4 (Phase 3 steps 5 and 6).** After writing a ROM (step 5) and after
   deleting one (step 6), the app deletes `Roms/SFC/SFC_cache6.db` (and
   `SFC_cache2.db`), as `reset_list.sh` does, so the list is rebuilt; that a
@@ -579,6 +593,218 @@ The six checks below. Checks 3, 4 and 5 bound rows of this table (the
 verdict: the sources settle each fact, the check confirms the card follows
 them.
 
+## 11. GBC list, saves and states (plan 3)
+
+What plan 3's LADX seeds need from Onion, cited like sections 6 and 7 and
+reusing their RetroArch facts by reference. Every Onion file cited here is
+outside the eight files that differ on `v4.5-dev` (*Pinned sources*), except
+`Makefile` and `install.sh`, which get a second link; the Gambatte binary is
+not in the `v4.5-dev` diff either. To re-check: clone each repository
+blobless into `tmp/` (`git clone --filter=blob:none --no-checkout <url>`),
+read files with `git show <commit>:<path>`, and identify a core with
+`strings` on `git show <commit>:static/build/RetroArch/.retroarch/cores/<core>.so`;
+`04e73b8` resolves after `git fetch` of `schmurtzm/gambatte-libretro` (not
+of `libretro/gambatte-libretro`).
+
+### The GBC entry
+
+- **The GBC entry is `Emu/GBC`, played with Gambatte.** Its `config.json`:
+  `"label":"GBC"`, `"launch":"launch.sh"`, `"rompath":"../../Roms/GBC"`,
+  `"gamelist":"../../Roms/GBC/miyoogamelist.xml"`,
+  `"extlist":"bin|dmg|gb|gbc|zip|7z"`
+  ([`config.json` lines 1–13](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/packages/Emu/Nintendo%20-%20Game%20Boy%20Color%20%28Gambatte%29/Emu/GBC/config.json#L1-L13));
+  `launch.sh` runs
+  `HOME=/mnt/SDCARD/RetroArch/ $progdir/../../RetroArch/retroarch -v -L $progdir/../../RetroArch/.retroarch/cores/gambatte_libretro.so "$1"`
+  ([`launch.sh` lines 6–7](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/packages/Emu/Nintendo%20-%20Game%20Boy%20Color%20%28Gambatte%29/Emu/GBC/launch.sh#L6-L7)).
+  Onion's GBC page lists `**lr-gambatte**, lr-gearboy, lr-tgbdual`, rom
+  folder `GBC`
+  ([`06-nintendo-gbc.md` lines 9–11](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/website/docs/04-emulators/03-handhelds/06-nintendo-gbc.md#L9-L11)).
+- **It is the only `Emu` package for `Roms/GBC`; two `RApp` packages share
+  the folder with other cores.** `RApp/gearboy_gbc` has
+  `"rompath":"../../Roms/GBC"` and `"extlist":""`
+  ([`config.json` lines 6–11](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/packages/RApp/Nintendo%20-%20GBC%20%28Gearboy%29/RApp/gearboy_gbc/config.json#L6-L11))
+  and starts `gearboy_libretro.so`
+  ([`launch.sh` line 7](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/packages/RApp/Nintendo%20-%20GBC%20%28Gearboy%29/RApp/gearboy_gbc/launch.sh#L7));
+  `RApp/TGB_Dual_gbc` has the same `rompath` and
+  `"extlist":"bin|dmg|gb|gbc|zip|7z|cgb"`
+  ([`config.json` lines 6–11](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/packages/RApp/Nintendo%20-%20GBC%20%28TGB%20Dual%29/RApp/TGB_Dual_gbc/config.json#L6-L11))
+  and starts `tgbdual_libretro.so`
+  ([`launch.sh` line 7](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/packages/RApp/Nintendo%20-%20GBC%20%28TGB%20Dual%29/RApp/TGB_Dual_gbc/launch.sh#L7)).
+  `Emu/GB` also accepts `gbc` but lists `"rompath":"../../Roms/GB"`
+  ([`config.json` lines 6–12](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/packages/Emu/Nintendo%20-%20Game%20Boy%20%28Gambatte%29/Emu/GB/config.json#L6-L12)),
+  not the app's folder; a player copying a seed there gets the same core.
+- **Packages are chosen in the Package Manager, not installed by default.**
+  The build copies `static/packages/Emu/`, `App/` and `RApp/` into
+  `App/PackageManager/data`
+  ([`Makefile` lines 98–104](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/Makefile#L98-L104);
+  [same lines at `2bab767e`](https://github.com/OnionUI/Onion/blob/2bab767e4a17b1b489f02c9fb6af8dde310d4c3e/Makefile#L98-L104)),
+  and the installer ends by running `packageManager --confirm` (or
+  `--confirm --auto_update` without a reset)
+  ([`install.sh` lines 329–335](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/dist/miyoo/app/.tmp_update/install.sh#L329-L335);
+  [lines 337–343 at `2bab767e`](https://github.com/OnionUI/Onion/blob/2bab767e4a17b1b489f02c9fb6af8dde310d4c3e/static/dist/miyoo/app/.tmp_update/install.sh#L337-L343)).
+  With `--confirm`, if no package of the first tab (`Emu`, "VERIFIED") is
+  installed, the ones whose rom folder already holds a file of their
+  `extlist` (one subfolder level included) are pre-selected; the user
+  confirms or changes the choice
+  ([`packageManager.c` lines 41–45](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/src/packageManager/packageManager.c#L41-L45);
+  [`listActions.h` lines 7–45](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/src/packageManager/listActions.h#L7-L45);
+  [`changes.h` lines 38–43](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/src/packageManager/changes.h#L38-L43);
+  [`fileActions.h` lines 120–190](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/src/packageManager/fileActions.h#L120-L190);
+  [`globals.h` lines 35–38](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/src/packageManager/globals.h#L35-L38)).
+  So whether `Emu/GBC` is on a given card is not stated in the sources
+  (device check 9). The same holds for `Emu/SFC`, which section 6 assumed
+  present.
+
+### Listing
+
+- **`.gbc` is in the `extlist`, lower case**, and the list is
+  case-sensitive (FAQ, [§6](#6-snes-list)), so a LADX ROM must end in
+  lower-case `.gbc`.
+- **`Roms/GBC/ZeldaRando/` is listed**: the subfolder rules of
+  [§6](#6-snes-list) apply to every rom folder (one level deep, no
+  apostrophe; the docs' own example is `Roms/GB/Hacks`), and `Emu/GBC`
+  has a `gamelist` key, so a `Roms/GBC/miyoogamelist.xml` on the card would
+  flatten the subfolder into one list.
+- **The cache is `Roms/GBC/GBC_cache6.db`, table `GBC_roms`.** The name is
+  `<rompath>/<basename(rompath)>_cache6.db` and the table
+  `<basename(rompath)>_roms`
+  ([`randomGamePicker.c` lines 123–132](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/src/randomGamePicker/randomGamePicker.c#L123-L132)),
+  and `reset_list.sh` deletes
+  `rm -f "$romdir/$(basename "$romdir")_cache2.db"` and `_cache6.db` for any
+  rom folder it is given
+  ([`reset_list.sh` lines 15–16](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/build/.tmp_update/script/reset_list.sh#L15-L16)),
+  here `Roms/GBC/GBC_cache2.db` and `Roms/GBC/GBC_cache6.db`. That a
+  subfolder's ROMs live in the parent's cache stays an inference, as in
+  [§6](#6-snes-list).
+- **Per-ROM core override**: `Roms/GBC/ZeldaRando/.game_config/<rom name>.cfg`,
+  the `runtime.sh` mechanism of [§6](#6-snes-list); it exists only if the
+  user changes the core for that ROM.
+
+### Saves and states
+
+- **The save folder is `Gambatte`, the core's `library_name`.** RetroArch
+  sorts saves and states by `library_name` ([§7](#7-saves-and-states)), and
+  the core sets `info->library_name = "Gambatte";`
+  ([`libretro.cpp` lines 1597–1611](https://github.com/schmurtzm/gambatte-libretro/blob/04e73b8215601b61fd414c66ab20db5a99d65001/libgambatte/libretro/libretro.cpp#L1597-L1611)),
+  the string in the shipped binary. The `.info` file's `corename = "Gambatte"`
+  ([`gambatte_libretro.info` line 5](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/build/RetroArch/.retroarch/cores/gambatte_libretro.info#L5))
+  and Onion's README lines `GBC             Gambatte`
+  ([`saves/README.txt` line 14](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/configs/Saves/CurrentProfile/saves/README.txt#L14),
+  [`states/README.txt` line 14](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/configs/Saves/CurrentProfile/states/README.txt#L14))
+  agree here, unlike SNES's.
+- **Onion's Gambatte config overrides no save or state key.**
+  `Saves/CurrentProfile/config/Gambatte/Gambatte.cfg` holds only
+  `video_dingux_ipu_keep_aspect = "true"`
+  ([`Gambatte.cfg` line 1](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/configs/Saves/CurrentProfile/config/Gambatte/Gambatte.cfg#L1)),
+  and `Gambatte.opt` only `gambatte_*` core options
+  ([`Gambatte.opt` lines 1–31](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/configs/Saves/CurrentProfile/config/Gambatte/Gambatte.opt#L1-L31)).
+  So section 7's `retroarch.cfg` values apply unchanged, with the same
+  caveat that a card's own files may differ (device check 4).
+- **RetroArch writes `<base>.srm` and `<base>.rtc`, each only when the core
+  gives it a non-empty memory.** For a single content, RetroArch registers
+  the save path for `RETRO_MEMORY_SAVE_RAM` and infers an `.rtc` path for
+  `RETRO_MEMORY_RTC` with `fill_pathname(savefile_name_rtc, savefile_path, ".rtc", …)`
+  ([`save.c` lines 529–543](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/save.c#L529-L543),
+  called from
+  [`runloop.c` lines 4228–4234](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/runloop.c#L4228-L4234)),
+  which replaces the last extension
+  ([`file_path.c` lines 329–340](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/libretro-common/file/file_path.c#L329-L340)),
+  so both sit in `saves/Gambatte/` with the same base name
+  (`FILE_PATH_RTC_EXTENSION ".rtc"`, `FILE_PATH_SRM_EXTENSION ".srm"`,
+  [`file_path_special.h` lines 45–47](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/file_path_special.h#L45-L47)).
+  A memory whose data is null or whose size is 0 is skipped
+  (`if (!mem_info->data || mem_info->size == 0) return false;`,
+  [`save.c` lines 322–334](https://github.com/libretro/RetroArch/blob/69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576/save.c#L322-L334)).
+  No Onion patch touches `save.c` (*Pinned sources*). Onion ships
+  `save_file_compression = "false"` and `autosave_interval = "0"`
+  ([`retroarch.cfg` line 2958](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/configs/RetroArch/.retroarch/retroarch.cfg#L2958),
+  [line 41](https://github.com/OnionUI/Onion/blob/07505ea58c7bba698d6b9220ff43946a43cac76b/static/configs/RetroArch/.retroarch/retroarch.cfg#L41)).
+- **Gambatte gives save RAM only to a battery cartridge, and an RTC only to
+  MBC3 with a timer or HuC3.** `retro_get_memory_data` and
+  `retro_get_memory_size` return `gb.savedata_*` for
+  `RETRO_MEMORY_SAVE_RAM` and `gb.rtcdata_*` for `RETRO_MEMORY_RTC`
+  ([`libretro.cpp` lines 2766–2792](https://github.com/schmurtzm/gambatte-libretro/blob/04e73b8215601b61fd414c66ab20db5a99d65001/libgambatte/libretro/libretro.cpp#L2766-L2792));
+  `savedata_size` is non-zero only when header byte `0x147` is one of
+  `0x03 0x06 0x09 0x0F 0x10 0x13 0x1B 0x1E 0xFE 0xFF`, and `rtcdata_size`
+  only for `0xFE` (HuC3), `0x0F` and `0x10`
+  ([`cartridge_libretro.cpp` lines 10–80](https://github.com/schmurtzm/gambatte-libretro/blob/04e73b8215601b61fd414c66ab20db5a99d65001/libgambatte/src/mem/cartridge_libretro.cpp#L10-L80)).
+  LADX DX's header byte is not in any pinned source (no ROM in the
+  repository); it is known as `0x1B` (MBC5 + RAM + battery), which gives an
+  `.srm` and no `.rtc`. That is an inference, settled by reading byte `0x147`
+  of the base ROM or of a generated seed when the oracle runs with the ROM
+  (Phase 2); delete covers `.rtc` anyway (G4).
+- **State names and the base-name rule are those of [§7](#7-saves-and-states)**:
+  `<base>.state`, `<base>.stateN`, `<base>.state.auto`, each with an optional
+  `.png`, in `Saves/CurrentProfile/states/Gambatte/`; `ZeldaRando/` is
+  ignored.
+- **The other cores use other folders.** Started from `RApp/gearboy_gbc`,
+  `RApp/TGB_Dual_gbc` or a `.game_config` override, a seed's saves go to that
+  core's `library_name` folder. The shipped binaries hold the strings
+  `Gearboy` and `TGB Dual` (with `v0.8.3 a6f3018` for TGB Dual), their
+  `.info` files say `corename = "Gearboy"` and `"TGB Dual"`, and Onion ships
+  `Saves/CurrentProfile/config/TGB Dual/`; these cores are not pinned to a
+  source commit, so `Gearboy` and `TGB Dual` as folder names are inferences.
+
+### Worked example
+
+`Roms/GBC/ZeldaRando/Normal-All-1CA10A.gbc` (an illustrative name shaped
+like ALttP's; Phase 4 fixes the real format), base name
+`Normal-All-1CA10A`, with Onion's shipped config and the `Emu/GBC` core:
+
+- save: `/mnt/SDCARD/Saves/CurrentProfile/saves/Gambatte/Normal-All-1CA10A.srm`
+  (and `Normal-All-1CA10A.rtc` beside it only for a cartridge with a clock);
+- states, in `/mnt/SDCARD/Saves/CurrentProfile/states/Gambatte/`:
+  `Normal-All-1CA10A.state`, `Normal-All-1CA10A.state1` …
+  `Normal-All-1CA10A.state10` (and any higher slot picked by hand),
+  `Normal-All-1CA10A.state.auto`, and each one's `.png` if thumbnails are
+  turned on; all of them start with `Normal-All-1CA10A.state`.
+
+### Checked against plan 3 §2
+
+Each GBC path of `docs/plan-3.md` §2 ("SD layout per game", and the
+phase steps that use them), against the facts above. No GBC or LADX path exists in code yet.
+
+| §2 path or layout | §2 text | Code | Facts | Verdict |
+|---|---|---|---|---|
+| `Roms/GBC/ZeldaRando/` as a folder of the GBC list, played by the default core | "Generated ROMs go to `Roms/SFC/ZeldaRando/` and `Roms/GBC/ZeldaRando/`"; "a patched `.gbc` that Onion's GBC core plays" | none yet (Phase 4 step 1) | `Emu/GBC` has `rompath` `../../Roms/GBC` and starts `gambatte_libretro.so`; one subfolder level is listed, no apostrophe, flattened with `miyoogamelist.xml`; the package is chosen in the Package Manager | MATCH, with a consequence (G1, G6) |
+| The `.gbc` ROM name as content | "a readable ROM name built from the main settings and a hex code, with the same collision rule" | none yet (Phase 4 step 1) | `extlist` holds lower-case `gbc` and is case-sensitive; the base name is the file name without its last extension ([§7](#7-saves-and-states)) | MATCH, with a consequence (G2) |
+| The `.srm` location | Phase 4 step 1: "deletion of the ROM, `.srm` and save states, using Phase 1 step 5's paths" | none yet (Phase 4 step 1) | `Saves/CurrentProfile/saves/Gambatte/<base>.srm`, plus `<base>.rtc` for a cartridge with a clock; Onion's Gambatte config overrides nothing | MATCH, with a consequence (G4, G5) |
+| The save-state location | Same Phase 4 step 1 text | none yet (Phase 4 step 1) | `Saves/CurrentProfile/states/Gambatte/`, every file starting with `<base>.state` ([§7](#7-saves-and-states)) | MATCH, with a consequence (G4, G5) |
+| The cache to delete | "The GBC folder, core and cache are subject to Phase 1's Onion research"; step 5: "the cache files to delete" | none yet (Phase 4 step 1) | `Roms/GBC/GBC_cache6.db` (table `GBC_roms`) and `GBC_cache2.db`, deleted the way `reset_list.sh` does | MATCH, with a consequence (G3) |
+| `App/ZeldaRando/ladx/` (`base.gbc`, the patch tables, `history/`, `settings.json`) | "`App/ZeldaRando/ladx/` holds `base.gbc`, the patch tables, `history/` and `settings.json`" | none yet (Phase 4 step 1) | App data inside the app folder moves with it, is not listed as a game and is not per profile ([§2](#2-app-folder), [§9](#9-profiles)) | MATCH |
+
+No row is a `MISMATCH`: §2's GBC paths stand.
+
+### Consequences for plan 3
+
+- **G1 (Phase 4 step 1).** `Roms/GBC/ZeldaRando/` is created before the
+  first LADX save, like `Roms/SFC/ZeldaRando/` (C3); it is not in the zip.
+- **G2 (Phase 4 step 1).** The LADX ROM name ends in lower-case `.gbc` and
+  keeps ALttP's character set (letters, digits, `-`), so the base name is
+  the name without `.gbc`.
+- **G3 (Phase 4 step 1).** After writing and after deleting a LADX ROM, the
+  app deletes `Roms/GBC/GBC_cache6.db` and `Roms/GBC/GBC_cache2.db`, the
+  GBC counterparts of `RANDO_SD_LIST_CACHE6` and `RANDO_SD_LIST_CACHE2`
+  (C4; device check 8).
+- **G4 (Phase 4 step 1).** Delete removes
+  `saves/Gambatte/<base>.srm` and `saves/Gambatte/<base>.rtc` (absent for a
+  cartridge without a clock, harmless to try), and every file of
+  `states/Gambatte/` whose name starts with `<base>.state`. The folder name
+  is the GBC counterpart of `RANDO_SD_CORE_DIR` (device check 7).
+- **G5 (Phase 4 step 1).** The profiles are handled as for ALttP (C6): the
+  same paths under `Saves/MainProfile/` and `Saves/GuestProfile/`. Other
+  cores and the per-ROM override (`Gearboy`, `TGB Dual`,
+  `Roms/GBC/ZeldaRando/.game_config/<rom>.cfg`) are handled as C7 and C8
+  decided for ALttP; a seed played with another core keeps that core's save.
+- **G6 (Phase 4 step 1).** A LADX and an ALttP seed never share a save or
+  state file: their folders are `Gambatte` and `Supafaust`, two different
+  `library_name`s. A same-named ROM under `Roms/GB/` played with the
+  `Emu/GB` Gambatte core would share the LADX seed's files (as C7 for
+  SNES); generated names make this unlikely.
+- **G7 (Phase 4 step 5).** The README can say a LADX seed needs the GBC
+  list (`Emu/GBC`) installed through the Package Manager, as ALttP needs
+  `Emu/SFC` (device check 9).
+
 ## Device checks for the owner
 
 What the sources do not settle, with what the app assumes meanwhile:
@@ -595,7 +821,14 @@ What the sources do not settle, with what the app assumes meanwhile:
    `savefile_directory`, `savestate_directory`, `sort_*` and
    `*_in_content_dir` values of section 7, and
    `Saves/CurrentProfile/config/Supafaust/` holds no override of them.
-5. A ROM copied into `Roms/SFC/ALttPR/` shows in the SNES list only after
+5. A ROM copied into `Roms/SFC/ZeldaRando/` shows in the SNES list only after
    Refresh, and shows without it once `Roms/SFC/SFC_cache6.db` is deleted.
-6. An app icon given as `/mnt/SDCARD/App/ALttPR/<file>.png` (or a path
+6. An app icon given as `/mnt/SDCARD/App/ZeldaRando/<file>.png` (or a path
    relative to the app folder) is shown in the Apps list.
+7. An existing GBC ROM's save folder: the folder name under
+   `Saves/CurrentProfile/saves/` and `states/` after saving in a game started
+   from the GBC list. Assumed: `Gambatte`.
+8. A ROM copied into `Roms/GBC/ZeldaRando/` shows in the GBC list only after
+   Refresh, and shows without it once `Roms/GBC/GBC_cache6.db` is deleted.
+9. The GBC list (`Emu/GBC`) and the SNES list (`Emu/SFC`) are installed on
+   the card (Package Manager, "VERIFIED" tab). Assumed: both are.

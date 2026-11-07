@@ -1,0 +1,14 @@
+generate_top	good	-	-	a r1 l1	Seed Settings | < None > | v|
+generate_middle	good	-	-	a down*12 up*5	Seed Settings | ^| | v| | < Open >
+generate_end	good	-	-	a up	>| Generate Seed | ^|
+generate_greyed_rows	good	-	--unsupported state=retro,goal=pedestal	a down*4 right*3 down*3 left	x| Goal           Master Sword Pedestal | X| World State                    Retro | i| Not supported with
+generate_greyed_action	good	-	--unsupported state=retro,goal=pedestal	a down*4 right*3 down*3 left down*7	X| Generate Seed | i| Not supported with Goal
+generate_refused	good	-	--unsupported state=retro,goal=pedestal	a down*4 right*3 down*3 left down*7 start	X| Generate Seed | E| Not supported with Goal
+generating	good	5	-	a start	Generating Seed | Please wait...
+seed_ready	good	-	-	a start	Seed Ready | Open-Ganon-1CA10A.sfc | Play it from the SNES list
+generation_failed	bad-source	-	-	a start	Generation Failed | Base ROM is not the JP 1.0 ROM
+history_list	good	-	-	a start a start a r1	Generated Seeds | Open-Ganon-1CA10A.sfc | Open-Ganon-1CA10A-2.sfc | Generated 2026-11-01 14:03
+history_empty	good	-	-	a r1	No seeds yet
+history_detail_spoiler	good	-	-	a up*2 right start a r1 a down*17	Spoiler | Bosses | B Back  X Delete
+history_confirm	good	-	-	a start a r1 x	This cannot be undone | A Delete  B Keep
+game_choice	good	-	-	down up	Choose a Game | A Link to the Past | Link's Awakening DX | A Open  B Quit

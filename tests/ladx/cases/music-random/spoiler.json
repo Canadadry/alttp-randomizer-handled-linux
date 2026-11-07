@@ -1,0 +1,1927 @@
+{
+  "accessibleItems": [
+    {
+      "id": "0x2A3",
+      "area": "Mabe Village",
+      "locationName": "Tarin's Gift",
+      "sphere": 0,
+      "itemName": "POWER_BRACELET"
+    },
+    {
+      "id": "0x2A4",
+      "area": "Mabe Village",
+      "locationName": "Well Heart Piece",
+      "sphere": 1,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x2B1",
+      "area": "Mabe Village",
+      "locationName": "Fishing Game Heart Piece",
+      "sphere": 2,
+      "itemName": "BOMB"
+    },
+    {
+      "id": "0x0A3",
+      "area": "Mabe Village",
+      "locationName": "Bush Field",
+      "sphere": 1,
+      "itemName": "RUPEES_20"
+    },
+    {
+      "id": "0x0D2",
+      "area": "Toronbo Shores",
+      "locationName": "Outside D1 Tree Bonk",
+      "sphere": 6,
+      "itemName": "SONG2"
+    },
+    {
+      "id": "0x092",
+      "area": "Mabe Village",
+      "locationName": "Ballad of the Wind Fish",
+      "sphere": 4,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x0D3",
+      "area": "Toronbo Shores",
+      "locationName": "Tail Cave Keyhole",
+      "sphere": 11,
+      "itemName": "TAIL_CAVE_OPENED"
+    },
+    {
+      "id": "0x2BF",
+      "area": "Mabe Village",
+      "locationName": "Dream Hut East",
+      "sphere": 2,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x2BE",
+      "area": "Mabe Village",
+      "locationName": "Dream Hut West",
+      "sphere": 6,
+      "itemName": "MAX_BOMBS_UPGRADE"
+    },
+    {
+      "id": "0x0F2",
+      "area": "Toronbo Shores",
+      "locationName": "Sword on the Beach",
+      "sphere": 1,
+      "itemName": "MEDICINE"
+    },
+    {
+      "id": "0x2FE-Trade",
+      "area": "Toronbo Shores",
+      "locationName": "Banana Sale",
+      "sphere": 8,
+      "itemName": "TOADSTOOL"
+    },
+    {
+      "id": "0x0E5",
+      "area": "Toronbo Shores",
+      "locationName": "West of Ghost House Chest",
+      "sphere": 1,
+      "itemName": "FEATHER"
+    },
+    {
+      "id": "0x0E9",
+      "area": "Martha's Bay",
+      "locationName": "Lone Bush",
+      "sphere": 1,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x0F8",
+      "area": "Martha's Bay",
+      "locationName": "Island Bush of Destiny",
+      "sphere": 7,
+      "itemName": "SONG1"
+    },
+    {
+      "id": "0x1E0",
+      "area": "Martha's Bay",
+      "locationName": "Mad Batter",
+      "sphere": 7,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x044",
+      "area": "Koholint Prairie",
+      "locationName": "Heart Piece of Shame",
+      "sphere": 2,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x050",
+      "area": "Mysterious Woods",
+      "locationName": "Toadstool",
+      "sphere": 1,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "TOADSTOOL2",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 9,
+      "itemName": "TOADSTOOL2"
+    },
+    {
+      "id": "0x2BD",
+      "area": "Mysterious Woods",
+      "locationName": "Cave Crystal Chest",
+      "sphere": 3,
+      "itemName": "TRADING_ITEM_FISHING_HOOK"
+    },
+    {
+      "id": "0x2AB",
+      "area": "Mysterious Woods",
+      "locationName": "Cave Skull Heart Piece",
+      "sphere": 1,
+      "itemName": "RUPEES_100"
+    },
+    {
+      "id": "0x034",
+      "area": "Goponga Swamp",
+      "locationName": "Swampy Chest",
+      "sphere": 2,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x136",
+      "area": "Bottle Grotto",
+      "locationName": "Entrance Chest",
+      "sphere": 2,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x12E",
+      "area": "Bottle Grotto",
+      "locationName": "Hardhat Beetle Pit Chest",
+      "sphere": 7,
+      "itemName": "MAP2"
+    },
+    {
+      "id": "0x132",
+      "area": "Bottle Grotto",
+      "locationName": "Two Stalfos Key",
+      "sphere": 5,
+      "itemName": "KEY2"
+    },
+    {
+      "id": "0x137",
+      "area": "Bottle Grotto",
+      "locationName": "Mask-Mimic Chest",
+      "sphere": 7,
+      "itemName": "MAGIC_POWDER"
+    },
+    {
+      "id": "0x138",
+      "area": "Bottle Grotto",
+      "locationName": "First Switch Locked Chest",
+      "sphere": 5,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x139",
+      "area": "Bottle Grotto",
+      "locationName": "Button Spawn Chest",
+      "sphere": 5,
+      "itemName": "KEY2"
+    },
+    {
+      "id": "0x134",
+      "area": "Bottle Grotto",
+      "locationName": "Mask-Mimic Key",
+      "sphere": 5,
+      "itemName": "KEY2"
+    },
+    {
+      "id": "0x126",
+      "area": "Bottle Grotto",
+      "locationName": "Vacuum Mouth Chest",
+      "sphere": 6,
+      "itemName": "STONE_BEAK2"
+    },
+    {
+      "id": "0x121",
+      "area": "Bottle Grotto",
+      "locationName": "Outside Boo Buddies Room Chest",
+      "sphere": 6,
+      "itemName": "KEY2"
+    },
+    {
+      "id": "0x120",
+      "area": "Bottle Grotto",
+      "locationName": "Boo Buddies Room Chest",
+      "sphere": 7,
+      "itemName": "NIGHTMARE_KEY2"
+    },
+    {
+      "id": "0x122",
+      "area": "Bottle Grotto",
+      "locationName": "Second Switch Locked Chest",
+      "sphere": 6,
+      "itemName": "COMPASS2"
+    },
+    {
+      "id": "0x127",
+      "area": "Bottle Grotto",
+      "locationName": "Enemy Order Room Chest",
+      "sphere": 6,
+      "itemName": "KEY2"
+    },
+    {
+      "id": "0x12B",
+      "area": "Bottle Grotto",
+      "locationName": "Genie Heart Container",
+      "sphere": 8,
+      "itemName": "SHIELD"
+    },
+    {
+      "id": "0x12A",
+      "area": "Bottle Grotto",
+      "locationName": "Conch Horn",
+      "sphere": 8,
+      "itemName": "INSTRUMENT2"
+    },
+    {
+      "id": "0x041",
+      "area": "Mysterious Woods",
+      "locationName": "Tail Key Chest",
+      "sphere": 1,
+      "itemName": "BLUE_TUNIC"
+    },
+    {
+      "id": "0x2AE",
+      "area": "Goponga Swamp",
+      "locationName": "Write Cave West",
+      "sphere": 2,
+      "itemName": "SWORD"
+    },
+    {
+      "id": "0x2AF",
+      "area": "Goponga Swamp",
+      "locationName": "Write Cave East",
+      "sphere": 2,
+      "itemName": "RUPEES_20"
+    },
+    {
+      "id": "0x2A8-Trade",
+      "area": "Goponga Swamp",
+      "locationName": "MrWrite",
+      "sphere": 19,
+      "itemName": "RUPEES_100"
+    },
+    {
+      "id": "0x2BB",
+      "area": "Tal Tal Mountains",
+      "locationName": "Access Tunnel Interior",
+      "sphere": 4,
+      "itemName": "GOLD_LEAF"
+    },
+    {
+      "id": "0x02B",
+      "area": "Tal Tal Heights",
+      "locationName": "Angler's Tunnel Keyhole",
+      "sphere": 15,
+      "itemName": "ANGLER_TUNNEL_OPENED"
+    },
+    {
+      "id": "0x2C3",
+      "area": "Kanalet Castle",
+      "locationName": "Kanalet Gate Button",
+      "sphere": 3,
+      "itemName": "CASTLE_GATE_OPENED"
+    },
+    {
+      "id": "0x2D2",
+      "area": "Kanalet Castle",
+      "locationName": "Darknut, Zol, Bubble Leaf",
+      "sphere": 3,
+      "itemName": "OCARINA"
+    },
+    {
+      "id": "0x2C5",
+      "area": "Kanalet Castle",
+      "locationName": "Bombable Darknut Leaf",
+      "sphere": 3,
+      "itemName": "MAX_POWDER_UPGRADE"
+    },
+    {
+      "id": "0x2C6",
+      "area": "Kanalet Castle",
+      "locationName": "Ball and Chain Darknut Leaf",
+      "sphere": 3,
+      "itemName": "MAX_ARROWS_UPGRADE"
+    },
+    {
+      "id": "0x05A",
+      "area": "Kanalet Castle",
+      "locationName": "Bomberman Meets Whack-a-mole Leaf",
+      "sphere": 3,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x058",
+      "area": "Kanalet Castle",
+      "locationName": "Crow Rock Leaf",
+      "sphere": 3,
+      "itemName": "GOLD_LEAF"
+    },
+    {
+      "id": "0x1F2",
+      "area": "Tal Tal Heights",
+      "locationName": "Damp Cave Heart Piece",
+      "sphere": 7,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x05C",
+      "area": "Rapids Ride",
+      "locationName": "West",
+      "sphere": 6,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x05D",
+      "area": "Rapids Ride",
+      "locationName": "East",
+      "sphere": 6,
+      "itemName": "HEART_CONTAINER"
+    },
+    {
+      "id": "0x0CD-Trade",
+      "area": "Animal Village",
+      "locationName": "Grandma",
+      "sphere": 7,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x297-Trade",
+      "area": "Martha's Bay",
+      "locationName": "Mermaid Statue",
+      "sphere": 9,
+      "itemName": "BOW"
+    },
+    {
+      "id": "0x0DA",
+      "area": "Martha's Bay",
+      "locationName": "Peninsula Dig",
+      "sphere": 8,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x0CE",
+      "area": "Yarna Desert",
+      "locationName": "Lanmola",
+      "sphere": 4,
+      "itemName": "RUPEES_200"
+    },
+    {
+      "id": "0x1E8",
+      "area": "Yarna Desert",
+      "locationName": "Cave Under Lanmola",
+      "sphere": 4,
+      "itemName": "BOOMERANG"
+    },
+    {
+      "id": "0x0FF",
+      "area": "Yarna Desert",
+      "locationName": "Rock Seashell",
+      "sphere": 4,
+      "itemName": "SLIME_KEY"
+    },
+    {
+      "id": "0x2E6",
+      "area": "Yarna Desert",
+      "locationName": "Bomb Arrow Cave",
+      "sphere": 4,
+      "itemName": "BOMB"
+    },
+    {
+      "id": "0x2FC",
+      "area": "Southern Face Shrine",
+      "locationName": "Under Armos Cave",
+      "sphere": 4,
+      "itemName": "MAGIC_POWDER"
+    },
+    {
+      "id": "0x27F",
+      "area": "Southern Face Shrine",
+      "locationName": "Armos Knight",
+      "sphere": 4,
+      "itemName": "HEART_CONTAINER"
+    },
+    {
+      "id": "0x2D9-Trade",
+      "area": "Animal Village",
+      "locationName": "Goat",
+      "sphere": 8,
+      "itemName": "TRADING_ITEM_RIBBON"
+    },
+    {
+      "id": "0x2D7-Trade",
+      "area": "Animal Village",
+      "locationName": "Bear Cook",
+      "sphere": 19,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "RAFT",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 5,
+      "itemName": "RAFT"
+    },
+    {
+      "id": "0x2FD",
+      "area": "Tal Tal Heights",
+      "locationName": "Manbo's Mambo",
+      "sphere": 7,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x179",
+      "area": "Angler's Tunnel",
+      "locationName": "Watery Statue Chest",
+      "sphere": 16,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x16A",
+      "area": "Angler's Tunnel",
+      "locationName": "NW of Boots Pit Ledge Chest",
+      "sphere": 16,
+      "itemName": "COMPASS4"
+    },
+    {
+      "id": "0x178",
+      "area": "Angler's Tunnel",
+      "locationName": "Two Spiked Beetle, Zol Chest",
+      "sphere": 16,
+      "itemName": "KEY4"
+    },
+    {
+      "id": "0x17B",
+      "area": "Angler's Tunnel",
+      "locationName": "Crystal Chest",
+      "sphere": 16,
+      "itemName": "TRADING_ITEM_MAGNIFYING_GLASS"
+    },
+    {
+      "id": "0x175",
+      "area": "Angler's Tunnel",
+      "locationName": "Flipper Locked Before Boots Pit Chest",
+      "sphere": 17,
+      "itemName": "KEY4"
+    },
+    {
+      "id": "D4_PITKEY",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 18,
+      "itemName": "D4_PITKEY"
+    },
+    {
+      "id": "0x16E",
+      "area": "Angler's Tunnel",
+      "locationName": "Flipper Locked After Boots Pit Chest",
+      "sphere": 18,
+      "itemName": "NIGHTMARE_KEY4"
+    },
+    {
+      "id": "0x16D",
+      "area": "Angler's Tunnel",
+      "locationName": "Blob Chest",
+      "sphere": 18,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x168",
+      "area": "Angler's Tunnel",
+      "locationName": "Spark Chest",
+      "sphere": 18,
+      "itemName": "RUPEES_20"
+    },
+    {
+      "id": "0x176",
+      "area": "Angler's Tunnel",
+      "locationName": "Nightmare Key Ledge Chest",
+      "sphere": 18,
+      "itemName": "BOMB"
+    },
+    {
+      "id": "0x166",
+      "area": "Angler's Tunnel",
+      "locationName": "Angler Fish Heart Container",
+      "sphere": 20,
+      "itemName": "MAP4"
+    },
+    {
+      "id": "D4_BOSS_CLEAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 20,
+      "itemName": "D4_BOSS_CLEAR"
+    },
+    {
+      "id": "0x162",
+      "area": "Angler's Tunnel",
+      "locationName": "Surf Harp",
+      "sphere": 21,
+      "itemName": "INSTRUMENT4"
+    },
+    {
+      "id": "D4_PUZZLE_CLUE",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 18,
+      "itemName": "D4_PUZZLE_CLUE"
+    },
+    {
+      "id": "0x160",
+      "area": "Angler's Tunnel",
+      "locationName": "Flippers Chest",
+      "sphere": 18,
+      "itemName": "KEY4"
+    },
+    {
+      "id": "0x169",
+      "area": "Angler's Tunnel",
+      "locationName": "Pit Key",
+      "sphere": 19,
+      "itemName": "KEY4"
+    },
+    {
+      "id": "0x171",
+      "area": "Angler's Tunnel",
+      "locationName": "Lower Bomb Locked Watery Chest",
+      "sphere": 16,
+      "itemName": "KEY4"
+    },
+    {
+      "id": "0x165",
+      "area": "Angler's Tunnel",
+      "locationName": "Upper Bomb Locked Watery Chest",
+      "sphere": 16,
+      "itemName": "STONE_BEAK4"
+    },
+    {
+      "id": "0x00C",
+      "area": "Tal Tal Mountains",
+      "locationName": "Bridge Rock",
+      "sphere": 7,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x004",
+      "area": "Tal Tal Mountains",
+      "locationName": "Outside Mad Batter",
+      "sphere": 7,
+      "itemName": "TRADING_ITEM_HIBISCUS"
+    },
+    {
+      "id": "0x24D",
+      "area": "Turtle Rock",
+      "locationName": "Left of Hinox Zamboni Chest",
+      "sphere": 17,
+      "itemName": "STONE_BEAK8"
+    },
+    {
+      "id": "0x24C",
+      "area": "Turtle Rock",
+      "locationName": "Left Vire Key",
+      "sphere": 17,
+      "itemName": "KEY8"
+    },
+    {
+      "id": "0x25C",
+      "area": "Turtle Rock",
+      "locationName": "Vacuum Mouth Chest",
+      "sphere": 17,
+      "itemName": "MAP8"
+    },
+    {
+      "id": "0x246",
+      "area": "Turtle Rock",
+      "locationName": "Two Torches Room Chest",
+      "sphere": 17,
+      "itemName": "KEY8"
+    },
+    {
+      "id": "0x255",
+      "area": "Turtle Rock",
+      "locationName": "Spark, Pit Chest",
+      "sphere": 17,
+      "itemName": "RUPEES_200"
+    },
+    {
+      "id": "0x259",
+      "area": "Turtle Rock",
+      "locationName": "Right Lava Chest",
+      "sphere": 17,
+      "itemName": "KEY8"
+    },
+    {
+      "id": "0x25A",
+      "area": "Turtle Rock",
+      "locationName": "Zamboni, Two Zol Key",
+      "sphere": 17,
+      "itemName": "KEY8"
+    },
+    {
+      "id": "0x234",
+      "area": "Turtle Rock",
+      "locationName": "Hot Head Heart Container",
+      "sphere": 18,
+      "itemName": "GOLD_LEAF"
+    },
+    {
+      "id": "0x230",
+      "area": "Turtle Rock",
+      "locationName": "Thunder Drum",
+      "sphere": 18,
+      "itemName": "INSTRUMENT8"
+    },
+    {
+      "id": "SWITCH8",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 17,
+      "itemName": "SWITCH8"
+    },
+    {
+      "id": "0x25F",
+      "area": "Turtle Rock",
+      "locationName": "Four Ropes Pot Chest",
+      "sphere": 17,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x23E",
+      "area": "Turtle Rock",
+      "locationName": "Gibdos on Cracked Floor Key",
+      "sphere": 17,
+      "itemName": "HEART_CONTAINER"
+    },
+    {
+      "id": "0x23D",
+      "area": "Turtle Rock",
+      "locationName": "Dodongo Chest",
+      "sphere": 17,
+      "itemName": "POWER_BRACELET"
+    },
+    {
+      "id": "0x000",
+      "area": "Tal Tal Mountains",
+      "locationName": "Outside D8 Heart Piece",
+      "sphere": 17,
+      "itemName": "ARROWS_10"
+    },
+    {
+      "id": "0x237",
+      "area": "Turtle Rock",
+      "locationName": "Magic Rod Chest",
+      "sphere": 18,
+      "itemName": "GEL"
+    },
+    {
+      "id": "0x240",
+      "area": "Turtle Rock",
+      "locationName": "Beamos Blocked Chest",
+      "sphere": 17,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x241",
+      "area": "Turtle Rock",
+      "locationName": "Lava Arrow Statue Key",
+      "sphere": 17,
+      "itemName": "KEY8"
+    },
+    {
+      "id": "0x23A",
+      "area": "Turtle Rock",
+      "locationName": "West of Boss Door Ledge Chest",
+      "sphere": 17,
+      "itemName": "NIGHTMARE_KEY8"
+    },
+    {
+      "id": "0x235",
+      "area": "Turtle Rock",
+      "locationName": "Lava Ledge Chest",
+      "sphere": 17,
+      "itemName": "KEY8"
+    },
+    {
+      "id": "0x232",
+      "area": "Turtle Rock",
+      "locationName": "Nightmare Key/Big Zamboni Chest",
+      "sphere": 18,
+      "itemName": "COMPASS8"
+    },
+    {
+      "id": "0x24F",
+      "area": "Turtle Rock",
+      "locationName": "Push Block Chest",
+      "sphere": 17,
+      "itemName": "KEY8"
+    },
+    {
+      "id": "0x1E2",
+      "area": "Tal Tal Mountains",
+      "locationName": "Mad Batter",
+      "sphere": 7,
+      "itemName": "RUPEES_200"
+    },
+    {
+      "id": "0x2BA",
+      "area": "Tal Tal Mountains",
+      "locationName": "Access Tunnel Bombable Heart Piece",
+      "sphere": 7,
+      "itemName": "FACE_KEY"
+    },
+    {
+      "id": "0x27A",
+      "area": "Tal Tal Mountains",
+      "locationName": "Bird Key Cave",
+      "sphere": 16,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x01D",
+      "area": "Tal Tal Mountains",
+      "locationName": "Outside Five Chest Game",
+      "sphere": 7,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x00E",
+      "area": "Tal Tal Mountains",
+      "locationName": "Eagle's Tower Keyhole",
+      "sphere": 11,
+      "itemName": "EAGLE_TOWER_OPENED"
+    },
+    {
+      "id": "0x210",
+      "area": "Eagle's Tower",
+      "locationName": "Entrance Key",
+      "sphere": 12,
+      "itemName": "KEY7"
+    },
+    {
+      "id": "D7_BALL",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 13,
+      "itemName": "D7_BALL"
+    },
+    {
+      "id": "0x209",
+      "area": "Eagle's Tower",
+      "locationName": "Switch Wrapped Chest",
+      "sphere": 13,
+      "itemName": "MAP7"
+    },
+    {
+      "id": "SWITCH7A",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 13,
+      "itemName": "SWITCH7A"
+    },
+    {
+      "id": "SWITCH7A_RANGE",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 13,
+      "itemName": "SWITCH7A_RANGE"
+    },
+    {
+      "id": "D7_PILLAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 14,
+      "itemName": "D7_PILLAR"
+    },
+    {
+      "id": "SWITCH7C",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 13,
+      "itemName": "SWITCH7C"
+    },
+    {
+      "id": "0x211",
+      "area": "Eagle's Tower",
+      "locationName": "Three of a Kind, No Pit Chest",
+      "sphere": 13,
+      "itemName": "TRADING_ITEM_PINEAPPLE"
+    },
+    {
+      "id": "0x201",
+      "area": "Eagle's Tower",
+      "locationName": "Kirby Ledge Chest",
+      "sphere": 14,
+      "itemName": "KEY7"
+    },
+    {
+      "id": "D7_PILLAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 14,
+      "itemName": "D7_PILLAR"
+    },
+    {
+      "id": "0x21C",
+      "area": "Eagle's Tower",
+      "locationName": "Three of a Kind, Pit Chest",
+      "sphere": 15,
+      "itemName": "ROOSTER"
+    },
+    {
+      "id": "D7_PILLAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 15,
+      "itemName": "D7_PILLAR"
+    },
+    {
+      "id": "0x21B",
+      "area": "Eagle's Tower",
+      "locationName": "Hinox Key",
+      "sphere": 14,
+      "itemName": "RUPEES_20"
+    },
+    {
+      "id": "D7_TOAK_CLEAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 14,
+      "itemName": "D7_TOAK_CLEAR"
+    },
+    {
+      "id": "SWITCH7C_MIDRANGE",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 14,
+      "itemName": "SWITCH7C_MIDRANGE"
+    },
+    {
+      "id": "SWITCH7C_RANGE",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 14,
+      "itemName": "SWITCH7C_RANGE"
+    },
+    {
+      "id": "0x204",
+      "area": "Eagle's Tower",
+      "locationName": "Beamos Ledge Chest",
+      "sphere": 14,
+      "itemName": "KEY7"
+    },
+    {
+      "id": "SWITCH7B",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 14,
+      "itemName": "SWITCH7B"
+    },
+    {
+      "id": "0x21A",
+      "area": "Eagle's Tower",
+      "locationName": "Mirror Shield Chest",
+      "sphere": 14,
+      "itemName": "STONE_BEAK7"
+    },
+    {
+      "id": "0x224",
+      "area": "Eagle's Tower",
+      "locationName": "Nightmare Key/After Grim Creeper Chest",
+      "sphere": 14,
+      "itemName": "COMPASS7"
+    },
+    {
+      "id": "0x220",
+      "area": "Eagle's Tower",
+      "locationName": "Conveyor Beamos Chest",
+      "sphere": 16,
+      "itemName": "HEART_CONTAINER"
+    },
+    {
+      "id": "0x223",
+      "area": "Eagle's Tower",
+      "locationName": "Evil Eagle Heart Container",
+      "sphere": 16,
+      "itemName": "SONG3"
+    },
+    {
+      "id": "D7_BOSS_CLEAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 16,
+      "itemName": "D7_BOSS_CLEAR"
+    },
+    {
+      "id": "0x22C",
+      "area": "Eagle's Tower",
+      "locationName": "Organ of Evening Calm",
+      "sphere": 17,
+      "itemName": "INSTRUMENT7"
+    },
+    {
+      "id": "0x212",
+      "area": "Eagle's Tower",
+      "locationName": "Horse Head, Bubble Chest",
+      "sphere": 13,
+      "itemName": "NIGHTMARE_KEY7"
+    },
+    {
+      "id": "D7_PILLAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 14,
+      "itemName": "D7_PILLAR"
+    },
+    {
+      "id": "SWITCH7B_RANGE",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 13,
+      "itemName": "SWITCH7B_RANGE"
+    },
+    {
+      "id": "0x28A",
+      "area": "Tal Tal Mountains",
+      "locationName": "Paphl Cave",
+      "sphere": 6,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x019-Trade",
+      "area": "Tal Tal Mountains",
+      "locationName": "Papahl",
+      "sphere": 14,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x018",
+      "area": "Tal Tal Mountains",
+      "locationName": "Access Tunnel Exterior",
+      "sphere": 3,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x2E2",
+      "area": "Tal Tal Heights",
+      "locationName": "Moblin Cave",
+      "sphere": 3,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x074",
+      "area": "Koholint Prairie",
+      "locationName": "Ghost Grave Dig",
+      "sphere": 8,
+      "itemName": "HEART_CONTAINER"
+    },
+    {
+      "id": "0x2DF",
+      "area": "Koholint Prairie",
+      "locationName": "Graveyard Connector",
+      "sphere": 4,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x30F",
+      "area": "Color Dungeon",
+      "locationName": "Entrance Chest",
+      "sphere": 3,
+      "itemName": "HOOKSHOT"
+    },
+    {
+      "id": "0x308",
+      "area": "Color Dungeon",
+      "locationName": "Upper Small Key",
+      "sphere": 3,
+      "itemName": "NIGHTMARE_KEY0"
+    },
+    {
+      "id": "0x311",
+      "area": "Color Dungeon",
+      "locationName": "Two Socket Chest",
+      "sphere": 3,
+      "itemName": "KEY0"
+    },
+    {
+      "id": "0x314",
+      "area": "Color Dungeon",
+      "locationName": "Lower Small Key",
+      "sphere": 3,
+      "itemName": "KEY0"
+    },
+    {
+      "id": "0x302",
+      "area": "Color Dungeon",
+      "locationName": "Nightmare Key Chest",
+      "sphere": 5,
+      "itemName": "COMPASS0"
+    },
+    {
+      "id": "0x306",
+      "area": "Color Dungeon",
+      "locationName": "Zol Chest",
+      "sphere": 4,
+      "itemName": "KEY0"
+    },
+    {
+      "id": "0x307",
+      "area": "Color Dungeon",
+      "locationName": "Bullshit Room Key",
+      "sphere": 4,
+      "itemName": "MEDICINE"
+    },
+    {
+      "id": "0x301-0",
+      "area": "Color Dungeon",
+      "locationName": "Tunic Fairy Item 1",
+      "sphere": 5,
+      "itemName": "MAP0"
+    },
+    {
+      "id": "0x301-1",
+      "area": "Color Dungeon",
+      "locationName": "Tunic Fairy Item 2",
+      "sphere": 5,
+      "itemName": "STONE_BEAK0"
+    },
+    {
+      "id": "0x07B-Trade",
+      "area": "Ukuku Prairie",
+      "locationName": "Kiki",
+      "sphere": 3,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x087-Trade",
+      "area": "Ukuku Prairie",
+      "locationName": "Honeycomb",
+      "sphere": 11,
+      "itemName": "MAGIC_ROD"
+    },
+    {
+      "id": "0x0B5",
+      "area": "Ukuku Prairie",
+      "locationName": "Key Cavern Keyhole",
+      "sphere": 5,
+      "itemName": "KEY_CAVERN_OPENED"
+    },
+    {
+      "id": "0x0A5",
+      "area": "Ukuku Prairie",
+      "locationName": "Outside D3 Ledge Dig",
+      "sphere": 8,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x153",
+      "area": "Key Cavern",
+      "locationName": "Vacuum Mouth Chest",
+      "sphere": 6,
+      "itemName": "FLIPPERS"
+    },
+    {
+      "id": "0x151",
+      "area": "Key Cavern",
+      "locationName": "Two Bombite, Sword Stalfos, Zol Chest",
+      "sphere": 6,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "D3_GEL_CLEAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 6,
+      "itemName": "D3_GEL_CLEAR"
+    },
+    {
+      "id": "0x150",
+      "area": "Key Cavern",
+      "locationName": "Sword Stalfos, Keese Switch Chest",
+      "sphere": 11,
+      "itemName": "GEL"
+    },
+    {
+      "id": "0x14F",
+      "area": "Key Cavern",
+      "locationName": "Four Zol Chest",
+      "sphere": 6,
+      "itemName": "NIGHTMARE_KEY3"
+    },
+    {
+      "id": "0x14E",
+      "area": "Key Cavern",
+      "locationName": "Two Stalfos, Zol Chest",
+      "sphere": 7,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "0x14C",
+      "area": "Key Cavern",
+      "locationName": "Zol Switch Chest",
+      "sphere": 11,
+      "itemName": "HEART_CONTAINER"
+    },
+    {
+      "id": "0x154",
+      "area": "Key Cavern",
+      "locationName": "North Key Room Key",
+      "sphere": 10,
+      "itemName": "BIRD_KEY"
+    },
+    {
+      "id": "SWITCH3",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 10,
+      "itemName": "SWITCH3"
+    },
+    {
+      "id": "0x158",
+      "area": "Key Cavern",
+      "locationName": "South Key Room Key",
+      "sphere": 7,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "0x155",
+      "area": "Key Cavern",
+      "locationName": "West Key Room Key",
+      "sphere": 7,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "0x14D",
+      "area": "Key Cavern",
+      "locationName": "After Stairs Key",
+      "sphere": 8,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "0x148",
+      "area": "Key Cavern",
+      "locationName": "Two Zol, Two Pairodd Key",
+      "sphere": 8,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "D3_ZOLS_CLEAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 8,
+      "itemName": "D3_ZOLS_CLEAR"
+    },
+    {
+      "id": "D3_STALFOS_CLEAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 8,
+      "itemName": "D3_STALFOS_CLEAR"
+    },
+    {
+      "id": "0x144",
+      "area": "Key Cavern",
+      "locationName": "Two Zol, Stalfos Ledge Chest",
+      "sphere": 9,
+      "itemName": "TRADING_ITEM_NECKLACE"
+    },
+    {
+      "id": "D3_BOMBWALL",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 8,
+      "itemName": "D3_BOMBWALL"
+    },
+    {
+      "id": "0x146",
+      "area": "Key Cavern",
+      "locationName": "Boots Chest",
+      "sphere": 8,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "0x142",
+      "area": "Key Cavern",
+      "locationName": "Three Zol, Stalfos Chest",
+      "sphere": 8,
+      "itemName": "MAP3"
+    },
+    {
+      "id": "0x141",
+      "area": "Key Cavern",
+      "locationName": "Three Bombite Key",
+      "sphere": 9,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "0x147",
+      "area": "Key Cavern",
+      "locationName": "Tile Arrow Ledge Chest",
+      "sphere": 8,
+      "itemName": "COMPASS3"
+    },
+    {
+      "id": "0x15B",
+      "area": "Key Cavern",
+      "locationName": "Nightmare Door Key",
+      "sphere": 10,
+      "itemName": "KEY3"
+    },
+    {
+      "id": "0x15A",
+      "area": "Key Cavern",
+      "locationName": "Slime Eye Heart Container",
+      "sphere": 10,
+      "itemName": "STONE_BEAK3"
+    },
+    {
+      "id": "0x159",
+      "area": "Key Cavern",
+      "locationName": "Sea Lily's Bell",
+      "sphere": 10,
+      "itemName": "INSTRUMENT3"
+    },
+    {
+      "id": "0x0A6",
+      "area": "Ukuku Prairie",
+      "locationName": "Outside D3 Island Bush",
+      "sphere": 7,
+      "itemName": "GOLD_LEAF"
+    },
+    {
+      "id": "0x08B",
+      "area": "Ukuku Prairie",
+      "locationName": "East of Seashell Mansion Bush",
+      "sphere": 1,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x0A4",
+      "area": "Ukuku Prairie",
+      "locationName": "East of Mabe Tree Bonk",
+      "sphere": 6,
+      "itemName": "GEL"
+    },
+    {
+      "id": "0x0B9",
+      "area": "Donut Plains",
+      "locationName": "Rock Seashell",
+      "sphere": 1,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x1FD",
+      "area": "Kanalet Castle",
+      "locationName": "Boots Pit",
+      "sphere": 16,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x2CD",
+      "area": "Ukuku Prairie",
+      "locationName": "Cave East of Mabe",
+      "sphere": 1,
+      "itemName": "BOWWOW"
+    },
+    {
+      "id": "0x2F4",
+      "area": "Ukuku Prairie",
+      "locationName": "Boots 'n' Bomb Cave Chest",
+      "sphere": 6,
+      "itemName": "TRADING_ITEM_BROOM"
+    },
+    {
+      "id": "0x2E5",
+      "area": "Ukuku Prairie",
+      "locationName": "Boots 'n' Bomb Cave Bombable Wall",
+      "sphere": 6,
+      "itemName": "RED_TUNIC"
+    },
+    {
+      "id": "0x2FB",
+      "area": "Ukuku Prairie",
+      "locationName": "Mamu",
+      "sphere": 18,
+      "itemName": "TRADING_ITEM_YOSHI_DOLL"
+    },
+    {
+      "id": "0x2E9-0",
+      "area": "Ukuku Prairie",
+      "locationName": "Seashell Mansion 5 Bonus",
+      "sphere": 2,
+      "itemName": "TRADING_ITEM_BANANAS"
+    },
+    {
+      "id": "0x2E9-1",
+      "area": "Ukuku Prairie",
+      "locationName": "Seashell Mansion 10 Bonus",
+      "sphere": 7,
+      "itemName": "SWORD"
+    },
+    {
+      "id": "0x2E9",
+      "area": "Ukuku Prairie",
+      "locationName": "Seashell Mansion",
+      "sphere": 17,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x0A8",
+      "area": "Donut Plains",
+      "locationName": "Donut Plains Ledge Dig",
+      "sphere": 8,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x2C8",
+      "area": "Pothole Field",
+      "locationName": "Under Richard's House",
+      "sphere": 19,
+      "itemName": "HEART_CONTAINER"
+    },
+    {
+      "id": "0x0C6",
+      "area": "Pothole Field",
+      "locationName": "Slime Key Dig",
+      "sphere": 19,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x2F5-Trade",
+      "area": "Martha's Bay",
+      "locationName": "Fisher",
+      "sphere": 7,
+      "itemName": "SHOVEL"
+    },
+    {
+      "id": "0x0C9-Trade",
+      "area": "Martha's Bay",
+      "locationName": "Mermaid",
+      "sphere": 10,
+      "itemName": "TRADING_ITEM_STICK"
+    },
+    {
+      "id": "0x1A0",
+      "area": "Catfish's Maw",
+      "locationName": "Entrance Hookshottable Chest",
+      "sphere": 7,
+      "itemName": "MAP5"
+    },
+    {
+      "id": "0x19E",
+      "area": "Catfish's Maw",
+      "locationName": "Spark, Two Iron Mask Chest",
+      "sphere": 7,
+      "itemName": "KEY5"
+    },
+    {
+      "id": "0x181",
+      "area": "Catfish's Maw",
+      "locationName": "Crystal Key",
+      "sphere": 7,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x180",
+      "area": "Catfish's Maw",
+      "locationName": "Master Stalfos Item",
+      "sphere": 10,
+      "itemName": "STONE_BEAK5"
+    },
+    {
+      "id": "0x19B",
+      "area": "Catfish's Maw",
+      "locationName": "Flying Bomb Chest South",
+      "sphere": 8,
+      "itemName": "TRADING_ITEM_SCALE"
+    },
+    {
+      "id": "0x197",
+      "area": "Catfish's Maw",
+      "locationName": "Three Iron Mask Chest",
+      "sphere": 8,
+      "itemName": "MESSAGE"
+    },
+    {
+      "id": "0x185",
+      "area": "Catfish's Maw",
+      "locationName": "Slime Eel Heart Container",
+      "sphere": 10,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x182",
+      "area": "Catfish's Maw",
+      "locationName": "Wind Marimba",
+      "sphere": 10,
+      "itemName": "INSTRUMENT5"
+    },
+    {
+      "id": "MS1_KILL",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 8,
+      "itemName": "MS1_KILL"
+    },
+    {
+      "id": "0x196",
+      "area": "Catfish's Maw",
+      "locationName": "Hookshot Note Chest",
+      "sphere": 8,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x18E",
+      "area": "Catfish's Maw",
+      "locationName": "Two Stalfos, Star Pit Chest",
+      "sphere": 8,
+      "itemName": "COMPASS5"
+    },
+    {
+      "id": "0x18F",
+      "area": "Catfish's Maw",
+      "locationName": "Flying Bomb Chest East",
+      "sphere": 8,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x188",
+      "area": "Catfish's Maw",
+      "locationName": "Sword Stalfos, Star, Bridge Chest",
+      "sphere": 8,
+      "itemName": "KEY5"
+    },
+    {
+      "id": "D5_ZOL_CLEAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 8,
+      "itemName": "D5_ZOL_CLEAR"
+    },
+    {
+      "id": "0x186",
+      "area": "Catfish's Maw",
+      "locationName": "Nightmare Key/Torch Cross Chest",
+      "sphere": 8,
+      "itemName": "NIGHTMARE_KEY5"
+    },
+    {
+      "id": "MS3_KILL",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 9,
+      "itemName": "MS3_KILL"
+    },
+    {
+      "id": "0x183",
+      "area": "Catfish's Maw",
+      "locationName": "Three Stalfos Chest",
+      "sphere": 9,
+      "itemName": "KEY5"
+    },
+    {
+      "id": "MS2_KILL",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 8,
+      "itemName": "MS2_KILL"
+    },
+    {
+      "id": "0x078",
+      "area": "Kanalet Castle",
+      "locationName": "In the Moat Heart Piece",
+      "sphere": 7,
+      "itemName": "TRADING_ITEM_DOG_FOOD"
+    },
+    {
+      "id": "0x08C",
+      "area": "Southern Face Shrine",
+      "locationName": "Face Shrine Keyhole",
+      "sphere": 8,
+      "itemName": "FACE_SHRINE_OPENED"
+    },
+    {
+      "id": "SWITCH6A",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 9,
+      "itemName": "SWITCH6A"
+    },
+    {
+      "id": "SWITCH6A_RANGE",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 9,
+      "itemName": "SWITCH6A_RANGE"
+    },
+    {
+      "id": "0x1CF",
+      "area": "Face Shrine",
+      "locationName": "Mini-Moldorm, Spark Chest",
+      "sphere": 9,
+      "itemName": "KEY6"
+    },
+    {
+      "id": "0x1C9",
+      "area": "Face Shrine",
+      "locationName": "Flying Heart, Statue Chest",
+      "sphere": 18,
+      "itemName": "KEY6"
+    },
+    {
+      "id": "0x1CE",
+      "area": "Face Shrine",
+      "locationName": "L2 Bracelet Chest",
+      "sphere": 10,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "D6_THREE_WIZROBE_CLEAR",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 9,
+      "itemName": "D6_THREE_WIZROBE_CLEAR"
+    },
+    {
+      "id": "SWITCH6B_MIDRANGE",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 10,
+      "itemName": "SWITCH6B_MIDRANGE"
+    },
+    {
+      "id": "SWITCH6B_RANGE",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 10,
+      "itemName": "SWITCH6B_RANGE"
+    },
+    {
+      "id": "0x1B9",
+      "area": "Face Shrine",
+      "locationName": "Stairs Across Statues Chest",
+      "sphere": 10,
+      "itemName": "STONE_BEAK6"
+    },
+    {
+      "id": "0x1C0",
+      "area": "Face Shrine",
+      "locationName": "Three Wizrobe, Switch Chest",
+      "sphere": 10,
+      "itemName": "KEY6"
+    },
+    {
+      "id": "SWITCH6C",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 10,
+      "itemName": "SWITCH6C"
+    },
+    {
+      "id": "0x1B3",
+      "area": "Face Shrine",
+      "locationName": "Switch, Star Above Statues Chest",
+      "sphere": 10,
+      "itemName": "TAIL_KEY"
+    },
+    {
+      "id": "0x1B4",
+      "area": "Face Shrine",
+      "locationName": "Two Wizrobe Key",
+      "sphere": 11,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x1B0",
+      "area": "Face Shrine",
+      "locationName": "Top Left Horse Heads Chest",
+      "sphere": 18,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "SWITCH6D",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 18,
+      "itemName": "SWITCH6D"
+    },
+    {
+      "id": "0x06C",
+      "area": "Rapids Ride",
+      "locationName": "Outside D6 Chest",
+      "sphere": 18,
+      "itemName": "GOLD_LEAF"
+    },
+    {
+      "id": "0x1C3",
+      "area": "Face Shrine",
+      "locationName": "Tile Room Key",
+      "sphere": 18,
+      "itemName": "MAP6"
+    },
+    {
+      "id": "0x1B1",
+      "area": "Face Shrine",
+      "locationName": "Top Right Horse Heads Chest",
+      "sphere": 18,
+      "itemName": "HEART_CONTAINER"
+    },
+    {
+      "id": "SWITCH6E",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 18,
+      "itemName": "SWITCH6E"
+    },
+    {
+      "id": "0x1BE",
+      "area": "Face Shrine",
+      "locationName": "Water Tektite Chest",
+      "sphere": 18,
+      "itemName": "COMPASS6"
+    },
+    {
+      "id": "0x1B6",
+      "area": "Face Shrine",
+      "locationName": "Pot Locked Chest",
+      "sphere": 19,
+      "itemName": "NIGHTMARE_KEY6"
+    },
+    {
+      "id": "SWITCH6F",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 19,
+      "itemName": "SWITCH6F"
+    },
+    {
+      "id": "0x1BC",
+      "area": "Face Shrine",
+      "locationName": "Facade Heart Container",
+      "sphere": 20,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x1B5",
+      "area": "Face Shrine",
+      "locationName": "Coral Triangle",
+      "sphere": 20,
+      "itemName": "INSTRUMENT6"
+    },
+    {
+      "id": "0x1D1",
+      "area": "Face Shrine",
+      "locationName": "Four Wizrobe Ledge Chest",
+      "sphere": 18,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "0x1E3",
+      "area": "Martha's Bay",
+      "locationName": "Ghost House Barrel",
+      "sphere": 1,
+      "itemName": "MEDICINE"
+    },
+    {
+      "id": "0x1F5",
+      "area": "Toronbo Shores",
+      "locationName": "Boomerang Guy Item",
+      "sphere": 17,
+      "itemName": "SINGLE_ARROW"
+    },
+    {
+      "id": "0x2A6-Trade",
+      "area": "Mabe Village",
+      "locationName": "Papahl's Wife",
+      "sphere": 19,
+      "itemName": "RUPEES_100"
+    },
+    {
+      "id": "0x1E4",
+      "area": "Mabe Village",
+      "locationName": "Rooster",
+      "sphere": 18,
+      "itemName": "TRADING_ITEM_HONEYCOMB"
+    },
+    {
+      "id": "0x2A1-0",
+      "area": "Mabe Village",
+      "locationName": "Shop 200 Item",
+      "sphere": 4,
+      "itemName": "RUPEES_20"
+    },
+    {
+      "id": "0x2A1-1",
+      "area": "Mabe Village",
+      "locationName": "Shop 980 Item",
+      "sphere": 18,
+      "itemName": "TRADING_ITEM_LETTER"
+    },
+    {
+      "id": "0x2B2",
+      "area": "Mabe Village",
+      "locationName": "Dog House Dig",
+      "sphere": 8,
+      "itemName": "BOMB"
+    },
+    {
+      "id": "0x2B2-Trade",
+      "area": "Mabe Village",
+      "locationName": "YipYip",
+      "sphere": 9,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x2A0-Trade",
+      "area": "Mabe Village",
+      "locationName": "Trendy Game",
+      "sphere": 2,
+      "itemName": "SHIELD"
+    },
+    {
+      "id": "0x116",
+      "area": "Tail Cave",
+      "locationName": "Hardhat Beetles Key",
+      "sphere": 12,
+      "itemName": "KEY1"
+    },
+    {
+      "id": "0x115",
+      "area": "Tail Cave",
+      "locationName": "Four Zol Chest",
+      "sphere": 12,
+      "itemName": "KEY1"
+    },
+    {
+      "id": "0x113",
+      "area": "Tail Cave",
+      "locationName": "Pit Button Chest",
+      "sphere": 12,
+      "itemName": "MAP1"
+    },
+    {
+      "id": "0x114",
+      "area": "Tail Cave",
+      "locationName": "Two Stalfos, Two Keese Chest",
+      "sphere": 12,
+      "itemName": "RUPEES_20"
+    },
+    {
+      "id": "0x10E",
+      "area": "Tail Cave",
+      "locationName": "Spark, Mini-Moldorm Chest",
+      "sphere": 12,
+      "itemName": "COMPASS1"
+    },
+    {
+      "id": "0x10D",
+      "area": "Tail Cave",
+      "locationName": "Mini-Moldorm Spawn Chest",
+      "sphere": 12,
+      "itemName": "KEY1"
+    },
+    {
+      "id": "0x108",
+      "area": "Tail Cave",
+      "locationName": "Nightmare Key Chest",
+      "sphere": 13,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x11D",
+      "area": "Tail Cave",
+      "locationName": "Feather Chest",
+      "sphere": 13,
+      "itemName": "NIGHTMARE_KEY1"
+    },
+    {
+      "id": "0x10A",
+      "area": "Tail Cave",
+      "locationName": "Three of a Kind Chest",
+      "sphere": 13,
+      "itemName": "STONE_BEAK1"
+    },
+    {
+      "id": "0x106",
+      "area": "Tail Cave",
+      "locationName": "Moldorm Heart Container",
+      "sphere": 14,
+      "itemName": "ANGLER_KEY"
+    },
+    {
+      "id": "0x102",
+      "area": "Tail Cave",
+      "locationName": "Full Moon Cello",
+      "sphere": 14,
+      "itemName": "INSTRUMENT1"
+    },
+    {
+      "id": "0x10C",
+      "area": "Tail Cave",
+      "locationName": "Bombable Wall Seashell Chest",
+      "sphere": 12,
+      "itemName": "HEART_PIECE"
+    },
+    {
+      "id": "0x071",
+      "area": "Mysterious Woods",
+      "locationName": "Two Zol, Moblin Chest",
+      "sphere": 1,
+      "itemName": "SEASHELL"
+    },
+    {
+      "id": "0x2B3",
+      "area": "Mysterious Woods",
+      "locationName": "Hookshot Cave",
+      "sphere": 4,
+      "itemName": "GEL"
+    },
+    {
+      "id": "0x1E1",
+      "area": "Mysterious Woods",
+      "locationName": "Mad Batter",
+      "sphere": 5,
+      "itemName": "PEGASUS_BOOTS"
+    },
+    {
+      "id": "0x2A2",
+      "area": "Koholint Prairie",
+      "locationName": "Witch Item",
+      "sphere": 9,
+      "itemName": "RUPEES_50"
+    },
+    {
+      "id": "MEDICINE2",
+      "area": "None",
+      "locationName": "Unset Room",
+      "sphere": 2,
+      "itemName": "MEDICINE2"
+    }
+  ],
+  "inaccessibleItems": [],
+  "options": {
+    "seed": "",
+    "logic": "",
+    "forwardfactor": 0.0,
+    "accessibility": "all",
+    "race": false,
+    "heartpiece": true,
+    "seashells": true,
+    "heartcontainers": true,
+    "instruments": false,
+    "tradequest": true,
+    "witch": true,
+    "rooster": true,
+    "boomerang": "gift",
+    "dungeon_keys": "",
+    "nightmare_keys": "",
+    "dungeon_beaks": "",
+    "dungeon_maps": "",
+    "randomstartlocation": false,
+    "dungeonshuffle": false,
+    "entranceshuffle": "none",
+    "shufflejunk": false,
+    "shuffleannoying": false,
+    "shufflewater": false,
+    "boss": "default",
+    "miniboss": "default",
+    "enemies": "default",
+    "goal": "vanilla",
+    "goalcount": "4",
+    "itempool": "",
+    "hpmode": "default",
+    "hardmode": "none",
+    "steal": "default",
+    "evilshop": "",
+    "bowwow": "normal",
+    "overworld": "normal",
+    "dungeonchainlength": "5",
+    "owlstatues": "",
+    "keyholesanity": false,
+    "shopsanity": "",
+    "superweapons": false,
+    "quickswap": "none",
+    "textmode": "fast",
+    "lowhpbeep": "slow",
+    "noflash": true,
+    "nagmessages": false,
+    "gfxmod": "",
+    "follower": "",
+    "linkspalette": "-1",
+    "music": "random"
+  },
+  "entrances": {},
+  "seed": "0CECA78D3D20D8DEFA33DEC007B987A8"
+}

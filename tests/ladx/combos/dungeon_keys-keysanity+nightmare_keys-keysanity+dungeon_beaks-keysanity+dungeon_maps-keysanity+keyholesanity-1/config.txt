@@ -1,0 +1,5 @@
+dungeon_keys=keysanity
+nightmare_keys=keysanity
+dungeon_beaks=keysanity
+dungeon_maps=keysanity
+keyholesanity=1

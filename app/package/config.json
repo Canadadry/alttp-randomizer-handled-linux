@@ -1,6 +1,6 @@
 {
-  "label": "ALttPR",
-  "icon": "/mnt/SDCARD/App/ALttPR/icon.png",
+  "label": "Zelda Randomizer",
+  "icon": "/mnt/SDCARD/App/ZeldaRando/icon.png",
   "launch": "launch.sh",
-  "description": "A Link to the Past Randomizer seeds"
+  "description": "Zelda Randomizer seeds"
 }

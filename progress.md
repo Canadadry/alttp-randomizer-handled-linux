@@ -1,0 +1,147 @@
+- [x] Phase 1 — Rename and game choice, ROM-free work
+  - [x] Step 1.1 Rename rando/ to alttp/ and tests/rando/ to tests/alttp/
+    - [x] Move both trees and update every path token
+  - [x] Step 1.2 Additive SDL golden write
+    - [x] goldens.sh --add and make sdl-goldens-add, self-proven
+  - [x] Step 1.3 Rename the app to Zelda Randomizer
+    - [x] App folder App/ZeldaRando and its strings
+    - [x] Binary zrando, package ZeldaRando.zip and CI
+    - [x] Docs follow the new name
+  - [x] Step 1.4 Per-game SD layout for ALttP
+    - [x] ALttP files under App/ZeldaRando/alttp, ROMs in Roms/SFC/ZeldaRando
+  - [x] Step 1.5 Onion facts for GBC
+    - [x] docs/onion.md section 11: GBC list, saves and states
+  - [x] Step 1.6 Game-choice screen in the UI core
+    - [x] Choice screen and app views in the UI core
+    - [x] Last-game memory on the SD card
+    - [x] SDL side: key sequences and the game_choice golden
+  - [x] Step 1.7 ROM guard
+    - [x] tests/rom_guard.py in make test, self-proven
+  - [x] Step 1.8 ROM-free oracle work
+    - [x] Chunk 1: oracle scaffolding and RNG vectors
+    - [x] Chunk 2: order audit and known ladxr.patch fixes
+      - [x] Order audit tool and table
+      - [x] Fix: sort endscreen.py's cats listing
+      - [x] Fix: spoiler accessibleItems in location_list order
+    - [x] Chunk 3: settings fixtures
+    - [x] Chunk 4: double run, item pools, determinism
+    - [x] Chunk 5: logic fixtures and docs
+  - [x] Step 1.9 Phase 2's ROM-free tooling, self-proven
+    - [x] Chunk 1: Nintendo-bytes check
+    - [x] Chunk 2: fetch_rom.sh and the ground rule
+    - [x] Chunk 3: push gate hook
+    - [x] Chunk 4: read trace
+    - [x] Chunk 5: inventory checker and draft
+  - [x] Step 1.10 check-net
+- [x] Phase 2 — LADXR oracle, with the ROM
+  - [x] Step 2.1 Fetch and check the ROM
+    - [x] Chunk 1: scoped Nintendo-bytes policy
+    - [x] Chunk 2: push gate on the policy
+    - [x] Chunk 3: calibration on real data
+    - [x] Chunk 4: arm and prove the gate
+  - [x] Step 2.2 Oracle and full-generation determinism
+    - [x] Chunk 1: comparators, tmp guard, environment audit
+    - [x] Chunk 2: full-generation driver and gen_golden.sh
+    - [x] Chunk 3: determinism.sh --full
+    - [x] Chunk 4: ladxr.patch fixes
+  - [x] Step 2.3 Inventory
+    - [x] Chunk 1: trace writes and read provenance
+    - [x] Chunk 2: inventory format and checker
+    - [x] Chunk 3: coverage checker and driver
+    - [x] Chunk 4: inventory on real data
+      - [x] Fix: inventory_check CLI runs the full check
+      - [x] Inventory filled from the traces
+  - [x] Step 2.4 Cases
+    - [x] Chunk 1: goal-bingo cut in tier1.txt and fixtures
+    - [x] Chunk 2: expected case list and checker
+    - [x] Chunk 3: seeds picked with the ROM, case folders
+    - [x] Chunk 4: runners over every case
+  - [x] Step 2.5 Golden format and goldens
+    - [x] Chunk 1: write events with byte origins
+    - [x] Chunk 2: write-log encoder and known-source map
+    - [x] Chunk 3: bytes policy for case folders
+    - [x] Chunk 4: inventory read ranges over all cases
+    - [x] Chunk 5: gen_golden into case folders and verifier
+    - [x] Chunk 6: goldens generated and committed
+      - [x] KS-match, invariant clearance and budget
+      - [x] Goldens committed, README and docs
+  - [x] Step 2.6 Patch tables
+    - [x] Chunk 1: table format and checks
+    - [x] Chunk 2: units, keys and coverage planning
+    - [x] Chunk 3: tables built with the ROM
+      - [x] Table builder and gen_tables.sh
+      - [x] Tables generated in data/ladx
+    - [x] Chunk 4: replay over every case
+    - [x] Chunk 5: random sample combos
+  - [x] Step 2.7 Extraction fixtures
+    - [x] Chunk 1: fixture format and ROM-free check
+    - [x] Chunk 2: generator, fixtures and verification
+      - [x] Generator, guard and verify
+      - [x] Fixtures generated in tests/ladx/extract
+    - [x] Chunk 3: store model
+    - [x] Chunk 4: fixture re-run and close
+  - [x] Step 2.8 Nintendo-bytes check over everything committed
+  - [x] Step 2.9 Full-ROM check target
+    - [x] rom-check target and its self-test
+  - [x] Step 2.10 Split Phase 3 step 6
+- [ ] Phase 3 — LADX library, host only
+  - [x] Step 3.1 Python RNG in C
+    - [x] Chunk 1: ladx/ skeleton, SHA-512, test and lint
+    - [x] Chunk 2: pyrandom against the fixture
+    - [x] Chunk 3: fast make test, unit-arm, docs
+  - [x] Step 3.2 Settings table
+    - [x] Settings table, validate and unsupported values
+  - [x] Step 3.3 Logic and locations
+    - [x] Chunk 1: items and requirements
+    - [x] Chunk 2: graph core, explorer and harness
+    - [x] Chunk 3: location kinds and metadata
+    - [x] Chunk 4: requirement settings and dungeons 1 to 4
+    - [x] Chunk 5: dungeons 5 to 8 and the colour dungeon
+    - [x] Chunk 6: overworld and the full logic
+    - [x] Chunk 7: every configuration and explorer vector
+  - [x] Step 3.4 Item pool and fill
+    - [x] Chunk 1: traced generator and run.txt renderer
+    - [x] Chunk 2: ladx_gen, e2e driver and the init claim
+    - [x] Chunk 3: world setup and maze: the ws claim
+    - [x] Chunk 4: item pool: the pool claim
+    - [x] Chunk 5: item placer: the fill claim
+    - [x] Chunk 6: fill outcomes on refused seeds
+    - [x] Chunk 7: measure
+  - [x] Step 3.5 Table application
+    - [x] Chunk 1: write-log builder
+    - [x] Chunk 2: tables reader, walk, applier and spot count
+    - [x] Chunk 3: driver group claims and self-test
+    - [x] Chunk 4: ladx_gen writes the table groups
+  - [ ] Step 3.6 Seed-dependent writes
+    - [ ] Step 3.6.1 ROM-free proof of save's packing
+    - [ ] Step 3.6.2 C write logger and KS
+    - [ ] Step 3.6.3 bank3e
+    - [ ] Step 3.6.4 title
+    - [ ] Step 3.6.5 marin
+    - [ ] Step 3.6.6 hints
+    - [ ] Step 3.6.7 music
+    - [ ] Step 3.6.8 endscreen
+    - [ ] Step 3.6.9 notext
+    - [ ] Step 3.6.10 goal
+    - [ ] Step 3.6.11 items
+    - [ ] Step 3.6.12 entrances
+    - [ ] Step 3.6.13 bosses
+    - [ ] Step 3.6.14 enemizer
+    - [ ] Step 3.6.15 warp-home
+    - [ ] Step 3.6.16 sprites
+    - [ ] Step 3.6.17 save
+    - [ ] Step 3.6.18 header
+    - [ ] Step 3.6.19 spoiler
+  - [ ] Step 3.7 Assembly pipeline
+  - [ ] Step 3.8 LADX-aware debugging skills
+  - [ ] Step 3.9 check-e2e on tests/ladx
+  - [ ] Step 3.10 Measure
+- [ ] Phase 4 — LADX in the app
+  - [ ] Step 4.1 LADX SD side
+  - [ ] Step 4.2 LADX Generate tab
+  - [ ] Step 4.3 SDL
+  - [ ] Step 4.4 Package
+  - [ ] Step 4.5 README and screenshots
+  - [ ] Step 4.6 check-net
+  - [ ] Step 4.7 rework-comments
+  - [ ] Step 4.8 Close the ROM window

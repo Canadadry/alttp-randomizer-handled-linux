@@ -13,7 +13,7 @@ The method was drawn from a C port of a PICO-8 cart (18,544 → 2,966 comment li
 
 ## Scope — every file, decided per file
 
-**The scope is every source and test file written in this repository** — `rando/`, `tests/`, and any directory a later step adds — unless the invocation names files. Whether a file needs work is decided by reading it against the bar below, **never by a ratio**, and never by a belief that a directory "was already reworked".
+**The scope is every source and test file written in this repository** — `alttp/`, `tests/`, and any directory a later step adds — unless the invocation names files. Whether a file needs work is decided by reading it against the bar below, **never by a ratio**, and never by a belief that a directory "was already reworked".
 
 What happened: a catch-up pass measured 13% comments over `src/`, concluded the repository was clean, and reworked only the six densest files. `engine/` and `game/` were never opened — and `allocator.h` alone held a comment on every declaration, none of which met the bar. A low global ratio says comments are *short*, not that they *should exist*. **A ratio is a progress measure, not a scoping tool.**
 
@@ -39,7 +39,7 @@ Record the starting ratio; it is the progress measure for every wave:
 
 ```sh
 # adapt to the language; here C/C++ comments vs lines of code
-cloc --by-file rando/ tests/ | tail -5
+cloc --by-file alttp/ tests/ | tail -5
 ```
 
 **Give this command to the agents; it is the definition.** "Comment line" has at least three meanings (a line that is entirely comment, a line containing one, `cloc`'s own definition): without a canonical command, each agent writes its own counter and the figures are comparable neither with each other nor with yours. It is the only measure the method presents as objective; letting it depend on each agent's tooling empties it of meaning.

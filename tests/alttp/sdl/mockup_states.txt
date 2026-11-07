@@ -1,0 +1,9 @@
+00_settings_help	good	-	-	a down right down*2 right*2 down right*5 down*4 right*3 down right*3 up*9	11
+01_settings_greyed_error	good	-	--unsupported state=retro,goal=ganon	a down*7 right*3 down right*3 down right*3 down*5 start	-
+02_generating	good	5	-	a start	-
+03_seed_ready	good	-	-	a up*2 right start	-
+04_generation_failed	bad-source	-	-	a start	-
+05_history_list	good	-	-	a start a down*7 right*2 start a left up*3 right*4 start a left down*3 left start a right*2 up*3 left start a left*2 down*3 left*2 start a r1 down	-
+06_history_empty	good	-	-	a r1	-
+07_seed_detail_spoiler	good	-	-	a up*2 right start a r1 a down*12	-
+08_confirm_delete	good	-	-	a start a start a r1 x	-

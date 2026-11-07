@@ -1,0 +1,8 @@
+# The side seeds of the inventory trace, hand-written; read by inventory_trace.sh. One seed per
+# line, hex bytes. Every case of determinism_cases.txt also runs with its settings under each
+# seed: line k into tmp/ladx-inventory/<case>/seed-<k>/ (seed-0 is the case's own seed), so that
+# read_check.py can tell a seed-dependent write from a settings-only one. Picked so that their
+# fill failures fall on different cases (maze and specific-random for the first, bosses-random
+# and owls-beaks for the second): every case but pain places its items under at least two seeds.
+53494445300000000000000000080008
+53494445300000000000000000090009

@@ -1,4 +1,4 @@
-# ALttPR on Miyoo
+# Zelda Randomizer on Miyoo
 
 An *A Link to the Past Randomizer* seed generator that runs on the **Miyoo
 Mini Flip** (OnionOS). Pick your settings with the d-pad, press Start, and
@@ -23,22 +23,27 @@ headerless Japanese 1.0 ROM (1,048,576 bytes, MD5
 `03a63945398191337e896e5771f77173`). The game you play is in English. No
 Nintendo ROM is in this repository.
 
-1. Download `ALttPR.zip` from the
+1. Download `ZeldaRando.zip` from the
    [latest release](https://github.com/Canadadry/alttp-randomizer-handled-linux/releases/latest).
-2. Unzip `ALttPR.zip` at the root of the SD card.
-3. Copy your ROM to `App/ALttPR/base.sfc`.
-4. Start **ALttPR** from Onion's Apps list.
+2. Unzip `ZeldaRando.zip` at the root of the SD card.
+3. Copy your ROM to `App/ZeldaRando/alttp/base.sfc`.
+4. Start **Zelda Randomizer** from Onion's Apps list.
+
+An `App/ALttPR/` folder left by an older release can be deleted.
 
 ## Use
 
+- **Choose a Game**: at launch, A opens the game under the cursor (the one
+  you opened last time); B in a game comes back here, B here quits.
+  *Link's Awakening DX* is not available yet.
 - **Generate**: Up / Down picks a setting, Left / Right changes it, Start
-  generates. The ROM lands in Onion's SNES list, folder `ALttPR`; each seed
+  generates. The ROM lands in Onion's SNES list, folder `ZeldaRando`; each seed
   keeps its own save.
 - **History** (L1 / R1): lists your seeds; A shows a seed's settings and
   spoiler, X deletes the seed with its save and states.
 
 If something goes wrong the screen says what to do, and
-`App/ALttPR/alttpr.log` says why; include it when you report a problem.
+`App/ZeldaRando/zrando.log` says why; include it when you report a problem.
 
 ## Development
 
@@ -58,9 +63,9 @@ make sdl-pc
 ```
 
 ```bash
-tests/rando/build/sdl/alttpr --sd tmp/sd --theme themes/alttp
+tests/alttp/build/sdl/zrando --sd tmp/sd --theme themes/alttp
 ```
 
-`make package` builds the release zip `tests/rando/build/package/ALttPR.zip`
+`make package` builds the release zip `tests/alttp/build/package/ZeldaRando.zip`
 (needs docker). Everything else (cross build, themes, screenshots) is in
 [`CLAUDE.md`](CLAUDE.md) and `make help`.

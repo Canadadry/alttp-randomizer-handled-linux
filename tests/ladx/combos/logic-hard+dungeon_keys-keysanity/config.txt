@@ -1,0 +1,2 @@
+logic=hard
+dungeon_keys=keysanity

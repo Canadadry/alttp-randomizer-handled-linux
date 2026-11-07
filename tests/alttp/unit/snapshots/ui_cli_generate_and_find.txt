@@ -1,0 +1,108 @@
+@ init
+ +----------------------------------------+
+ |                                        |
+#| Choose a Game                          |
+>| A Link to the Past                     |
+ | Link's Awakening DX                    |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+_| A Open  B Quit                         |
+ +----------------------------------------+
+@ a
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+>| Glitches                      < None > |
+ | Item Placement              Advanced   |
+ | Dungeon Items               Standard   |
+ | Accessibility         100% Inventory   |
+ | Goal                    Defeat Ganon   |
+ | Tower Crystals                     7   |
+ | Ganon Crystals                     7   |
+ | World State                     Open   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal  v|
+h| No glitches required. Standard logic ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ generating
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Generating Seed                        |
+ | Please wait...                         |
+ | This takes a few seconds               |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ +----------------------------------------+
+@ start
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Ready                             |
+ | Saved in Roms/SFC/ZeldaRando as:       |
+ | Open-Ganon-1CA10A.sfc                  |
+ | Spoiler not kept                       |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+i| Play it from the SNES list             |
+_| A Back                                 |
+ +----------------------------------------+
+@ a
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Settings                          |
+>| Glitches                      < None > |
+ | Item Placement              Advanced   |
+ | Dungeon Items               Standard   |
+ | Accessibility         100% Inventory   |
+ | Goal                    Defeat Ganon   |
+ | Tower Crystals                     7   |
+ | Ganon Crystals                     7   |
+ | World State                     Open   |
+ | Swords                    Randomized   |
+ | Item Pool                     Normal   |
+ | Item Functionality            Normal  v|
+h| No glitches required. Standard logic ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r1
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Generated Seeds                        |
+>| Open-Ganon-1CA10A.sfc                  |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+i| Generated 2026-11-01 14:03             |
+_| A Details  X Delete                    |
+ +----------------------------------------+

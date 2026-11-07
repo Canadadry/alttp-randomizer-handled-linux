@@ -1,0 +1,72 @@
+# Order and environment audit of the patched LADXR checkout, read by audit_order.py (hand-written).
+# One line per site: <file>\t<stripped line text>\t<patched|unreached|order-free|inert>\t<reason>.
+# A site is an order-sensitive construct or an environment read (subprocess, environment variables,
+# clock, working directory, os.urandom, platform and Python version). ladxr.patch holds order fixes
+# and environment fixes. patched: made order-stable or environment-free in ladxr.patch; unreached:
+# only under a setting outside tier 1, or never imported by the randomizer; order-free: the order
+# cannot reach the RNG, the placement, a ROM write or the spoiler; inert: the value read cannot reach
+# them either, or is the case's own seed.
+dungeongen/dungeongen.py	tileset_ids = set(TILE_TILESETS[tile])	unreached	dungeongen/ runs only for overworld=dungeonchain (tier 3)
+dungeongen/dungeongen.py	tileset_ids = tileset_ids.intersection(set(TILE_TILESETS[tile]))	unreached	dungeongen/ runs only for overworld=dungeonchain (tier 3)
+dungeongen/dungeongen.py	animation_ids = set(TILE_ANIMATION_SET[tile])	unreached	dungeongen/ runs only for overworld=dungeonchain (tier 3)
+dungeongen/dungeongen.py	animation_ids = animation_ids.intersection(set(TILE_ANIMATION_SET[tile]))	unreached	dungeongen/ runs only for overworld=dungeonchain (tier 3)
+dungeongen/dungeongen.py	result = set()	unreached	dungeongen/ runs only for overworld=dungeonchain (tier 3)
+explorer.py	self.__visited = set()	order-free	the visited set itself; every reader of getAccessableLocations() has its own entry
+explorer.py	def getAccessableLocations(self):	order-free	returns the visited set; every caller has its own entry
+explorer.py	items = set()	order-free	getRequiredItemsForNextLocations(): randomizer.py sorts it (ForwardItemPlacer) or tests it as a boolean
+gfxconv.py	if set(search_pal).issubset(set(pal)):	unreached	gfxconv.py is a standalone sprite tool (PIL), never imported by the randomizer
+gfxconv.py	if len(set(search_pal).intersection(set(pal))) > 1:	unreached	gfxconv.py is a standalone sprite tool (PIL), never imported by the randomizer
+gfxconv.py	if len(set(search_pal).intersection(set(pal))) > 0:	unreached	gfxconv.py is a standalone sprite tool (PIL), never imported by the randomizer
+gfxconv.py	match_count = len(set(match_pal).intersection(set(pal)))	unreached	gfxconv.py is a standalone sprite tool (PIL), never imported by the randomizer
+gfxconv.py	mismatch1 = tuple(sorted(n for n in set(match_pal).difference(set(pal))))	unreached	gfxconv.py is a standalone sprite tool (PIL), never imported by the randomizer
+gfxconv.py	mismatch2 = tuple(sorted(n for n in set(pal).difference(set(match_pal))))	unreached	gfxconv.py is a standalone sprite tool (PIL), never imported by the randomizer
+itempool.py	for item_name in {KEY, NIGHTMARE_KEY, MAP, COMPASS, STONE_BEAK}:	unreached	overworld=alttp and overworld=nodungeons only (tier 3); each remove() zeroes and deletes a key, so the pool's order does not move either
+itempool.py	for idx, count in {1: 3, 2: 3, 3: 3, 4: 1, 5: 2, 6: 3, 7: 3, 8: 3, 0: 3}.items():	unreached	overworld=dungeonchain only (tier 3); a dict literal iterates in insertion order anyway
+launch_web_ui.py	with socketserver.TCPServer(('', args.port), LADXRHandler) as httpd:	unreached	launch_web_ui.py is the local web UI's server, never imported by the randomizer
+launch_web_ui.py	time.sleep(100)	unreached	launch_web_ui.py is the local web UI's server, never imported by the randomizer
+logic/location.py	self.__connected_to = set()	order-free	membership only; connections keep their own list order
+logic/main.py	self.__location_set = set()	order-free	membership only; location_list is filled in discovery order
+main.py	time.sleep(args.timeout)	inert	the --timeout thread, started only with --timeout, which the oracle never passes; it can only kill the process
+mapgen/logic.py	tmp = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/logic.py	edge_set = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/map.py	self.visited = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	solid_tiles = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	open_tiles = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	walkable_tiles = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	vertical_edge_tiles = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	horizontal_edge_tiles = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	self.up = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	self.right = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	self.down = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	self.left = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/tileset.py	self.all: Set[int] = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/wfc.py	new_options = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+mapgen/wfc.py	propegation_set = set()	unreached	mapgen/ runs only for overworld=random (tier 3)
+patches/bingo.py	has_group = set()	order-free	membership only over group names; goals keep their shuffled list order
+patches/endscreen.py	cats = sorted(f for f in os.listdir(os.path.join(os.path.dirname(__file__), "cats")) if f.endswith(".bin"))	patched	ladxr.patch sorts the cat pictures before random.choice, so the pick no longer depends on the filesystem's listing order
+patches/maze.py	all_options = set(ALL_SIGN_OPTION_TILES)	order-free	membership and removal only; get_options_from walks coordinates in range order
+patches/music.py	song_files = os.listdir(directory)	unreached	importMusic runs only for music=ffa (tier 3)
+patches/titleScreen.py	version = ""  # ladxr.patch: was subprocess.run(['git', 'describe', '--tags', '--dirty=-D']) in the working directory	patched	the title screen's version was the working directory's git describe (a tag, -D when dirty); pinned to the empty string every untagged run wrote
+patches/witch.py	ld  e, $09 ; give powder every time after the first time.	inert	assembly text inside a string, not a read of the clock
+randomizer.py	for loc in e.getAccessableLocations():	order-free	hasNewPlacesToExplore() returns a boolean
+randomizer.py	options = set(spot.getOptions())	order-free	membership only; items are tried in item_priority_order
+randomizer.py	return self._logic.windfish in e.getAccessableLocations()	order-free	membership, a boolean result
+randomizer.py	if len(e.getAccessableLocations()) != len(self._logic.location_list):	order-free	a length comparison
+randomizer.py	if loc not in e.getAccessableLocations():	order-free	membership, walked in location_list order
+randomizer.py	if self._accessibility == "goal" and self._logic.windfish in e.getAccessableLocations():	order-free	membership, a boolean result
+randomizer.py	spots = [spot for loc in e.getAccessableLocations() for spot in loc.items if spot.item is None]	unreached	ForwardItemPlacer only (forwardfactor > 0, fixed at 0.0 in tier 1); the spots are sorted by nameId before rnd.choices anyway
+randomizer.py	if self._accessibility != "goal" or self._logic.windfish not in e.getAccessableLocations():	order-free	membership, a boolean result
+randomizer.py	from datetime import datetime	inert	used only by the datetime.now() of the --logdirectory JSON log name, which the oracle never passes
+randomizer.py	self.seed = os.urandom(16)	inert	only when no seed is given: the driver passes the case's seed, and the plain run's os.urandom returns it, so the value read is the case's seed
+randomizer.py	filename = "LADXR_%s_%s.json" % (datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), log.seed)	inert	only with --logdirectory, which the oracle never passes; it names a log file and is never written into the ROM or the spoiler
+settings.py	short_options = set()	order-free	membership only, in an assertion
+settings.py	for filename in sorted(os.listdir(gfx_path)):	order-free	sorted by LADXR itself
+spoilerLog.py	remainingItems = set(self.logic.iteminfo_list)	order-free	each element gets ii.item assigned and is removed; no output depends on the visiting order
+spoilerLog.py	lastAccessibleLocations = set()	order-free	used only in a set difference
+spoilerLog.py	newLocations = e.getAccessableLocations() - lastAccessibleLocations	order-free	each spot gets its sphere and item assigned; no output depends on the visiting order
+spoilerLog.py	lastAccessibleLocations = e.getAccessableLocations()	order-free	an assignment, used only in the next set difference
+spoilerLog.py	reached = e.getAccessableLocations()	patched	ladxr.patch builds accessibleItems by walking location_list and keeping the reached locations, not in the visited set's address order
+spoilerLog.py	if len(e.getAccessableLocations()) != len(self.logic.location_list):	order-free	a length comparison
+spoilerLog.py	if loc not in e.getAccessableLocations():	order-free	membership, walked in location_list order
+worldSetup.py	done = set()	unreached	_randomizeEntrances, entranceshuffle other than none only (tier 2); membership only
+worldSetup.py	found = set()	order-free	membership only, in an assertion

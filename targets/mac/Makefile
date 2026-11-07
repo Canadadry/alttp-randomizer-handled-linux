@@ -11,8 +11,9 @@ TTF_PC := $(PREFIX)/lib/pkgconfig/SDL_ttf.pc
 IMG_LIB := $(PREFIX)/lib/libSDL_image.a
 IMG_PC := $(PREFIX)/lib/pkgconfig/SDL_image.pc
 SD := $(ROOT)/tmp/sd
-SD_APP := $(SD)/App/ALttPR
-APP := $(ROOT)/tests/rando/build/sdl/alttpr
+SD_APP := $(SD)/App/ZeldaRando
+SD_ALTTP := $(SD_APP)/alttp
+APP := $(ROOT)/tests/alttp/build/sdl/zrando
 ROM_SIZE := 1048576
 HEADERED_SIZE := 1049088
 
@@ -56,15 +57,15 @@ $(IMG_PC): | deps
 # <SDL/SDL.h> needs the parent include dirs; Apple clang flags an intentional
 # string concatenation in text_strings.c that gcc accepts.
 build: $(TTF_PC) $(IMG_PC) sd
-	$(MAKE) -C $(ROOT)/tests/rando build/sdl/alttpr \
+	$(MAKE) -C $(ROOT)/tests/alttp build/sdl/zrando \
 		CFLAGS="-std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS -Wno-string-concatenation" \
 		SDL_CFLAGS="$$(pkg-config --cflags sdl SDL_ttf SDL_image) -I$(PREFIX)/include -I$$(brew --prefix)/include" \
 		SDL_LIBS="$$(pkg-config --libs sdl SDL_ttf SDL_image)"
-	@[ -f $(SD_APP)/base.sfc ] || echo "no ROM yet: make -C targets/mac rom ROM=<your JP 1.0 rom.sfc>"
+	@[ -f $(SD_ALTTP)/base.sfc ] || echo "no ROM yet: make -C targets/mac rom ROM=<your JP 1.0 rom.sfc>"
 
 sd:
-	mkdir -p $(SD_APP)
-	cp $(ROOT)/data/base.bps $(SD_APP)/
+	mkdir -p $(SD_ALTTP)
+	cp $(ROOT)/data/base.bps $(SD_ALTTP)/
 
 # Copies ROM to the fake SD card, stripping a 512-byte copier header if there is one.
 rom: sd
@@ -72,11 +73,11 @@ rom: sd
 	@[ -f "$(ROM_PATH)" ] || { echo "rom: $(ROM_PATH) not found" >&2; exit 1; }
 	@size=$$(wc -c < "$(ROM_PATH)" | tr -d ' '); \
 	case $$size in \
-	$(ROM_SIZE)) cp "$(ROM_PATH)" $(SD_APP)/base.sfc; echo "rom: no header, copied" ;; \
-	$(HEADERED_SIZE)) tail -c $(ROM_SIZE) "$(ROM_PATH)" > $(SD_APP)/base.sfc; echo "rom: 512-byte header stripped" ;; \
+	$(ROM_SIZE)) cp "$(ROM_PATH)" $(SD_ALTTP)/base.sfc; echo "rom: no header, copied" ;; \
+	$(HEADERED_SIZE)) tail -c $(ROM_SIZE) "$(ROM_PATH)" > $(SD_ALTTP)/base.sfc; echo "rom: 512-byte header stripped" ;; \
 	*) echo "rom: $$size bytes, expected $(ROM_SIZE) (or $(HEADERED_SIZE) with a header)" >&2; exit 1 ;; \
 	esac
-	@md5 -q $(SD_APP)/base.sfc | grep -qx 03a63945398191337e896e5771f77173 \
+	@md5 -q $(SD_ALTTP)/base.sfc | grep -qx 03a63945398191337e896e5771f77173 \
 		&& echo "rom: JP 1.0, ready" || echo "rom: not the JP 1.0 ROM (MD5 differs): the app will refuse it" >&2
 
 run: build

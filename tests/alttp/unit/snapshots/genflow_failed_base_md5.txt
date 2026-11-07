@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Generation Failed                      |
+ | Needs App/ZeldaRando/alttp/base.sfc    |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+E| Base ROM is not the JP 1.0 ROM         |
+_| A Back                                 |
+ +----------------------------------------+
