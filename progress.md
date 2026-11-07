@@ -56,7 +56,7 @@
     - [x] Chunk 2: expected case list and checker
     - [x] Chunk 3: seeds picked with the ROM, case folders
     - [x] Chunk 4: runners over every case
-  - [ ] Step 2.5 Golden format and goldens
+  - [x] Step 2.5 Golden format and goldens
     - [x] Chunk 1: write events with byte origins
     - [x] Chunk 2: write-log encoder and known-source map
     - [x] Chunk 3: bytes policy for case folders
