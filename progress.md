@@ -81,7 +81,7 @@
     - [x] Chunk 3: store model
     - [x] Chunk 4: fixture re-run and close
   - [x] Step 2.8 Nintendo-bytes check over everything committed
-  - [ ] Step 2.9 Full-ROM check target
+  - [x] Step 2.9 Full-ROM check target
     - [x] rom-check target and its self-test
   - [ ] Step 2.10 Split Phase 3 step 6
 - [ ] Phase 3 — LADX library, host only
