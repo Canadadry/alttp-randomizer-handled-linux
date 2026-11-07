@@ -1,4 +1,4 @@
-.PHONY: help test lint unit-arm rom-check rom-check-selftest
+.PHONY: help test lint logic unit-arm rom-check rom-check-selftest
 
 CC ?= gcc
 # -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
@@ -6,7 +6,9 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -ffp-contract=off
 LADX := ../../ladx
 BUILD := build
 
-UNIT_TESTS := test_sha512 test_pyrandom test_settings test_requirements
+UNIT_TESTS := test_sha512 test_pyrandom test_settings test_requirements test_logic
+# Run again with --fixtures by make logic and unit-arm.
+LOGIC_TESTS := test_logic
 
 LADX_SRC := $(wildcard $(LADX)/src/*.c)
 LADX_HDR := $(wildcard $(LADX)/include/*.h $(LADX)/src/*.h)
@@ -14,6 +16,8 @@ LADX_OBJ := $(patsubst $(LADX)/src/%.c,$(BUILD)/obj/%.o,$(LADX_SRC))
 LADX_LIB := $(BUILD)/libladx.a
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 SUPPORT_OBJ := $(BUILD)/support.o
+LOGIC_FIXTURE_OBJ := $(BUILD)/logic_fixture.o
+LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
 LINT_DIR := $(BUILD)/lint
 LINT_OBJ := $(patsubst $(LADX)/src/%.c,$(LINT_DIR)/%.o,$(LADX_SRC))
 
@@ -28,6 +32,7 @@ CASES ?=
 
 help:
 	@echo "make test              LADX's unit tests (tests/ladx/unit), built with the ladx/ library, run from tests/ladx"
+	@echo "make logic             LADX's LOGIC_TESTS run with --fixtures from tests/ladx: the oracle's logic fixtures replayed"
 	@echo "make lint              every ladx/ source built as strict ISO C99 (-pedantic-errors)"
 	@echo "make unit-arm          LADX's unit tests built by Onion's toolchain (-ffp-contract=off kept) and run under qemu-arm from tests/ladx (needs docker, qemu-user)"
 	@echo "make rom-checkthe generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
@@ -44,6 +49,10 @@ test: $(UNIT_BINS)
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@echo "test: $(words $(UNIT_BINS)) LADX unit tests ran"
 
+logic: $(LOGIC_BINS)
+	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
+	@echo "logic: $(words $(LOGIC_TESTS)) LADX unit tests replayed the oracle fixtures"
+
 lint: $(LINT_OBJ)
 	@echo "lint: $(words $(LADX_SRC)) ladx/ sources build with -pedantic-errors"
 
@@ -53,12 +62,13 @@ unit-arm:
 	@rm -rf $(ARM_UNIT_DIR) && mkdir -p $(ARM_UNIT_DIR)/obj
 	@echo "unit-arm: building $(words $(UNIT_TESTS)) LADX unit tests in $(ARM_UNIT_DIR) with Onion's toolchain"
 	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include"; \
-		for s in $(LADX_SRC) unit/support.c; do "$$cc" $$f -c -o $(ARM_UNIT_DIR)/obj/$$(basename $$s .c).o $$s; done; \
+		for s in $(LADX_SRC) unit/support.c unit/logic_fixture.c; do "$$cc" $$f -c -o $(ARM_UNIT_DIR)/obj/$$(basename $$s .c).o $$s; done; \
 		for t in $(UNIT_TESTS); do "$$cc" $$f -Iunit -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o; done'
 	@file $(ARM_UNIT_DIR)/test_pyrandom | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_UNIT_DIR)/test_pyrandom; echo "unit-arm: $(ARM_UNIT_DIR)/test_pyrandom is not a 32-bit ARM EABI executable" >&2; exit 1; }
 	@qemu-arm --version | head -n 1
 	@set -e; for t in $(UNIT_TESTS); do qemu-arm $(ARM_UNIT_DIR)/$$t; done
-	@echo "unit-arm: $(words $(UNIT_TESTS)) LADX unit tests passed under qemu-arm"
+	@set -e; for t in $(LOGIC_TESTS); do qemu-arm $(ARM_UNIT_DIR)/$$t --fixtures; done
+	@echo "unit-arm: $(words $(UNIT_TESTS)) LADX unit tests and $(words $(LOGIC_TESTS)) fixture replays passed under qemu-arm"
 
 $(BUILD):
 	@mkdir -p $@
@@ -74,6 +84,12 @@ $(LADX_LIB): $(LADX_OBJ)
 
 $(SUPPORT_OBJ): unit/support.c unit/support.h | $(BUILD)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(LOGIC_FIXTURE_OBJ): unit/logic_fixture.c unit/logic_fixture.h unit/support.h $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -c -o $@ $<
+
+$(BUILD)/test_logic: unit/test_logic.c unit/support.h unit/logic_fixture.h $(SUPPORT_OBJ) $(LOGIC_FIXTURE_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(LOGIC_FIXTURE_OBJ) $(LADX_LIB)
 
 $(BUILD)/test_%: unit/test_%.c unit/support.h $(SUPPORT_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(LADX_LIB)

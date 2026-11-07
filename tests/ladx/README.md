@@ -459,7 +459,8 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `ladx/src/`; pure C99, no allocation, no platform library, nothing of
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
-(`test_sha512`, `test_pyrandom`, `test_settings`, `test_requirements`),
+(`test_sha512`, `test_pyrandom`, `test_settings`, `test_requirements`,
+`test_logic`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -525,6 +526,43 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   `requirement_text`. It prints `test_requirements: <n> item names;
   folding, stored order, add and remove on shared nodes, inventory, test
   and getItems ok (<c> checks)`.
+  `test_logic` (linked with the fixture support `unit/logic_fixture.c`,
+  the canonical text of `ladx_oracle.graph_lines`, `requirement_text` and
+  `index_ranges`, and the reader of `logic_vectors.txt`) checks
+  `ladx_logic` (LADXR's `logic/location.py`, `Logic`'s discovery and
+  `explorer.py`) through `ladx_logic.h` and `ladx_logic_builder.h` (the
+  builder, public so that tests build synthetic graphs): `singleConnect`
+  (a second edge to a target is `OR(new, old)`, `None` on either side
+  wins, `False` adds nothing, `True` is `None`), `connect` (both ways, the
+  back requirement the same node, `back=False` forward only), discovery
+  (preorder in connection order from the start, unreached locations
+  dropped, `iteminfo_list` by location then add order, edges renumbered),
+  the canonical text of a hand-built graph equal to a literal, option
+  appends, the explorer (a placed item picked up on visit, `_process` to
+  a fixpoint, `RUPEES_<n>` folding, a zero-count item present, the
+  required items of the todo list, a second visit refused), the
+  capacities (the first overflow breaks the logic, which then builds and
+  shows nothing) and `LadxWorldSetup`'s defaults (`WorldSetup()`). It
+  prints `test_logic: synthetic graphs, renderer and explorer ok (<c>
+  checks)`. With `--fixtures` it then reads every configuration of
+  `oracle/logic_vectors.txt`: its settings set on defaults (`""` the
+  empty value) and validated, each assignment kept by validate, every
+  value supported alone (`ladx_setting_value_reason`; the pair
+  `boomerang=default` with `accessibility=all`, which LADXR's fill
+  refuses on every seed but whose logic builds, is counted, not refused),
+  and its 13 `ws` lines read into `LadxWorldSetup` (`boss_mapping`,
+  `miniboss_mapping`, `goal`, `goal_count`) and the harness (`multichest`,
+  `sign_maze`, `inside_to_outside`, `keep_two_way`, `one_on_one`, kept as
+  text; `entrance_mapping identity`, `bingo_goals -`, `map -` and
+  `dungeon_chain -` required) and rendered back unchanged; it prints
+  `test_logic: <n> configurations of oracle/logic_vectors.txt read:
+  settings kept by validate, every value supported alone (<p> refused
+  only as a pair LADXR's fill refuses), <w> ws lines read back
+  unchanged`.
+- `make -C tests/ladx logic` (run by the root `make logic`, after
+  `tests/alttp`'s, part of `make check`): runs each `LOGIC_TESTS` binary
+  with `--fixtures` from `tests/ladx`, then prints `logic: <n> LADX unit
+  tests replayed the oracle fixtures`.
 - `make -C tests/ladx lint` (run by the root `make lint`, after
   `tests/alttp`'s): every `ladx/src` source compiled with `-pedantic-errors`
   added, then `lint: <n> ladx/ sources build with -pedantic-errors`.
@@ -533,14 +571,16 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   (install qemu-user)`, exit 1, without `qemu-arm`; `onion-toolchain.sh`'s
   `setup:` line without docker or its daemon. Else it prints `unit-arm:
   building <n> LADX unit tests in build/arm/unit with Onion's toolchain`,
-  compiles `ladx/src`, `unit/support.c` and each test with Onion's
+  compiles `ladx/src`, `unit/support.c`, `unit/logic_fixture.c` and each test with Onion's
   toolchain and the flags above plus `-O2 -marm -mtune=cortex-a7
   -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve -static
   -D_FILE_OFFSET_BITS=64` (as `tests/alttp`'s), checks with `file` that
   `test_pyrandom` is a 32-bit ARM EABI5 executable, prints `qemu-arm
   --version`'s first line, runs every test under `qemu-arm` from
-  `tests/ladx` (the same fixture, the same output lines) and ends with
-  `unit-arm: <n> LADX unit tests passed under qemu-arm`; any failure exits
+  `tests/ladx` (the same fixture, the same output lines), then each
+  `LOGIC_TESTS` binary again with `--fixtures`, and ends with `unit-arm:
+  <n> LADX unit tests and <m> fixture replays passed under qemu-arm`; any
+  failure exits
   non-zero.
 
 ## Full-ROM check

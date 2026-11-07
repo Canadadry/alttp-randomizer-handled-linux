@@ -13,7 +13,7 @@ help:
 	@echo "make rom-guard      fails if git's index holds a .gb/.gbc/.sfc/.smc file or a LADX/ALttP ROM by digest, run by make test"
 	@echo "make ui-cli         builds tests/alttp/build/ui_cli, the agent's text view of the app"
 	@echo "make lint           alttp/, ladx/ and app/ built as strict ISO C99 (-pedantic-errors)"
-	@echo "make logic          unit tests replaying the oracle fixtures (tests/alttp/oracle)"
+	@echo "make logic          unit tests replaying the oracle fixtures of both games (tests/alttp/oracle, tests/ladx/oracle)"
 	@echo "make selftest       the e2e driver's own self-test"
 	@echo "make e2e            every case of tests/alttp/cases diffed against its golden"
 	@echo "make e2e-combos     every case of tests/alttp/combos diffed against its golden, kept out of e2e"
@@ -80,6 +80,7 @@ lint:
 
 logic:
 	$(MAKE) -C tests/alttp logic
+	$(MAKE) -C tests/ladx logic
 
 selftest:
 	$(MAKE) -C tests/alttp selftest

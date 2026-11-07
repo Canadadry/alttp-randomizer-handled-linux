@@ -665,7 +665,9 @@ in `docs/`, then `README.md`.
   (`alttp/`, `ladx/` and `app/` built with
   `-std=c99 -pedantic-errors`, except `app/sdl/` and `sdl_main.c`, which
   `make sdl` builds that way; `ladx/`'s half is `make -C tests/ladx lint`,
-  contract in `tests/ladx/README.md`, "Unit tests and lint"), `logic` (unit tests replaying the oracle fixtures),
+  contract in `tests/ladx/README.md`, "Unit tests and lint"), `logic` (unit tests replaying the oracle fixtures
+  of both games: `tests/alttp`'s, then `make -C tests/ladx logic`, contract in
+  `tests/ladx/README.md`, "Unit tests and lint"),
   `selftest` (the e2e driver's own self-test), `e2e` (every case diffed
   against its golden, one `DIVERGENT <case>` line per failure) and
   `e2e-combos` (every combination case diffed against its golden, kept out
