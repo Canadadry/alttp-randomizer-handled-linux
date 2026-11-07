@@ -334,3 +334,53 @@ size_t ladx_run_text_place_line(char *buf, size_t cap, const LadxLogic *logic, i
 		t.over = 1;
 	return finish(&t);
 }
+
+static int put_line(FILE *out, const char *line, size_t len)
+{
+	return len > 0 && fputs(line, out) != EOF && fputc('\n', out) != EOF;
+}
+
+int ladx_run_text_write_run(FILE *out, const LadxSettings *settings, const uint8_t *seed, size_t seed_len,
+			    const LadxRandomizer *r, FILE *trace)
+{
+	char line[LADX_RUN_TEXT_MAX_LINE];
+	char short_string[LADX_SETTINGS_SHORT_MAX + 1];
+	const LadxOutcome *outcome = ladx_randomizer_outcome(r);
+	const LadxWorldSetup *ws = ladx_randomizer_world_setup(r);
+	const LadxItemPool *pool, *read = ladx_randomizer_read_pool(r);
+	const LadxLogic *placement = ladx_randomizer_placement(r);
+	uint64_t before, after;
+	size_t got;
+	int i;
+
+	if (ladx_settings_short_string(settings, short_string, sizeof short_string) < 0)
+		return 0;
+	if (!put_line(out, line, ladx_run_text_seed_line(line, sizeof line, seed, seed_len)) ||
+	    !put_line(out, line, ladx_run_text_settings_line(line, sizeof line, short_string)))
+		return 0;
+	if (ws)
+		for (i = 0; i < LADX_RUN_TEXT_WS_LINES; i++)
+			if (!put_line(out, line, ladx_run_text_ws_line(line, sizeof line, ws, i)))
+				return 0;
+	pool = ladx_randomizer_pool(r, &before, &after);
+	if (pool && (!put_line(out, line, ladx_run_text_words_line(line, sizeof line, "words_before", before)) ||
+		     !put_line(out, line, ladx_run_text_pool_line(line, sizeof line, "pool", pool)) ||
+		     !put_line(out, line, ladx_run_text_words_line(line, sizeof line, "words_after", after))))
+		return 0;
+	if (read && !put_line(out, line, ladx_run_text_pool_line(line, sizeof line, "placer_pool", read)))
+		return 0;
+	if (placement)
+		for (i = 0; i < ladx_logic_spot_count(placement); i++)
+			if (!put_line(out, line, ladx_run_text_place_line(line, sizeof line, placement, i)))
+				return 0;
+	rewind(trace);
+	while ((got = fread(line, 1, sizeof line, trace)) > 0)
+		if (fwrite(line, 1, got, out) != got)
+			return 0;
+	if (ferror(trace))
+		return 0;
+	if (!placement && outcome->kind != LADX_OUTCOME_UNFINISHED &&
+	    !put_line(out, line, ladx_run_text_outcome_line(line, sizeof line, outcome)))
+		return 0;
+	return 1;
+}

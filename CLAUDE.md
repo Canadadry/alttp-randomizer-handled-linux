@@ -162,8 +162,14 @@ in `docs/`, then `README.md`.
   `tests/alttp`'s: LADX's e2e driver `run_e2e.py`, its claims
   `claims.txt`, contract in `tests/ladx/README.md`, "Stage projection" and
   "E2E driver and claims";
-  `unit-arm`, `rom-check`, `rom-check-selftest`, outside the net); Phase 3
-  adds its targets there.
+  `unit-arm`, `measure` (the run stopped after the fill timed on every
+  case, projected onto the Cortex-A7; contract in `tests/ladx/README.md`,
+  "Measure"), `rom-check`, `rom-check-selftest`, outside the net); Phase 3
+  adds its targets there. `tests/ladx/oracle/fill_outcomes.txt`, LADXR's
+  fill outcomes on seeds that are not case seeds, is written only by
+  `gen_fill_outcomes.py` (`--check` re-renders it), replayed by
+  `test_fill --fixtures`; contract in `tests/ladx/README.md`,
+  "Fill-outcome fixture".
 
 ## Checks
 
@@ -829,7 +835,7 @@ in `docs/`, then `README.md`.
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
   `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh`, `gen_tables.sh`,
   `gen_extract.sh`, `extract.py verify`,
-  `table_replay.py` and `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
+  `table_replay.py`, `gen_fill_outcomes.py` and `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
   `key_trace.py` its settings and constant reads,

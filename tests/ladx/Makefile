@@ -1,4 +1,4 @@
-.PHONY: help test lint logic unit-arm selftest e2e e2e-combos rom-check rom-check-selftest
+.PHONY: help test lint logic unit-arm selftest e2e e2e-combos measure rom-check rom-check-selftest
 
 CC ?= gcc
 # -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
@@ -9,9 +9,9 @@ BUILD := build
 UNIT_TESTS := test_sha512 test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
 	test_itempool test_fill
 # Run again with --fixtures by make logic and unit-arm.
-LOGIC_TESTS := test_logic test_itempool
+LOGIC_TESTS := test_logic test_itempool test_fill
 # Linked with the host layer ladx/host/ too.
-HOST_TESTS := test_run_text test_itempool
+HOST_TESTS := test_run_text test_itempool test_fill
 
 LADX_SRC := $(wildcard $(LADX)/src/*.c)
 LADX_HDR := $(wildcard $(LADX)/include/*.h $(LADX)/src/*.h)
@@ -51,6 +51,7 @@ help:
 	@echo "make selftest          the e2e driver run_e2e.py's self-test on planted runs and fake generators"
 	@echo "make e2e               build/ladx_gen on every case of cases/ (or CASES=\"a b\"), its run.txt's stage projection diffed against the golden's at claims.txt's stage"
 	@echo "make e2e-combos        the same on every case of combos/"
+	@echo "make measure           build/ladx_gen --time (the run stopped after the fill) 3 times on every case and combo, the minimum kept, projected onto the Cortex-A7; report in build/measure/report.txt; outside the net"
 	@echo "make rom-check          the generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
 	@echo "make rom-check-selftest rom_check.py's self-test alone: a synthetic ROM, a planted case tree and fake generators, no ROM"
 
@@ -63,6 +64,9 @@ e2e: $(GEN)
 e2e-combos: $(GEN)
 	@echo "e2e-combos: the combination cases"
 	@python3 -I -B run_e2e.py --cases combos --gen $(GEN) $(CASES)
+
+measure: $(GEN)
+	@CC='$(CC)' ./measure.sh $(GEN) $(BUILD)/measure
 
 # Paths are repository-relative: the driver runs from the repository's root.
 rom-check:

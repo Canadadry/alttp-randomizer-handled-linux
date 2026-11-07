@@ -1,0 +1,178 @@
+# LADXR's fill outcomes on seeds that are not case seeds; written by gen_fill_outcomes.py, never
+# by hand. Runs, in order: for every case and combo (tests/ladx/cases/ then combos/, in the
+# expected order), every candidate derive(<name>, k) below the case's own k (the candidates
+# ladx_cases.py pick refused); candidates k = 0..7 of each refused single; then the lines of
+# determinism_cases.txt whose values are all tier-1 values, labelled det-<name>. Each runs
+# LADXR's Randomizer in SKIP_ROM_GENERATION mode (oracle_run.py's driver, no ROM). One line each:
+#   <label> <k or -> <seed hex> <ok|error|crash> <lines> <digest> [<k=v> ...]
+# <digest>: the first 16 bytes, in hex, of SHA-512 of the run's fill projection (run_e2e.py's
+# project at stage fill: lines joined by \n, final newline); <lines>: its line count.
+baseline 0 3ad484d5f6d7795ad8893b6c536da4ad error 99 76d74106aa9d79239dbd9bd748dbe002
+logic-hard 0 806155f273137d6dc4370e43fd423d65 error 564 b55ffdf2ec4f87188fcc3898770d69c3 logic=hard
+logic-hard 1 fd9dfce2bf6fd284ee50d963995b0689 error 614 6ba82932996a2b7a477d4c8e53b972c7 logic=hard
+heartpiece-0 0 d859d7de240c949b2e1cd0f6a23119a5 error 602 a61637ce46209a7b408f18db6bc115f8 heartpiece=0
+seashells-0 0 ae3ed44d3f01fab640334b0428152318 error 576 abbebbdedf3a6e8d941e2be6859da7ed seashells=0
+heartcontainers-0 0 6812bcafe51535445a0c549279d18fe2 error 441 f786e010eb0e83b1856ba4ca61359391 heartcontainers=0
+heartcontainers-0 1 2828a4e628b419f754449eb2ddf78ef9 error 647 c92f307bb71e8eb187db3adef460ab5a heartcontainers=0
+tradequest-0 0 a2ed5a8ce681816c5f777383e3594774 error 552 6bf817857bd2d4a85b07dd14564524f1 tradequest=0
+tradequest-0 1 59e37534ec0b6d42ad0d5c38d6d653d5 error 436 3fc5511aaa5378d450a145d13575aaeb tradequest=0
+boomerang-trade 0 f3b0749619a754a883f4bac14f8cab9c error 571 381e4568aa1ea4ce3df38441d3e0d5f4 boomerang=trade
+boomerang-trade 1 dadedbef212d8771411ad93b04081909 error 593 670b92c521fc5af08a71fe9cb3a8a009 boomerang=trade
+boomerang-trade 2 7cfa1cd88c2191a9a69a22c6be912798 error 659 e92f9ea1753c325fa1b744c0c9da2af6 boomerang=trade
+boomerang-trade 3 a2584540a7e169ab4b1238bf12313802 ok 776 c7625fc85ac95dea2821223c5abc03ac boomerang=trade
+boomerang-trade 4 f3d396ef4f5d48127b5ff473330c198d error 562 7d9f2c65b7d147d74d1d3f0e0aae2274 boomerang=trade
+dungeon_keys-removed 0 9f1df22bef006e51cdeef4aff42069ec ok 874 000e5b5c3e39cb09adfee6d2771cdfb9 dungeon_keys=removed
+dungeon_keys-removed 1 856eab24ede0765329447babe1d06bfd error 672 c1fe1ca1fc2599419ee639c8fb054b16 dungeon_keys=removed
+dungeon_beaks-keysanity 0 2e3aa34d1a0fed201ec9867cf5dba4ab error 475 9be540f8b79c40d60df9b6cbef042be3 dungeon_beaks=keysanity
+dungeon_maps-removed 0 a13346a2ce54284bfacc46fb5394e1a5 error 515 5e676bcf98b697b767e2a1eaa111129f dungeon_maps=removed
+dungeon_maps-removed 1 721eea7a8e5c16830e7fe49b557f1c69 error 508 fdffa5309ce5c2bd8d85d61045bc460f dungeon_maps=removed
+dungeon_maps-removed 2 255ba20af977b0102cfe6af42b5ee1ef error 563 e90012940c3700593c8678a36e0ca78b dungeon_maps=removed
+boss-shuffle 0 e39ffb34d7f873a3d370b365d2681b01 error 611 19d32931992d976a40adffbd6488a0f5 boss=shuffle
+boss-shuffle 1 9ab1f319e56beb142f488ef41071bd52 error 736 ca2649dd3d5868781312e6a4720e32e3 boss=shuffle
+boss-shuffle 2 8282ba5682e88ef92f9b780f0cb057d0 error 539 790f24528fcf73955d54d6fb29807977 boss=shuffle
+goal-open 0 09c80ee9282808e11d5af894e74a6cdc error 524 6ba5501cc23c5534ca209f4865dd9c19 goal=open
+goal-open 1 c33359bbf408135fe3efdadaeb4d60a1 error 108 5e05920ff374018fce650b59f98af214 goal=open
+goal-open 2 79562ab94e692d6587cc4193a43b6f4a error 654 6c298230621ecfdb058cc9284e3d72d5 goal=open
+goal-open-4 0 db170f5994b4819b2c4de3728a96613c error 541 d0ab2101ec48a5cc9ef39f6cc6a146e5 goal=open-4
+goal-5-8 0 c9329df891258a8ae2baadeddfee4238 error 501 3cf19296804edf75b0e3c50cd1e39379 goal=5-8
+goal-5-8 1 ecd9af6b8ad8dc16a0c344bac46036a9 error 485 086c19814e372b87be70da7602904aa4 goal=5-8
+goal-seashells 0 45fa47c26b12f9922d39bd83f518f382 error 582 210e24624a6beead617c1c216e3265f1 goal=seashells
+goal-seashells 1 8fc4fe9604fac10289f3e6e9fbae1461 error 109 556eec3fb13e0dc6a3b64e2f3eaffab0 goal=seashells
+goal-maze 0 7e1fac94ce0d7bb9574364a7a357c50d crash 78 6ff2795d6a27f7828f18bc7c0b5e2b7a goal=maze
+goalcount-7 0 94dc0784a05c0e4a2ad3d422174db124 error 504 260a5cd9001aee19300f3b4044edcbef goalcount=7
+goalcount-6 0 e5d703cb7b94ab51a91131c2d0e1fc32 error 580 96c69923cf0b2272be438c739dab156e goalcount=6
+goalcount-6 1 3a77d91ca70f56fbad2ff8520a281b39 error 51 5dcc6506b7dafc888be2030e148417e9 goalcount=6
+goalcount-5 0 d43605c485d5066379de2f5426738196 error 640 dbd3fba64e590295713dd347e94247da goalcount=5
+goalcount-5 1 2d601132e064ed85c44f91712fa2bb4b error 666 6e77824d4bf63353bba69ab44f212b46 goalcount=5
+goalcount-5 2 ebdccdaf52d81c928b344ecf34b30937 error 609 1cf808c83ec6bd660597f525f0c922dc goalcount=5
+goalcount-5 3 eae16d519f57a8e203e93b8cce0af327 error 496 4ff7ed2bbd4ef73a23ad75e23affd29a goalcount=5
+goalcount-5 4 799a5de2ec78ec40503178d1151a79e3 error 553 bf75f1afb63a46726aa9e59053d55143 goalcount=5
+goalcount-3 0 89ed69c76e396c5c80ca5ede72f3146f error 568 ac19a395e377adb10a5f251d0a9510c4 goalcount=3
+goalcount-3 1 3e5122ff58b348255f80ae899ec81fbe error 107 9811c1c1b53c09f86517792fc5bafc33 goalcount=3
+goalcount-3 2 f70b063fa706b2d46190dc5f3eb072ed error 98 6e93507aed263e8d3a5972c26a383570 goalcount=3
+goalcount-3 3 49e54b768191991c79b17b73be838f52 error 497 b87e807ff9fcbb1718078ec4bd527927 goalcount=3
+goalcount-3 4 539dc5e8709edd9a6f59a90e081699d1 error 106 5365ea25c00fbf839542ec7d4c79327d goalcount=3
+goalcount-3 5 ed51df84970e22234d1105dd57b93347 error 549 862aa2e7c04e670de37fc36837d643b1 goalcount=3
+goalcount-3 6 a2d642e36fc8d0b511144bb4a9969a49 error 87 7af31783c4c671b19ed5fc5fa2fd932b goalcount=3
+goalcount-3 7 614119ca0fc3ccec9bc9c21804f001af error 509 4afdba469f93538798cce9c7e0e4ef1c goalcount=3
+goalcount-2 0 0fc744d28c7b273f68f1aa928fbda1dc error 586 f33738a93483316ac6a083faf7358215 goalcount=2
+goalcount-1 0 c6ac700d1103916267e2f026f39f30e5 error 540 f5067119c2a581d825637502b949032b goalcount=1
+goalcount-1 1 8f193fff72d372078f3216b3b9807dbc error 600 4f9549c1ea8b8605be7bdca7055932f3 goalcount=1
+goalcount-0 0 3990faf10b647f30ad8924183d23978b error 559 8de865d5f7adf5ecfd476a099aa2d264 goalcount=0
+goalcount-0 1 bb7a84cadda44673af6364caf0e8a105 error 541 a6113f71efe520fc9197836b5ce85df0 goalcount=0
+itempool-casual 0 3a28cc6f95daee0a8457122be53afe93 error 464 684450c586c591273112a5c9771d5aea itempool=casual
+itempool-keyup 0 c2efa4d56840d4099ddc2e2a7d81ddaa error 490 2f23bc13c49a92b455f9575d43807c54 itempool=keyup
+itempool-keyup 1 fa33506ce6b09dc43c567143f1e373d5 error 436 de43ee547a2a3100dd9f30372cdd4996 itempool=keyup
+hpmode-inverted 0 0917a245201d2e913736773fd49a9971 error 567 50ed0e4370445b780eb72c14af1d4abf hpmode=inverted
+hpmode-inverted 1 9bcfc617f54cfdd4ed615f1c7ea2618e error 579 f201614aeafda3542f2a8a0da741d398 hpmode=inverted
+hpmode-inverted 2 68a4786d9a4a2076670ea5c198196610 error 616 2f6122821a7b69e3ff7f7902562e1739 hpmode=inverted
+hpmode-inverted 3 04d10bd47e669400a506541bb1f6015a error 553 106efbb79ff158ac24052cae4322c0d4 hpmode=inverted
+hpmode-inverted 4 2341964430e982e23e5a0f81750c927c error 87 f654b6ba90b3bb94aafdea9ee3dc6010 hpmode=inverted
+hpmode-1 0 1d4c1bd3336f0e0ad979232a1876e11f error 602 49549701150971358a78f9a68609be0c hpmode=1
+hpmode-1 1 cc08b10c5761557e78ef73ad8bc7c9eb error 639 54e6ce11e78d02baaaf6f866218b0073 hpmode=1
+hpmode-1 2 881a46443d53f8cc027a4f9e1b0ebf11 error 642 e0f45814bb0c7f533fb66297c83541d0 hpmode=1
+hpmode-low 0 285b3e22944ce621decd96a03ad86e72 ok 821 a7fbe1f15b3bf818de25bb82db751182 hpmode=low
+hpmode-low 1 6a3a01a59f166c4347fe034c06a9af91 error 518 7e2d72d63eed9cadc27ec96288982dd7 hpmode=low
+hardmode-oracle 0 d8dd26b8a4fde2efeb061e86e513a165 error 103 616cebf3907fe5dde85d9397d0fe1ab0 hardmode=oracle
+hardmode-ohko 0 506a226d4b1e891367bdd028a9d70a68 error 544 e0d2d60a9204b84d4099404354cbde80 hardmode=ohko
+hardmode-ohko 1 c4b16a5de4bb2c7f96226fe3693c515d error 607 170faa3fa542864a8c9fee13b9770573 hardmode=ohko
+hardmode-ohko 2 d1a0096eb8559bf7bc34d4a512838a67 error 540 962f8012a58456a50f22cb7fb74a4e41 hardmode=ohko
+hardmode-ohko 3 35dc0bc0b44ee8334209015fe7acab17 error 562 11edf7d151c93efdbe6b8e47425326ae hardmode=ohko
+hardmode-ohko 4 9b693b66024d4adab4777d081102dd83 error 492 861593103b3c875608f518f135b3170c hardmode=ohko
+evilshop-enabled 0 6310432cc422a29c2b612c5c53b38cfb error 63 5bdd88d4a3315958a13445eb81b06c21 evilshop=enabled
+keyholesanity-1 0 e7272ad4e0c3c54eb1bab863d879aa66 error 555 0d88765ae03a026cf2c9b2bce26682c1 keyholesanity=1
+keyholesanity-1 1 5a0d73f34cd3efe4c3eb3e600f8704dc error 566 4d1ed57aeea56307cf786d2215a9ad61 keyholesanity=1
+superweapons-1 0 5fababeb5f2ed17b43b72ece1cae8e0b error 560 be42b858e73b09b03c709aec3e4ec2e0 superweapons=1
+quickswap-a 0 1f42f8d171f4a9e4454f0aaca9bf3040 error 528 7c183458655f70888269b9970fb705d0 quickswap=a
+textmode-notextbox 0 c42c70c6debc15ba3c48a5c9f33667ce error 574 5200e9ef98d8c518e78e912402727fab textmode=notextbox
+textmode-notextbox 1 28dc77fc3f14a74b7b655e869e158bb8 error 498 7bc1600e4dc2aecaa4e53ab58d87b005 textmode=notextbox
+lowhpbeep-none 0 3481e548413422770ade919f12ae3741 error 504 e81c01976d43fc58637a87a0d6ec4e4f lowhpbeep=none
+noflash-0 0 1cb5d08dd60e1f270dcfb10b4ee1825a error 548 7880d9d943222fee063c315cbbcca8de noflash=0
+noflash-0 1 2a7618e8d1781c2c92ade7814a0ff7ec error 565 a4f46d8abeb0201f767afce5b69b63f2 noflash=0
+follower-fox 0 dd955592e3f1023db7121ff04d46d0a9 error 538 8c37ebc88cb8e4a2b2b2e10ef11a4f2a follower=fox
+linkspalette-0 0 276ca9e4742187381b00cd92f34b4be9 error 103 df9e642c71a116943ea956b8763cb66c linkspalette=0
+linkspalette-0 1 b4745bd52924a81e5e34cf2edc022399 error 601 e4453de4a109173e252ba72da7e84e47 linkspalette=0
+linkspalette-0 2 0ebd12990d86527b3cf074d7f567fbd1 error 539 598eebd1755d747eff7f074e6a15b10a linkspalette=0
+linkspalette-1 0 2bc9e09165679c43d7437999b79f5f38 ok 793 ffd084b175c5b95de90db2e6e435d274 linkspalette=1
+linkspalette-7 0 472ed4cd492f0bbccca9edd7e0f5f62e ok 846 c098a31a1b87472ca33b03183bb503b3 linkspalette=7
+music-random 0 1e5485d2952a8475224679049a0db038 error 515 6582f815dedd92d7358b28216345810e music=random
+music-shifted 0 3884871f766937d52f57c3137a4666b1 error 579 504614ea80d8a84ef83bf86a42fe93a3 music=shifted
+logic-hard+dungeon_keys-removed 0 64754b4cf833ae646ff5b8a850f519ee error 576 328c80813b73c61c6582da35803577ce logic=hard dungeon_keys=removed
+accessibility-goal+goal-instruments 0 45e355fccddade1ae642de6ba55da370 error 596 802b63eb9e53721efac4ebbc5178cd3c accessibility=goal goal=instruments
+accessibility-goal+goal-instruments 1 fcb1d9ac5268bb74ff3d8493e2e80f84 error 590 8301c2a495e2e3cdbb3566c21554cbe7 accessibility=goal goal=instruments
+accessibility-goal+goal-seashells 0 4893bf574322af32f91bc495d6bd7681 error 534 cda772fe1b9c696cfcc703452733dd09 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 1 d40e7289b22157ab82abe0b4da825f2f error 510 7605864c7d25ee8474137cedafa49374 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 2 163c0750f9285c13d1a375a455eed563 error 470 421f63a8cc4c84f69fd26a36070da062 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 3 f45606af2fbbeab127a6405fba68f6b2 error 566 ffc1f182281aa4d25db6819d8b1769cd accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 4 9571960d578dce7924cf2f12b414fd8f error 496 6db112addb7acfc7cf8d4bf323be22af accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 5 611f5f01d455ddf41a716a23239ecb89 error 404 947c93fd37ce94b717c2957c58eef0b9 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 6 067d929a6d31fc3397c6d69b39520ba3 error 540 f09f097bfcd14357e8e62cabad42b082 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 7 439642c5e043eeb349a0d9235060101f error 540 d4b5605fc7a371d1183309fa5a344163 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 8 b73df601146340bae45f36c497350787 error 486 28ed9bb846af83e910091d7ed79d26fc accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 9 b5baebfcad55ddd79adfe8ce2058ab15 error 518 8279ec752a9b6e4f69cd9681b5cf5a9c accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 10 b209a1fc7dc0909236285553573592b7 error 482 a06070070ebf4d28315e7f025a003061 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 11 338b041c6d563a30ff529c7b9af05e0e error 524 a6698dae51d3f0f9b36be23a99abb815 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 12 a9e0a80bb240fa75bf4c84909dd5703d error 506 53ba0c74e8315e8f62a10c6653c3e9b2 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 13 900e499bb3386c4e9896eabd67abfde3 error 592 915b9a5dac8169f029792e139fc16fdf accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 14 0c776b62047a8241ba150c745c5fd723 error 444 ac073ec05aafb5f5170429d4fe07c328 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 15 4b3ea04dd210d401c82a1fd08ed715ad error 546 9e23990bdac326c60034a8782b69eb43 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 16 50454ffa2e0a58c2075e6035e665c33c error 498 d24106138567a5c9f4999261270cafbc accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 17 48cbe21f4bc7c24e30c0e9ae057b12e7 error 488 c590bebf04514bc7d7560d568dcdfda4 accessibility=goal goal=seashells
+accessibility-goal+goal-seashells 18 69e3de9903d42a544ee90047e956f8ae error 490 c57233314c75fc66b2fa795fb0ec1164 accessibility=goal goal=seashells
+hpmode-inverted+hardmode-hero 0 8c2b3bdac7c934a628ad6e7ad3b9e461 error 582 0a8c90dab8595b37a86bd002fae36d2f hpmode=inverted hardmode=hero
+hpmode-inverted+hardmode-hero 1 962bedf229d9e3834cd8635ded037bf1 error 581 1597658ce2d53fffeefc48358de3afd2 hpmode=inverted hardmode=hero
+hpmode-inverted+hardmode-hero 2 1ed0bcd0b2e67db4c80261a68cd40ef1 error 592 007726070dded4270929bcc009ca2787 hpmode=inverted hardmode=hero
+hpmode-inverted+hardmode-hero 3 fbf93c7a028ff9f767684b8f427c7a69 error 555 c4f715302e0ba656b9a5f33850bfe4c5 hpmode=inverted hardmode=hero
+hpmode-inverted+hardmode-ohko 0 45b5b8e51db02b56609457d1045566d4 ok 745 56af141d2a2b9c4097e32d4d53be9340 hpmode=inverted hardmode=ohko
+hpmode-1+hardmode-oracle 0 c396d0766bbcca989b2117f964c33ade error 532 eea48b70a525ae6ebf2461950a2c726b hpmode=1 hardmode=oracle
+hpmode-low+hardmode-oracle 0 718047163a37774e8a5711b00121d2f3 error 475 7aff067412983f5f76a5f4476dc34258 hpmode=low hardmode=oracle
+hpmode-low+hardmode-ohko 0 2c77a4af2f9bd4088582d284cce700d0 error 540 dde2691333c29147de692e3dff4aff53 hpmode=low hardmode=ohko
+hpmode-5hit+hardmode-oracle 0 3fcba87014e01a7a1a60bc567ad6de10 error 577 4fbf970e6a14aaaef488360a31876edb hpmode=5hit hardmode=oracle
+hpmode-5hit+hardmode-oracle 1 b5fd44e9592b15a09fc61a15d3b67bc2 error 488 db1aeafcdd6139ceeb69eb06169253c8 hpmode=5hit hardmode=oracle
+hpmode-5hit+hardmode-hero 0 80d7e21adcf42c5ba69df8151de70c8a error 533 2dbe6f4f65bf7871509b35584a691385 hpmode=5hit hardmode=hero
+hpmode-5hit+hardmode-hero 1 12245420f5e1a5c7cca0d527e667ccb1 error 626 c46677ee71d82332415428752c43f422 hpmode=5hit hardmode=hero
+dungeon_keys-keysanity+nightmare_keys-keysanity+dungeon_beaks-keysanity+dungeon_maps-keysanity+keyholesanity-1 0 8a0c8860b91d12a7097c24cfa4a71cc4 error 581 ee6970fc240f0a1045cd16506f1de4b9 dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=keysanity dungeon_maps=keysanity keyholesanity=1
+dungeon_keys-keysanity+nightmare_keys-keysanity+dungeon_beaks-keysanity+dungeon_maps-keysanity+keyholesanity-1 1 ec74bb16f48780b088b31ccbf0c6f3fb error 555 4c399671090d249c5af2ece4f28e01f2 dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=keysanity dungeon_maps=keysanity keyholesanity=1
+dungeon_keys-keysanity+nightmare_keys-keysanity+dungeon_beaks-keysanity+dungeon_maps-keysanity+keyholesanity-1 2 b99294d5cafe2a02122f7bd7a54883a5 error 541 af5f19525449c280493457d762aa9eaa dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=keysanity dungeon_maps=keysanity keyholesanity=1
+sample-01 0 2b45027e5139515e8206e5f1cb2a669d error 560 35547ed3aade00937506c01acc319542 logic=hard seashells=0 heartcontainers=0 instruments=1 rooster=0 boomerang=trade nightmare_keys=removed dungeon_beaks=removed dungeon_maps=keysanity boss=random goal=instruments goalcount=2 itempool=pain hpmode=inverted hardmode=hero steal=never owlstatues=dungeon keyholesanity=1 quickswap=b textmode=none lowhpbeep=default noflash=0 linkspalette=4 music=shifted
+sample-02 0 d923ca327a42d7c56747e086425b1e9b error 586 162eb8c4affb1dee96f2c71c843bf2e6 logic=glitched accessibility=goal race=1 instruments=1 witch=0 rooster=0 boomerang=default dungeon_keys=keysanity dungeon_beaks=removed boss=shuffle miniboss=random goal=instruments goalcount=1 itempool=keyup hpmode=inverted hardmode=oracle steal=never evilshop=enabled bowwow=swordless keyholesanity=1 superweapons=1 quickswap=b lowhpbeep=none noflash=0 linkspalette=6 music=off
+sample-04 0 f5ef558957eff6da856e72ea17b56f04 error 683 7cc650f2e509e5b26aeecbfe82fad7ba logic=casual seashells=0 heartcontainers=0 instruments=1 rooster=0 boomerang=trade nightmare_keys=keysanity dungeon_beaks=keysanity itempool=pain hpmode=5hit steal=never bowwow=always owlstatues=both keyholesanity=1 textmode=default lowhpbeep=none nagmessages=1 follower=yipyip linkspalette=4
+sample-04 1 4e6897bbb7b34bbb5f2e09fa68241e0f error 100 eed60d7c6742a9ec50ffa2106a1a111d logic=casual seashells=0 heartcontainers=0 instruments=1 rooster=0 boomerang=trade nightmare_keys=keysanity dungeon_beaks=keysanity itempool=pain hpmode=5hit steal=never bowwow=always owlstatues=both keyholesanity=1 textmode=default lowhpbeep=none nagmessages=1 follower=yipyip linkspalette=4
+sample-05 0 4d5371b4012c112a4cbac59584b4a3a4 error 515 3a30238cad554c9a2750b80495223463 logic=hard accessibility=goal race=1 seashells=0 heartcontainers=0 instruments=1 tradequest=0 boomerang=default dungeon_keys=keysanity nightmare_keys=keysanity dungeon_maps=keysanity boss=shuffle goal=5-8 goalcount=6 itempool=pain hardmode=ohko steal=always bowwow=always owlstatues=both superweapons=1 quickswap=b textmode=default lowhpbeep=default follower=yipyip linkspalette=4 music=random
+sample-05 1 715f6932421efc6f52219d75db2aa79c error 529 5cddc30e30c7ad123b562037e4ec654a logic=hard accessibility=goal race=1 seashells=0 heartcontainers=0 instruments=1 tradequest=0 boomerang=default dungeon_keys=keysanity nightmare_keys=keysanity dungeon_maps=keysanity boss=shuffle goal=5-8 goalcount=6 itempool=pain hardmode=ohko steal=always bowwow=always owlstatues=both superweapons=1 quickswap=b textmode=default lowhpbeep=default follower=yipyip linkspalette=4 music=random
+sample-05 2 c2169b103dc04a4a43f8cf3f0692f5a1 error 527 59a896789010703f37609eecebe852bc logic=hard accessibility=goal race=1 seashells=0 heartcontainers=0 instruments=1 tradequest=0 boomerang=default dungeon_keys=keysanity nightmare_keys=keysanity dungeon_maps=keysanity boss=shuffle goal=5-8 goalcount=6 itempool=pain hardmode=ohko steal=always bowwow=always owlstatues=both superweapons=1 quickswap=b textmode=default lowhpbeep=default follower=yipyip linkspalette=4 music=random
+sample-05 3 25c855db1b229164a929a69983aedff4 error 497 a72796751d016f17a635c707074089a0 logic=hard accessibility=goal race=1 seashells=0 heartcontainers=0 instruments=1 tradequest=0 boomerang=default dungeon_keys=keysanity nightmare_keys=keysanity dungeon_maps=keysanity boss=shuffle goal=5-8 goalcount=6 itempool=pain hardmode=ohko steal=always bowwow=always owlstatues=both superweapons=1 quickswap=b textmode=default lowhpbeep=default follower=yipyip linkspalette=4 music=random
+sample-05 4 fcfedd308e43987b2ece5eebd75d9c0d error 665 3329664bf180826085f1638e63c4af72 logic=hard accessibility=goal race=1 seashells=0 heartcontainers=0 instruments=1 tradequest=0 boomerang=default dungeon_keys=keysanity nightmare_keys=keysanity dungeon_maps=keysanity boss=shuffle goal=5-8 goalcount=6 itempool=pain hardmode=ohko steal=always bowwow=always owlstatues=both superweapons=1 quickswap=b textmode=default lowhpbeep=default follower=yipyip linkspalette=4 music=random
+sample-05 5 d06f8668cd61d6605778e6b1017f8d51 error 613 f56282987f8ad7fe92dd9c5104b26425 logic=hard accessibility=goal race=1 seashells=0 heartcontainers=0 instruments=1 tradequest=0 boomerang=default dungeon_keys=keysanity nightmare_keys=keysanity dungeon_maps=keysanity boss=shuffle goal=5-8 goalcount=6 itempool=pain hardmode=ohko steal=always bowwow=always owlstatues=both superweapons=1 quickswap=b textmode=default lowhpbeep=default follower=yipyip linkspalette=4 music=random
+sample-06 0 b4b3218104d9dbb2592ae3cd318d51c9 error 626 848adbde6f745f4986f2f1c71c50dc18 logic=hard race=1 heartpiece=0 instruments=1 rooster=0 boomerang=trade dungeon_keys=keysanity nightmare_keys=removed dungeon_beaks=keysanity dungeon_maps=removed goal=open goalcount=0 itempool=keyup hpmode=inverted steal=never bowwow=swordless superweapons=1 quickswap=b textmode=notextbox lowhpbeep=default noflash=0 nagmessages=1 follower=navi linkspalette=3 music=off
+sample-06 1 22961d2b3d11e1ac07be3c08158963a2 error 614 f3b312fcadf1e61fc3e38b79a638e0ae logic=hard race=1 heartpiece=0 instruments=1 rooster=0 boomerang=trade dungeon_keys=keysanity nightmare_keys=removed dungeon_beaks=keysanity dungeon_maps=removed goal=open goalcount=0 itempool=keyup hpmode=inverted steal=never bowwow=swordless superweapons=1 quickswap=b textmode=notextbox lowhpbeep=default noflash=0 nagmessages=1 follower=navi linkspalette=3 music=off
+sample-07 0 5ffea9615439fd1d9333474fbe081ec7 error 585 66fc2d7e54ab6cfc4e5959f4116adc73 logic=glitched accessibility=goal seashells=0 instruments=1 tradequest=0 witch=0 dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=removed boss=random miniboss=random enemies=overworld goal=specific goalcount=random itempool=casual hpmode=low hardmode=ohko steal=ggs bowwow=swordless owlstatues=dungeon quickswap=b textmode=default noflash=0 nagmessages=1 follower=fox linkspalette=7 music=shifted
+sample-07 1 d1b80cf28109933a29d89db8fc13466d ok 814 b459b1031a1ced762ca75bfabedde4fa logic=glitched accessibility=goal seashells=0 instruments=1 tradequest=0 witch=0 dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=removed boss=random miniboss=random enemies=overworld goal=specific goalcount=random itempool=casual hpmode=low hardmode=ohko steal=ggs bowwow=swordless owlstatues=dungeon quickswap=b textmode=default noflash=0 nagmessages=1 follower=fox linkspalette=7 music=shifted
+sample-08 0 016b89106188de481e53e694a02a3739 error 491 aff35bd54542985cd364630d0b077a5e logic=casual race=1 instruments=1 tradequest=0 witch=0 rooster=0 dungeon_keys=keysanity dungeon_maps=keysanity miniboss=shuffle goal=specific itempool=keyup hpmode=5hit hardmode=oracle steal=always superweapons=1 textmode=notextbox lowhpbeep=none nagmessages=1 follower=ghost linkspalette=6
+sample-11 0 3231f9942cd09ff191b6694a9bfde369 error 650 083247252cccfa1be3d5b8acf4282cc8 logic=glitched race=1 seashells=0 heartcontainers=0 tradequest=0 witch=0 boomerang=trade dungeon_keys=removed dungeon_beaks=keysanity boss=random goal=instruments goalcount=random hpmode=inverted hardmode=oracle steal=never bowwow=always owlstatues=overworld keyholesanity=1 quickswap=a textmode=default noflash=0 nagmessages=1 follower=fox linkspalette=2 music=shifted
+boomerang-default 0 1a278958a88dd2c3fb01dcc1cb60a07f crash 36 435288c9778486da33aa82fbb103043e boomerang=default
+boomerang-default 1 bc07bf0638a70e4384ae2008cff59b90 crash 36 1f2abb8146905426f062d1fbe5a3c98b boomerang=default
+boomerang-default 2 3ca7a46cb08c6c5903c1d4788ee8c66f crash 36 8ad839cc67c5227c9b97e45d9a3650bc boomerang=default
+boomerang-default 3 07d4a0fbde3755c18753b3fe425da522 crash 36 acf5c228baa210f9ac49148e9da20ebf boomerang=default
+boomerang-default 4 6dc268eb1386b118934edd4569e9b996 crash 36 83b983d701de630cec93cef927f98609 boomerang=default
+boomerang-default 5 d1e39e01c8f88b3997717993cf640674 crash 36 512cbcd59f26e252ffeba7809c90612f boomerang=default
+boomerang-default 6 85141b8e347f49f696790e163dd0e89c crash 36 0350aca783b5399bc9483efdd9c613ce boomerang=default
+boomerang-default 7 c1c6bbe962c4a6eabe519eac6b5d805f crash 36 cafd19f9d65ffb2ad7eb614ab17a6d37 boomerang=default
+det-baseline - 000102030405060708090a0b0c0d0e0f ok 739 6bea829b5b04b68a405f5e499e22f85b
+det-race - 4c414458520000000000000000000020 ok 754 aa672fb90e5ac1a06f38523630eb277c race=1
+det-accessibility-goal - 1f2e3d4c5b6a79881f2e3d4c5b6a7988 ok 762 f6d0f69345274cc898ab3bdc4bc00ac7 accessibility=goal
+det-hell-keysanity - 0123456789abcdef0123456789abcdef ok 777 431b2b4e6bb7a0af24f4318fec645d08 logic=hell dungeon_keys=keysanity nightmare_keys=keysanity
+det-bosses-random - 4c414458520000000000000000000021 ok 807 5bb00180644bc8962610dbef869320e0 boss=random miniboss=random
+det-maze - 4c414458520000000000000000000011 ok 990 e0947dc343d70204e983cfc73fa42188 goal=maze
+det-specific-random - 4c41445852000000000000000000000c ok 745 5e95ed7cc7b62429d6b62c5f7907265d goal=specific goalcount=random
+det-casual - 4c414458520000000000000000000020 ok 706 58f9b0a2834a0bf2a5fa10ddc93203da itempool=casual
+det-pain - 4c41445852000000000000000000000e error 567 3daea5213e2362e8c68df922a8f97dd9 itempool=pain
+det-owls-beaks - 4c41445852000000000000000000000f ok 834 d9af02771bab2187d5405d93ebe0188d owlstatues=both dungeon_beaks=keysanity
+det-5hit - 4c414458520000000000000000000010 ok 762 35449110206931c310cb2f9d616e6bc0 hpmode=5hit heartpiece=1
+det-enemies-overworld - 4c41445852000000000000001e000000 ok 757 27c1962cd29e9f08b9d20da5e56e65dd enemies=overworld
+det-music-random-notext - 4c41445852000000000000001f000000 ok 760 4554382198204f47e5604f8c24eef858 music=random textmode=none
+det-music-shifted-ohko - 4c414458520000000000000020000002 ok 771 bfd75f3dd160cce0b911a8cf708a5267 music=shifted hardmode=ohko
+det-music-off-notextbox - 4c414458520000000000000021000001 ok 778 220c1e637aa49c0f2fe66927c6b37432 music=off textmode=notextbox hardmode=hero
+det-superweapons-evilshop - 4c414458520000000000000000000034 ok 781 ebc7d31ac180e9d6e8728585ca99e781 superweapons=1 evilshop=enabled
+det-bowwow-quickswap-palette - 4c414458520000000000000023000000 ok 798 85554f90314db9684c03df685f873d33 bowwow=always quickswap=a linkspalette=2
+det-bowwow-swordless - 4c414458520000000000000024000003 ok 838 a952b7a9375849a969d43b311893d8a3 bowwow=swordless quickswap=b linkspalette=5 hardmode=oracle

@@ -1,14 +1,18 @@
 #include "ladx_logic_builder.h"
 #include "ladx_randomizer.h"
+#include "ladx_run_text.h"
 #include "ladx_settings.h"
+#include "ladx_sha512.h"
 #include "support.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define TEST "test_fill"
+#define OUTCOMES "oracle/fill_outcomes.txt"
 #define I(name) LADX_ITEM_##name
 
 static int checks;
@@ -303,8 +307,123 @@ static void test_boomerang_pair(void)
 	}
 }
 
-int main(void)
+#define FIXTURE_LINE 4096
+#define DIGEST_HEX 32
+#define MAX_SEED 64
+#define MAX_FIELDS 64
+
+static const char *const kind_names[] = {"unfinished", "ok", "error", "crash"};
+
+/* The C run's fill projection written to a temporary file: its line count and digest. */
+static void c_projection(const LadxSettings *s, const uint8_t *seed, size_t seed_len, const char *label,
+			 long *lines, char digest_hex[DIGEST_HEX + 1])
 {
+	static uint8_t buf[1 << 16];
+	uint8_t digest[LADX_SHA512_SIZE];
+	LadxRunTextTrace sink;
+	LadxSha512 sha;
+	FILE *trace = tmpfile(), *out = tmpfile();
+	size_t got, i;
+
+	if (!trace || !out)
+		test_fail(TEST, "%s: cannot open a temporary file", label);
+	ladx_run_text_trace_init(&sink, trace);
+	if (ladx_randomize(&r, s, seed, seed_len, ladx_run_text_trace_sink, &sink) != LADX_RANDOMIZE_OK ||
+	    sink.failed)
+		test_fail(TEST, "%s: broken run", label);
+	if (!ladx_run_text_write_run(out, s, seed, seed_len, &r, trace))
+		test_fail(TEST, "%s: the run text did not write", label);
+	fclose(trace);
+	rewind(out);
+	ladx_sha512_init(&sha);
+	*lines = 0;
+	while ((got = fread(buf, 1, sizeof buf, out)) > 0) {
+		ladx_sha512_update(&sha, buf, got);
+		for (i = 0; i < got; i++)
+			*lines += buf[i] == '\n';
+	}
+	fclose(out);
+	ladx_sha512_final(&sha, digest);
+	for (i = 0; i < DIGEST_HEX / 2; i++)
+		sprintf(digest_hex + 2 * i, "%02x", digest[i]);
+}
+
+static size_t parse_seed(const char *hex, uint8_t *seed, const char *label)
+{
+	size_t n = strlen(hex) / 2, i;
+	unsigned v;
+
+	if (strlen(hex) % 2 || n > MAX_SEED)
+		test_fail(TEST, "%s: bad seed %s", label, hex);
+	for (i = 0; i < n; i++) {
+		if (sscanf(hex + 2 * i, "%2x", &v) != 1)
+			test_fail(TEST, "%s: bad seed %s", label, hex);
+		seed[i] = (uint8_t)v;
+	}
+	return n;
+}
+
+/* fill_outcomes.txt: every run's outcome kind, fill projection line count and digest equal. */
+static void replay_outcomes(void)
+{
+	static char line[FIXTURE_LINE];
+	int counts[4] = {0, 0, 0, 0}, runs = 0;
+	long line_no = 0;
+	FILE *f = fopen(OUTCOMES, "r");
+
+	if (!f)
+		test_fail(TEST, "cannot open %s", OUTCOMES);
+	while (fgets(line, sizeof line, f)) {
+		char label[320], *fields[MAX_FIELDS], *tok;
+		char digest[DIGEST_HEX + 1];
+		uint8_t seed[MAX_SEED];
+		size_t seed_len, len = strlen(line);
+		LadxSettings s;
+		long lines, want_lines;
+		int n = 0, kind, i;
+
+		line_no++;
+		if (len == 0 || line[len - 1] != '\n')
+			test_fail(TEST, "%s line %ld: too long or unterminated", OUTCOMES, line_no);
+		line[len - 1] = '\0';
+		if (line[0] == '#')
+			continue;
+		for (tok = strtok(line, " "); tok; tok = strtok(NULL, " ")) {
+			if (n == MAX_FIELDS)
+				test_fail(TEST, "%s line %ld: too many fields", OUTCOMES, line_no);
+			fields[n++] = tok;
+		}
+		if (n < 6)
+			test_fail(TEST, "%s line %ld: want 6 fields and the settings", OUTCOMES, line_no);
+		snprintf(label, sizeof label, "%s line %ld: %s k=%s", OUTCOMES, line_no, fields[0], fields[1]);
+		ladx_settings_defaults(&s);
+		for (i = 6; i < n; i++)
+			if (ladx_settings_set(&s, fields[i]) != LADX_SETTINGS_OK)
+				test_fail(TEST, "%s: setting %s refused", label, fields[i]);
+		ladx_settings_validate(&s);
+		seed_len = parse_seed(fields[2], seed, label);
+		want_lines = strtol(fields[4], NULL, 10);
+		c_projection(&s, seed, seed_len, label, &lines, digest);
+		kind = (int)ladx_randomizer_outcome(&r)->kind;
+		if (strcmp(kind_names[kind], fields[3]) != 0)
+			test_fail(TEST, "%s: outcome %s, want %s", label, kind_names[kind], fields[3]);
+		if (lines != want_lines || strcmp(digest, fields[5]) != 0)
+			test_fail(TEST, "%s: fill projection %ld lines %s, want %ld lines %s", label, lines, digest,
+				  want_lines, fields[5]);
+		counts[kind]++;
+		runs++;
+	}
+	fclose(f);
+	if (runs == 0)
+		test_fail(TEST, "%s: no run", OUTCOMES);
+	printf("%s: %d runs of %s replayed, same outcome and fill projection (%d ok, %d error, %d crash)\n", TEST,
+	       runs, OUTCOMES, counts[LADX_OUTCOME_OK], counts[LADX_OUTCOME_ERROR], counts[LADX_OUTCOME_CRASH]);
+}
+
+int main(int argc, char **argv)
+{
+	int fixtures = test_fixtures_mode(TEST, argc, argv);
+
 	test_five_spots();
 	test_sort_semantics();
 	test_outcomes();
@@ -312,5 +431,7 @@ int main(void)
 	printf("%s: LADXR's placements, draws and outcomes on hand-built graphs, the boomerang pair's "
 	       "AssertionError (%d checks)\n",
 	       TEST, checks);
+	if (fixtures)
+		replay_outcomes();
 	return 0;
 }

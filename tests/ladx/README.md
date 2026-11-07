@@ -460,7 +460,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -470,7 +470,7 @@ keeps the flag. Library objects see only `-I ladx/include`; the host
 layer `ladx/host/` (C99, stdio allowed, never built into the device's
 library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
-`test_run_text`, `test_itempool`) `-I ladx/host` and `-lm`. Build output goes to `tests/ladx/build/`.
+`test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -562,7 +562,16 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   `AssertionError` "Sanity check failed: False" and no placement through
   `ladx_randomize` on three seeds. It prints `test_fill: LADXR's
   placements, draws and outcomes on hand-built graphs, the boomerang
-  pair's AssertionError (<c> checks)`.
+  pair's AssertionError (<c> checks)`. With `--fixtures` it then replays
+  every run of `oracle/fill_outcomes.txt` (below, "Fill-outcome
+  fixture"): the line's settings set and validated (support not checked:
+  the boomerang pair runs), `ladx_randomize` on its seed with the
+  run-text trace sink, `ladx_run_text_write_run`'s fill projection into a
+  temporary file, and its outcome kind, line count and digest compared
+  (`test_fill: FAIL oracle/fill_outcomes.txt line <n>: <label> k=<k>:
+  ...` on the first mismatch), then prints `test_fill: <n> runs of
+  oracle/fill_outcomes.txt replayed, same outcome and fill projection
+  (<o> ok, <e> error, <c> crash)`; about 4 s on the host.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -806,6 +815,10 @@ e2e` and `e2e-combos`.
   (`LADX_RANDOMIZE_BROKEN`, a C bug); 1 on an I/O failure. Messages go to
   stderr, prefixed `ladx_gen: `.
 
+`ladx_gen` writes the file with the host layer's
+`ladx_run_text_write_run` (`ladx/host/ladx_run_text.h`), which
+`test_fill --fixtures` uses too.
+
 ## Stage projection
 
 A run's stage projection keeps the lines of `run.txt` a stage claims, in
@@ -878,6 +891,82 @@ runs as expected`, else one `e2e: self-test failed: <case> (expected
 `e2e-combos` prints `e2e-combos: the combination cases`, then runs it on
 `combos/`. The root `make selftest`, `e2e` and `e2e-combos` run
 `tests/alttp`'s target, then LADX's.
+
+## Fill-outcome fixture
+
+The case seeds are `outcome ok` by construction (`ladx_cases.py pick`),
+so they cannot show that C refuses the seeds LADXR refuses.
+`tests/ladx/oracle/fill_outcomes.txt` records LADXR's fill projection
+(stage `fill`, above) on seeds that are not case seeds. Runs, in order:
+for every case and combo (`cases/` then `combos/`, in `ladx_cases.py`'s
+expected order) every candidate `derive(<name>, k)` below the case's own
+`k` (the candidates `pick` refused, for the Nintendo-bytes check or by
+outcome); candidates `k = 0..7` of each refused single
+(`boomerang-default`); then the lines of `oracle/determinism_cases.txt`
+whose values are all tier-1 values (`bingo` left out, scope cut
+`goal-bingo`), labelled `det-<name>`. Each runs LADXR's `Randomizer` in
+`SKIP_ROM_GENERATION` mode (`oracle_run.py`'s driver; no ROM). After a
+`#` header documenting it, one line per run:
+
+    <label> <k or -> <seed hex> <ok|error|crash> <lines> <digest> [<k=v> ...]
+
+`<digest>` is the first 16 bytes, in hex, of SHA-512 of the run's fill
+projection text (`run_e2e.py`'s `project` at `fill`, lines joined by
+`\n`, final newline), `<lines>` its line count; the outcome kind comes
+from the run's `outcome` line. Seeds, settings and digests only, no ROM
+byte: `nintendo_bytes.py` on the file (general scope) reports 0 literal
+runs. Written only by its generator, never by hand:
+
+- `python3 tests/ladx/oracle/gen_fill_outcomes.py [--ladxr <dir>] [--out
+  <file>]` (no `-I` or `-E`: both drop `PYTHONHASHSEED`; the LADXR
+  checkout at the pin, default `LADXR_DIR` or `tests/ladx/oracle/ladxr`,
+  and python3 >= 3.11, else `setup: fill-outcomes: ...`, exit 2; no ROM,
+  no network) renders in a child python3 with `PYTHONHASHSEED=0` and
+  writes `<file>` (default `tests/ladx/oracle/fill_outcomes.txt`), then
+  prints `fill-outcomes: <n> runs written to <file>`; about 1 minute. The
+  case tree must match the expected list (`ladx_cases.py`'s comparison),
+  else it exits 1 writing nothing.
+- `gen_fill_outcomes.py --check [--ladxr <dir>] [--out <file>]` renders
+  into `tmp/ladx-fill-outcomes/fill_outcomes.txt` with
+  `PYTHONHASHSEED=1` on the same checkout and prints one `DIFFERENT line
+  <n> (<label> <k>): committed <line>, regenerated <line>` line per
+  differing line (exit 1), `MISSING <file>` when the committed file is
+  absent, else `fill-outcomes: <n> runs byte-identical to
+  tests/ladx/oracle/fill_outcomes.txt`. No fresh-clone run: the fill's
+  independence from hash seed and checkout is proven by `determinism.sh`
+  on the same code path.
+- `test_gen_fill_outcomes.py` (`make test-ladx-oracle`) tests the line
+  rendering and comparison on planted runs, and that the committed
+  file's labels, `k`, seeds and settings are exactly the plan the case
+  tree and inputs give, every case's candidates below its `k` and none
+  of its own seed.
+- C side: `test_fill --fixtures` (above, `make logic` and `make
+  unit-arm`).
+
+## Measure
+
+`make -C tests/ladx measure` (outside the net; `tests/ladx/measure.sh`)
+builds `build/ladx_gen` `-O2`, runs `ladx_gen --time` (the run stopped
+after the fill, no sink) 3 times on every case and combo, one after the
+other, keeps each case's minimum, and writes `build/measure/report.txt`,
+also printed:
+
+- `fill.time <case> <us> us`, per case, `cases/` then `combos/`;
+- `fill.time.cases <n> (each the minimum of 3 runs of ladx_gen --time,
+  -O2)`, `fill.time.median <us> us`, `fill.time.max <us> us <case>`,
+  `fill.time.total <us> us`;
+- `fill.state.bytes <n> (sizeof LadxRandomizer)`, the device's static
+  memory for this stage (a probe built with `$(CC)` against
+  `ladx/include`);
+- `miyoo.note ...` and `miyoo.fill.projected <lo>..<hi> ms (host x
+  20..50) budget 10000[ over]`: the slowest case times
+  `tests/alttp/measure.sh`'s `a7_factor_lo`/`a7_factor_hi` (read from that
+  file), the same stated assumptions until a device timing replaces them;
+  ` over` when the high end passes the 10 s line.
+
+Exit 0 whatever the figures; 1 when a measurement cannot be taken (no
+generator, a failing or silent `--time` run, the factors not found, the
+probe not built); 2 on a usage error.
 
 ## Full-ROM check
 
