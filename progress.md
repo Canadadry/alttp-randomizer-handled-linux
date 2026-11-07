@@ -83,7 +83,7 @@
   - [x] Step 2.8 Nintendo-bytes check over everything committed
   - [x] Step 2.9 Full-ROM check target
     - [x] rom-check target and its self-test
-  - [ ] Step 2.10 Split Phase 3 step 6
+  - [x] Step 2.10 Split Phase 3 step 6
 - [ ] Phase 3 — LADX library, host only
   - [ ] Step 3.1 Python RNG in C
   - [ ] Step 3.2 Settings table
@@ -91,6 +91,25 @@
   - [ ] Step 3.4 Item pool and fill
   - [ ] Step 3.5 Table application
   - [ ] Step 3.6 Seed-dependent writes
+    - [ ] Step 3.6.1 ROM-free proof of save's packing
+    - [ ] Step 3.6.2 C write logger and KS
+    - [ ] Step 3.6.3 bank3e
+    - [ ] Step 3.6.4 title
+    - [ ] Step 3.6.5 marin
+    - [ ] Step 3.6.6 hints
+    - [ ] Step 3.6.7 music
+    - [ ] Step 3.6.8 endscreen
+    - [ ] Step 3.6.9 notext
+    - [ ] Step 3.6.10 goal
+    - [ ] Step 3.6.11 items
+    - [ ] Step 3.6.12 entrances
+    - [ ] Step 3.6.13 bosses
+    - [ ] Step 3.6.14 enemizer
+    - [ ] Step 3.6.15 warp-home
+    - [ ] Step 3.6.16 sprites
+    - [ ] Step 3.6.17 save
+    - [ ] Step 3.6.18 header
+    - [ ] Step 3.6.19 spoiler
   - [ ] Step 3.7 Assembly pipeline
   - [ ] Step 3.8 LADX-aware debugging skills
   - [ ] Step 3.9 check-e2e on tests/ladx

@@ -373,7 +373,7 @@ sprite data entries, which `sprites` decides on every seed.
 | gfxmod | unused | gfxmod | - | - |
 | goal | C | goal, goalcount | fixed | goal, pyrandom_vectors.txt, extract:room-entities, extract:room-objects |
 | goal-fixed | table | goal | - | - |
-| header | C | - | bank3e, bosses, endscreen, enemizer, entrances, fixed, frame-counter, goal, goal-fixed, items, music, music-fixed, options, save, sprites, title, warp-home | header |
+| header | C | - | bank3e, bosses, endscreen, enemizer, entrances, fixed, frame-counter, goal, goal-fixed, items, music, music-fixed, options, save, sprites, title, warp-home | header, rom-check (the values of 0x14D..0x14F), fixHeader unit tests |
 | hints | C | - | - | hints, pyrandom_vectors.txt |
 | items | C | - | fixed, goal | items, extract:source-flags |
 | locals | none | - | - | - |
