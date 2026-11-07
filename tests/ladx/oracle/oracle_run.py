@@ -1,4 +1,4 @@
-"""Usage: python3 oracle_run.py [--out <file>] [--meta <file>] [--work <dir>] [--rom <file> --dir <dir> [--plain | --reads [--inventory <file>]]] <ladxr dir> <seed hex> [k=v ...]
+"""Usage: python3 oracle_run.py [--out <file>] [--meta <file>] [--work <dir>] [--rom <file> --dir <dir> [--plain | --reads [--inventory <file>] [--keys] [--no-invariant]]] <ladxr dir> <seed hex> [k=v ...]
 
 Runs LADXR's Randomizer in SKIP_ROM_GENERATION mode (no ROM, no plan, no spoiler) on the seed
 (hex bytes, - for empty; LADXR's seed setting stays empty) and the settings (set in order, then
@@ -39,6 +39,9 @@ and each byte's origin, a source offset or known, after the parsed entries) and 
 (invariant_run.py's re-run of every C-group call of generateRom that writes a computed byte, on
 a scrambled copy of the ROM state: per event, one flag per byte, write_log.py's
 parse_invariant). The other files are the same with or without it.
+--keys (with --reads) also installs key_trace.py over the same sections and writes keys.txt (the
+settings and assembler constants each row read); --no-invariant (with --reads) skips the re-run
+and writes no invariant.txt. The other files are the same with or without either.
 --plain (with --rom) runs LADXR's own main.main instead, with no hook and no tracer, os.urandom
 handing it the seed on its first call; it writes out.gbc, spoiler.json and plain.txt:
 rom_sha1 | rom none, spoiler_sha1 | spoiler none, then outcome ok | outcome retry (a second
@@ -59,6 +62,7 @@ import sys
 import importlib
 import inventory_check
 import invariant_run
+import key_trace
 import ladx_oracle
 import read_trace
 
@@ -175,11 +179,13 @@ class Driver:
     def _after_place(self, placer, args, result):
         self.case["place"] = list(ladx_oracle.place_lines(placer._logic.iteminfo_list))
 
-    def run(self, seed, assignments, pool_only=False, rom=None, case_dir=None, reads=None):
+    def run(self, seed, assignments, pool_only=False, rom=None, case_dir=None, reads=None,
+            keys=False, invariant=True):
         """One case: the output lines (without the trace when pool_only, which stops once
         readItemPool returned and then has outcome ok). With rom, a full generation writing
         out.gbc and spoiler.json into case_dir, their SHA-1 lines before the outcome; with
-        reads too ({site: group}), reads.txt, writes.txt and events.txt as well."""
+        reads too ({site: group}), reads.txt, writes.txt and events.txt as well, invariant.txt
+        when invariant, keys.txt when keys."""
         self.case = {"ws": [], "pool": [], "placer_pool": [], "place": [], "pool_only": pool_only}
         del self.tracer.lines[:]
         settings = self.settings.Settings()
@@ -195,7 +201,8 @@ class Driver:
             args = ladxr_args(rom, out_rom, spoiler)
         outcome = "outcome ok"
         trace = self._trace(reads) if reads is not None and rom is not None else None
-        rerun = self._rerun(trace, reads) if trace is not None else None
+        rerun = self._rerun(trace, reads) if trace is not None and invariant else None
+        key_reads = self._keys() if trace is not None and keys else None
         try:
             with contextlib.redirect_stdout(io.StringIO()):
                 self.randomizer.Randomizer(args, settings, seed=seed)
@@ -208,6 +215,9 @@ class Driver:
         except Exception as e:
             outcome = "outcome crash %s %s" % (type(e).__name__, ladx_oracle.field(str(e)))
         finally:
+            if key_reads is not None:
+                key_reads.uninstall()
+                key_reads.write(os.path.join(case_dir, "keys.txt"))
             if rerun is not None:
                 rerun.uninstall()
                 write_lines(os.path.join(case_dir, "invariant.txt"), rerun.lines())
@@ -232,6 +242,11 @@ class Driver:
                    for module, attr in invariant_run.targets_of(reads.text)]
         return invariant_run.install(trace, targets, invariant_run.sides_of(reads.text),
                                      tracer=self.tracer)
+
+    def _keys(self):
+        import assembler
+        sections = [(f, fn) for f, fn, _ in inventory_check.SECTIONS]
+        return key_trace.install(self.settings.Settings, assembler, sections, [self.ladxr_dir])
 
     @staticmethod
     def _trace(groups):
@@ -318,6 +333,8 @@ def main(argv):
     parser.add_argument("--dir")
     parser.add_argument("--plain", action="store_true")
     parser.add_argument("--reads", action="store_true")
+    parser.add_argument("--keys", action="store_true")
+    parser.add_argument("--no-invariant", action="store_true")
     parser.add_argument("--inventory", default=inventory_check.DEFAULT_INVENTORY)
     parser.add_argument("ladxr_dir")
     parser.add_argument("seed")
@@ -328,6 +345,8 @@ def main(argv):
         parser.error("--rom and --dir go together, --plain needs them, and they replace --out and --meta")
     if args.reads and (args.rom is None or args.plain):
         parser.error("--reads needs --rom and not --plain")
+    if (args.keys or args.no_invariant) and not args.reads:
+        parser.error("--keys and --no-invariant need --reads")
     reads = None
     if args.reads:
         with open(args.inventory, "rb") as f:
@@ -349,7 +368,7 @@ def main(argv):
     driver = Driver(args.ladxr_dir, work)
     try:
         lines = driver.run(parse_seed(args.seed), args.settings, rom=rom, case_dir=case_dir,
-                           reads=reads)
+                           reads=reads, keys=args.keys, invariant=not args.no_invariant)
         meta = driver.meta()
     finally:
         driver.close()

@@ -73,6 +73,40 @@ class Coupling(unittest.TestCase):
                                         bank("b(rom)", 0x100, b"\x02", "items")), [])
 
 
+class RunEntries(unittest.TestCase):
+
+    UNITS = {site("a(rom)"): "fixed.1", site("b(rom)"): "fixed.2", site("c(rom)"): "fixed.3"}
+
+    def entries(self, *events, units=UNITS):
+        return gen_tables.encode_run(stream(*events), bytes(ROM), SIDES).entries(units)
+
+    def test_each_unit_gets_its_net_records_cut_from_its_segment(self):
+        got = self.entries(bank("a(rom)", 0x100, ROM[0x800:0x806]),
+                           bank("b(rom)", 0x106, b"\x00\x01"), entry("b(rom)", 1, ROM[0x900:0x905]),
+                           bank("x(rom)", 0x400, b"\x00", "items"),
+                           bank("c(rom)", 0x200, ROM[0x200:0x202] + b"\x07"),
+                           bank("c(rom)", 0x202, b"\x08"))
+        self.assertEqual(got, ({"fixed.1": ["B 100 @800+6"],
+                                "fixed.2": ["B 106 0001", "T texts 1 @900+5"],
+                                "fixed.3": ["B 200 =2 08"]},
+                               []))
+
+    def test_a_fused_units_rows_share_the_segments_encoding(self):
+        run = gen_tables.encode_run(stream(bank("a(rom)", 0x100, ROM[0x800:0x803]),
+                                           bank("b(rom)", 0x103, ROM[0x803:0x806])),
+                                    bytes(ROM), SIDES)
+        self.assertEqual(run.entries({site("a(rom)"): "fixed.1", site("b(rom)"): "fixed.1"}),
+                         ({"fixed.1": ["B 100 @800+6"]}, []))
+        self.assertEqual(run.couplings, [(site("a(rom)"), site("b(rom)"), "match")])
+
+    def test_a_unit_writing_in_two_segments_of_a_run_is_split(self):
+        _, problems = self.entries(bank("b(rom)", 0x100, b"\x01"),
+                                   bank("x(rom)", 0x400, b"\x00", "items"),
+                                   bank("c(rom)", 0x101, b"\x02"),
+                                   units=dict(self.UNITS, **{site("c(rom)"): "fixed.2"}))
+        self.assertEqual(problems, ["SPLIT fixed.2"])
+
+
 def rows(*specs):
     """Rows of `<side> <group> <call>` specs, in order."""
     out = []
@@ -137,12 +171,13 @@ GROUP_SIDES = {"fixed": "table", "opts": "table", "goal-fixed": "table",
 
 class Keys(unittest.TestCase):
 
-    def keys(self, facts=None, widenings=()):
+    def keys(self, facts=None, widenings=(), rewrites=()):
         units, _ = gen_tables.units(KEY_ORDER, [], [], set())
         model = gen_tables.Inventory(KEY_ORDER, GROUP_KEYS, GROUP_SIDES, CONSTANTS, SETTINGS)
         facts = facts or gen_tables.Facts()
         got, problems = gen_tables.unit_keys(units, model, facts,
-                                             [(site(c), k, "why") for c, k in widenings])
+                                             [(site(c), k, "why") for c, k in widenings],
+                                             [(site(a), site(b), "rewrite") for a, b in rewrites])
         return {u: " ".join(c) for u, c in got.items()}, problems
 
     def test_a_row_is_keyed_by_its_settings_column_else_its_groups_key(self):
@@ -167,17 +202,38 @@ class Keys(unittest.TestCase):
         facts.targets[site("a(rom)")] = {"bank 0x26"}
         facts.targets[site("c(rom)")] = {"table texts"}
         facts.targets[site("b(rom, settings)")] = {"table texts"}
-        facts.provenance[site("c(rom)")] = {("opts", "table texts")}
-        facts.provenance[site("e(rom)")] = {("fixed", "bank 0x26")}
+        facts.provenance[site("c(rom)")] = {("opts", "table texts", None)}
+        facts.provenance[site("e(rom)")] = {("fixed", "bank 0x26", (0x10, 0x20))}
         facts.carried[site("g(rom)")] = {site("c(rom)")}
         got, problems = self.keys(facts)
         self.assertEqual((got["fixed.2"], got["goal-fixed.1"], got["opts.2"]),
                          ("witch", "goal asm:ITEM_DIALOGS", "hardmode lowhpbeep witch"))
         self.assertEqual(problems, [])
 
+    def test_only_the_units_that_wrote_inside_the_read_range_are_read(self):
+        facts = gen_tables.Facts()
+        facts.constant_reads[site("a(rom)")] = {"ITEM_DIALOGS"}
+        facts.add_events(stream(bank("a(rom)", 0x26 * 0x4000 + 0x30, b"\x01"),
+                                bank("c(rom)", 0x26 * 0x4000 + 0x18, b"\x01"),
+                                entry("b(rom, settings)", 5, b"\x01", "opts")))
+        facts.provenance[site("e(rom)")] = {("fixed", "bank 0x26", (0x10, 0x20))}
+        facts.provenance[site("g(rom)")] = {("opts", "table texts", (6, 9))}
+        got, _ = self.keys(facts)
+        self.assertEqual((got["goal-fixed.1"], got["opts.2"]), ("goal", "hardmode lowhpbeep"))
+        facts.provenance[site("e(rom)")] = {("fixed", "bank 0x26", (0x10, 0x30))}
+        facts.provenance[site("g(rom)")] = {("opts", "table texts", (5, 9))}
+        got, _ = self.keys(facts)
+        self.assertEqual((got["goal-fixed.1"], got["opts.2"]),
+                         ("goal asm:ITEM_DIALOGS", "hardmode lowhpbeep witch"))
+
+    def test_a_row_rewritten_by_a_later_row_takes_its_key(self):
+        got, _ = self.keys(rewrites=[("b(rom, settings)", "g(rom)")])
+        self.assertEqual((got["opts.1"], got["opts.2"]),
+                         ("hardmode lowhpbeep witch", "hardmode lowhpbeep"))
+
     def test_reading_or_carrying_a_c_groups_writes_is_depends_c(self):
         facts = gen_tables.Facts()
-        facts.provenance[site("e(rom)")] = {("items", "bank 0x02")}
+        facts.provenance[site("e(rom)")] = {("items", "bank 0x02", None)}
         facts.carried[site("g(rom)")] = {site("d(rom)")}
         _, problems = self.keys(facts)
         self.assertEqual(problems, ["DEPENDS-C goal-fixed.1 items", "DEPENDS-C opts.2 items"])
@@ -223,6 +279,7 @@ class Inputs(unittest.TestCase):
             ("rom.py ROM.save\trom.fixHeader()", "C", "header", [])])
         self.assertEqual((inv.group_keys["opts"], inv.sides["hints"]), (["witch"], "C"))
         self.assertEqual(inv.constants, {"ITEM_DIALOGS": ["textmode"]})
+        self.assertEqual(inv.sections, [SECTION, "rom.py ROM.save"])
         self.assertEqual(inv.const_exprs["ITEM_DIALOGS"],
                          "1 if settings.textmode != 'notextbox' else 0")
 
@@ -272,7 +329,8 @@ class TracedFacts(unittest.TestCase):
             "\t".join(["-", "-", "rom.py:ROM.save", "slice", "bank 0x00", "written:items",
                        "n=1 0x0134..0x014C"])]) + "\n")
         self.assertEqual(facts.provenance, {site("b(rom)"): {
-            ("fixed", "bank 0x26"), ("goal", "bank 0x26"), ("fixed", "table texts")}})
+            ("fixed", "bank 0x26", (0x10, 0x20)), ("goal", "bank 0x26", (0x10, 0x20)),
+            ("fixed", "table texts", (2, 2))}})
 
     def test_key_traces_give_the_settings_and_constants_each_row_read(self):
         facts = gen_tables.Facts()
@@ -355,6 +413,17 @@ class CoverageRuns(unittest.TestCase):
         again, _ = self.plan(dict(reversed(list(keys.items()))))
         self.assertEqual([r.assignment for r in again], [r.assignment for r in runs])
 
+    def test_a_merged_run_with_no_ok_seed_is_replanned_unmerged(self):
+        runs, unreached = gen_tables.plan_runs(self.KEYS, planted_model(),
+                                               avoid=[{"textmode": "normal", "witch": "1"}])
+        self.assertEqual([r.assignment for r in runs], [
+            {"race": "1", "textmode": "notextbox"}, {"textmode": "normal"}, {"witch": "1"}])
+        self.assertEqual(unreached, [])
+        runs, unreached = gen_tables.plan_runs(self.KEYS, planted_model(),
+                                               avoid=[{"race": "1", "textmode": "notextbox"}])
+        self.assertNotIn({"race": "1", "textmode": "notextbox"}, [r.assignment for r in runs])
+        self.assertEqual(unreached, ["UNREACHED u.2 notextbox"])
+
     def test_runs_already_done_count_first_and_only_what_they_miss_is_planned(self):
         runs, _ = gen_tables.plan_runs(self.KEYS, planted_model(),
                                        done=[{"textmode": "normal", "witch": "1"}])
@@ -362,6 +431,109 @@ class CoverageRuns(unittest.TestCase):
             {"textmode": "normal", "witch": "1"}, {"race": "1", "textmode": "notextbox"}, {}])
         self.assertEqual(runs[0].covers, [("u.1", ("0",)), ("u.2", ("normal",)),
                                           ("u.3", ("11",))])
+
+
+BUILD_ROWS = [gen_tables.Row(site("a(rom)"), "table", "fixed", []),
+              gen_tables.Row(site("b(rom)"), "C", "items", []),
+              gen_tables.Row(site("c(rom)"), "table", "opts", ["race"])]
+BUILD_SIDES = {"fixed": "table", "items": "C", "opts": "table"}
+NOT_ROM_10 = bytes([ROM[0x10] ^ 0xff])
+
+
+class PlantedRunner:
+    """Coverage runs of a planted LADXR: a(rom) copies ROM 0x800.. to 0x100 (plus a byte when
+    a_reads_race and race=1), b(rom) writes 0x400, c(rom) writes 0x10 when race=1 (and 0x11 when
+    witch=1, a read the key trace shows when c_reads_witch); runs in `fail` have no ok seed."""
+
+    def __init__(self, a_reads_race=False, c_reads_witch=False, fail=(), c_reads_items=False,
+                 d_rewrites=False):
+        self.a_reads_race, self.c_reads_witch = a_reads_race, c_reads_witch
+        self.d_rewrites = d_rewrites
+        self.fail, self.c_reads_items, self.calls = fail, c_reads_items, []
+
+    def __call__(self, name, assignment):
+        self.calls.append((name, assignment))
+        if assignment in self.fail:
+            return None
+        values = dict(planted_model().validated(assignment))
+        events = [bank("a(rom)", 0x100, ROM[0x800:0x806])]
+        if self.a_reads_race and values["race"] == "1":
+            events.append(bank("a(rom)", 0x106, b"\x00"))
+        if self.d_rewrites and values["race"] == "1":
+            events.append(bank("d(rom)", 0x105, bytes([ROM[0x805] ^ 0xff])))
+        events.append(bank("b(rom)", 0x400, b"\x00", "items"))
+        if values["race"] == "1":
+            events.append(bank("c(rom)", 0x10, NOT_ROM_10, "opts"))
+        if self.c_reads_witch and values["witch"] == "1":
+            events.append(bank("c(rom)", 0x11, b"\x00", "opts"))
+        keys = gen_tables.key_trace.VERSION_LINE + "\n"
+        if self.c_reads_witch:
+            keys += "\t".join(["setting", SECTION, "c(rom)", "witch"]) + "\n"
+        reads = ""
+        if self.c_reads_items:
+            reads = "\t".join(["opts", SECTION, "c(rom)", "patches/c.py:c", "index", "bank 0x00",
+                               "written:items", "n=1 0x0400..0x0400"]) + "\n"
+        return stream(*events), reads, keys
+
+
+class Generate(unittest.TestCase):
+
+    def generate(self, runner, widenings=(), fusions=(), rows=BUILD_ROWS):
+        inv = gen_tables.Inventory(rows, {"fixed": [], "opts": ["race"]}, BUILD_SIDES, {},
+                                   ["race", "textmode", "witch"])
+        return gen_tables.generate(inv, planted_model(), list(widenings), list(fusions), runner,
+                                   bytes(ROM))
+
+    def test_the_coverage_runs_give_the_order_and_one_file_per_table_group(self):
+        runner = PlantedRunner()
+        files, problems = self.generate(runner)
+        self.assertEqual(problems, [])
+        self.assertEqual(runner.calls, [("run-00", {"race": "1"}), ("run-01", {})])
+        self.assertEqual(files, {
+            "order.txt": "ladx-tables-order 1\nsection generator.py generateRom\n"
+                         "table fixed fixed.1 a(rom)\nC items - b(rom)\n"
+                         "table opts opts.1 c(rom)\n",
+            "fixed.txt": "ladx-tables 1\ngroup fixed\ntables texts\nunit fixed.1\nE\n"
+                         "B 100 @800+6\n",
+            "opts.txt": "ladx-tables 1\ngroup opts\ntables texts\nunit opts.1 race\nE 0\n"
+                        "nothing\nE 1\nB 10 %s\n" % NOT_ROM_10.hex()})
+        for text in files.values():
+            self.assertEqual(gen_tables.tables.render(gen_tables.tables.parse(text)), text)
+
+    def test_a_traced_read_widens_the_key_and_plans_the_runs_it_needs(self):
+        runner = PlantedRunner(c_reads_witch=True)
+        files, problems = self.generate(runner)
+        self.assertEqual(problems, [])
+        self.assertEqual(runner.calls[2:], [("run-02", {"witch": "1"})])
+        self.assertIn("unit opts.1 race witch\nE 0 0\nnothing\nE 0 1\nB 11 00\nE 1 0\n",
+                      files["opts.txt"])
+
+    def test_a_row_rewritten_by_a_later_one_is_keyed_by_it_not_fused(self):
+        rows = BUILD_ROWS[:1] + [gen_tables.Row(site("d(rom)"), "table", "fixed", ["race"])] \
+            + BUILD_ROWS[1:]
+        files, problems = self.generate(PlantedRunner(d_rewrites=True), rows=rows)
+        self.assertEqual(problems, [])
+        self.assertIn("unit fixed.1 race\nE 0\nB 100 @800+6\nE 1\nB 100 @800+5\n"
+                      "unit fixed.2 race\nE 0\nnothing\nE 1\nB 105 %02x\n" % (ROM[0x805] ^ 0xff),
+                      files["fixed.txt"])
+
+    def test_two_runs_giving_one_tuple_different_writes_conflict(self):
+        _, problems = self.generate(PlantedRunner(a_reads_race=True))
+        self.assertEqual(problems, ["CONFLICT fixed.1"])
+        files, problems = self.generate(PlantedRunner(a_reads_race=True),
+                                        widenings=[(site("a(rom)"), "race", "why")])
+        self.assertEqual(problems, [])
+        self.assertIn("unit fixed.1 race\nE 0\nB 100 @800+6\nE 1\n", files["fixed.txt"])
+
+    def test_a_tuple_whose_run_has_no_ok_seed_is_unreached(self):
+        runner = PlantedRunner(fail=[{"race": "1"}])
+        _, problems = self.generate(runner)
+        self.assertEqual(problems, ["UNREACHED opts.1 1"])
+        self.assertEqual(runner.calls, [("run-00", {"race": "1"}), ("run-01", {})])
+
+    def test_reading_a_c_groups_writes_is_reported(self):
+        _, problems = self.generate(PlantedRunner(c_reads_items=True))
+        self.assertEqual(problems, ["DEPENDS-C opts.1 items"])
 
 
 PLANT_SETTINGS = ("setting race\tMain\tV\tbool\t0\tRace\t0\t-\n"

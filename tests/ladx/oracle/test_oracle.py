@@ -797,7 +797,13 @@ class Settings:
 
     def getShortString(self):
         return ""
+
+    def __getattr__(self, item):
+        if item.startswith("_"):
+            raise AttributeError(item)
+        return self.values.get(item, "")
 """,
+    "assembler.py": "CONST_MAP = {\"STUB_CONST\": 1}\n",
     "itempool.py": "class ItemPool:\n    def __init__(self, logic, settings, rnd, plando):\n"
                    "        pass\n",
     "worldSetup.py": "class WorldSetup:\n    def __init__(self):\n        self.entrance_mapping = {}\n"
@@ -848,9 +854,13 @@ class ROMWithTables(ROM):
 from romTables import ROMWithTables
 
 
+import assembler
+
+
 def generateRom(args, settings, seed, logic, *, rnd=None):
     rom = ROMWithTables(open(args.input_filename, "rb"))
     rom.banks[1][0x10] = rom.banks[2][0x20]
+    keyed = (assembler.CONST_MAP["STUB_CONST"], settings.witch)
     if settings.values.get("crash") == "1":
         raise KeyError("stub")
     rom.texts[0] = rom.texts[1]
@@ -859,6 +869,7 @@ def generateRom(args, settings, seed, logic, *, rnd=None):
 }
 
 COPY_LINE = "rom.banks[1][0x10] = rom.banks[2][0x20]"
+KEYED_LINE = 'keyed = (assembler.CONST_MAP["STUB_CONST"], settings.witch)'
 
 
 def _stub_inventory():
@@ -949,8 +960,26 @@ class OracleRunReadsTest(unittest.TestCase):
         self.assertEqual([l.split("\t")[0] for l in writes], ["g-copy"])
         self.assertNotIn(b"table texts", traced["reads.txt"])
 
+    def test_keys_traces_the_settings_and_constants_each_row_reads(self):
+        traced = self.files(self.run_case("keys", "--reads", "--keys"))
+        site = "generator.py generateRom\t" + KEYED_LINE
+        self.assertEqual(traced["keys.txt"].decode().splitlines(), [
+            "ladx-key-reads 1", "const\t%s\tSTUB_CONST" % site, "setting\t%s\twitch" % site])
+        plain = self.files(self.run_case("plain", "--reads"))
+        self.assertNotIn("keys.txt", plain)
+        for name in plain:
+            self.assertEqual(traced[name], plain[name], name)
+
+    def test_no_invariant_skips_the_re_run_and_keeps_the_other_outputs(self):
+        skipped = self.files(self.run_case("skipped", "--reads", "--no-invariant"))
+        traced = self.files(self.run_case("traced", "--reads"))
+        self.assertNotIn("invariant.txt", skipped)
+        self.assertEqual(skipped, {n: v for n, v in traced.items() if n != "invariant.txt"})
+
     def test_reads_needs_rom_and_not_plain(self):
         for extra in (["--reads", "--out", os.path.join(self.dir, "x")],
+                      ["--rom", self.rom, "--dir", self.dir, "--keys"],
+                      ["--rom", self.rom, "--dir", self.dir, "--no-invariant"],
                       ["--rom", self.rom, "--dir", self.dir, "--plain", "--reads"]):
             proc = subprocess.run([sys.executable, "-B", os.path.join(HERE, "oracle_run.py")]
                                   + extra + [self.ladxr, "00"], capture_output=True, text=True)
