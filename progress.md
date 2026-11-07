@@ -86,6 +86,9 @@
   - [x] Step 2.10 Split Phase 3 step 6
 - [ ] Phase 3 — LADX library, host only
   - [ ] Step 3.1 Python RNG in C
+    - [x] Chunk 1: ladx/ skeleton, SHA-512, test and lint
+    - [ ] Chunk 2: pyrandom against the fixture
+    - [ ] Chunk 3: fast make test, unit-arm, docs
   - [ ] Step 3.2 Settings table
   - [ ] Step 3.3 Logic and locations
   - [ ] Step 3.4 Item pool and fill

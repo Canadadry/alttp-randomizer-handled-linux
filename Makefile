@@ -1,9 +1,10 @@
-.PHONY: help install test test-rando ui-cli test-template rom-guard test-ladx-oracle ladx-cases ladx-tables ladx-extract lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
+.PHONY: help install test test-rando test-ladx ui-cli test-template rom-guard test-ladx-oracle ladx-cases ladx-tables ladx-extract lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
 	@echo "make test           the fast loop: unit tests, on the host, in seconds"
 	@echo "make test-rando     the randomizer's unit tests (tests/alttp)"
+	@echo "make test-ladx      LADX's unit tests (tests/ladx/unit), run by make test"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
 	@echo "make test-ladx-oracle the LADX oracle's helper unit tests (tests/ladx/oracle), no LADXR, no network, run by make test"
 	@echo "make ladx-cases     tests/ladx/cases/ and combos/ checked against tier1.txt and combos.txt, their goldens and size budget, no ROM, no LADXR, run by make test"
@@ -11,7 +12,7 @@ help:
 	@echo "make ladx-extract   tests/ladx/extract/ (extraction fixtures) parsed and checked against the inventory's Extractions names, no ROM, no LADXR, run by make test"
 	@echo "make rom-guard      fails if git's index holds a .gb/.gbc/.sfc/.smc file or a LADX/ALttP ROM by digest, run by make test"
 	@echo "make ui-cli         builds tests/alttp/build/ui_cli, the agent's text view of the app"
-	@echo "make lint           alttp/ and app/ built as strict ISO C99 (-pedantic-errors)"
+	@echo "make lint           alttp/, ladx/ and app/ built as strict ISO C99 (-pedantic-errors)"
 	@echo "make logic          unit tests replaying the oracle fixtures (tests/alttp/oracle)"
 	@echo "make selftest       the e2e driver's own self-test"
 	@echo "make e2e            every case of tests/alttp/cases diffed against its golden"
@@ -41,10 +42,13 @@ install:
 	@echo "install: no dependency to install (host gcc, make, python3)"
 
 # The fast loop. Keep it a few seconds, with no network and no external service.
-test: test-rando test-template rom-guard test-ladx-oracle ladx-cases ladx-tables ladx-extract
+test: test-rando test-ladx test-template rom-guard test-ladx-oracle ladx-cases ladx-tables ladx-extract
 
 test-rando:
 	$(MAKE) -C tests/alttp test
+
+test-ladx:
+	$(MAKE) -C tests/ladx test
 
 # The template's tooling under .claude/: the pre-push hook and plan-pilot's
 # progress.md hook. Kept apart from the project's own tests.
@@ -72,6 +76,7 @@ ui-cli:
 
 lint:
 	$(MAKE) -C tests/alttp lint
+	$(MAKE) -C tests/ladx lint
 
 logic:
 	$(MAKE) -C tests/alttp logic
