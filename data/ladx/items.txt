@@ -1,0 +1,49 @@
+ladx-tables 1
+group items
+tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b rooms_color_dungeon room_sprite_data_overworld room_sprite_data_indoor background_tiles background_attributes
+unit items.1
+E
+B db9c 3e0100
+B e44d 3e0100
+unit items.2
+E
+B 14cda =1 00
+unit items.3
+E
+B d45d =1 0b
+unit items.4
+E
+B 6463f =1 06
+B 646c1 =1 06
+B 646fc =1 06
+B 64710 =1 06
+unit items.5
+E
+B 64668 c90000
+B 6469c 3e06ea7ddbfa2b47e0f13e06cf3e @428ca+1a =1 00
+B 6475a fa2b47e0f13e0a @3b6df+9
+B 64786 fa2b47 @13bbd+4 @3b6df+6
+unit items.6
+E
+B afa9 cdfb7f00
+B bd00 @80845+4 09cff601c9
+B bffb @afa9+4 c9
+unit items.7
+E
+B b831 0000
+B 540e9 3e09cf
+unit items.8
+E
+B bfef @37c0+5 06fa11dbc3 =1 7d
+unit items.9
+E
+B bfef @db7+5 @1807c+4 c3 =1 7d
+unit items.10
+E
+B bfef @928c+5 @1a82e+4 c3 =1 7d
+unit items.11
+E
+B bfef @afc9+5 06fa13dbc3 =1 7d
+unit items.12
+E
+B bfef @31bf+5 06fa14dbc3 =1 7d

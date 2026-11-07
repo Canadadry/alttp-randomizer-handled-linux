@@ -604,16 +604,16 @@ static void test_real_tables(void)
 	int cases, combos, u, with_count = 0;
 
 	open_real();
-	check(ladx_tables_group_count(&tables) == 8, "data/ladx: 8 groups, bank3e's, endscreen's and goal's constants included");
-	check(ladx_tables_unit_count(&tables) == 382, "data/ladx: 382 units");
-	check(ladx_tables_entry_count(&tables) == 991, "data/ladx: 991 entries");
+	check(ladx_tables_group_count(&tables) == 9, "data/ladx: 9 groups, bank3e's, endscreen's, goal's and items' constants included");
+	check(ladx_tables_unit_count(&tables) == 394, "data/ladx: 394 units");
+	check(ladx_tables_entry_count(&tables) == 1003, "data/ladx: 1003 entries");
 	for (u = 0; u < ladx_tables_unit_count(&tables); u++)
 		with_count += ladx_tables_unit_uses_count(&tables, u);
 	check(with_count == 1, "data/ladx: one unit keyed by count");
 	cases = check_cases("cases");
 	combos = check_cases("combos");
 	check(cases > 0 && combos > 0, "case and combo folders");
-	printf("%s: data/ladx opened (8 groups, 382 units, 991 entries); %d cases and %d combos select %d entries\n",
+	printf("%s: data/ladx opened (9 groups, 394 units, 1003 entries); %d cases and %d combos select %d entries\n",
 	       TEST, cases, combos, units_selected);
 }
 

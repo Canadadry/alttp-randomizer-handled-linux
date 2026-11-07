@@ -10,6 +10,7 @@ static const LadxPipelineGroup groups[] = {
 	{"music", 1, ladx_group_music, ladx_group_music_draws},
 	{"notext", 1, ladx_group_notext, NULL},
 	{"goal", 1, ladx_group_goal, NULL},
+	{"items", 1, ladx_group_items, NULL},
 	{"title", 1, ladx_group_title, NULL},
 	{"endscreen", 1, ladx_group_endscreen, ladx_group_endscreen_draws},
 };
@@ -175,4 +176,36 @@ int ladx_pipeline_const_units(LadxEncoder *enc, LadxPipeline *p, const char *gro
 			return 0;
 	}
 	return 1;
+}
+
+int ladx_pipeline_const_bank(LadxPipeline *p, const char *group, int unit, uint32_t offset, uint8_t *out, size_t n)
+{
+	LadxSpan name;
+	LadxTablesStep step;
+	LadxTablesError err;
+	LadxTablesRecords it;
+	LadxTablesRecord rec;
+	size_t found = 0, i;
+	int g, first, count;
+
+	name.at = group;
+	name.len = strlen(group);
+	if ((g = ladx_tables_find_group(p->tables, name)) < 0)
+		return 0;
+	count = ladx_tables_group_units(p->tables, g, &first);
+	if (unit < 0 || unit >= count || !ladx_tables_select(p->tables, first + unit, p->settings, p->spot_count, &step, &err))
+		return 0;
+	ladx_tables_records_init(&it, p->tables, &step);
+	while (ladx_tables_records_next(&it, &rec, p->scratch, LADX_WLOG_ATOM_MAX, &err)) {
+		if (rec.table_record || rec.offset >= offset + n || rec.offset + rec.n <= offset)
+			continue;
+		if (!resolve(p, rec.atoms, rec.n, p->values, p->origins))
+			return 0;
+		for (i = 0; i < rec.n; i++)
+			if (rec.offset + i >= offset && rec.offset + i < offset + n) {
+				out[rec.offset + i - offset] = p->values[i];
+				found++;
+			}
+	}
+	return err.status == LADX_TABLES_OK && found == n;
 }

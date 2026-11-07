@@ -856,6 +856,41 @@ _GOAL_TEXT = [("T", "texts", 0x1A3)]
 _MAZE_ROOM6 = [("T", "entities", 6), ("T", "rooms_overworld_top", 6), ("B", 0x26 * 0x4000 + 6 * 80)]
 
 
+def _items_calls():
+    """items' calls (patches of locations/ on a fresh parse) and the positions C writes itself:
+    the beach sword's, the start item's, chest 0x1B6's, the boomerang trade's and gift's, the
+    keyhole hook, the castle keyhole's, then each other keyhole's handler at slot 0."""
+    bank = BANK_SIZE
+
+    def loc(module, expr):
+        return "importlib.import_module(\"locations.%s\").%s" % (module, expr)
+    item = lambda room: ("B", 0x3E * bank + 0x3800 + room)
+    keyhole_item = lambda room: ("B", 0x3E * bank + 0x3B16 + room)
+    hook = [("B", 2 * bank + 0x2FA9), ("B", 2 * bank + 0x3FFB), ("B", 2 * bank + 0x3D00)]
+    castle = [("B", 2 * bank + 0x3831), ("B", 0x15 * bank + 0x00E9)]
+    keyhole = lambda room, reward: loc("keyhole", "KeyHole(0x%03X, %r).patch(rom, \"SWORD\")"
+                                       % (room, reward))
+    calls = [
+        (loc("beachSword", "BeachSword().patch(rom, \"SWORD\")"),
+         [item(0xF2), ("T", "entities", 0xF2), ("T", "rooms_overworld_bottom", 0x72),
+          ("B", 0x27 * bank + (0xF2 - 0xCC) * 80)]),
+        (loc("startItem", "StartItem().patch(rom, \"SWORD\")"), [item(0x2A3)]),
+        (loc("chest", "Chest(0x1B6).patch(rom, \"SWORD\")"), [("B", 0x14 * bank + 0x1B6 + 0x560)]),
+        (loc("boomerangGuy", "BoomerangGuy().patch(rom, \"HOOKSHOT\")"),
+         [("T", "texts", t) for t in (0x222, 0x224, 0x225, 0x226)]),
+        ("(lambda g: (setattr(g, \"setting\", \"gift\"), g.patch(rom, \"HOOKSHOT\")))(%s)"
+         % loc("boomerangGuy", "BoomerangGuy()"),
+         [("T", "texts", 0x221), ("T", "texts", 0x225), ("B", 0x19 * bank + 0x072B)]),
+        (keyhole(0x2C3, "CASTLE_GATE_OPENED"), [keyhole_item(0x2C3)] + castle),
+        (keyhole(0x2C3, "CASTLE_GATE_OPENED"), [keyhole_item(0x2C3)] + hook),
+    ]
+    for room, reward in ((0x0D3, "TAIL_CAVE_OPENED"), (0x0B5, "KEY_CAVERN_OPENED"),
+                         (0x02B, "ANGLER_TUNNEL_OPENED"), (0x08C, "FACE_SHRINE_OPENED"),
+                         (0x00E, "EAGLE_TOWER_OPENED")):
+        calls.append((keyhole(room, reward), [keyhole_item(room)] + hook + [("B", 2 * bank + 0x2FAA)]))
+    return calls
+
+
 def variant_runs(module, call):
     """[call()'s result], one per element of the sequence call draws from module.choice, the
     k-th with that choice returning the k-th element; module.choice restored after.
@@ -896,6 +931,7 @@ CONST_GROUPS = {
            for c in range(-1, 8)]
         + [("patches.goal.setSpecificInstruments(rom, %r)" % lst, _GOAL_TEXT)
            for lst in _specific_lists()])),
+    "items": ConstSpec(None, [], [], calls=_items_calls()),
 }
 ASM_CONSTS_GROUP = "asm-consts"
 BANK_SIZE = 0x4000

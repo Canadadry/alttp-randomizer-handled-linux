@@ -290,6 +290,23 @@ static void test_const(void)
 		      ladx_pipeline_const_unit_count(&pipeline_of_run, "alpha") == 2 &&
 		      ladx_pipeline_const_unit_count(&pipeline_of_run, "nobody") == -1,
 	      "a group's unit count, -1 without a file");
+	{
+		uint8_t got[5];
+
+		memset(got, 0, sizeof got);
+		check(ladx_pipeline_const_bank(&pipeline_of_run, "rommy", 0, 0x60, got, 4) && got[0] == synth.rom[0x60] &&
+			      got[1] == synth.rom[0x100] && got[2] == synth.rom[0x101] && got[3] == 0x7f,
+		      "a unit's bank bytes, keep, copy and literal resolved");
+		check(ladx_pipeline_const_bank(&pipeline_of_run, "rommy", 0, 0x61, got, 2) &&
+			      got[0] == synth.rom[0x100] && got[1] == synth.rom[0x101],
+		      "a unit's bank bytes inside a record");
+		check(!ladx_pipeline_const_bank(&pipeline_of_run, "rommy", 0, 0x60, got, 5) &&
+			      !ladx_pipeline_const_bank(&pipeline_of_run, "rommy", 0, 0x5f, got, 2) &&
+			      !ladx_pipeline_const_bank(&pipeline_of_run, "rommy", 2, 0x60, got, 1) &&
+			      !ladx_pipeline_const_bank(&pipeline_of_run, "rommy", -1, 0x60, got, 1) &&
+			      !ladx_pipeline_const_bank(&pipeline_of_run, "nobody", 0, 0x60, got, 1),
+		      "bytes the unit does not all write, a unit or group out of range, give 0");
+	}
 	rommy_const_mode = 2;
 	check(run(&rom, &calls, &err) == LADX_PIPELINE_OK, "a group writes one unit of its constants file");
 	snprintf(want, sizeof want,
@@ -363,15 +380,16 @@ static void test_errors(void)
 	{
 		const LadxPipelineGroup *g = ladx_pipeline_groups(&count);
 
-		check(count == 8 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
+		check(count == 9 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
 			      strcmp(g[1].name, "marin") == 0 && g[1].needs_rom && g[1].draw &&
 			      strcmp(g[2].name, "hints") == 0 && !g[2].needs_rom && !g[2].draw &&
 			      strcmp(g[3].name, "music") == 0 && g[3].needs_rom && g[3].draw &&
 			      strcmp(g[4].name, "notext") == 0 && g[4].needs_rom && !g[4].draw &&
 			      strcmp(g[5].name, "goal") == 0 && g[5].needs_rom && !g[5].draw &&
-			      strcmp(g[6].name, "title") == 0 && g[6].needs_rom && !g[6].draw &&
-			      strcmp(g[7].name, "endscreen") == 0 && g[7].needs_rom && g[7].draw,
-		      "the library registers bank3e, marin, hints, music, notext, goal, title then endscreen, in LADXR's "
+			      strcmp(g[6].name, "items") == 0 && g[6].needs_rom && !g[6].draw &&
+			      strcmp(g[7].name, "title") == 0 && g[7].needs_rom && !g[7].draw &&
+			      strcmp(g[8].name, "endscreen") == 0 && g[8].needs_rom && g[8].draw,
+		      "the library registers bank3e, marin, hints, music, notext, goal, items, title then endscreen, in LADXR's "
 		      "order, hints alone ROM-free, marin, music and endscreen drawing without the ROM");
 	}
 }

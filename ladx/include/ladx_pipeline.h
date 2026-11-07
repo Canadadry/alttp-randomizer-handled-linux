@@ -96,6 +96,14 @@ int ladx_pipeline_const(LadxEncoder *enc, LadxPipeline *p, const char *group);
 /* ladx_pipeline_const of units first to first + count - 1 alone (0-based in the file); 0 when out of range. */
 int ladx_pipeline_const_units(LadxEncoder *enc, LadxPipeline *p, const char *group, int first, int count);
 
+/*
+ * The bytes unit (0-based in group's constants file) writes at bank offsets
+ * offset to offset + n - 1, resolved as ladx_pipeline_const does, into out;
+ * nothing written. 0 when the unit does not write every one of them, has
+ * no entry, or a reference cannot be read.
+ */
+int ladx_pipeline_const_bank(LadxPipeline *p, const char *group, int unit, uint32_t offset, uint8_t *out, size_t n);
+
 /* The number of units of group's constants file; -1 when it has none. */
 int ladx_pipeline_const_unit_count(const LadxPipeline *p, const char *group);
 

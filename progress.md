@@ -138,7 +138,7 @@
     - [x] Step 3.6.10 goal
     - [x] Fix: drawn open goal, tables and goldens regenerated
     - [x] Fix: drawn open goal, written by the goal group
-    - [ ] Step 3.6.11 items
+    - [x] Step 3.6.11 items
     - [ ] Step 3.6.12 entrances
     - [ ] Step 3.6.13 bosses
     - [ ] Step 3.6.14 enemizer

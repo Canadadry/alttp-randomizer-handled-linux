@@ -250,7 +250,7 @@ follow the table groups' encoding rule, the fragment rule included
   `tables <table>...` (ROMWithTables' tables in their order, as in a write
   log), then its units.
 - `<group>.txt` for a `C` group, its **constants file** (today
-  `bank3e.txt`, `endscreen.txt` and `goal.txt`): the settings-only writes of the
+  `bank3e.txt`, `endscreen.txt`, `goal.txt` and `items.txt`): the settings-only writes of the
   group's call that C cannot compute (LADXR's assembler, LADXR's binary
   files), in the same format; below.
 
@@ -368,7 +368,22 @@ bank 0x3F 0x3700; `goal.2` to `goal.10` are
 `setRequiredInstrumentCount(rom, c)` for `c` = -1 to 7 less text 0x1A3;
 `goal.11` to `goal.265` are `setSpecificInstruments(rom, list)` less
 text 0x1A3, for the mask `m` = 1 to 255 (bit `i - 1` for instrument
-`i`), the list `m`'s instruments ascending. `tables.py check`
+`i`), the list `m`'s instruments ascending. `items` (12 units, 907
+bytes), each call a `locations/` class's `patch` on a fresh parse with a
+placeholder item: `items.1` `BeachSword` less its item byte and room
+0xF2's three stores (the like-like patches at bank 3 0x1B9C and
+0x244D); `items.2` `StartItem` with the sword less its item byte (bank 5
+0x0CDA); `items.3` `Chest(0x1B6)` with the sword less its chest byte
+(bank 3 0x145D, the operand a placeholder); `items.4` the boomerang
+trade with the hookshot less its four texts (four instructions, their
+operands placeholders); `items.5` the boomerang gift less texts 0x221
+and 0x225 and the item byte at bank 0x19 0x072B; `items.6` keyhole
+0x2C3 less its item byte and the castle's patches (the hook: bank 2
+0x2FA9, 0x3D00, 0x3FFB); `items.7` the same call less its item byte and
+the hook (bank 2 0x3831, bank 0x15 0x00E9); `items.8` to `items.12`
+keyholes 0x0D3, 0x0B5, 0x02B, 0x08C, 0x00E less their item byte, the
+hook and the target word (each one's handler at slot 0, bank 2
+0x3FEF). `tables.py check`
 accepts at most one such file per `C` group of the inventory (any other
 name is `EXTRA`), checks its domains and duplicates, and matches its
 units to no row.
@@ -503,7 +518,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -515,7 +530,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -704,10 +719,10 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   hand-built graph with `KeyLocation` spots and an unreached one. Then
   it opens the real
   `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
-  file): 8 groups (`bank3e.txt`, `endscreen.txt` and `goal.txt` included), 382 units, 991 entries, one unit keyed by `count`; and
+  file): 9 groups (`bank3e.txt`, `endscreen.txt`, `goal.txt` and `items.txt` included), 394 units, 1003 entries, one unit keyed by `count`; and
   for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
   supported, every unit without `count` selects an entry. It prints
-  `test_tables: data/ladx opened (8 groups, 382 units, 991 entries); <n>
+  `test_tables: data/ladx opened (9 groups, 394 units, 1003 entries); <n>
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
@@ -761,8 +776,11 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   fails the group on a reference beyond the ROM, a unit with no entry or
   no file; `ladx_pipeline_const_units` writes the keyed unit alone and
   fails on units past the file's end; `ladx_pipeline_const_unit_count`
-  counts a file's units, -1 without one; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `title` then `endscreen`,
+  counts a file's units, -1 without one; `ladx_pipeline_const_bank`
+  reads a unit's resolved bank bytes (keep, copy and literal; inside a
+  record) and gives 0 for bytes it does not all write, a unit or a group
+  out of range; the library's registry is
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `title` then `endscreen`,
   `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
@@ -901,6 +919,28 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   `seashells` write nothing; a file of 264 units fails the group. It
   prints `test_goal: the goal group on a synthetic ROM and planted
   constants (<c> checks)`.
+  `test_items` runs the library's registry on a synthetic ROM, its
+  encoder without KS, after a planted table group (bank 2 0x2FA9 0xF0,
+  the witch byte, the gift byte 0x00, room 0xF2's entities with a 0x31
+  and its objects), with a planted 12-unit `items.txt` of invented
+  bytes at LADXR's offsets, on an ok fill of the settings with chosen
+  items placed: `CHEST_ITEMS`, `INVENTORY_MAP` and the dungeon-item
+  reduction; the multichest; a dungeon chest's reduction and the pot
+  chest's operand; a chest keeping another dungeon's key; the gel
+  disguise and the copies of rooms 0x169, 0x166 (not reduced), 0x223 and
+  0x092; the angler key's two copies, the boss item a source copy; the
+  mad batter, tunic fairy and mansion bonus tables; the beach room's
+  heart piece and like-like patches; the start item's sprite patch
+  (none for the shield) and BowWow; the shop's items and texts; the
+  witch (patched, already patched, mismatched as LADXR's
+  `AssertionError`, unshuffled); the boomerang gift and trade (operands
+  and texts); trade items (texts when changed, the id alone when not);
+  owl statues' reduction; keyholes (unchanged: no hook; the hook once,
+  each handler below the last, the target word, the castle's patches);
+  `KeyError` for an item `CHEST_ITEMS` lacks, at a spot and as the
+  multichest; a file without 12 units fails the group. It prints
+  `test_items: setMultiChest and every location kind's patch on a
+  synthetic ROM and planted constants (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1149,7 +1189,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `title` and `endscreen`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `title` and `endscreen`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1171,7 +1211,12 @@ the ROM (or there is none), or the encoder refuses.
 `ladx_pipeline_const_units(enc, p, group, first, count)` writes only
 units `first` to `first + count - 1` (0-based, file order) the same way,
 0 when they pass the file's end; `ladx_pipeline_const_unit_count` gives
-a file's unit count, -1 without one.
+a file's unit count, -1 without one. `ladx_pipeline_const_bank(p, group,
+unit, offset, out, n)` resolves the bytes unit (0-based) writes at bank
+offsets `offset` to `offset + n - 1` into `out` the same way, writing
+nothing: 0 unless the unit writes every one of them, for a group to
+splice an operand into an assembled instruction or move code, then
+write it as one event.
 `ladx_enc_entry_value` gives an entry's current bytes and origins,
 `ladx_enc_bank_value` a bank byte's current value and origin (0 for a
 reference without the ROM),
@@ -1318,6 +1363,65 @@ It needs the ROM (the file's references, the rooms, the KS copies in
 its goldens: `rom-group goal`), draws nothing (the world setup drew)
 and has no `draw`. It fails on a file without 265 units, a malformed
 room or a goal it cannot write.
+
+**`items`** (`patches.chest.setMultiChest` and every `spot.patch(rom,
+spot.item)` of `iteminfo_list`, `ladx_group_items`), with
+`data/ladx/items.txt` ("Patch tables", 12 units): first the multichest
+byte, bank 0x14 0x2F2 + 0x560, `CHEST_ITEMS` of the world setup's
+multichest; then each spot in order by its kind, as `locations/` at the
+pin. `KeyLocation` writes nothing. `Chest`: bank 0x14 room + 0x560; for
+room 0x1B6 also unit 3's two bytes at bank 3 0x145D with its operand made
+the id (`ld a, <id>`). `DungeonChest`: the **reduction** first (`KEYn`,
+`NIGHTMARE_KEYn`, `MAPn`, `COMPASSn`, `STONE_BEAKn` with `n` the spot's
+dungeon become their generic item), then `Chest`. `DroppedKey` and its
+subclasses (heart pieces and containers, instruments, seashells, the
+mansion, songs, toadstool, gold leaves, slime, bird and face keys,
+hookshot, fishing): the reduction unless room 0x166 or 0x223, the id (a
+gel disguised as 0x51 + room % 6), bank 0x3E 0x3800 + room, and for
+rooms 0x169, 0x166, 0x223 and 0x092 the same byte at 0x3800 + 0x17C,
+0x1FF, 0x2E8 and 0x0DC. `AnglerKey`: `DroppedKey`, then bank 0x3E
+0x3800 + 0x1F8 and 0x3300 + 0x1F8 written as the current bytes of 0x0CE
+with their origins (the boss item a source copy while unwritten).
+`BeachSword`: `DroppedKey`, room 0xF2 loaded from the current state
+("Room editor"), its 0x31 entities removed, `(5, 5, 0x35)` added,
+stored, then unit 1 (the like-like patches). `StartItem`: with `bowwow`
+other than `normal` the item is BowWow and text 0xC8 `Got BowWow!`;
+unless the item is the shield, unit 2 (Link's sprite); then
+`DroppedKey`. `KeyHole`: the id (gel disguised) at bank 0x3E 0x3B16 +
+room; nothing more for its default reward; else unit 6 (the hook) when
+bank 2 0x2FA9 holds 0xF0 now, then for room 0x2C3 unit 7, for 0x0D3,
+0x0B5, 0x02B, 0x08C and 0x00E their unit's 12-byte handler (read at
+slot 0, bank 2 0x3FEF) written at the hook's current target (bank 2
+0x2FAA, little-endian) less 12, then the target less 12 written there;
+another room raises `RuntimeError`. `OwlStatue`: the reduction, bank
+0x3E 0x3B16 + room. `MadBatter`: bank 0x18 0x0F90 + (room & 0x0F).
+`TunicFairy`: bank 0x36 0x11BF + index. `SeashellMansionBonus`: bank
+0x3E 0x3E30 + index. `ShopItem` (no shopsanity in tier 1): index 0 at
+bank 0x3E 0x3800 + room with text 0x030 `Deluxe {<ITEM>} 200
+{RUPEES}!`, index 1 at bank 0x14 room + 0x560 with text 0x02C
+`{<ITEM>} Only 980 {RUPEES}!`, both `ask="Buy  No Way"`.
+`TradeSequenceItem`: the id at bank 0x3E 0x3B16 + room; when not its
+default item, its default's texts (0x181 to 0x183, 0x182 the single
+byte 0xFF; 0x1CA; 0x1CF; 0x173; 0x168; 0x135; 0x15D) with LADXR's
+strings. `Witch`: nothing when unshuffled (one option); else
+`rom.patch`'s one byte at bank 5 0x08D5 (written over 0x09, skipped
+over the new byte, else LADXR's `AssertionError`). `BoomerangGuy`:
+with `boomerang=trade`, unit 4's four instructions (bank 0x19 0x063F,
+0x06C1, 0x06FC, 0x0710) with their operand made `INVENTORY_MAP`'s id,
+texts 0x222, 0x224 to 0x226; otherwise text 0x221, unit 5 (the gift
+code), the item at bank 0x19 0x072B by `rom.patch` over 0x00, text
+0x225. Texts are `formatText` with LADXR's strings and no origin, every
+computed byte has no origin, and an assembled patch is written as one
+event, as `rom.patch` writes one slice. An item `CHEST_ITEMS` (or
+`INVENTORY_MAP` for the trade) lacks raises `KeyError '<NAME>'`, and a
+`formatText` raise propagates, each ending the walk `RAISED`. The
+assembled patches' old bytes are not re-checked (they are LADXR's ASM,
+not in the file); none fails after the groups before it on the source
+ROM. It runs once, at `setMultiChest`'s row, before `entrances`' row,
+where LADXR has `changeEntrances` between the multichest and the spots:
+the inventory shows neither group depending on the other, they share
+no position, and claims are projections. It needs the ROM (`rom-group
+items`), draws nothing and has no `draw`.
 
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank

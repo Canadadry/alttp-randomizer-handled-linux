@@ -166,4 +166,22 @@ int ladx_group_notext(LadxEncoder *enc, LadxPipeline *p);
  */
 int ladx_group_goal(LadxEncoder *enc, LadxPipeline *p);
 
+/*
+ * The items group (patches/chest.py setMultiChest, then every spot's
+ * patch in iteminfo_list order, locations/ at the pin; tests/ladx/README.md,
+ * "Pipeline"): each kind's item bytes and texts, assembled patches from
+ * data/ladx/items.txt (12 units), room 0xF2 through the room editor. Needs
+ * p->rom; draws nothing; returns 0 with p->raised set where LADXR raises.
+ */
+int ladx_group_items(LadxEncoder *enc, LadxPipeline *p);
+
+/* locations/constants.py CHEST_ITEMS[item]; -1 when it lacks the item. */
+int ladx_items_chest_id(int item);
+
+/* int(INVENTORY_MAP[item], 16); -1 when it lacks the item. */
+int ladx_items_inventory_id(int item);
+
+/* The dungeon-item reduction: KEYn, NIGHTMARE_KEYn, MAPn, COMPASSn, STONE_BEAKn with n == dungeon as its generic item, else item. */
+int ladx_items_dungeon_item(int item, int dungeon);
+
 #endif
