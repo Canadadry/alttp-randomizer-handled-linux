@@ -26,6 +26,15 @@ static void settings_of(LadxSettings *s, const char *assignment)
 
 static LadxRandomizer r;
 
+/* rnd's MT words when ItemPool was entered; 0 when it did not return. */
+static uint64_t words_before(const LadxRandomizer *run)
+{
+	uint64_t before = 0;
+
+	ladx_randomizer_pool(run, &before, NULL);
+	return before;
+}
+
 /*
  * item_pools.txt's three goal=maze runs: buildMaze crashes on the third
  * seed; the other two reach ItemPool with words_before 80 and 77.
@@ -46,14 +55,14 @@ static void test_maze_seeds(void)
 	check(ladx_randomize(&r, &s, seed_a, sizeof seed_a, NULL, NULL) == LADX_RANDOMIZE_OK, "maze seed a: run");
 	o = ladx_randomizer_outcome(&r);
 	check(o->kind == LADX_OUTCOME_UNFINISHED, "maze seed a: no crash");
-	check(r.rnd.py.words == 80, "maze seed a: words_before 80");
+	check(words_before(&r) == 80, "maze seed a: words_before 80");
 	ws = ladx_randomizer_world_setup(&r);
 	check(ws && ws->goal == LADX_GOAL_MAZE && ws->sign_count == LADX_SIGN_MAZE_SIGNS,
 	      "maze seed a: goal maze, 22 signs");
 
 	check(ladx_randomize(&r, &s, seed_b, sizeof seed_b, NULL, NULL) == LADX_RANDOMIZE_OK, "maze seed b: run");
 	check(ladx_randomizer_outcome(&r)->kind == LADX_OUTCOME_UNFINISHED, "maze seed b: no crash");
-	check(r.rnd.py.words == 77, "maze seed b: words_before 77");
+	check(words_before(&r) == 77, "maze seed b: words_before 77");
 
 	check(ladx_randomize(&r, &s, seed_c, sizeof seed_c, NULL, NULL) == LADX_RANDOMIZE_OK, "maze seed c: run");
 	o = ladx_randomizer_outcome(&r);

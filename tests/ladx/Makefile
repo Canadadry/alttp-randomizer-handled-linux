@@ -6,9 +6,12 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -ffp-contract=off
 LADX := ../../ladx
 BUILD := build
 
-UNIT_TESTS := test_sha512 test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup
+UNIT_TESTS := test_sha512 test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
+	test_itempool
 # Run again with --fixtures by make logic and unit-arm.
-LOGIC_TESTS := test_logic
+LOGIC_TESTS := test_logic test_itempool
+# Linked with the host layer ladx/host/ too.
+HOST_TESTS := test_run_text test_itempool
 
 LADX_SRC := $(wildcard $(LADX)/src/*.c)
 LADX_HDR := $(wildcard $(LADX)/include/*.h $(LADX)/src/*.h)
@@ -123,7 +126,7 @@ $(BUILD)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -I$(LADX)/include -I$(LADX)/host -c -o $@ $<
 
-$(BUILD)/test_run_text: unit/test_run_text.c unit/support.h $(SUPPORT_OBJ) $(HOST_OBJ) $(LADX_LIB) $(LADX_HDR) $(HOST_HDR) | $(BUILD)
+$(addprefix $(BUILD)/,$(HOST_TESTS)): $(BUILD)/test_%: unit/test_%.c unit/support.h $(SUPPORT_OBJ) $(HOST_OBJ) $(LADX_LIB) $(LADX_HDR) $(HOST_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(LADX)/include -I$(LADX)/host -Iunit -o $@ $< $(SUPPORT_OBJ) $(HOST_OBJ) $(LADX_LIB) -lm
 
 $(BUILD)/test_%: unit/test_%.c unit/support.h $(SUPPORT_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)

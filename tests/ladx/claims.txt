@@ -1,2 +1,2 @@
 # The stage every case and combo is claimed at (tests/ladx/README.md, "E2E driver and claims").
-stage ws
+stage pool

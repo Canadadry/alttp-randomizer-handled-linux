@@ -1,6 +1,7 @@
 #ifndef LADX_RUN_TEXT_H
 #define LADX_RUN_TEXT_H
 
+#include "ladx_itempool.h"
 #include "ladx_randomizer.h"
 #include "ladx_rng.h"
 
@@ -44,6 +45,15 @@ size_t ladx_run_text_outcome_line(char *buf, size_t cap, const LadxOutcome *outc
  * for i outside 0 to LADX_RUN_TEXT_WS_LINES - 1.
  */
 size_t ladx_run_text_ws_line(char *buf, size_t cap, const LadxWorldSetup *ws, int i);
+
+/* `<tag> <n>` (words_before, words_after); same return as ladx_run_text_trace_line. */
+size_t ladx_run_text_words_line(char *buf, size_t cap, const char *tag, uint64_t words);
+
+/*
+ * `<tag> <item>=<count> ...` in the pool's order, zero and negative counts
+ * kept (pool, placer_pool); same return as ladx_run_text_trace_line.
+ */
+size_t ladx_run_text_pool_line(char *buf, size_t cap, const char *tag, const LadxItemPool *pool);
 
 /* A trace sink numbering the records from 0 and writing each line to out. */
 typedef struct LadxRunTextTrace {

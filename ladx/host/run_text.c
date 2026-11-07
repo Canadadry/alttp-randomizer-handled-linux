@@ -197,6 +197,30 @@ size_t ladx_run_text_outcome_line(char *buf, size_t cap, const LadxOutcome *outc
 	return finish(&t);
 }
 
+size_t ladx_run_text_words_line(char *buf, size_t cap, const char *tag, uint64_t words)
+{
+	Text t;
+
+	open_text(&t, buf, cap);
+	put(&t, "%s %llu", tag, (unsigned long long)words);
+	return finish(&t);
+}
+
+size_t ladx_run_text_pool_line(char *buf, size_t cap, const char *tag, const LadxItemPool *pool)
+{
+	int i, item, count;
+	Text t;
+
+	open_text(&t, buf, cap);
+	put(&t, "%s", tag);
+	for (i = 0; ladx_itempool_entry(pool, i, &item, &count); i++) {
+		if (!ladx_item_name(item))
+			t.over = 1;
+		put(&t, " %s=%d", ladx_item_name(item), count);
+	}
+	return finish(&t);
+}
+
 size_t ladx_run_text_ws_line(char *buf, size_t cap, const LadxWorldSetup *ws, int i)
 {
 	Text t;

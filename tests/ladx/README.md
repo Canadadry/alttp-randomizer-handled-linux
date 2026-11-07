@@ -460,7 +460,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -469,8 +469,8 @@ would differ in its last bit. Phase 4, which builds `ladx/` into the app,
 keeps the flag. Library objects see only `-I ladx/include`; the host
 layer `ladx/host/` (C99, stdio allowed, never built into the device's
 library) sees `-I ladx/include -I ladx/host`; the tests add
-`-I tests/ladx/unit`, and those linking the host layer `-I ladx/host` and
-`-lm`. Build output goes to `tests/ladx/build/`.
+`-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
+`test_run_text`, `test_itempool`) `-I ladx/host` and `-lm`. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -542,6 +542,25 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   `LADX_RANDOMIZE_UNSUPPORTED`. It prints `test_world_setup: goal=maze's
   crash and words on item_pools.txt's seeds, buildMaze's and
   goal=specific's vectors, goal=bingo unsupported (<c> checks)`.
+  `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
+  `ItemPool` and `readItemPool`) through its headers: Python's dict
+  semantics on hand-made sequences (`add` keeps a key's position and
+  inserts a key at zero, `remove` deletes at exactly zero and keeps a key
+  below it, a deleted key re-added goes to the end, `remove` of an absent
+  key inserts it negative, `set` and `del`, an item outside the table
+  refused); and `itempool=pain` on seed `000000a2` as LADXR ran it
+  (`oracle_run.py`): `RUPEES_20` used up, so 7 rupee picks for 5 new
+  items (`__randomizeRupees`'s re-draw on weights it never updates),
+  `words_after` 26 and the counts LADXR's pool holds. It prints
+  `test_itempool: dict semantics and a rupee re-draw ok (<c> checks)`.
+  With `--fixtures` it replays every run of `oracle/item_pools.txt`
+  (settings set, validated and their short string compared, then
+  `ladx_randomize`): the `words_before`, `pool`, `words_after` and
+  `placer_pool` lines rendered by the host's `ladx_run_text` equal, or,
+  when `readItemPool` did not return, the outcome as `crash <type>
+  <message>` or `error <message>`; it fails naming the line and both
+  texts, else prints `test_itempool: 267 runs of oracle/item_pools.txt
+  replayed line-identical (<k> crashes)`.
   `test_settings` checks `ladx_settings` (LADXR's `settings.py` at the
   pin, less `seed` and `forwardfactor`) through its header only: the
   table equal to `settings.txt` in order, field by field (key, category,
@@ -745,11 +764,15 @@ e2e` and `e2e-combos`.
   `ladx_randomize` (`ladx/include/ladx_randomizer.h`, `Randomizer.__init__`
   as far as it is ported: so far the seeding, the `race` draw,
   `WorldSetup.randomize` for tier 1 with `buildMaze`, the global
-  generator's copy and the logic built on that world setup) with the
+  generator's copy, the logic built on that world setup, `ItemPool`
+  with `__randomizeRupees` (`ladx/include/ladx_itempool.h`) and
+  `readItemPool`) with the
   run-text trace sink, and writes `<out_dir>/run.txt` in the oracle's
   format, already in its fill projection's form (below): `seed`,
   `settings`, the sections of the stages ported (the 13 `ws` lines once
-  `WorldSetup.randomize` returned, none when it raised), the trace, then the
+  `WorldSetup.randomize` returned, none when it raised; `words_before`,
+  `pool` and `words_after` once `ItemPool` returned, `placer_pool` once
+  `readItemPool` returned), the trace, then the
   `outcome` line once LADXR's outcome is known (none while the run stops
   at the end of the ported stages, `LADX_OUTCOME_UNFINISHED`).
 - `ladx_gen --time <case_dir>` runs the same with no sink and prints only
@@ -794,7 +817,7 @@ order: `init`, `ws`, `pool`, `fill`.
 stages; blank lines and `#` comments skipped) that applies to every case
 of the directory run, cases and combos alike. An unknown stage, a second
 `stage` line, no `stage` line or any other line exits 2. Stage claimed
-now: `ws`.
+now: `pool`.
 
 `python3 -I -B tests/ladx/run_e2e.py [--cases <dir>] [--claims <file>]
 [--gen <binary>] [<case>...]` (defaults `tests/ladx/cases`,

@@ -136,6 +136,8 @@ static int write_run(FILE *out, const Case *c, const LadxRandomizer *r, FILE *tr
 	char short_string[LADX_SETTINGS_SHORT_MAX + 1];
 	const LadxOutcome *outcome = ladx_randomizer_outcome(r);
 	const LadxWorldSetup *ws = ladx_randomizer_world_setup(r);
+	const LadxItemPool *pool, *read = ladx_randomizer_read_pool(r);
+	uint64_t before, after;
 	size_t got;
 	int i;
 
@@ -148,6 +150,13 @@ static int write_run(FILE *out, const Case *c, const LadxRandomizer *r, FILE *tr
 		for (i = 0; i < LADX_RUN_TEXT_WS_LINES; i++)
 			if (!put_line(out, line, ladx_run_text_ws_line(line, sizeof line, ws, i)))
 				return 0;
+	pool = ladx_randomizer_pool(r, &before, &after);
+	if (pool && (!put_line(out, line, ladx_run_text_words_line(line, sizeof line, "words_before", before)) ||
+		     !put_line(out, line, ladx_run_text_pool_line(line, sizeof line, "pool", pool)) ||
+		     !put_line(out, line, ladx_run_text_words_line(line, sizeof line, "words_after", after))))
+		return 0;
+	if (read && !put_line(out, line, ladx_run_text_pool_line(line, sizeof line, "placer_pool", read)))
+		return 0;
 	rewind(trace);
 	while ((got = fread(line, 1, sizeof line, trace)) > 0)
 		if (fwrite(line, 1, got, out) != got)

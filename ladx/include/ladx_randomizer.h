@@ -1,33 +1,14 @@
 #ifndef LADX_RANDOMIZER_H
 #define LADX_RANDOMIZER_H
 
+#include "ladx_itempool.h"
 #include "ladx_logic.h"
+#include "ladx_outcome.h"
 #include "ladx_rng.h"
 #include "ladx_settings.h"
 
 #include <stddef.h>
 #include <stdint.h>
-
-typedef enum LadxOutcomeKind {
-	/* The run stopped at the end of the stages ported so far: LADXR's outcome is not known yet. */
-	LADX_OUTCOME_UNFINISHED = 0,
-	LADX_OUTCOME_OK,
-	LADX_OUTCOME_ERROR, /* LADXR's utils.Error */
-	LADX_OUTCOME_CRASH  /* any other exception LADXR raises */
-} LadxOutcomeKind;
-
-/* type: the exception's type name, CRASH only, else NULL; message: static text, NULL when UNFINISHED or OK. */
-typedef struct LadxOutcome {
-	LadxOutcomeKind kind;
-	const char *type;
-	const char *message;
-} LadxOutcome;
-
-typedef enum LadxRandomizeStatus {
-	LADX_RANDOMIZE_OK = 0,
-	LADX_RANDOMIZE_UNSUPPORTED, /* a value outside tier 1 (goal=bingo*, scope cut goal-bingo) */
-	LADX_RANDOMIZE_BROKEN	    /* a capacity overflow or a logic failure: no outcome, a C bug */
-} LadxRandomizeStatus;
 
 /* Caller-owned; read through the accessors. */
 typedef struct LadxRandomizer {
@@ -37,6 +18,14 @@ typedef struct LadxRandomizer {
 	LadxWorldSetup ws;
 	bool ws_done; /* WorldSetup.randomize returned */
 	LadxLogic logic;
+	LadxItemPool pool;	/* ItemPool's toDict() as built */
+	bool pool_done;
+	uint64_t words_before, words_after;
+	LadxItemPool read_pool; /* what readItemPool returned */
+	bool read_done;
+	LadxItemPool placer_pool; /* the placer's _item_pool */
+	int spots[LADX_LOGIC_SPOT_CAP]; /* the placer's _spots, spot indexes */
+	int spot_count;
 	LadxOutcome outcome;
 } LadxRandomizer;
 
@@ -44,7 +33,7 @@ typedef struct LadxRandomizer {
  * LADXR's Randomizer.__init__ on validated settings and the seed's bytes,
  * every draw of both generators reported to sink (may be NULL) with ctx.
  * Ported so far: the seeding, the race draw, the world setup, the global
- * generator's copy and the logic.
+ * generator's copy, the logic, readItemPool and the placer's addItem calls.
  */
 LadxRandomizeStatus ladx_randomize(LadxRandomizer *r, const LadxSettings *validated, const uint8_t *seed,
 				   size_t seed_len, LadxRngSink sink, void *ctx);
@@ -52,6 +41,14 @@ LadxRandomizeStatus ladx_randomize(LadxRandomizer *r, const LadxSettings *valida
 const LadxOutcome *ladx_randomizer_outcome(const LadxRandomizer *r);
 /* The world setup randomize gave; NULL when it did not return. */
 const LadxWorldSetup *ladx_randomizer_world_setup(const LadxRandomizer *r);
+
+/*
+ * ItemPool's toDict() as built, with rnd's MT word counts when ItemPool was
+ * entered and returned (either may be NULL); NULL when it did not return.
+ */
+const LadxItemPool *ladx_randomizer_pool(const LadxRandomizer *r, uint64_t *words_before, uint64_t *words_after);
+/* readItemPool's result, zero and negative counts kept; NULL when it did not return. */
+const LadxItemPool *ladx_randomizer_read_pool(const LadxRandomizer *r);
 
 /*
  * worldSetup.py WorldSetup.randomize for tier 1 on validated settings,
