@@ -65,7 +65,7 @@
     - [x] Chunk 6: goldens generated and committed
       - [x] KS-match, invariant clearance and budget
       - [x] Goldens committed, README and docs
-  - [ ] Step 2.6 Patch tables
+  - [x] Step 2.6 Patch tables
     - [x] Chunk 1: table format and checks
     - [x] Chunk 2: units, keys and coverage planning
     - [x] Chunk 3: tables built with the ROM
