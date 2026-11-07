@@ -6,3 +6,4 @@ group goal-fixed
 group music-fixed
 group options
 rom-group bank3e
+rom-group title

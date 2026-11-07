@@ -129,7 +129,7 @@
       - [x] Chunk 8: pipeline and ladx_gen --rom
       - [x] Chunk 9: driver, e2e-rom and the real-ROM run
     - [x] Step 3.6.3 bank3e
-    - [ ] Step 3.6.4 title
+    - [x] Step 3.6.4 title
     - [ ] Step 3.6.5 marin
     - [ ] Step 3.6.6 hints
     - [ ] Step 3.6.7 music

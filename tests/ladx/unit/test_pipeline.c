@@ -303,8 +303,9 @@ static void test_errors(void)
 	{
 		const LadxPipelineGroup *g = ladx_pipeline_groups(&count);
 
-		check(count == 1 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom,
-		      "the library registers bank3e, a group that needs the ROM");
+		check(count == 2 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom &&
+			      strcmp(g[1].name, "title") == 0 && g[1].needs_rom,
+		      "the library registers bank3e then title, in LADXR's order, both needing the ROM");
 	}
 }
 

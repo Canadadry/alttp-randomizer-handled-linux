@@ -473,7 +473,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -485,7 +485,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -726,7 +726,8 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   fixed unit with a keep, a copy and a literal, a unit keyed by `music`
   with a `T` record and a pointer) as computed literals for the key, and
   fails the group on a reference beyond the ROM, a unit with no entry or
-  no file; the library's registry is `bank3e`, needing the ROM. It
+  no file; the library's registry is `bank3e` then `title`, both needing
+  the ROM. It
   prints `test_pipeline: <c> checks ok`.
   `test_bank3e` runs the library's registry on a synthetic ROM and a
   planted `bank3e.txt` (a fixed unit and one keyed by `asm:HARD_MODE`):
@@ -737,6 +738,25 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   synthetic entry 0x111's span; bank3e skipped without the ROM, failing
   without its file. It prints `test_bank3e: constants, seed, settings
   string and the 0xBE copy on a synthetic ROM (<c> checks)`.
+  `test_md5` checks `ladx_md5.h` against RFC 1321's seven test-suite
+  strings, inputs of 0 to 129 bytes around the padding boundaries split
+  at every position, and one million `a`.
+  `test_background` checks `ladx_background.h` on hand-built backgrounds:
+  decoding literal, repeated and vertical runs (a missing terminator or a
+  cut run refused); `store`'s encoder (expectations printed by LADXR's own
+  `BackgroundEditor.store` on the same tiles): repeat or literal by
+  `same > different - 4 and same > 2`, both counts capped at 0x40, gaps
+  splitting runs, the output cap, an empty map or a run at 0x10000
+  refused; and a round trip.
+  `test_title` checks `_encode`'s table, the seed number (hex, the MD5 of
+  a non-hex text, bytes over 0x7F as `?`), `ladx_title_edit` on four
+  synthetic backgrounds against the bytes LADXR's own `setRomInfo` stored
+  on a fake ROM holding them (a hex seed, `Race`, a non-hex text), and
+  the group through the library's registry on a synthetic ROM: `B 7 52`
+  (`01` on `race=1`), then backgrounds 3 and 4 of the tiles and the
+  attributes, each record's tokens resolved against the synthetic ROM
+  equal to its entry decoded, edited and re-encoded; skipped without the
+  ROM.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -981,7 +1001,8 @@ when it needs the ROM and none is given; then `ladx_enc_end`. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e` (`ladx/include/ladx_groups.h`).
+`rom-group` of `claims.txt`: today `bank3e` and `title`, in LADXR's order
+(`ladx/include/ladx_groups.h`).
 
 A group's `run` takes the encoder and the pipeline itself (tables,
 settings, spot count, randomizer, parsed ROM, `ctx`, and the `scratch`,
@@ -994,6 +1015,23 @@ the group has no file, a unit has no entry, a reference falls outside
 the ROM (or there is none), or the encoder refuses.
 `ladx_enc_entry_value` gives an entry's current bytes and origins, and
 `ladx_randomizer_seed` the seed's first 32 bytes.
+
+**`title`** (`setRomInfo`): bank 0 offset 7 written `0x01` on `race`,
+else `0x52`; then backgrounds 3 and 4, for each the tiles then the
+attributes entry, as LADXR stores them: the entry's current value
+decoded by `ladx_background.h` (`BackgroundEditor`, in the pipeline's
+`background` scratch), edited by `ladx_title_edit` and re-encoded by
+`store`'s greedy encoder, written by `ladx_enc_table` with no origin (the
+oracle's `store` builds a plain `bytearray`; the encoder's rule gives the
+references). The text is the seed's upper-case hex (lines of 16 at
+0x9A01 and 0x9A21; attributes 0 there), or `Race`; the guards
+(0x9820/0x9840/0x9860 + 0x09..0x13) become 0x7F, 0xA0/0xA1 and 0xA2; the
+pattern takes five symbols `0xA0 + 4 * (sn % 14)` and palettes `0x08 |
+(sn' % 8)` from `ladx_title_seed_number`, the hex seed's value (or a
+non-hex text's MD5, `ladx_md5.h`) modulo 112^5, all the pattern reads.
+LADXR's version text is empty (`ladxr.patch`), so it writes nothing.
+Not ported, unreachable at the pin: `int()`'s other syntax, a string
+`race`, and a seed over 32 bytes (the randomizer keeps no more).
 
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
@@ -1036,7 +1074,7 @@ e2e` and `e2e-combos`.
   spot count, the library's pipeline ("Pipeline") walks `order.txt`:
   each selected entry's records through the encoder's `fixed` calls
   under its unit's group, and at `C` rows the library's ported groups
-  (without `--rom` none, since `bank3e` needs the ROM, so consecutive
+  (without `--rom` none, since `bank3e` and `title` need the ROM, so consecutive
   entries of one group merge into one segment across the `C` rows). The file is a valid version-1 write log, no `I`
   line; the version and `tables` lines are written even when nothing
   else is. Without `--rom` the encoder has no ROM, KS or parsed tables
@@ -1129,7 +1167,7 @@ repeated or `spoiler` group, a group both `group` and `rom-group`, a
 `rom-group` of another side, either refusal or any other line exits 2.
 Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
 `goal-fixed`, `music-fixed` and `options` (the five table groups);
-`rom-group bank3e`.
+`rom-group bank3e` and `rom-group title`.
 
 `python3 -I -B tests/ladx/run_e2e.py [--cases <dir>] [--claims <file>]
 [--gen <binary>] [--tables <dir>] [--inventory <file>] [<case>...]`

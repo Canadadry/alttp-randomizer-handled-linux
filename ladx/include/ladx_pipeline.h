@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "ladx_background.h"
 #include "ladx_encoder.h"
 #include "ladx_ks.h"
 #include "ladx_randomizer.h"
@@ -70,6 +71,7 @@ struct LadxPipeline {
 	LadxAtom scratch[LADX_WLOG_ATOM_MAX]; /* the run's, one record's atoms */
 	uint8_t values[LADX_WLOG_ATOM_MAX];   /* a C group's, one record's bytes */
 	int32_t origins[LADX_WLOG_ATOM_MAX];
+	LadxBackground background; /* a C group's, one background being edited */
 };
 
 /* enc initialised over p->rom's bytes, KS and tables (or none), its log begun. */

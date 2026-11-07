@@ -5,6 +5,7 @@
 
 static const LadxPipelineGroup groups[] = {
 	{"bank3e", 1, ladx_group_bank3e},
+	{"title", 1, ladx_group_title},
 };
 
 const LadxPipelineGroup *ladx_pipeline_groups(int *count)

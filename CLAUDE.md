@@ -47,7 +47,11 @@ in `docs/`, then `README.md`.
   `tests/ladx/README.md`, "Pipeline"); `bank3e.c`, the `C` group
   `bank3e` (`ladx_groups.h`, its constants from `data/ladx/bank3e.txt`),
   tested by `test_bank3e`, claimed `rom-group` by `e2e-rom`, contract in
-  `tests/ladx/README.md`, "Pipeline" and "Patch tables"; `tables.c`, the patch tables' reader, key, walk, records
+  `tests/ladx/README.md`, "Pipeline" and "Patch tables"; `title.c`,
+  the `C` group `title` with `md5.c` and `background.c`
+  (`BackgroundEditor`), tested by `test_title`, `test_md5` and
+  `test_background`, claimed `rom-group` by `e2e-rom`, contract in
+  `tests/ladx/README.md`, "Pipeline"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
