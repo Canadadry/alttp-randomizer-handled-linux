@@ -459,9 +459,9 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `ladx/src/`; pure C99, no allocation, no platform library, nothing of
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
-(`test_sha512`, `test_pyrandom`, `test_settings`), failing through `unit/support.h`'s
-`test_fail` (`<test>: FAIL <message>`, exit 1). Every LADX build, host,
-lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
+(`test_sha512`, `test_pyrandom`, `test_settings`, `test_requirements`),
+failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
+<message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
 one, while CPython never fuses, so `uniform`'s `a + (b - a) * random()`
 would differ in its last bit. Phase 4, which builds `ladx/` into the app,
@@ -507,6 +507,24 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   section 2 lists`, `test_settings: <t> tier-1 values supported alone,
   every other non-default value unsupported` and `test_settings: <c>
   cases and <m> combos parse, survive validate and are supported`.
+  `test_requirements`, synthetic only (no fixture), checks `ladx_items`
+  (LADXR's item names: `locations/items.py`'s 125 in order, then the 37
+  names only `logic/` uses, in first-use order; lookup by name, no
+  `_USED` name) and `ladx_requirements` (LADXR's `logic/requirements.py`)
+  through their headers: `AND`/`OR` folding as `__new__` (a true or false
+  term, all true or all false, no term, `None` terms dropped, `AND(None)`
+  an empty node that passes, an `OR` left empty an assertion that breaks
+  the arena), the stored order (items, then children, duplicates kept),
+  `add` (by name or by identity) and `remove` (first occurrence) seen
+  through every reference to a shared node, the inventory (present after
+  a zero-count add, `RUPEES_<n>` adding `n × count` to `RUPEES`), `COUNT`,
+  `COUNTS` and `FOUND` thresholds, `getItems` (nothing for a satisfied
+  node, a bare item always) and the node and term capacities (the first
+  overflow breaks the arena, which then builds nothing). Each expectation
+  cites its LADXR line; requirements are compared as `ladx_oracle`'s
+  `requirement_text`. It prints `test_requirements: <n> item names;
+  folding, stored order, add and remove on shared nodes, inventory, test
+  and getItems ok (<c> checks)`.
 - `make -C tests/ladx lint` (run by the root `make lint`, after
   `tests/alttp`'s): every `ladx/src` source compiled with `-pedantic-errors`
   added, then `lint: <n> ladx/ sources build with -pedantic-errors`.
