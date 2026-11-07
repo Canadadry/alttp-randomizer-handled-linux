@@ -473,7 +473,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -485,7 +485,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -729,9 +729,9 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   fixed unit with a keep, a copy and a literal, a unit keyed by `music`
   with a `T` record and a pointer) as computed literals for the key, and
   fails the group on a reference beyond the ROM, a unit with no entry or
-  no file; the library's registry is `bank3e`, `marin`, `hints` then
-  `title`, `hints` alone needing no ROM and `marin` alone with a draw-only
-  run. It
+  no file; the library's registry is `bank3e`, `marin`, `hints`, `music`
+  then `title`, `hints` alone needing no ROM and `marin` and `music` alone
+  with a draw-only run. It
   prints `test_pipeline: <c> checks ok`.
   `test_bank3e` runs the library's registry on a synthetic ROM and a
   planted `bank3e.txt` (a fixed unit and one keyed by `asm:HARD_MODE`):
@@ -801,6 +801,22 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   draws, both generators where those leave them; and the walk failing
   without the generators. It prints `test_hints: addHints on planted
   spots, the group on the baseline seed (<c> checks)`.
+  `test_music` checks `ladx_music_randomize` with `rnd` seeded
+  `b"ladx-music-<k>"`, `k` 1 to 3: the 0x120 bytes' SHA-1 equal to that
+  of LADXR's own `randomizeMusic` at the pin on a fake bank 0x02, every
+  byte a looping track, and the generator's next `random()` equal (as
+  many words drawn); then the group through the library's registry on a
+  synthetic ROM with `music=random` on the baseline case's seed, bank
+  0x02's bytes made 0xFF and a planted KS of one 4-byte bank span holding
+  East Tal Tal's track four times: one `music` segment whose records,
+  resolved against the ROM, give the table `ladx_music_randomize` draws
+  from the randomizer's own `rnd`, every byte once, each run equal to the
+  KS span a copy of it (at least East Tal Tal's two rows); with `music`
+  default, `off` or `shifted`, with or without the ROM, nothing written
+  and nothing drawn; without the ROM nothing written but `rnd` drawn as
+  with it; failing without the generators, with or without the ROM. It
+  prints `test_music: randomizeMusic against LADXR, the group on a
+  synthetic ROM (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1049,8 +1065,8 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints` and `title`, in LADXR's order,
-`hints` alone needing no ROM and `marin` alone with a `draw`
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music` and `title`, in LADXR's order,
+`hints` alone needing no ROM and `marin` and `music` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
 A group's `run` takes the encoder and the pipeline itself (tables,
@@ -1120,6 +1136,23 @@ the ROM, `marin`'s `draw` runs `getMarinStartingText` alone (the 59
 shortened texts draw nothing and cannot raise), so a ROM-free run raises
 on the same seed with the same outcome.
 
+**`music`** (`patches.music.randomizeMusic`, `ladx_music_randomize`), only
+when `music` is `random` (else nothing drawn or written; `off` and
+`shifted` are the `music-fixed` table group): for each of the 25
+`_OVERWORLD_MUSIC_REGIONS` in order, `rnd.choice` of the 63
+`_LOOPING_MUSIC` tracks written to every room of the region (bank 0x02
+0x00..0xFF, every room once), then 32 more choices for bank 0x02
+0x100..0x11F (stage `patches.music:randomizeMusic`). The 0x120 bytes
+are written by one `ladx_enc_bank` with no origin: each byte is written
+once, so its encoding depends only on its own offset's state, as in
+LADXR's byte-by-byte order. The library holds LADXR's lists as runs of
+consecutive tracks and as rectangles of the 16x16 overworld (room `16y +
+x`), whose byte lists match ROM runs. It needs the ROM: its region runs repeat a track 4 or
+more times, which KS-match turns into copies of KS runs (`music-random`
+and `sample-05`'s goldens), so it is a `rom-group` with its trace lines.
+Its `draw` makes the 57 draws without the ROM, writing nothing, so every
+later draw keeps its number in `run.txt` ROM-free.
+
 **`hints`** (`hints.addHints`, `ladx_hints_add`): the placed logic's
 spots in `iteminfo_list` order, as (`name_id`, `item`, its
 `checkMetadata` area), filtered to the 25 `hint_items` and stably sorted
@@ -1184,7 +1217,7 @@ e2e` and `e2e-combos`.
   spot count, the library's pipeline ("Pipeline") walks `order.txt`:
   each selected entry's records through the encoder's `fixed` calls
   under its unit's group, and at `C` rows the library's ported groups
-  (without `--rom` `hints` and `marin`'s draws, since `bank3e`, `marin` and `title` need the ROM, so consecutive
+  (without `--rom` `hints` and `marin`'s and `music`'s draws, since `bank3e`, `marin`, `music` and `title` need the ROM, so consecutive
   entries of one group merge into one segment across the `C` rows). The file is a valid version-1 write log, no `I`
   line; the version and `tables` lines are written even when nothing
   else is. Without `--rom` the encoder has no ROM, KS or parsed tables
@@ -1277,13 +1310,14 @@ repeated or `spoiler` group, a group both `group` and `rom-group`, a
 `rom-group` of another side, either refusal or any other line exits 2.
 Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
 `goal-fixed`, `music-fixed` and `options` (the five table groups) and
-`hints`; `rom-group bank3e`, `rom-group marin` and `rom-group title`.
+`hints`; `rom-group bank3e`, `rom-group marin`, `rom-group music` and
+`rom-group title`.
 
 A claimed `C` group that draws also claims its `trace` lines: those of
 `run.txt` whose stage (the 4th field) is one of its LADXR frames
 (`run_e2e.py`'s `GROUP_TRACE`; today `marin`:
 `patches.aesthetics:getMarinStartingText` and `utils:randomNumber`;
-`hints`: `hints:addHints`),
+`hints`: `hints:addHints`; `music`: `patches.music:randomizeMusic`),
 whole (number, generator, arguments, result, words) and in order,
 golden against C, wherever they fall in the trace. They are claimed with
 the group: by `e2e` for a `group` line, by `e2e-rom` for a `rom-group`

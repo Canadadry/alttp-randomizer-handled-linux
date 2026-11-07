@@ -132,7 +132,7 @@
     - [x] Step 3.6.4 title
     - [x] Step 3.6.5 marin
     - [x] Step 3.6.6 hints
-    - [ ] Step 3.6.7 music
+    - [x] Step 3.6.7 music
     - [ ] Step 3.6.8 endscreen
     - [ ] Step 3.6.9 notext
     - [ ] Step 3.6.10 goal

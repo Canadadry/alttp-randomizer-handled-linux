@@ -59,7 +59,10 @@ in `docs/`, then `README.md`.
   the ROM too, contract in `tests/ladx/README.md`, "Pipeline";
   `hints.c`, the `C` group `hints` (`addHints`), tested by `test_hints`,
   claimed `group` by `e2e` with its trace lines, contract in
-  `tests/ladx/README.md`, "Pipeline"; `tables.c`, the patch tables' reader, key, walk, records
+  `tests/ladx/README.md`, "Pipeline"; `music.c`, the `C` group `music`
+  (`randomizeMusic`), tested by `test_music`, claimed `rom-group` by
+  `e2e-rom` with its trace lines, its draws run without the ROM too,
+  contract in `tests/ladx/README.md`, "Pipeline"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");

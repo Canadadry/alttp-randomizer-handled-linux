@@ -339,12 +339,13 @@ static void test_errors(void)
 	{
 		const LadxPipelineGroup *g = ladx_pipeline_groups(&count);
 
-		check(count == 4 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
+		check(count == 5 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
 			      strcmp(g[1].name, "marin") == 0 && g[1].needs_rom && g[1].draw &&
 			      strcmp(g[2].name, "hints") == 0 && !g[2].needs_rom && !g[2].draw &&
-			      strcmp(g[3].name, "title") == 0 && g[3].needs_rom && !g[3].draw,
-		      "the library registers bank3e, marin, hints then title, in LADXR's order, hints alone "
-		      "ROM-free, marin drawing without the ROM");
+			      strcmp(g[3].name, "music") == 0 && g[3].needs_rom && g[3].draw &&
+			      strcmp(g[4].name, "title") == 0 && g[4].needs_rom && !g[4].draw,
+		      "the library registers bank3e, marin, hints, music then title, in LADXR's order, hints "
+		      "alone ROM-free, marin and music drawing without the ROM");
 	}
 }
 

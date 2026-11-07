@@ -84,6 +84,24 @@ LadxHintsStatus ladx_hints_add(LadxRng *rnd, const LadxHintSpot *spots, size_t c
 			       void *ctx, LadxOutcome *raised);
 
 /*
+ * patches/music.py randomizeMusic, when music is random: bank 0x02 bytes
+ * 0x000..0x11F written in one record, with no origin. Needs
+ * p->rnd and p->rom; draws nothing and writes nothing on another music.
+ */
+int ladx_group_music(LadxEncoder *enc, LadxPipeline *p);
+
+/* music's draws without the ROM: the same draws, nothing written. */
+int ladx_group_music_draws(LadxEncoder *enc, LadxPipeline *p);
+
+#define LADX_MUSIC_TRACK_COUNT 63  /* _LOOPING_MUSIC */
+#define LADX_MUSIC_REGION_COUNT 25 /* _OVERWORLD_MUSIC_REGIONS */
+#define LADX_MUSIC_SLOT_COUNT 0x20
+#define LADX_MUSIC_TABLE_SIZE 0x120 /* bank 0x02 0x000..0x11F, every byte randomizeMusic writes */
+
+/* randomizeMusic(rom, rnd) on table, bank 0x02's first 0x120 bytes; table untouched on a failed draw. */
+LadxRngStatus ladx_music_randomize(LadxRng *rnd, uint8_t table[LADX_MUSIC_TABLE_SIZE]);
+
+/*
  * patches/titleScreen.py setRomInfo: bank 0 offset 7 (0x01 on race, else
  * 0x52), then title backgrounds 3 and 4, tiles then attributes, each
  * decoded, edited by ladx_title_edit and re-encoded, with no origin. The

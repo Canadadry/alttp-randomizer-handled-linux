@@ -8,4 +8,5 @@ group options
 group hints
 rom-group bank3e
 rom-group marin
+rom-group music
 rom-group title
