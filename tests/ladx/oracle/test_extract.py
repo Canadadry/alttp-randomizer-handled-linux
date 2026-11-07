@@ -338,13 +338,26 @@ class Guard(unittest.TestCase):
 TILES = {(4, 1): {0x9800: 1, 0x9801: 2, 0x9802: 3, 0x9820: 7, 0x9840: 7}}
 
 
+def ladxr_like(model):
+    """A store result shaped as ladxr_store's, from a model's."""
+    return extract.StoreModel(dict(model.writes), [(t, bank, start, length)
+                                                   for t, _, bank, start, length in
+                                                   model.placements])
+
+
 class Verify(unittest.TestCase):
     def setUp(self):
-        self.rom = synthetic_rom()
-        self.fixtures = extract.from_rom(self.rom, regions(), LAYOUT, BOSSES, FLAGS)
+        rom = bytearray(synthetic_rom())
+        rom[2 * BANK + 0x103:2 * BANK + 0x105] = b"\x05\xff"
+        self.rom = bytes(rom)
+        room = regions()
+        room[0] = [(1, 0x100, 0x120)]
+        self.fixtures = extract.from_rom(self.rom, room, LAYOUT, BOSSES, FLAGS)
+        self.stored = ladxr_like(extract.store_model(self.fixtures, LAYOUT))
 
     def verify(self, tiles=TILES):
-        return extract.verify(self.fixtures, self.rom, tiles, LAYOUT, BOSSES, FLAGS)
+        return extract.verify(self.fixtures, self.rom, tiles, self.stored, LAYOUT, BOSSES,
+                              FLAGS)
 
     def bad(self, tiles=TILES):
         return [line for line in self.verify(tiles)[0] if not line.startswith("ok ")]
@@ -359,7 +372,23 @@ class Verify(unittest.TestCase):
     def test_the_fixtures_of_a_rom_verify_against_it(self):
         ks = extract.known_source.build(self.rom, LAYOUT, BOSSES)
         self.assertEqual(self.verify(), (["ok ks", "ok flags", "ok bosses", "ok backgrounds",
-                                          "ok fingerprints"], len(ks.spans), len(ks)))
+                                          "ok fingerprints", "ok store"], len(ks.spans),
+                                         len(ks)))
+
+    def test_a_packing_unlike_ladxr_s_is_named_by_entry_and_offset(self):
+        self.stored.placements[1] = self.stored.placements[1][:2] + (0x120, 3)
+        self.stored.writes[2 * BANK + 1] ^= 1
+        del self.stored.writes[BANK]
+        self.stored.writes[0x77] = 0
+        self.assertEqual(self.bad(), [
+            "BAD store: table 0 entry 0: placed at another span",
+            "BAD store: offset 77: not written by the model",
+            "BAD store: offset 4000: not written by LADXR",
+            "BAD store: offset 8001: another byte"])
+
+    def test_an_entry_the_fixtures_give_no_content_is_named(self):
+        self.set_entry(1, 2, dedup=None)
+        self.assertEqual(self.bad(), ["BAD store: no content for table 1 entry 2"])
 
     def test_a_ks_span_rebuilt_wrong_or_left_out_is_named(self):
         self.set_entry(3, 1, extra=[0x34, 0x35, 0x36, 0x38])
@@ -389,7 +418,9 @@ class Verify(unittest.TestCase):
         self.set_entry(2, 1, extra=[first[0], self.entry(2, 1).extra[1]])
         self.assertEqual(self.bad(), [
             "BAD fingerprints: table 2 entry 1 suffix 0: not the hash of its suffix",
-            "BAD fingerprints: table 2 entry 1 suffix 0: shared with another suffix"])
+            "BAD fingerprints: table 2 entry 1 suffix 0: shared with another suffix",
+            "BAD store: table 2: 1 entries placed, LADXR 2",
+            "BAD store: offset c002: another byte"])
 
 
 INVENTORY = """# Inventory
@@ -399,6 +430,152 @@ INVENTORY = """# Inventory
 | Name | Group | Holds | Derived from | Format |
 |---|---|---|---|---|
 """ + "".join("| %s | g | h | d | f |\n" % name for name in extract.NAMES)
+
+
+def suffixes(data):
+    """The suffix keys store_table takes for data: each suffix's own bytes."""
+    return [bytes(data[i:]) for i in range(len(data))]
+
+
+TEXTS = {"count": 3, "pointers_bank": 3, "pointers_addr": 0x10, "banks_bank": 3,
+         "banks_addr": 0x200}
+
+
+class StoreTable(unittest.TestCase):
+    def test_each_entry_goes_to_the_first_region_of_its_bank_with_room(self):
+        regions = [(4, 0x100, 0x103), (3, 0x080, 0x090), (4, 0x200, 0x210)]
+        entries = {0: (4, suffixes(b"abcd")), 1: (4, suffixes(b"xy")), 2: (3, suffixes(b"z"))}
+        got = extract.store_table(TEXTS, regions, entries)
+        self.assertEqual(got.placements, [(0, 4, 0x200, 4), (1, 4, 0x100, 2), (2, 3, 0x080, 1)])
+        at = 3 * BANK + 0x10
+        self.assertEqual(got.writes, {at: 0x00, at + 1: 0x42, at + 2: 0x00, at + 3: 0x41,
+                                      at + 4: 0x80, at + 5: 0x40})
+        self.assertEqual(got.leftover, [(4, 0x102, 0x103), (3, 0x081, 0x090),
+                                        (4, 0x204, 0x210)])
+
+    def test_an_entry_equal_to_a_suffix_stored_last_points_inside_it(self):
+        regions = [(4, 0x100, 0x110)]
+        entries = {0: (4, suffixes(b"abc")), 1: (4, suffixes(b"xbc")), 2: (4, suffixes(b"bc"))}
+        got = extract.store_table(TEXTS, regions, entries)
+        self.assertEqual(got.placements, [(0, 4, 0x100, 3), (1, 4, 0x103, 3)])
+        self.assertEqual(got.writes[3 * BANK + 0x14], 0x04)
+        self.assertEqual(got.leftover, [(4, 0x106, 0x110)])
+
+    SPRITES = {"count": 3, "pointers_bank": 5, "pointers_addr": 0x20, "data_bank": 5,
+               "data_addr": 0x100, "data_size": 4}
+
+    def test_sprite_data_get_an_index_byte_and_equal_entries_share_a_slot(self):
+        regions = [(5, 0x104, 0x110)]
+        entries = {0: (5, suffixes(b"abcd")), 1: (5, suffixes(b"efgh")),
+                   2: (5, suffixes(b"abcd"))}
+        got = extract.store_table(self.SPRITES, regions, entries)
+        self.assertEqual(got.placements, [(0, 5, 0x104, 4), (1, 5, 0x108, 4)])
+        at = 5 * BANK + 0x20
+        self.assertEqual(got.writes, {at: 1, at + 1: 2, at + 2: 1})
+
+    def test_a_sprite_slot_off_the_grid_or_past_index_255_is_refused(self):
+        for regions in ([(5, 0x102, 0x110)], [(5, 0x100 + 4 * 256, 0x100 + 4 * 257)]):
+            with self.subTest(regions=regions), self.assertRaises(extract.StoreError):
+                extract.store_table(self.SPRITES, regions, {0: (5, suffixes(b"abcd"))})
+
+    ROOMS = {"count": 2, "pointers_bank": 1, "pointers_addr": 0, "data_bank": 1,
+             "alt_pointers": {"Alt06": (0, 0x10), "Alt0E": (0, 0x20)}}
+
+    def test_alt_entries_go_first_and_are_never_shared(self):
+        regions = [(1, 0x100, 0x110)]
+        entries = {"Alt06": (1, suffixes(b"ab")), "Alt0E": (1, suffixes(b"ab")),
+                   0: (1, suffixes(b"ab")), 1: (1, suffixes(b"b"))}
+        got = extract.store_table(self.ROOMS, regions, entries)
+        self.assertEqual(got.placements, [("Alt06", 1, 0x100, 2), ("Alt0E", 1, 0x102, 2),
+                                          (0, 1, 0x104, 2)])
+        at = BANK
+        self.assertEqual(got.writes, {0x10: 0x00, 0x11: 0x41, 0x20: 0x02, 0x21: 0x41,
+                                      at: 0x04, at + 1: 0x41, at + 2: 0x05, at + 3: 0x41})
+
+    def test_an_integer_pointer_is_written_with_bit_14_set(self):
+        got = extract.store_table(TEXTS, [(4, 0x100, 0x110)], {0: 0x1234, 1: 0x0005, 2: 0x8001})
+        at = 3 * BANK + 0x10
+        self.assertEqual(got.writes, {at: 0x34, at + 1: 0x52, at + 2: 0x05, at + 3: 0x40,
+                                      at + 4: 0x01, at + 5: 0xC0})
+        self.assertEqual(got.placements, [])
+
+    def test_an_entry_with_no_room_in_its_bank_is_refused(self):
+        with self.assertRaises(extract.StoreError):
+            extract.store_table(TEXTS, [(4, 0x100, 0x102), (3, 0x100, 0x110)],
+                                {0: (4, suffixes(b"abc"))})
+
+
+def store_fixtures():
+    """Planted fixtures of STORE_LAYOUT: texts, entities (one not rebuilt, named by its
+    de-duplication only), the two sprite data tables."""
+    Save, Entry, Section = extract.SaveEntry, extract.Entry, extract.Section
+    texts = {0: Save(3, 4, 0x100, 3, None, None, fingerprints(b"abc")),
+             1: Save(3, 4, 0x101, 2, None, (0, 1), fingerprints(b"bc"))}
+    entities = {0: Save(1, 2, 0x100, 3, None, None, None),
+                1: Save(1, 2, 0x102, 1, None, (0, 2), None),
+                2: Save(1, 2, 0x101, 2, None, (0, 1), None)}
+    overworld = {k: Save(1, 5, 0x100 + 4 * i, 4, None, None if k < 2 else (0, 0), list(v))
+                 for k, (i, v) in enumerate([(0, b"abcd"), (1, b"efgh"), (0, b"abcd")])}
+    indoor = {k: Save(1, 5, 0x10C + 4 * k, 4, None, None, list(v))
+              for k, v in enumerate([b"ijkl", b"mnop", b"qrst"])}
+    return {
+        "save-layout": [Section(0, [(4, 0x100, 0x110)], texts),
+                        Section(1, [(2, 0x100, 0x110)], entities),
+                        Section(2, [(5, 0x100, 0x10C)], overworld),
+                        Section(3, [(5, 0x10C, 0x114)], indoor)],
+        "room-entities": {(1, 0): Entry(1, 2, 0x100, 3, [(1, 2, 0x10)]),
+                          (1, 1): Entry(1, 2, 0x102, 1, [])},
+        "room-objects": {}, "backgrounds": {},
+    }
+
+
+STORE_LAYOUT = [
+    Table("texts", {"count": 2, "pointers_bank": 3, "pointers_addr": 0x10, "banks_bank": 3,
+                    "banks_addr": 0x200}, "text", None),
+    Table("entities", {"count": 3, "pointers_bank": 2, "pointers_addr": 0, "data_bank": 2},
+          "data", range(2)),
+    Table("room_sprite_data_overworld", {"count": 3, "pointers_bank": 5, "pointers_addr": 0x20,
+                                         "data_bank": 5, "data_addr": 0x100, "data_size": 4},
+          "sprite", "all"),
+    Table("room_sprite_data_indoor", {"count": 3, "pointers_bank": 5, "pointers_addr": 0x30,
+                                      "data_bank": 5, "data_addr": 0x10C, "data_size": 4},
+          "sprite", "all"),
+]
+
+
+class StoreModel(unittest.TestCase):
+    def test_the_unchanged_tables_pack_as_ladxr_s_save_would(self):
+        got = extract.store_model(store_fixtures(), STORE_LAYOUT)
+        self.assertEqual(got.placements, [(0, 0, 4, 0x100, 3), (1, 0, 2, 0x100, 3),
+                                          (2, 0, 5, 0x100, 4), (2, 1, 5, 0x104, 4),
+                                          (3, 0, 5, 0x108, 4), (3, 1, 5, 0x10C, 4),
+                                          (3, 2, 5, 0x110, 4)])
+        t, e, s = 3 * BANK + 0x10, 2 * BANK, 5 * BANK
+        self.assertEqual(got.writes, {
+            t: 0x00, t + 1: 0x41, t + 2: 0x01, t + 3: 0x41,
+            e: 0x00, e + 1: 0x41, e + 2: 0x02, e + 3: 0x41, e + 4: 0x01, e + 5: 0x41,
+            s + 0x20: 0, s + 0x21: 1, s + 0x22: 0,
+            0x0DFA: 0x21, 0x0DFB: 0x08, 0x0DFC: 0x41,
+            s + 0x30: 0, s + 0x31: 1, s + 0x32: 2})
+
+    def test_a_changed_entry_is_packed_by_its_bytes_and_shifts_what_follows(self):
+        got = extract.store_model(store_fixtures(), STORE_LAYOUT,
+                                  {(1, 0): b"\x33\x44\xff", (2, 1): b"abcd"})
+        self.assertEqual([p for p in got.placements if p[0] in (1, 2)],
+                         [(1, 0, 2, 0x100, 3), (1, 2, 2, 0x103, 2), (2, 0, 5, 0x100, 4)])
+        self.assertEqual(got.writes[0x0DFB], 0x04)
+        self.assertEqual([p for p in got.placements if p[0] == 3][0], (3, 0, 5, 0x104, 4))
+
+    def test_a_leftover_apart_from_the_indoor_regions_is_used_first(self):
+        fixtures = store_fixtures()
+        layout = fixtures["save-layout"]
+        layout[2] = layout[2]._replace(regions=[(5, 0x100, 0x110)])
+        layout[3] = layout[3]._replace(regions=[(5, 0x120, 0x12C)])
+        got = extract.store_model(fixtures, STORE_LAYOUT)
+        self.assertEqual([p for p in got.placements if p[0] == 3],
+                         [(3, 0, 5, 0x108, 4), (3, 1, 5, 0x10C, 4), (3, 2, 5, 0x120, 4)])
+        s = 5 * BANK
+        self.assertEqual([got.writes[s + 0x30 + k] for k in range(3)], [0, 1, 6])
 
 
 class Check(unittest.TestCase):

@@ -83,8 +83,10 @@ in `docs/`, then `README.md`.
   the extraction fixtures `tests/ladx/extract/` (Phase 2 step 7,
   documented in `tests/ladx/README.md`, "Extraction fixtures"; `parse`,
   `render`, `read`, `write`, the ROM-free KS rebuild `ks_spans` and
-  `ks_rebuild`, `check`, and with the ROM `generate`, driven by
-  `gen_extract.sh`, and `verify`),
+  `ks_rebuild`, the ROM-free model of `PointerTable.store`
+  `store_table` and of `ROMWithTables.save`'s stores `store_model`,
+  `check`, and with the ROM `generate`, driven by `gen_extract.sh`, and
+  `verify`),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
   hand-written inputs `tier1.txt`,
@@ -236,8 +238,11 @@ in `docs/`, then `README.md`.
   `parse` (the check above), `ks` (the known-source map rebuilt from the
   six files alone equal to `known_source.build(rom)`, span by span and
   byte by byte), `flags`, `bosses`, `backgrounds` (tile maps against
-  `BackgroundEditor`) and `fingerprints` (each the first 8 bytes of SHA-512
-  of its ROM suffix, no two suffixes sharing one), then `extract-verify: 6
+  `BackgroundEditor`), `fingerprints` (each the first 8 bytes of SHA-512
+  of its ROM suffix, no two suffixes sharing one) and `store` (`store_model`
+  driven by the fixtures alone, every placement, pointer byte and the
+  `ld hl` at 0x0DFA equal to LADXR's own `ROMWithTables.save` stores of
+  the unchanged tables, the file write skipped), then `extract-verify: 6
   files, <k> KS spans, <b> KS bytes rebuilt, <n> bad`, exit 1 on any bad;
   about 1 s.
 - The LADX oracle, outside the net (it needs git, the network for GitHub and

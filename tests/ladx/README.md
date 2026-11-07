@@ -400,10 +400,31 @@ the pin (`oracle/setup.sh`), else a `setup:` line (exit 2):
   `parse` (the check above), `ks` (the map rebuilt from the six files
   equal to `known_source.build(rom)`, span by span and byte by byte),
   `flags`, `bosses`, `backgrounds` (each tile map equal to
-  `BackgroundEditor`'s) and `fingerprints` (each the hash of its ROM
-  suffix, no two suffixes sharing one), then `extract-verify: 6 files, <k>
+  `BackgroundEditor`'s), `fingerprints` (each the hash of its ROM
+  suffix, no two suffixes sharing one) and `store` (below), then
+  `extract-verify: 6 files, <k>
   KS spans, <b> KS bytes rebuilt, <n> bad` (exit 1 on any bad). About
   1 s.
+
+**Store model.** `extract.py`'s `store_table` is LADXR's
+`PointerTable.store` without the ROM: the alt pointers first, then every
+entry in index order into the first region of its bank with room (regions
+in `save-layout`'s order, LADXR's sorted by start), an entry whose first
+suffix is already registered in its bank pointing there; every suffix of a
+stored entry is registered (the last stored wins), only the whole entry for
+sprite data; an integer pointer is written back with `| 0x4000`, a sprite
+data pointer as its index from `data_addr`. Entries are compared by the
+fingerprints of their suffixes: `save-layout`'s for texts and backgrounds,
+those of the bytes the room files' fields rebuild, the sprite data values,
+and for an entry the room files do not rebuild (entities 0x316..0x31F)
+those of the entry its de-duplication names. `store_model` runs the eleven
+tables in `ROMWithTables.save`'s order: the overworld sprite data's
+leftover is added to the indoor regions (`addStorage`'s merge), its first
+region's start becomes the indoor `data_addr` and the `ld hl` at 0x0DFA
+(`0x21`, then that start `| 0x4000`, little-endian); an optional
+`{(table, key): bytes or integer pointer}` replaces changed entries.
+`verify`'s `store` check compares its placements and written bytes with
+LADXR's own `save` on a fresh parse (the file write skipped).
 
 The files are committed only as `gen_extract.sh`'s output, in a commit of
 their own, never edited by hand.

@@ -6,7 +6,8 @@
 The extraction fixtures, tests/ladx/extract/: the source ROM's structure the inventory's
 Extractions table names, so that C rebuilds the known-source map KS (known_source.py) and makes
 the C groups' decisions without the ROM. This module is their format (`parse`, `render`, `read`,
-`write`), the KS rebuild from the fixtures alone (`ks_spans`, `ks_rebuild`), `check`, the
+`write`), the KS rebuild from the fixtures alone (`ks_spans`, `ks_rebuild`), the store model
+(`store_table`, `store_model`: ROMWithTables.save's packing from the fixtures alone), `check`, the
 ROM-free check against the inventory, `from_rom` and `generate`, the generator, and `verify`.
 The layout of each file is in tests/ladx/README.md ("Extraction fixtures").
 
@@ -29,8 +30,9 @@ literal run is found (else exit 1, nothing written, offsets and lengths only).
 
 `verify` (ROM and LADXR, else `setup:`) prints `ok <check>` or `BAD <check>: <detail>` for parse
 (the check above), ks (the map rebuilt from the fixtures equal to known_source.build(rom), span
-by span and byte by byte), flags, bosses, backgrounds (tile maps against BackgroundEditor) and
-fingerprints (each the hash of its ROM suffix, no two suffixes sharing one), then
+by span and byte by byte), flags, bosses, backgrounds (tile maps against BackgroundEditor),
+fingerprints (each the hash of its ROM suffix, no two suffixes sharing one) and store (the store
+model's placements and written bytes equal to LADXR's own ROMWithTables.save stores), then
 `extract-verify: 6 files, <k> KS spans, <b> KS bytes rebuilt, <n> bad`; exit 1 on any bad.
 Never prints a byte value.
 """
@@ -714,6 +716,159 @@ def tile_map(parts):
     return tiles
 
 
+class StoreError(Exception):
+    pass
+
+
+# writes {source offset: byte} of the pointers; placements [(key, bank, start, length)] of the
+# entries stored, in store order; leftover [(bank, start, end)] the regions' room left.
+Stored = collections.namedtuple("Stored", "writes placements leftover")
+
+
+def store_table(info, regions, entries):
+    """LADXR's PointerTable.store without the ROM. info: the table's info; regions [(bank,
+    start, end)] its storage in LADXR's order; entries {key: integer pointer or (bank,
+    suffixes)} in store order (alt keys first), suffixes[i] a hashable equal for equal suffixes
+    from byte i. StoreError when an entry finds no room or no pointer."""
+    storage = [list(region) for region in regions]
+    writes, placements, done = {}, [], collections.defaultdict(dict)
+
+    def place(key, bank, length):
+        for st in storage:
+            if st[0] == bank and st[2] - st[1] >= length:
+                st[1] += length
+                placements.append((key, bank, st[1] - length, length))
+                return st[1] - length
+        raise StoreError("no room for entry %s in bank %d" % (_key_text(key), bank))
+
+    def pointer16(where, pointer):
+        writes[where] = pointer & 0xFF
+        writes[where + 1] = (pointer >> 8) & 0xFF | 0x40
+
+    base, size = info["pointers_bank"] * BANK + info["pointers_addr"], info.get("data_size")
+    for key, (bank, addr) in info.get("alt_pointers", {}).items():
+        pointer16(bank * BANK + addr, place(key, info["data_bank"], len(entries[key][1])))
+    for n, key in enumerate(k for k in entries if not isinstance(k, str)):
+        if isinstance(entries[key], int):
+            pointer16(base + 2 * n, entries[key])
+            continue
+        bank, suffixes = entries[key]
+        pointer = done[bank].get(suffixes[0])
+        if pointer is None:
+            pointer = place(key, bank, len(suffixes))
+            for skip, suffix in enumerate(suffixes if size is None else suffixes[:1]):
+                done[bank][suffix] = pointer + skip
+        if "data_addr" not in info:
+            pointer16(base + 2 * n, pointer)
+            continue
+        index, misaligned = divmod(pointer - info["data_addr"], size or 1)
+        if misaligned or not 0 <= index <= 255:
+            raise StoreError("entry %s at %x has no index" % (_key_text(key), pointer))
+        writes[base + n] = index
+    return Stored(writes, placements, [tuple(st) for st in storage])
+
+
+def _add_storage(regions, extra):
+    """LADXR's PointerTable.addStorage: regions with extra added, merged and sorted by start."""
+    storage = [list(region) for region in regions]
+    for bank, start, end in extra:
+        for st in storage:
+            if st[0] == bank:
+                if st[1] == end:
+                    st[1] = start
+                    break
+                if st[2] == start:
+                    st[2] = end
+                    break
+                if st[1] <= start and st[2] >= end:
+                    break
+        else:
+            storage.append([bank, start, end])
+    merged = True
+    while merged:
+        merged = False
+        for n, m in ((n, m) for n in range(len(storage)) for m in range(len(storage))):
+            if m != n and storage[n][0] == storage[m][0] and \
+                    storage[m][1] - 1 <= storage[n][2] <= storage[m][2]:
+                storage[n][1] = min(storage[n][1], storage[m][1])
+                storage[n][2] = storage[m][2]
+                storage.pop(m)
+                merged = True
+                break
+    return [tuple(st) for st in sorted(storage, key=lambda st: st[1])]
+
+
+def _prints(data):
+    return [fingerprint(data[i:]) for i in range(len(data))]
+
+
+def _source_suffixes(fixtures, layout):
+    """{(t, key): [fingerprint of each suffix]} of every source entry with a span: from
+    save-layout's fingerprints or sprite values, the room files' fields, else the entry it
+    equals by save-layout's de-duplication."""
+    content = {"rooms": fixtures["room-objects"], "data": fixtures["room-entities"],
+               "background": fixtures["backgrounds"]}
+    out = {}
+    for t, table in enumerate(layout):
+        for key, e in fixtures["save-layout"][t].entries.items():
+            if e.raw is not None:
+                continue
+            room = content.get(table.kind, {}).get((t, key))
+            if table.kind == "sprite":
+                keys = _prints(bytes(e.extra))
+            elif e.extra is not None:
+                keys = list(e.extra)
+            elif room is not None and room.known:
+                keys = _prints(known_source.rebuild(table.kind, room.parts))
+            elif e.dedup is not None:
+                keys = out[(t, e.dedup[0])][e.dedup[1]:]
+            else:
+                raise StoreError("no content for %s" % _label(t, key))
+            if len(keys) != e.length:
+                raise StoreError("%s: content not its span's length" % _label(t, key))
+            out[(t, key)] = keys
+    return out
+
+
+StoreModel = collections.namedtuple("StoreModel", "writes placements")
+OVERWORLD_SPRITES, INDOOR_SPRITES = "room_sprite_data_overworld", "room_sprite_data_indoor"
+SPRITE_BASE_LOAD = 0x0DFA
+
+
+def store_model(fixtures, layout=LAYOUT, changed=None):
+    """ROMWithTables.save's table stores from the fixtures alone ({name: structure}, as `load`
+    gives them): writes {source offset: byte} of every pointer and of the `ld hl` at 0x0DFA,
+    placements [(table, key, bank, start, length)] in store order. changed {(table, key): bytes
+    or integer pointer} replaces those entries; every other entry is the source's."""
+    changed = changed or {}
+    source = _source_suffixes(fixtures, layout)
+    writes, placements, leftover = {}, [], None
+    for t, table in enumerate(layout):
+        section = fixtures["save-layout"][t]
+        entries = {}
+        for key, e in section.entries.items():
+            value = changed.get((t, key))
+            if isinstance(value, (bytes, bytearray)):
+                entries[key] = (e.bank, _prints(bytes(value)))
+            elif value is not None:
+                entries[key] = value
+            else:
+                entries[key] = e.raw if e.raw is not None else (e.bank, source[(t, key)])
+        info, regions = table.info, section.regions
+        if table.name == INDOOR_SPRITES and leftover is not None:
+            regions = _add_storage(regions, leftover)
+            info = dict(info, data_addr=leftover[0][1])
+        stored = store_table(info, regions, entries)
+        writes.update(stored.writes)
+        placements += [(t,) + placement for placement in stored.placements]
+        if table.name == OVERWORLD_SPRITES:
+            leftover = stored.leftover
+            base = leftover[0][1] | 0x4000
+            writes.update({SPRITE_BASE_LOAD: 0x21, SPRITE_BASE_LOAD + 1: base & 0xFF,
+                           SPRITE_BASE_LOAD + 2: base >> 8})
+    return StoreModel(writes, placements)
+
+
 def _verify_ks(fixtures, rom, ks, layout):
     want = {label: (start, rom[start:stop]) for start, stop, label in ks.spans}
     got = {label: (start, data) for start, data, label in ks_spans(fixtures, layout)}
@@ -762,10 +917,40 @@ def _verify_fingerprints(sections, rom, layout):
     return bad
 
 
-def verify(fixtures, rom, tiles, layout=LAYOUT, bosses=BOSSES, flag_bytes=FLAG_BYTES):
+def _verify_store(fixtures, stored, layout):
+    """The differences between the model's packing of the fixtures and stored, LADXR's
+    (ladxr_store's shape): placements per table, then written offsets."""
+    try:
+        model = store_model(fixtures, layout)
+    except StoreError as e:
+        return [str(e)]
+    bad = []
+    for t in range(len(layout)):
+        ours = [p for p in model.placements if p[0] == t]
+        theirs = [p for p in stored.placements if p[0] == t]
+        for (_, key, *span), other in zip(ours, theirs):
+            if tuple(span) != other[1:]:
+                bad.append("%s: placed at another span" % _label(t, key))
+                break
+        else:
+            if len(ours) != len(theirs):
+                bad.append("table %d: %d entries placed, LADXR %d" % (t, len(ours),
+                                                                     len(theirs)))
+    for q in sorted(set(model.writes) | set(stored.writes)):
+        if q not in stored.writes:
+            bad.append("offset %x: not written by LADXR" % q)
+        elif q not in model.writes:
+            bad.append("offset %x: not written by the model" % q)
+        elif model.writes[q] != stored.writes[q]:
+            bad.append("offset %x: another byte" % q)
+    return bad
+
+
+def verify(fixtures, rom, tiles, stored, layout=LAYOUT, bosses=BOSSES, flag_bytes=FLAG_BYTES):
     """(lines, KS spans, KS bytes) of the fixtures ({name: structure}) against the source ROM:
     `ok <check>` or `BAD <check>: <detail>` for ks, flags, bosses, backgrounds (tiles: {(table,
-    key): {address: value}}, LADXR's BackgroundEditor maps) and fingerprints; offsets and labels
+    key): {address: value}}, LADXR's BackgroundEditor maps), fingerprints and store (stored:
+    LADXR's own store of the unchanged tables, as ladxr_store gives it); offsets and labels
     only, never a byte value."""
     ks = known_source.build(rom, layout, bosses)
     want_flags = _source_flags(rom, flag_bytes)
@@ -780,6 +965,7 @@ def verify(fixtures, rom, tiles, layout=LAYOUT, bosses=BOSSES, flag_bytes=FLAG_B
                          if backgrounds.get(k) is None or not backgrounds[k].known
                          or tile_map(backgrounds[k].parts) != tiles.get(k)]),
         ("fingerprints", _verify_fingerprints(fixtures["save-layout"], rom, layout)),
+        ("store", _verify_store(fixtures, stored, layout)),
     ]
     lines = []
     for name, bad in checks:
@@ -940,6 +1126,52 @@ def ladxr_tiles(source, ladxr, layout=LAYOUT):
     return out
 
 
+def ladxr_store(rom_path, ladxr, layout=LAYOUT):
+    """LADXR's own ROMWithTables.save on a fresh parse of the source ROM, the file write
+    skipped: StoreModel(writes {source offset: byte} of every byte written outside the tables'
+    placements, placements [(table, bank, start, length)] of each table's slice writes)."""
+    _ladxr_modules(ladxr)
+    import rom as rom_module
+    source = ladxr_source(rom_path, ladxr)
+    current, placements, offsets = [None], [], set()
+
+    class Bank(bytearray):
+        def __setitem__(self, index, value):
+            if isinstance(index, slice) and current[0] is not None:
+                placements.append((current[0], self.number, index.start,
+                                   index.stop - index.start))
+            elif isinstance(index, slice):
+                offsets.update(self.number * BANK + q for q in range(*index.indices(BANK)))
+            else:
+                offsets.add(self.number * BANK + index)
+            super().__setitem__(index, value)
+
+    banks = []
+    for n, data in enumerate(source.banks):
+        banks.append(Bank(data))
+        banks[-1].number = n
+    source.banks = banks
+
+    def tagged(t, store):
+        def run(rom):
+            current[0] = t
+            try:
+                return store(rom)
+            finally:
+                current[0] = None
+        return run
+
+    for t, table in enumerate(layout):
+        pointer_table = getattr(source, table.name)
+        pointer_table.store = tagged(t, pointer_table.store)
+    real_save, rom_module.ROM.save = rom_module.ROM.save, lambda self, file, name=None: None
+    try:
+        source.save(None, name=None)
+    finally:
+        rom_module.ROM.save = real_save
+    return StoreModel({q: source.banks[q // BANK][q % BANK] for q in offsets}, placements)
+
+
 def ladxr_crosscheck(rom_path, ladxr, rom, source, structures, layout=LAYOUT):
     """MISMATCH lines between the structures and LADXR's own parse: known_source.check_ladxr
     (spans and the RoomEditor round trip), every entry's bytes or integer pointer, RoomEditor's
@@ -1008,7 +1240,8 @@ def verify_tree(root, inventory_text, rom_path, ladxr):
         return lines + ["extract-verify: %d files, 0 KS spans, 0 KS bytes rebuilt, %d bad" % (
             len(NAMES), len(lines))], 1
     fixtures = load(root)
-    found, spans, size = verify(fixtures, rom, ladxr_tiles(ladxr_source(rom_path, ladxr), ladxr))
+    found, spans, size = verify(fixtures, rom, ladxr_tiles(ladxr_source(rom_path, ladxr), ladxr),
+                                ladxr_store(rom_path, ladxr))
     lines = ["ok parse"] + found
     bad = sum(line.startswith("BAD ") for line in lines)
     return lines + ["extract-verify: %d files, %d KS spans, %d KS bytes rebuilt, %d bad" % (

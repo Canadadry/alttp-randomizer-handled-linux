@@ -78,7 +78,7 @@
     - [x] Chunk 2: generator, fixtures and verification
       - [x] Generator, guard and verify
       - [x] Fixtures generated in tests/ladx/extract
-    - [ ] Chunk 3: store model
+    - [x] Chunk 3: store model
     - [ ] Chunk 4: fixture re-run and close
   - [ ] Step 2.8 Nintendo-bytes check over everything committed
   - [ ] Step 2.9 Full-ROM check target
