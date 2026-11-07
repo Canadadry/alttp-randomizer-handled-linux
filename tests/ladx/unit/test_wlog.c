@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define TEST "test_wlog"
-#define OUT_MAX 4096
+#define OUT_MAX (2 * LADX_WLOG_BANK_MAX + 4096)
 
 /* Every expected text below is write_log.render's text of the same net maps. */
 
@@ -202,7 +202,7 @@ static void test_bad_input(void)
 	expect_text("refused records", HEADER);
 }
 
-static LadxAtom big[LADX_WLOG_ATOM_MAX + 1];
+static LadxAtom big[(LADX_WLOG_BANK_MAX > LADX_WLOG_ATOM_MAX ? LADX_WLOG_BANK_MAX : LADX_WLOG_ATOM_MAX) + 1];
 
 /* A record longer than any internal buffer goes out whole. */
 static void test_long_record(void)
@@ -269,6 +269,171 @@ static void test_overflow(void)
 	expect_overflow("after an atom overflow");
 }
 
+/* Parsing and projection ---------------------------------------------------------------------- */
+
+static const char sample_log[] = HEADER "G a\n"
+					"B 10 =2 @400+3 aa\n"
+					"B 20 0102\n"
+					"T texts 5 @30+2 0a\n"
+					"T entities Alt06 p1234\n"
+					"G b\n"
+					"B 11 ff\n"
+					"B 100 @500+4\n"
+					"T texts 5 bb\n"
+					"G a\n"
+					"B 15 @403+2\n"
+					"B 30 =1\n"
+					"T texts 5 cc\n"
+					"T entities 2 p0\n"
+					"I 4 5+1\n"
+					"I 5 0+2\n";
+
+static LadxWlogStatus project(const char *text, const char *group, int *line)
+{
+	out_len = 0;
+	out[0] = '\0';
+	return ladx_wlog_project(&wlog, span(text), span(group), sink, NULL, line);
+}
+
+static void expect_projection(const char *text, const char *group, const char *want)
+{
+	int line = -1;
+	LadxWlogStatus st = project(text, group, &line);
+
+	if (st != LADX_WLOG_OK)
+		test_fail(TEST, "projection of %s: status %d at line %d", group, (int)st, line);
+	if (strcmp(out, want) != 0)
+		test_fail(TEST, "projection of %s: got\n%s---\nwant\n%s---", group, out, want);
+	checks++;
+}
+
+/* Each expected text is write_log.py project's on the same log. */
+static void test_project(void)
+{
+	static const char a[] = HEADER "G a\nB 10 =2 @400+5\nB 20 0102\nB 30 =1\nT texts 5 cc\nT entities 2 p0\n"
+				       "T entities Alt06 p1234\n";
+	static const char b[] = HEADER "G b\nB 11 ff\nB 100 @500+4\nT texts 5 bb\n";
+
+	expect_projection(sample_log, "a", a);
+	expect_projection(sample_log, "b", b);
+	expect_projection(sample_log, "c", HEADER);
+	expect_projection(a, "a", a);
+	expect_projection(HEADER "G a\nT texts 0\n", "a", HEADER "G a\nT texts 0\n");
+}
+
+static void test_groups_of_log(void)
+{
+	LadxSpan names[4];
+	int count = -1, line = -1;
+
+	check(ladx_wlog_groups(span(sample_log), names, 4, &count, &line) == LADX_WLOG_OK, "groups of the sample log");
+	check(count == 2 && names[0].len == 1 && names[0].at[0] == 'a' && names[1].len == 1 && names[1].at[0] == 'b',
+	      "groups in first-write order, each once");
+	check(ladx_wlog_groups(span(sample_log), names, 1, &count, &line) == LADX_WLOG_OVERFLOW,
+	      "groups over the caller's array");
+	check(ladx_wlog_groups(span(HEADER), names, 4, &count, &line) == LADX_WLOG_OK && count == 0,
+	      "a log of no segment");
+}
+
+static char long_log[2 * LADX_WLOG_BANK_MAX + 256];
+
+/* A record longer than any internal buffer, and save's 121,397 net bytes, project whole. */
+static void test_project_long(void)
+{
+	size_t n = (size_t)sprintf(long_log, "%sG save\nB 4000 ", HEADER), i;
+
+	for (i = 0; i < 1000; i++)
+		n += (size_t)sprintf(long_log + n, "%02x", (unsigned)(i * 7 % 256));
+	n += (size_t)sprintf(long_log + n, " =%x\nB %x 5a\nT texts 1 ", 121397u - 1001u, 0x4000u + 121397u);
+	for (i = 0; i < 3000; i++)
+		n += (size_t)sprintf(long_log + n, "%02x", (unsigned)(i % 251));
+	sprintf(long_log + n, "\n");
+	expect_projection(long_log, "save", long_log);
+}
+
+static int malformed_count;
+
+static void test_project_malformed(void)
+{
+	static const struct {
+		const char *name, *text;
+		int line;
+	} bad[] = {
+		{"no final newline", HEADER "G a\nB 10 aa", 0},
+		{"version", "ladx-rom-writes 2\ntables texts\n", 1},
+		{"no tables line", "ladx-rom-writes 1\nG a\nB 1 aa\n", 2},
+		{"repeated table", "ladx-rom-writes 1\ntables texts texts\n", 2},
+		{"bad table name", "ladx-rom-writes 1\ntables te/xts\n", 2},
+		{"record before G", HEADER "B 10 aa\n", 3},
+		{"empty segment", HEADER "G a\nG b\nB 1 aa\n", 3},
+		{"empty last segment", HEADER "G a\nB 1 aa\nG b\n", 5},
+		{"segment continues", HEADER "G a\nB 1 aa\nG a\nB 3 aa\n", 5},
+		{"bad G", HEADER "G a b\nB 1 aa\n", 3},
+		{"bank out of order", HEADER "G a\nB 10 aa\nB 5 aa\n", 5},
+		{"bank touching", HEADER "G a\nB 10 aa\nB 11 aa\n", 5},
+		{"bank after table", HEADER "G a\nT texts 1 aa\nB 10 aa\n", 5},
+		{"offset not canonical", HEADER "G a\nB 010 aa\n", 4},
+		{"offset uppercase", HEADER "G a\nB 1A aa\n", 4},
+		{"empty bank record", HEADER "G a\nB 10\n", 4},
+		{"unknown table", HEADER "G a\nT rooms 1 aa\n", 4},
+		{"key not canonical", HEADER "G a\nT texts 0a aa\n", 4},
+		{"bad alt key", HEADER "G a\nT texts Alt/1 aa\n", 4},
+		{"table out of order", HEADER "G a\nT entities 1 aa\nT texts 1 aa\n", 5},
+		{"alt before index", HEADER "G a\nT texts Alt06 aa\nT texts 1 aa\n", 5},
+		{"table repeated", HEADER "G a\nT texts 1 aa\nT texts 1 bb\n", 5},
+		{"keep zero", HEADER "G a\nB 10 =0\n", 4},
+		{"keep not canonical", HEADER "G a\nB 10 =04\n", 4},
+		{"copy zero", HEADER "G a\nB 10 @400+0\n", 4},
+		{"copy not canonical", HEADER "G a\nB 10 @0400+3\n", 4},
+		{"copy on own offset", HEADER "G a\nB 10 aa @11+2\n", 4},
+		{"literals continue", HEADER "G a\nB 10 aa bb\n", 4},
+		{"copies continue", HEADER "G a\nB 10 @400+2 @402+1\n", 4},
+		{"keep continued by copy", HEADER "G a\nB 10 =2 @12+1\n", 4},
+		{"odd literal", HEADER "G a\nB 10 abc\n", 4},
+		{"uppercase literal", HEADER "G a\nB 10 AA\n", 4},
+		{"pointer in bank", HEADER "G a\nB 10 p1\n", 4},
+		{"pointer with bytes", HEADER "G a\nT texts 1 p1 aa\n", 4},
+		{"pointer not canonical", HEADER "G a\nT texts 1 p01\n", 4},
+		{"keep in table", HEADER "G a\nT texts 1 =2\n", 4},
+		{"empty token", HEADER "G a\nB 10 aa  @400+1\n", 4},
+		{"trailing space", HEADER "G a\nB 10 aa \n", 4},
+		{"unknown line", HEADER "G a\nB 10 aa\nX 1\n", 5},
+		{"empty line", HEADER "G a\nB 10 aa\n\n", 5},
+		{"I names a G line", HEADER "G a\nB 10 aabb\nI 3 0+1\n", 5},
+		{"I names a later line", HEADER "G a\nB 10 aabb\nI 5 0+1\n", 5},
+		{"I names a pointer", HEADER "G a\nT texts 1 p5\nI 4 0+1\n", 5},
+		{"I range not literal", HEADER "G a\nB 10 aa @400+2\nI 4 0+2\n", 5},
+		{"I range past the record", HEADER "G a\nB 10 aabb\nI 4 1+2\n", 5},
+		{"I ranges touching", HEADER "G a\nB 10 aabbcc\nI 4 0+1 1+1\n", 5},
+		{"I range empty", HEADER "G a\nB 10 aabbcc\nI 4 0+0\n", 5},
+		{"I range not canonical", HEADER "G a\nB 10 aabbcc\nI 4 00+1\n", 5},
+		{"I line not canonical", HEADER "G a\nB 10 aabbcc\nI 04 0+1\n", 5},
+		{"I without range", HEADER "G a\nB 10 aabbcc\nI 4\n", 5},
+		{"I lines out of order", HEADER "G a\nB 10 aabbcc\nB 20 dd\nI 5 0+1\nI 4 0+1\n", 7},
+		{"I lines repeated", HEADER "G a\nB 10 aabbcc\nI 4 0+1\nI 4 2+1\n", 6},
+		{"record after I", HEADER "G a\nB 10 aabbcc\nI 4 0+1\nB 20 aa\n", 6},
+	};
+	size_t i;
+
+	for (i = 0; i < N(bad); i++) {
+		LadxSpan names[4];
+		int line = -1, count;
+		LadxWlogStatus st = project(bad[i].text, "a", &line);
+
+		if (st != LADX_WLOG_MALFORMED || line != bad[i].line)
+			test_fail(TEST, "malformed log %s: status %d line %d, want malformed at line %d", bad[i].name,
+				  (int)st, line, bad[i].line);
+		if (out_len != 0)
+			test_fail(TEST, "malformed log %s: text written", bad[i].name);
+		line = -1;
+		if (ladx_wlog_groups(span(bad[i].text), names, 4, &count, &line) != LADX_WLOG_MALFORMED ||
+		    line != bad[i].line)
+			test_fail(TEST, "malformed log %s: groups not refused at line %d", bad[i].name, bad[i].line);
+		checks += 2;
+		malformed_count++;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	test_fixtures_mode(TEST, argc, argv);
@@ -279,7 +444,12 @@ int main(int argc, char **argv)
 	test_bad_input();
 	test_long_record();
 	test_overflow();
-	printf("%s: write_log.render's texts of synthetic segments, refused records and overflows (%d checks)\n", TEST,
-	       checks);
+	test_project();
+	test_groups_of_log();
+	test_project_long();
+	test_project_malformed();
+	printf("%s: write_log.render's texts of synthetic segments, refused records and overflows; write_log.py's "
+	       "projections and groups of hand-written logs, %d malformed logs refused (%d checks)\n",
+	       TEST, malformed_count, checks);
 	return 0;
 }

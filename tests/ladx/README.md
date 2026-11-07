@@ -382,12 +382,30 @@ ascending before alt keys in byte order, with `write_log.render`'s
 canonical tokens ("`rom_writes.txt`, version 1"); a segment with no
 record is never written, and no `I` line ever. Text goes to the caller's
 sink in pieces, so no buffer bounds a record. Capacities per open
-segment: 32768 bank bytes, 4096 table entries, 65536 table atoms (a
-replaced entry's atoms reclaimed first; today's largest table-group
-projections 9,953 bank bytes, 1,035 entries and 34,094 table bytes); an
-overflow is returned by that call and every later one. A refused record
-(an empty bank record, a literal over `ff`, a bad name, table or alt key)
-changes nothing.
+segment: 262144 bank bytes, 4096 table entries, 65536 table atoms (a
+replaced entry's atoms reclaimed first; today's largest projections
+121,397 bank bytes (`save`), 1,035 entries and 34,094 table bytes
+(`options`)); an overflow is returned by that call and every later one.
+A refused record (an empty bank record, a literal over `ff`, a bad name,
+table or alt key) changes nothing.
+
+**Parsing and projection** (`ladx_wlog_project`, `ladx_wlog_groups`): a
+version-1 log's text is checked with every rule of `write_log.parse`
+(version and `tables` lines, `G` lines, `B` and `T` records with their
+order and canonical tokens, `I` lines after every record, increasing,
+each naming an earlier `B` or `T` record that is not a pointer, its
+ranges canonical, not touching and each inside one literal token), with
+two limits of C's: names (tables, groups, alt keys) of at most 31
+characters, and 1 to 16 tables. A malformed log is `malformed` with the
+1-based line at fault (0 when the text does not end with a newline),
+nothing written. `ladx_wlog_groups` lists the groups, each once, in
+first-write order (`write_log.groups`). `ladx_wlog_project` replays one
+group's records in order into a fresh log (the same-group merge keeps
+the net effect) and renders it as one segment with the header lines,
+`write_log.py project`'s text; a group absent from the log gives the
+two header lines; `I` lines are checked, then ignored. A table entry
+over 65536 atoms is `overflow`. The token decoder (`ladx/src/wlog_token.h`,
+internal) is the same for the patch tables' records.
 
 ## Nintendo-bytes policy
 
@@ -590,9 +608,21 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   lines; refused records (an empty bank record, a literal over `ff`, a
   bad name, table or alt key) leaving the log unchanged with no segment;
   and each capacity's overflow (bank bytes, entries, atoms, a replaced
-  entry's atoms reclaimed first) returned by every later call. It prints
-  `test_wlog: write_log.render's texts of synthetic segments, refused
-  records and overflows (<c> checks)`.
+  entry's atoms reclaimed first) returned by every later call. Then the
+  parser and projection, each expected text `write_log.py project`'s on
+  the same hand-written log: two segments of one group around another's,
+  a keep, a copy continued by a copy of a later segment, pointers, an
+  alt key, `I` lines, and a group absent (the header alone); a
+  projection projected again; an empty table entry; a 1000-byte literal
+  and a log of `save`'s 121,397 net bank bytes, projected whole; the
+  groups in first-write order and over the caller's array; and 53
+  malformed logs, each refused by `write_log.parse` too (version, tables
+  line, segments, record order, offsets, keys, every token rule, `I`
+  lines), refused at the same line by projection and groups with nothing
+  written. It prints `test_wlog: write_log.render's texts of synthetic
+  segments, refused records and overflows; write_log.py's projections
+  and groups of hand-written logs, 53 malformed logs refused (<c>
+  checks)`.
   `test_tables` checks `ladx_tables.h` on synthetic tables: a walk
   interleaving `table` and `C` rows (a `C` step's call), a fused unit
   yielded once at its first row, `nothing`, `""`, booleans, `count`, a
@@ -885,6 +915,12 @@ e2e` and `e2e-combos`.
   9 ms per run on the host (slowest case, `sample-05`).
 - `ladx_gen --time <case_dir>` runs the same with no sink and prints only
   the run's elapsed microseconds (`CLOCK_MONOTONIC`), no file.
+- `ladx_gen --project <rom_writes.txt> <out_dir>` reads the log whole (4
+  MiB at most) and writes `<out_dir>/<group>.txt` for every group of the
+  log, its projection (`ladx_wlog_project`, "Table application"), nothing
+  else. A malformed log exits 2 with `ladx_gen: <file>:<line>: malformed
+  write log`, nothing written; over 64 groups, or a group named `.` or
+  `..`, exits 2.
 - Exit 0 with the file written, whatever LADXR's outcome (it is in the
   file); 2 on a usage error, a malformed or missing input, unsupported
   settings (`ladx_gen: unsupported settings: <reason id>`) or a broken run
@@ -966,9 +1002,24 @@ binary is missing). A detail line over 200 characters is cut at 200 and
 ends ` ... (<k> chars)`. Then `e2e: <p> pass, <d> divergent`; exit 0, 1
 when a case is divergent, 2 on a usage, claims or golden-format error.
 
+`run_e2e.py --projections [--cases <dir>] [--gen <binary>] [<case>...]`
+runs `<gen> --project <case>/rom_writes.txt <out_dir>` on every golden
+of the directory (the named ones when given), in parallel, each in a
+fresh temporary directory, and compares every group's file with
+`write_log.py`'s `projections` of the same golden: one `PROJECTION
+<case> <group>: line <n>` (the first differing line), `PROJECTION <case>
+<group>: missing` or `... extra` per difference, or `PROJECTION <case>
+-: <reason>` when the generator fails (exit code and first stderr line,
+timeout, no generator); then `projections: <n> goldens, <g> group
+projections equal to write_log.py's` (exit 0), else `projections: <n>
+goldens, <d> differences from write_log.py's` (exit 1). A missing golden
+`rom_writes.txt`, a malformed golden or an unknown case exits 2. Today
+`projections: 88 goldens, 1413 group projections equal to write_log.py's`
+and `projections: 40 goldens, 655 ...`, about 5 s and 2 s.
+
 `run_e2e.py --self-test` builds planted case trees from `cases/baseline`'s
 golden and fake generators (Python scripts copying a planted `run.txt`
-and, when planted, `rom_writes.txt`) and checks 33 verdicts. With no
+and, when planted, `rom_writes.txt`) and checks 36 verdicts. With no
 group claimed (18): identical, a changed `generateRom` trace line, a
 changed `rom_sha1` or `spoiler_sha1`, a claim at `ws` with a changed
 `place` line, and a claim at `init` with C stopping after the seeding
@@ -991,14 +1042,18 @@ segment's last byte moved into the next segment, of another group; the
 claimed `options` absent from C's log; no `rom_writes.txt` from C; and a
 malformed C log, each `DIVERGENT`; `group nosuch`, a repeated group,
 `group spoiler`, and a golden without `rom_writes.txt` while a group is
-claimed, each exit 2. It prints `e2e: self-test, 33 planted runs as
+claimed, each exit 2. With `--projections`, on the baseline's
+`rom_writes.txt` and a fake generator copying planted projection files
+(3): `write_log.py`'s own projections exit 0; one projection with a
+changed `G` line, and one group's file missing, each exit 1 with a
+`PROJECTION planted` line. It prints `e2e: self-test, 36 planted runs as
 expected`, else one `e2e: self-test failed: <case> (expected <v>, got
 <w>)` line each, exit 1.
 
 `make -C tests/ladx selftest` runs the self-test; `make -C tests/ladx e2e
-[CASES="<case> ..."]` builds `ladx_gen` and runs the driver on `cases/`
-with `--tables` the repository's `data/ladx`;
-`e2e-combos` prints `e2e-combos: the combination cases`, then runs it on
+[CASES="<case> ..."]` builds `ladx_gen`, runs `--projections` on `cases/`,
+then the driver on `cases/` with `--tables` the repository's `data/ladx`;
+`e2e-combos` prints `e2e-combos: the combination cases`, then runs both on
 `combos/`. The root `make selftest`, `e2e` and `e2e-combos` run
 `tests/alttp`'s target, then LADX's.
 
@@ -1052,6 +1107,72 @@ runs. Written only by its generator, never by hand:
   of its own seed.
 - C side: `test_fill --fixtures` (above, `make logic` and `make
   unit-arm`).
+
+## Encoder fixture
+
+`tests/ladx/oracle/encoder_vectors.txt` holds `write_log.py`'s encoder
+("Encoding rule") run on synthetic event streams, the reference C's
+encoder replays. Nothing in it comes from a ROM: its ROM is
+`random.Random(0x1ADE0E1C).randbytes(0x1000)` with two synthetic regions
+copied inside it (`rom[0xC00:0xC10] = rom[0x200:0x210]`, `rom[0x240:0x246]
+= rom[0xE00:0xE06]`, for KS-match ties); each vector's KS is a
+`known_source.KnownSource` built from the vector's own spans, so
+`write_log.encode` runs on it unchanged (membership, `mask`, `entries`,
+`span_at`). After a `#` header documenting it, the format (hex
+lowercase):
+
+    ladx-encoder-vectors 1
+    tables <table>...              ROMWithTables' 11 tables, every stream's and log's order
+    rom <size>                     then one `R <hex>` line per 64 bytes of the ROM
+    V <name>                       one block per vector
+    sides <group>=<table|C>...     its groups' sides, in first-write order
+    ks none | ks <n>               no KS (the encoder runs on an empty one), or n K lines
+    K <start> <length> <label>     a KS span, labels as the KS span list's ("KS span
+                                   list"); a `<table> <key>` label is its key's entry
+    events <n>                     n lines of a `ladx-events 1` stream after its three
+                                   header lines (`I`, `B`, `T`, tab-separated, site `-`)
+    log <n>                        n lines: write_log.encode's rom_writes.txt of the stream
+
+Vectors: 16 hand-written ones, one per rule, each holding a record that
+shows it (`test_gen_encoder_vectors.py` pins it): `carried-source-copy`,
+`carried-identity` (a computed byte inheriting a keep, carried by a later
+group), `inherit-on-equal-bank`, `table-prefix-suffix-middle`,
+`table-unknowable-stop`, `ks-match-run-boundary`,
+`ks-match-lowest-offset`, `ks-match-longest` (a longer match at a higher
+offset wins), `fragment-table`, `fragment-bank` (pieces cut by `span_at`
+over overlapping spans), `rename-after-ks-match` and
+`rename-after-fragment` (a later group's carried copy inherits the
+renamed reference), `keep-rewrite` (a position written back to its
+source as `=1`, across segments and within one), `integer-pointer`,
+`net-effect`, `table-passthrough` (a `table` group's encoding, then a
+`C` group carrying its identities); then 200 `random-<nnn>` vectors drawn
+from `random.Random(0x1ADE0E1D)`: 1 to 6 KS spans (entries and other
+labels) or `ks none`, initial entries (source copies, computed bytes,
+integer pointers, and each KS entry's source), and 2 to 10 events of a
+`table` group and two `C` groups (source copies, KS bytes, copies of
+earlier writes, fresh write identities, computed bytes, rewrites of an
+entry with one byte changed, pointers). 216 vectors, about 195 KB;
+`nintendo_bytes.py` on it (general scope) reports 0 literal runs.
+
+- `python3 -I tests/ladx/oracle/gen_encoder_vectors.py [--out <file>]`
+  (no ROM, no LADXR, no network; independent of the hash seed) writes
+  the fixture (default `tests/ladx/oracle/encoder_vectors.txt`) and prints
+  `encoder-vectors: <n> vectors written to <file>`; under a second.
+- `gen_encoder_vectors.py --check [--out <file>]` renders it again in
+  memory and prints one `DIFFERENT line <n>` line per differing line (the
+  first 20) and `encoder-vectors: <k> lines differ from <file>` (exit 1),
+  `MISSING <file>` (exit 1), else `encoder-vectors: <n> vectors
+  byte-identical to <file>`.
+- `test_gen_encoder_vectors.py` (`make test-ladx-oracle`): a planted
+  render and parse round trip (sides, KS spans and entries, initial
+  entries with a pointer, events, logs), a truncated fixture refused,
+  `--check` reporting a changed line and a missing file; on the committed
+  fixture: under 300 KB, its ROM the synthetic one, every vector's log
+  equal to `write_log.encode` on its parsed stream and KS, names unique,
+  the 16 hand-written vectors first, 200 random ones with `ks none` and
+  KS entries among them, and each hand-written vector's pinned record.
+- C side: replayed by the C encoder's unit test with `--fixtures` once
+  that encoder exists (plan 3, step 6.2's encoder chunks).
 
 ## Measure
 

@@ -1,5 +1,7 @@
 #include "ladx_tables.h"
 
+#include "wlog_token.h"
+
 #include <string.h>
 
 static const char *const status_names[LADX_TABLES_STATUS_COUNT] = {
@@ -225,31 +227,15 @@ static int component_ok(LadxSpan c)
 static int tokens_ok(LadxSpan rest, int bank)
 {
 	LadxSpan tok;
+	LadxWlogToken t;
 	int count = 0, pointer = 0;
-	uint32_t v;
 
 	while (field(&rest, &tok)) {
 		count++;
-		if (tok.len == 0)
+		if (!ladx_wlog_token(tok, &t) || (t.kind == LADX_WLOG_TOKEN_KEEP && !bank) ||
+		    (t.kind == LADX_WLOG_TOKEN_POINTER && bank))
 			return 0;
-		if (tok.len >= 2 && tok.at[0] == '=') {
-			if (!bank || !parse_hex(sub(tok, 1, tok.len), &v) || v == 0)
-				return 0;
-		} else if (tok.len >= 4 && tok.at[0] == '@') {
-			size_t plus = 1;
-
-			while (plus < tok.len && tok.at[plus] != '+')
-				plus++;
-			if (plus == tok.len || !parse_hex(sub(tok, 1, plus), &v) || v > 0x7fffffffu ||
-			    !parse_hex(sub(tok, plus + 1, tok.len), &v) || v == 0)
-				return 0;
-		} else if (tok.at[0] == 'p') {
-			if (bank || !parse_hex(sub(tok, 1, tok.len), &v))
-				return 0;
-			pointer = 1;
-		} else if (!(is_hex(tok) && tok.len % 2 == 0)) {
-			return 0;
-		}
+		pointer |= t.kind == LADX_WLOG_TOKEN_POINTER;
 	}
 	return pointer ? count == 1 : !bank || count > 0;
 }
@@ -712,38 +698,23 @@ bool ladx_tables_records_next(LadxTablesRecords *it, LadxTablesRecord *rec, Ladx
 		rec->offset = hex_value(a);
 	}
 	while (field(&rest, &tok)) {
-		uint32_t q, count, i;
+		LadxWlogToken t;
+		uint32_t q, i;
 
-		if (tok.at[0] == 'p') {
+		ladx_wlog_token(tok, &t);
+		if (t.kind == LADX_WLOG_TOKEN_POINTER) {
 			rec->pointer = true;
-			rec->value = hex_value(sub(tok, 1, tok.len));
+			rec->value = t.q;
 			continue;
 		}
-		if (tok.at[0] == '=') {
-			q = rec->offset + (uint32_t)n;
-			count = hex_value(sub(tok, 1, tok.len));
-		} else if (tok.at[0] == '@') {
-			size_t plus = 1;
-
-			while (tok.at[plus] != '+')
-				plus++;
-			q = hex_value(sub(tok, 1, plus));
-			count = hex_value(sub(tok, plus + 1, tok.len));
-		} else {
-			if (n + tok.len / 2 > cap) {
-				fail(err, LADX_TABLES_BUFFER, it->file, l.number);
-				return false;
-			}
-			for (i = 0; i < tok.len; i += 2)
-				buf[n++] = LADX_ATOM_LITERAL(hex_digit(tok.at[i]) << 4 | hex_digit(tok.at[i + 1]));
-			continue;
-		}
-		if (count > cap - n) {
+		if (t.n > cap - n) {
 			fail(err, LADX_TABLES_BUFFER, it->file, l.number);
 			return false;
 		}
-		for (i = 0; i < count; i++)
-			buf[n++] = (LadxAtom)(q + i);
+		q = t.kind == LADX_WLOG_TOKEN_KEEP ? rec->offset + (uint32_t)n : t.q;
+		for (i = 0; i < t.n; i++)
+			buf[n++] = t.kind == LADX_WLOG_TOKEN_LITERAL ? LADX_ATOM_LITERAL(ladx_wlog_token_byte(&t, i))
+								     : (LadxAtom)(q + i);
 	}
 	rec->n = n;
 	return true;

@@ -36,8 +36,9 @@ in `docs/`, then `README.md`.
   `test_world_setup`; `itempool.c`, `ItemPool` with Python's dict order,
   `ladx_itempool.h`, tested by `test_itempool`; `placer.c`,
   `RandomItemPlacer`, `ladx_placer_*` in `ladx_randomizer.h`, tested by
-  `test_fill`; `wlog.c`, the write-log builder `ladx_wlog.h`, tested by
-  `test_wlog`; `tables.c`, the patch tables' reader, key, walk, records
+  `test_fill`; `wlog.c`, the write-log builder, parser and projection
+  `ladx_wlog.h` (tokens decoded by `wlog_token.c`, shared with
+  `tables.c`), tested by `test_wlog`; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
@@ -171,7 +172,11 @@ in `docs/`, then `README.md`.
   fill outcomes on seeds that are not case seeds, is written only by
   `gen_fill_outcomes.py` (`--check` re-renders it), replayed by
   `test_fill --fixtures`; contract in `tests/ladx/README.md`,
-  "Fill-outcome fixture".
+  "Fill-outcome fixture". `tests/ladx/oracle/encoder_vectors.txt`,
+  `write_log.py`'s encoder on synthetic event streams over a synthetic ROM
+  and KS (no ROM), is written only by `gen_encoder_vectors.py` (`--check`
+  re-renders it; tested by `test_gen_encoder_vectors.py`); contract in
+  `tests/ladx/README.md`, "Encoder fixture".
 
 ## Checks
 
@@ -664,7 +669,9 @@ in `docs/`, then `README.md`.
   against its golden, one `DIVERGENT <case>` line per failure) and
   `e2e-combos` (every combination case diffed against its golden, kept out
   of `e2e`), each `tests/alttp`'s then LADX's (`make -C tests/ladx
-  selftest|e2e|e2e-combos`, contract in `tests/ladx/README.md`, "E2E
+  selftest|e2e|e2e-combos`, LADX's `e2e` and `e2e-combos` first comparing
+  C's projection of every golden with `write_log.py`'s, `run_e2e.py
+  --projections`; contract in `tests/ladx/README.md`, "E2E
   driver and claims"). Run
   `make -k check` to see every failure at once.
 - `make -C tests/alttp measure`, outside the net, gives the per-case times
@@ -800,7 +807,7 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
   `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh`, `gen_tables.sh`,
-  `table_replay.py`, `gen_fill_outcomes.py` and `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
+  `table_replay.py`, `gen_fill_outcomes.py`, `gen_encoder_vectors.py` and `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
   `key_trace.py` its settings and constant reads,

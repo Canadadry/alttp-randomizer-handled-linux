@@ -1,7 +1,9 @@
 """LADX's e2e driver: runs the C generator (ladx_gen) on every case of a directory and compares,
 per case, the golden's and C's stage projection of run.txt at the stage claims.txt names, then
-each claimed group's write-log projection (write_log.py's). Contract in tests/ladx/README.md,
-"Stage projection" and "E2E driver and claims". Standard library only; run with python3 -I -B.
+each claimed group's write-log projection (write_log.py's). --projections compares C's projection
+of every golden (ladx_gen --project) with write_log.py's, group by group. Contract in
+tests/ladx/README.md, "Stage projection" and "E2E driver and claims". Standard library only; run
+with python3 -I -B.
 """
 
 import argparse
@@ -282,6 +284,77 @@ def run(cases_dir, claims, gen, names, out, tables, inventory):
     return 1 if divergent else 0
 
 
+# --- C's projections of the goldens ----------------------------------------------------------
+
+def project_case(gen, path):
+    """(the golden's group count, [(group or "-", detail)] of the differences between ladx_gen
+    --project's files for the log at path and write_log.py's projections); WriteLogError when the
+    golden is malformed."""
+    with open(path, encoding="utf-8", errors="replace") as f:
+        want = write_log.projections(f.read())
+    if not os.path.isfile(gen) or not os.access(gen, os.X_OK):
+        return len(want), [("-", "no C generator: %s" % gen)]
+    with tempfile.TemporaryDirectory(prefix="ladx-e2e-project-") as out_dir:
+        try:
+            proc = subprocess.run([gen, "--project", path, out_dir], stdin=subprocess.DEVNULL,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=TIMEOUT)
+        except subprocess.TimeoutExpired:
+            return len(want), [("-", "c generator timed out after %d s" % TIMEOUT)]
+        if proc.returncode != 0:
+            err = proc.stderr.decode("utf-8", "replace").splitlines()[:1]
+            return len(want), [("-", _cut("c generator exited %d%s" % (proc.returncode,
+                                                                        "".join(": " + e for e in err))))]
+        got = {}
+        for name in sorted(os.listdir(out_dir)):
+            with open(os.path.join(out_dir, name), encoding="utf-8", errors="replace") as f:
+                got[name[:-4] if name.endswith(".txt") else name] = f.read()
+    diffs = []
+    for group in sorted(set(want) | set(got)):
+        if group not in got:
+            diffs.append((group, "missing"))
+        elif group not in want:
+            diffs.append((group, "extra"))
+        elif got[group] != want[group]:
+            a, b = want[group].split("\n"), got[group].split("\n")
+            n = next(i for i in range(max(len(a), len(b))) if i >= len(a) or i >= len(b) or a[i] != b[i])
+            diffs.append((group, "line %d" % (n + 1)))
+    return len(want), diffs
+
+
+def run_projections(cases_dir, gen, names, out):
+    """Prints one PROJECTION line per difference, then the summary; returns the exit code."""
+    try:
+        cases = list_cases(cases_dir, names)
+        for case in cases:
+            if not os.path.isfile(os.path.join(cases_dir, case, "rom_writes.txt")):
+                raise Usage("%s: no golden rom_writes.txt" % case)
+    except Usage as e:
+        print("run_e2e: %s" % e, file=out)
+        return 2
+    if not cases:
+        print("projections: no cases", file=out)
+        return 2
+    paths = [os.path.join(cases_dir, case, "rom_writes.txt") for case in cases]
+    workers = min(len(cases), os.cpu_count() or 1)
+    try:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as pool:
+            results = list(pool.map(project_case, [gen] * len(paths), paths))
+    except write_log.WriteLogError as e:
+        print("run_e2e: a golden rom_writes.txt: %s" % e, file=out)
+        return 2
+    different = 0
+    for case, (_, diffs) in zip(cases, results):
+        for group, detail in diffs:
+            print("PROJECTION %s %s: %s" % (case, group, detail), file=out)
+        different += len(diffs)
+    if different:
+        print("projections: %d goldens, %d differences from write_log.py's" % (len(cases), different), file=out)
+        return 1
+    print("projections: %d goldens, %d group projections equal to write_log.py's"
+          % (len(cases), sum(total for total, _ in results)), file=out)
+    return 0
+
+
 # --- self-test -------------------------------------------------------------------------------
 
 def _trace_where(line):
@@ -467,6 +540,34 @@ def _planted_run(root, config, stage, groups, gold, c, kind, gold_log, c_log):
     return code, out.getvalue()
 
 
+def _planted_projection(root, golden_log, change):
+    """run_projections' (code, text) on one planted golden, the fake generator writing
+    write_log.py's projections, change(projections) applied first."""
+    case = os.path.join(root, "cases", "planted")
+    os.makedirs(case)
+    _write(os.path.join(case, "rom_writes.txt"), golden_log)
+    planted = change(write_log.projections(golden_log))
+    files = os.path.join(root, "projections")
+    os.makedirs(files)
+    for group, text in planted.items():
+        _write(os.path.join(files, group + ".txt"), text)
+    gen = os.path.join(root, "gen")
+    _write(gen, "#!%s\nimport os, shutil, sys\nassert sys.argv[1] == '--project'\n"
+                "for name in os.listdir(%r):\n    shutil.copy(os.path.join(%r, name), sys.argv[3])\n"
+           % (sys.executable, files, files))
+    os.chmod(gen, 0o755)
+    out = io.StringIO()
+    code = run_projections(os.path.join(root, "cases"), gen, [], out)
+    return code, out.getvalue()
+
+
+def _wrong_projection(projections):
+    out = dict(projections)
+    group = sorted(out)[0]
+    out[group] = out[group].replace("G ", "G x", 1)
+    return out
+
+
 def self_test():
     golden = read_lines(os.path.join(HERE, "cases", "baseline", "run.txt"))
     with open(os.path.join(HERE, "cases", "baseline", "rom_writes.txt"), encoding="utf-8") as f:
@@ -484,6 +585,14 @@ def self_test():
             got = _verdict(code, text)
             if got != expected:
                 failed.append("%s (expected %s, got %s)" % (name, expected, got))
+        projected = [("projections equal to write_log.py's", lambda p: p, 0, "projections: 1 goldens"),
+                     ("a wrong projection", _wrong_projection, 1, "PROJECTION planted "),
+                     ("a projection missing", lambda p: dict(list(p.items())[1:]), 1, "PROJECTION planted ")]
+        for k, (name, change, code, line) in enumerate(projected):
+            got_code, text = _planted_projection(os.path.join(tmp, "p%d" % k), golden_log, change)
+            if got_code != code or not ("\n" + text).count("\n" + line):
+                failed.append("%s (expected exit %d and %r, got exit %d)" % (name, code, line, got_code))
+        planted += projected
     for case in failed:
         print("e2e: self-test failed: %s" % case)
     if failed:
@@ -495,6 +604,7 @@ def self_test():
 def main(argv):
     parser = argparse.ArgumentParser(prog="run_e2e.py")
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--projections", action="store_true")
     parser.add_argument("--cases", default=os.path.join(HERE, "cases"))
     parser.add_argument("--claims", default=os.path.join(HERE, "claims.txt"))
     parser.add_argument("--gen", default=os.path.join(HERE, "build", "ladx_gen"))
@@ -507,6 +617,8 @@ def main(argv):
         return 2 if e.code else 0
     if args.self_test:
         return self_test()
+    if args.projections:
+        return run_projections(args.cases, os.path.abspath(args.gen), args.case, sys.stdout)
     return run(args.cases, args.claims, os.path.abspath(args.gen), args.case, sys.stdout,
                os.path.abspath(args.tables), args.inventory)
 

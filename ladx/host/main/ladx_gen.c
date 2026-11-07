@@ -19,9 +19,13 @@
 #define TABLES_TEXT_MAX (2 * 1024 * 1024)
 #define TABLES_NAME_MAX 64
 #define RECORD_ATOMS_MAX 65536
+/* rom_writes.txt: 224 KiB per case at most (the goldens' budget). */
+#define LOG_TEXT_MAX (4 * 1024 * 1024)
+#define LOG_GROUPS_MAX 64
 
 static const char usage[] = "usage: ladx_gen [--tables <dir>] <case_dir> <out_dir>\n"
-			    "       ladx_gen --time <case_dir>\n";
+			    "       ladx_gen --time <case_dir>\n"
+			    "       ladx_gen --project <rom_writes.txt> <out_dir>\n";
 
 typedef struct Case {
 	LadxSettings settings;
@@ -380,8 +384,73 @@ static int time_run(const char *case_dir)
 	return 0;
 }
 
+static char log_text[LOG_TEXT_MAX];
+
+/* <out_dir>/<group>.txt, write_log.py project's text, for every group of the log. */
+static int project_log(const char *log_path, const char *out_dir)
+{
+	LadxSpan text, groups[LOG_GROUPS_MAX];
+	char name[LADX_WLOG_NAME_MAX + 5], path[MAX_PATH];
+	int count, line, i;
+	LadxWlogStatus st;
+	size_t n;
+	FILE *f = fopen(log_path, "rb");
+
+	if (!f) {
+		fprintf(stderr, "ladx_gen: cannot open %s\n", log_path);
+		return 2;
+	}
+	n = fread(log_text, 1, sizeof log_text, f);
+	if (ferror(f) || n == sizeof log_text) {
+		fprintf(stderr, "ladx_gen: cannot read %s, or it is over %d bytes\n", log_path, LOG_TEXT_MAX);
+		fclose(f);
+		return 2;
+	}
+	fclose(f);
+	text.at = log_text;
+	text.len = n;
+	st = ladx_wlog_groups(text, groups, LOG_GROUPS_MAX, &count, &line);
+	if (st != LADX_WLOG_OK) {
+		if (st == LADX_WLOG_MALFORMED)
+			fprintf(stderr, "ladx_gen: %s:%d: malformed write log\n", log_path, line);
+		else
+			fprintf(stderr, "ladx_gen: %s: over %d groups\n", log_path, LOG_GROUPS_MAX);
+		return 2;
+	}
+	for (i = 0; i < count; i++) {
+		FileSink sink;
+
+		memcpy(name, groups[i].at, groups[i].len);
+		strcpy(name + groups[i].len, ".txt");
+		if (name[0] == '.' || !join(path, out_dir, name)) {
+			fprintf(stderr, "ladx_gen: %s: group %s is not a file name\n", log_path, name);
+			return 2;
+		}
+		sink.f = fopen(path, "w");
+		sink.failed = 0;
+		if (!sink.f) {
+			fprintf(stderr, "ladx_gen: cannot write %s\n", path);
+			return 1;
+		}
+		st = ladx_wlog_project(&wlog, text, groups[i], file_sink, &sink, &line);
+		if (fclose(sink.f) != 0)
+			sink.failed = 1;
+		if (st != LADX_WLOG_OK) {
+			fprintf(stderr, "ladx_gen: %s: projection of %s: write log overflow\n", log_path, name);
+			return 2;
+		}
+		if (sink.failed) {
+			fprintf(stderr, "ladx_gen: cannot write %s\n", path);
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
+	if (argc == 4 && strcmp(argv[1], "--project") == 0)
+		return project_log(argv[2], argv[3]);
 	if (argc == 3 && strcmp(argv[1], "--time") == 0)
 		return time_run(argv[2]);
 	if (argc == 3 && argv[1][0] != '-')

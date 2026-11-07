@@ -8,11 +8,12 @@
  * The write log rom_writes.txt, version 1 (tests/ladx/README.md), built in
  * a caller-owned struct with no allocation: each segment's net effect is
  * held until the segment closes, then rendered canonically, as
- * write_log.render renders the same net maps. No I lines.
+ * write_log.render renders the same net maps. No I lines. Also parsed
+ * from text, every rule of write_log.parse, and projected onto one group.
  */
 
 /* Net bank bytes, table entries and table atoms of one open segment. */
-#define LADX_WLOG_BANK_MAX 32768
+#define LADX_WLOG_BANK_MAX 262144
 #define LADX_WLOG_ENTRY_MAX 4096
 #define LADX_WLOG_ATOM_MAX 65536
 #define LADX_WLOG_TABLES_MAX 16
@@ -42,7 +43,8 @@ typedef void (*LadxWlogSink)(void *ctx, const char *text, size_t len);
 typedef enum LadxWlogStatus {
 	LADX_WLOG_OK = 0,
 	LADX_WLOG_BAD_INPUT, /* refused, the log unchanged: a bad name, atom, table or empty bank record */
-	LADX_WLOG_OVERFLOW   /* a capacity exceeded: every later call returns it */
+	LADX_WLOG_OVERFLOW,  /* a capacity exceeded: every later call returns it */
+	LADX_WLOG_MALFORMED  /* parsing: not a version-1 log */
 } LadxWlogStatus;
 
 typedef struct LadxWlogBank {
@@ -73,6 +75,7 @@ typedef struct LadxWlog {
 	int entry_count; /* sorted in render order */
 	LadxAtom atom[LADX_WLOG_ATOM_MAX];
 	int atom_count;
+	LadxAtom scratch[LADX_WLOG_ATOM_MAX];
 } LadxWlog;
 
 /*
@@ -98,5 +101,28 @@ LadxWlogStatus ladx_wlog_pointer(LadxWlog *log, LadxSpan group, int table, LadxW
 
 /* Closes the open segment; the log is then complete. */
 LadxWlogStatus ladx_wlog_end(LadxWlog *log);
+
+/*
+ * Parsing. *line gets the 1-based line at fault on MALFORMED, 0 for the
+ * whole text (no final newline), and 0 on success. Names are at most
+ * LADX_WLOG_NAME_MAX characters and the tables line names at least one
+ * table, at most LADX_WLOG_TABLES_MAX; I lines are checked, then ignored.
+ */
+
+/*
+ * write_log.py project: group's segments replayed in order into log,
+ * rendered to sink as one segment with the header lines (the header alone
+ * when group writes nothing). The whole text is checked first: on
+ * MALFORMED nothing reaches sink. OVERFLOW when the projection exceeds
+ * the log's capacities (a table entry over LADX_WLOG_ATOM_MAX atoms).
+ */
+LadxWlogStatus ladx_wlog_project(LadxWlog *log, LadxSpan text, LadxSpan group, LadxWlogSink sink, void *ctx,
+				 int *line);
+
+/*
+ * write_log.py groups: the log's groups, each once, in first-write order,
+ * as spans into text; OVERFLOW when there are more than cap.
+ */
+LadxWlogStatus ladx_wlog_groups(LadxSpan text, LadxSpan *groups, int cap, int *count, int *line);
 
 #endif

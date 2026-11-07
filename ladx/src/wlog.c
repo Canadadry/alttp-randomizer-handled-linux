@@ -1,5 +1,7 @@
 #include "ladx_wlog.h"
 
+#include "wlog_token.h"
+
 #include <string.h>
 
 #define OUT_CHUNK 256
@@ -409,4 +411,479 @@ LadxWlogStatus ladx_wlog_end(LadxWlog *log)
 	if (!log->failed)
 		close_segment(log);
 	return log->failed;
+}
+
+/* Parsing ------------------------------------------------------------------------------------- */
+
+#define EMIT_CHUNK 256
+
+/* Python's str.split(" ") of a line: an empty text is one empty field. */
+typedef struct Fields {
+	LadxSpan rest;
+	int more;
+} Fields;
+
+static void fields_init(Fields *f, LadxSpan line)
+{
+	f->rest = line;
+	f->more = 1;
+}
+
+static int next_field(Fields *f, LadxSpan *out)
+{
+	size_t i = 0;
+
+	if (!f->more)
+		return 0;
+	while (i < f->rest.len && f->rest.at[i] != ' ')
+		i++;
+	out->at = f->rest.at;
+	out->len = i;
+	if (i == f->rest.len) {
+		f->more = 0;
+	} else {
+		f->rest.at += i + 1;
+		f->rest.len -= i + 1;
+	}
+	return 1;
+}
+
+static int span_eq(LadxSpan a, LadxSpan b)
+{
+	return a.len == b.len && memcmp(a.at, b.at, a.len) == 0;
+}
+
+static int span_is(LadxSpan a, const char *s)
+{
+	return a.len == strlen(s) && memcmp(a.at, s, a.len) == 0;
+}
+
+static int is_name(LadxSpan s)
+{
+	size_t i;
+
+	if (s.len == 0 || s.len > LADX_WLOG_NAME_MAX)
+		return 0;
+	for (i = 0; i < s.len; i++)
+		if (!name_char(s.at[i]))
+			return 0;
+	return 1;
+}
+
+static int is_hex_text(LadxSpan s)
+{
+	size_t i;
+
+	if (s.len == 0)
+		return 0;
+	for (i = 0; i < s.len; i++)
+		if (!((s.at[i] >= '0' && s.at[i] <= '9') || (s.at[i] >= 'a' && s.at[i] <= 'f')))
+			return 0;
+	return 1;
+}
+
+/* The text's lines, each without its '\n'. */
+typedef struct Lines {
+	LadxSpan text;
+	size_t pos;
+	int number;
+} Lines;
+
+static int lines_next(Lines *l, LadxSpan *line)
+{
+	size_t i = l->pos;
+
+	if (l->pos >= l->text.len)
+		return 0;
+	while (l->text.at[i] != '\n')
+		i++;
+	line->at = l->text.at + l->pos;
+	line->len = i - l->pos;
+	l->pos = i + 1;
+	l->number++;
+	return 1;
+}
+
+/* A T record's key, in write_log's order: table, index keys, then alt keys by bytes. */
+typedef struct Key {
+	int table;
+	int alt;
+	uint32_t index;
+	LadxSpan name;
+} Key;
+
+static int key_cmp(const Key *a, const Key *b)
+{
+	size_t n;
+	int c;
+
+	if (a->table != b->table)
+		return a->table < b->table ? -1 : 1;
+	if (a->alt != b->alt)
+		return a->alt ? 1 : -1;
+	if (!a->alt)
+		return a->index < b->index ? -1 : a->index > b->index;
+	n = a->name.len < b->name.len ? a->name.len : b->name.len;
+	c = memcmp(a->name.at, b->name.at, n);
+	if (c)
+		return c;
+	return a->name.len < b->name.len ? -1 : a->name.len > b->name.len;
+}
+
+/* Where a record's atoms go while projecting: none, the log in bank chunks, or the scratch. */
+typedef struct Emit {
+	LadxWlog *log;
+	LadxSpan group;
+	int bank;
+	uint32_t offset;
+	LadxAtom chunk[EMIT_CHUNK];
+	size_t n;
+	LadxWlogStatus st;
+} Emit;
+
+static void emit(Emit *e, LadxAtom a)
+{
+	if (!e || e->st != LADX_WLOG_OK)
+		return;
+	if (e->bank) {
+		if (e->n == EMIT_CHUNK) {
+			e->st = ladx_wlog_bank(e->log, e->group, e->offset, e->chunk, e->n);
+			e->offset += (uint32_t)e->n;
+			e->n = 0;
+		}
+		e->chunk[e->n++] = a;
+	} else if (e->n == LADX_WLOG_ATOM_MAX) {
+		e->st = LADX_WLOG_OVERFLOW;
+	} else {
+		e->log->scratch[e->n++] = a;
+	}
+}
+
+/*
+ * A record's tokens, every rule of write_log._parse_tokens: bank (offset
+ * given) or table. A table record of a single pointer sets *pointer.
+ * Atoms go to e when not NULL.
+ */
+static int payload(Fields *f, int bank, uint32_t offset, uint32_t *total, int *pointer, uint32_t *value, Emit *e)
+{
+	enum { NONE, LIT, REF } prev = NONE;
+	uint64_t at = 0, last = 0;
+	LadxSpan tok;
+	int count = 0;
+	uint32_t i;
+
+	*pointer = 0;
+	while (next_field(f, &tok)) {
+		LadxWlogToken t;
+		uint64_t q;
+
+		count++;
+		if (!ladx_wlog_token(tok, &t))
+			return 0;
+		if (t.kind == LADX_WLOG_TOKEN_POINTER) {
+			if (bank || count != 1 || f->more)
+				return 0;
+			*pointer = 1;
+			*value = t.q;
+			return 1;
+		}
+		if (t.kind == LADX_WLOG_TOKEN_LITERAL) {
+			if (prev == LIT)
+				return 0;
+			prev = LIT;
+			for (i = 0; i < t.n; i++)
+				emit(e, LADX_ATOM_LITERAL(ladx_wlog_token_byte(&t, i)));
+		} else {
+			if (t.kind == LADX_WLOG_TOKEN_KEEP && !bank)
+				return 0;
+			q = t.kind == LADX_WLOG_TOKEN_KEEP ? offset + at : t.q;
+			if ((t.kind == LADX_WLOG_TOKEN_COPY && bank && q == offset + at) || (prev == REF && last + 1 == q) ||
+			    q + t.n > 0x80000000u)
+				return 0;
+			prev = REF;
+			last = q + t.n - 1;
+			for (i = 0; i < t.n; i++)
+				emit(e, (LadxAtom)(q + i));
+		}
+		at += t.n;
+		if ((bank && offset + at > 0x80000000u) || at > 0x7fffffffu)
+			return 0;
+	}
+	if (bank && at == 0)
+		return 0;
+	*total = (uint32_t)at;
+	return 1;
+}
+
+typedef struct Parse {
+	LadxSpan tables[LADX_WLOG_TABLES_MAX];
+	int table_count;
+	LadxSpan tables_names; /* the tables line after "tables " */
+	/* projection: when log is set, group's records go into it */
+	LadxWlog *log;
+	LadxSpan group;
+	/* the groups found, when groups is set */
+	LadxSpan *groups;
+	int cap, count;
+	int overflow;
+} Parse;
+
+/* An I line's target: a record line before it, its tokens literal over each range. */
+static int mark_ok(Fields *f, Lines *cursor, int number, int *last_mark)
+{
+	LadxSpan tok, line = {NULL, 0}, kind, ignore;
+	uint32_t target, start, n;
+	int64_t end = -1;
+	Fields rf;
+	size_t plus;
+
+	if (!next_field(f, &tok) || !ladx_wlog_hex(tok, &target) || !f->more)
+		return 0;
+	if ((int64_t)target <= *last_mark || (int64_t)target >= number)
+		return 0;
+	*last_mark = (int)target;
+	while (cursor->number < (int)target)
+		lines_next(cursor, &line);
+	fields_init(&rf, line);
+	next_field(&rf, &kind);
+	if (span_is(kind, "B"))
+		next_field(&rf, &ignore);
+	else if (span_is(kind, "T"))
+		next_field(&rf, &ignore), next_field(&rf, &ignore);
+	else
+		return 0;
+	while (next_field(f, &tok)) {
+		Fields scan = rf;
+		LadxSpan rt;
+		uint64_t at = 0;
+		int literal = 0;
+
+		for (plus = 0; plus < tok.len && tok.at[plus] != '+'; plus++)
+			;
+		if (plus == tok.len)
+			return 0;
+		ignore.at = tok.at;
+		ignore.len = plus;
+		rt.at = tok.at + plus + 1;
+		rt.len = tok.len - plus - 1;
+		if (!ladx_wlog_hex(ignore, &start) || !ladx_wlog_hex(rt, &n) || n == 0 || (int64_t)start <= end)
+			return 0;
+		while (next_field(&scan, &rt)) {
+			LadxWlogToken t;
+
+			ladx_wlog_token(rt, &t);
+			if (t.kind == LADX_WLOG_TOKEN_POINTER)
+				return 0;
+			if (t.kind == LADX_WLOG_TOKEN_LITERAL && at <= start && (uint64_t)start + n <= at + t.n)
+				literal = 1;
+			at += t.n;
+		}
+		if (!literal)
+			return 0;
+		end = (int64_t)start + n;
+	}
+	return 1;
+}
+
+static LadxWlogStatus parse_fail(int *line, int number)
+{
+	*line = number;
+	return LADX_WLOG_MALFORMED;
+}
+
+static void found_group(Parse *p, LadxSpan name)
+{
+	int i;
+
+	if (!p->groups)
+		return;
+	for (i = 0; i < p->count; i++)
+		if (span_eq(p->groups[i], name))
+			return;
+	if (p->count == p->cap)
+		p->overflow = 1;
+	else
+		p->groups[p->count++] = name;
+}
+
+/* The header lines into p's tables. */
+static LadxWlogStatus parse_header(Parse *p, Lines *l, int *line)
+{
+	LadxSpan text, tok;
+	Fields f;
+	int a;
+
+	if (!lines_next(l, &text) || !span_is(text, "ladx-rom-writes 1"))
+		return parse_fail(line, 1);
+	if (!lines_next(l, &text))
+		return parse_fail(line, 2);
+	fields_init(&f, text);
+	if (!next_field(&f, &tok) || !span_is(tok, "tables") || !f.more)
+		return parse_fail(line, 2);
+	p->tables_names = f.rest;
+	p->table_count = 0;
+	while (next_field(&f, &tok)) {
+		if (p->table_count == LADX_WLOG_TABLES_MAX || !is_name(tok))
+			return parse_fail(line, 2);
+		for (a = 0; a < p->table_count; a++)
+			if (span_eq(p->tables[a], tok))
+				return parse_fail(line, 2);
+		p->tables[p->table_count++] = tok;
+	}
+	return LADX_WLOG_OK;
+}
+
+static int table_of(const Parse *p, LadxSpan name)
+{
+	int i;
+
+	for (i = 0; i < p->table_count; i++)
+		if (span_eq(p->tables[i], name))
+			return i;
+	return -1;
+}
+
+static LadxWlogStatus parse_log(Parse *p, LadxSpan text, int *line)
+{
+	Lines l, cursor;
+	LadxSpan row;
+	LadxWlogStatus st;
+	int open = 0, records = 0, group_line = 0, has_bank = 0, has_key = 0, last_mark = 0, feeding = 0;
+	uint32_t bank_end = 0;
+	LadxSpan group = {NULL, 0};
+	Key last_key = {0, 0, 0, {NULL, 0}};
+	Emit e;
+
+	*line = 0;
+	if (text.len && text.at[text.len - 1] != '\n')
+		return LADX_WLOG_MALFORMED;
+	l.text = text;
+	l.pos = 0;
+	l.number = 0;
+	if ((st = parse_header(p, &l, line)) != LADX_WLOG_OK)
+		return st;
+	cursor = l;
+	cursor.pos = 0;
+	cursor.number = 0;
+	while (lines_next(&l, &row)) {
+		LadxSpan kind, a, b;
+		Fields f;
+		uint32_t total, value;
+		int pointer;
+		Emit *out;
+
+		fields_init(&f, row);
+		next_field(&f, &kind);
+		if (span_is(kind, "I")) {
+			if (!mark_ok(&f, &cursor, l.number, &last_mark))
+				return parse_fail(line, l.number);
+			continue;
+		}
+		if (last_mark)
+			return parse_fail(line, l.number);
+		if (span_is(kind, "G") && next_field(&f, &a) && !f.more && is_name(a)) {
+			if (open && records == 0)
+				return parse_fail(line, group_line);
+			if (open && span_eq(a, group))
+				return parse_fail(line, l.number);
+			open = 1;
+			records = has_bank = has_key = 0;
+			group = a;
+			group_line = l.number;
+			feeding = p->log && span_eq(a, p->group);
+			found_group(p, a);
+			continue;
+		}
+		fields_init(&f, row);
+		next_field(&f, &kind);
+		if (!open)
+			return parse_fail(line, l.number);
+		out = feeding ? &e : NULL;
+		if (out) {
+			out->log = p->log;
+			out->group = p->group;
+			out->n = 0;
+			out->st = LADX_WLOG_OK;
+		}
+		if (span_is(kind, "B") && next_field(&f, &a)) {
+			uint32_t offset;
+
+			if (!ladx_wlog_hex(a, &offset) || has_key || (has_bank && offset <= bank_end))
+				return parse_fail(line, l.number);
+			if (out) {
+				out->bank = 1;
+				out->offset = offset;
+			}
+			if (!payload(&f, 1, offset, &total, &pointer, &value, out))
+				return parse_fail(line, l.number);
+			if (out && out->st == LADX_WLOG_OK && out->n)
+				out->st = ladx_wlog_bank(p->log, p->group, out->offset, out->chunk, out->n);
+			bank_end = offset + total;
+			has_bank = 1;
+		} else if (span_is(kind, "T") && next_field(&f, &a) && next_field(&f, &b)) {
+			Key key;
+			LadxWlogKey wkey;
+
+			key.table = table_of(p, a);
+			key.alt = !is_hex_text(b);
+			key.index = 0;
+			key.name = b;
+			if (key.table < 0 || (key.alt ? !is_name(b) : !ladx_wlog_hex(b, &key.index)) ||
+			    (has_key && key_cmp(&last_key, &key) >= 0))
+				return parse_fail(line, l.number);
+			if (out)
+				out->bank = 0;
+			if (!payload(&f, 0, 0, &total, &pointer, &value, out))
+				return parse_fail(line, l.number);
+			last_key = key;
+			has_key = 1;
+			wkey.index = key.index;
+			wkey.alt.at = key.alt ? b.at : NULL;
+			wkey.alt.len = key.alt ? b.len : 0;
+			if (out && out->st == LADX_WLOG_OK)
+				out->st = pointer ? ladx_wlog_pointer(p->log, p->group, key.table, wkey, value)
+						  : ladx_wlog_table(p->log, p->group, key.table, wkey, p->log->scratch, out->n);
+		} else {
+			return parse_fail(line, l.number);
+		}
+		records++;
+		if (out && out->st != LADX_WLOG_OK)
+			return out->st;
+	}
+	if (open && records == 0)
+		return parse_fail(line, group_line);
+	return LADX_WLOG_OK;
+}
+
+LadxWlogStatus ladx_wlog_groups(LadxSpan text, LadxSpan *groups, int cap, int *count, int *line)
+{
+	Parse p;
+	LadxWlogStatus st;
+
+	memset(&p, 0, sizeof p);
+	p.groups = groups;
+	p.cap = cap;
+	st = parse_log(&p, text, line);
+	*count = p.count;
+	if (st == LADX_WLOG_OK && p.overflow)
+		return LADX_WLOG_OVERFLOW;
+	return st;
+}
+
+LadxWlogStatus ladx_wlog_project(LadxWlog *log, LadxSpan text, LadxSpan group, LadxWlogSink sink, void *ctx,
+				 int *line)
+{
+	Parse p;
+	LadxWlogStatus st;
+
+	memset(&p, 0, sizeof p);
+	if ((st = parse_log(&p, text, line)) != LADX_WLOG_OK)
+		return st;
+	if ((st = ladx_wlog_begin(log, p.tables_names, sink, ctx)) != LADX_WLOG_OK)
+		return st;
+	p.log = log;
+	p.group = group;
+	if ((st = parse_log(&p, text, line)) != LADX_WLOG_OK)
+		return st;
+	return ladx_wlog_end(log);
 }
