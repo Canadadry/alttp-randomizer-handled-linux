@@ -107,7 +107,7 @@
     - [x] Chunk 5: item placer: the fill claim
     - [x] Chunk 6: fill outcomes on refused seeds
     - [x] Chunk 7: measure
-  - [ ] Step 3.5 Table application
+  - [x] Step 3.5 Table application
     - [x] Chunk 1: write-log builder
     - [x] Chunk 2: tables reader, walk, applier and spot count
     - [x] Chunk 3: driver group claims and self-test
