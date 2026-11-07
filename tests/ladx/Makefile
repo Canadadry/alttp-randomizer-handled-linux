@@ -7,7 +7,7 @@ LADX := ../../ladx
 BUILD := build
 
 UNIT_TESTS := test_sha512 test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
-	test_itempool
+	test_itempool test_fill
 # Run again with --fixtures by make logic and unit-arm.
 LOGIC_TESTS := test_logic test_itempool
 # Linked with the host layer ladx/host/ too.

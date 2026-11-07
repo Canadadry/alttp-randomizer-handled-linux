@@ -129,7 +129,11 @@ static int put_line(FILE *out, const char *line, size_t len)
 	return len > 0 && fputs(line, out) != EOF && fputc('\n', out) != EOF;
 }
 
-/* The fill projection of run.txt: the sections, then the trace held in trace, then the outcome. */
+/*
+ * The fill projection of run.txt: the sections, then the trace held in
+ * trace, then the outcome when the fill placed nothing (an ok run's outcome
+ * belongs to the whole run).
+ */
 static int write_run(FILE *out, const Case *c, const LadxRandomizer *r, FILE *trace)
 {
 	char line[LADX_RUN_TEXT_MAX_LINE];
@@ -137,6 +141,7 @@ static int write_run(FILE *out, const Case *c, const LadxRandomizer *r, FILE *tr
 	const LadxOutcome *outcome = ladx_randomizer_outcome(r);
 	const LadxWorldSetup *ws = ladx_randomizer_world_setup(r);
 	const LadxItemPool *pool, *read = ladx_randomizer_read_pool(r);
+	const LadxLogic *placement = ladx_randomizer_placement(r);
 	uint64_t before, after;
 	size_t got;
 	int i;
@@ -157,13 +162,17 @@ static int write_run(FILE *out, const Case *c, const LadxRandomizer *r, FILE *tr
 		return 0;
 	if (read && !put_line(out, line, ladx_run_text_pool_line(line, sizeof line, "placer_pool", read)))
 		return 0;
+	if (placement)
+		for (i = 0; i < ladx_logic_spot_count(placement); i++)
+			if (!put_line(out, line, ladx_run_text_place_line(line, sizeof line, placement, i)))
+				return 0;
 	rewind(trace);
 	while ((got = fread(line, 1, sizeof line, trace)) > 0)
 		if (fwrite(line, 1, got, out) != got)
 			return 0;
 	if (ferror(trace))
 		return 0;
-	if (outcome->kind != LADX_OUTCOME_UNFINISHED &&
+	if (!placement && outcome->kind != LADX_OUTCOME_UNFINISHED &&
 	    !put_line(out, line, ladx_run_text_outcome_line(line, sizeof line, outcome)))
 		return 0;
 	return 1;

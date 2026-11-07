@@ -317,3 +317,20 @@ void ladx_run_text_trace_sink(void *ctx, const LadxRngRecord *record)
 	}
 	t->count++;
 }
+
+size_t ladx_run_text_place_line(char *buf, size_t cap, const LadxLogic *logic, int i)
+{
+	const LadxSpot *spot = ladx_logic_spot(logic, i);
+	Text t;
+
+	open_text(&t, buf, cap);
+	if (!spot || !ladx_spot_kind_name(spot->kind)) {
+		t.over = 1;
+		return finish(&t);
+	}
+	put(&t, "place %d %s %s %s", i, ladx_spot_kind_name(spot->kind), field(spot->name_id),
+	    spot->item == LADX_ITEM_NONE ? "-" : ladx_item_name(spot->item));
+	if (spot->item != LADX_ITEM_NONE && !ladx_item_name(spot->item))
+		t.over = 1;
+	return finish(&t);
+}

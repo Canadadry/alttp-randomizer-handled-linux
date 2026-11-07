@@ -1,10 +1,11 @@
 #include "ladx_randomizer.h"
+#include "randomizer_internal.h"
 
 #include <stdio.h>
 
 #define I(name) LADX_ITEM_##name
 
-static void key_error(LadxOutcome *outcome, int item)
+void ladx_outcome_key_error(LadxOutcome *outcome, int item)
 {
 	snprintf(outcome->text, sizeof outcome->text, "'%s'", ladx_item_name(item));
 	outcome->kind = LADX_OUTCOME_CRASH;
@@ -12,7 +13,7 @@ static void key_error(LadxOutcome *outcome, int item)
 	outcome->message = outcome->text;
 }
 
-/* Randomizer.readItemPool with no plan: false on a KeyError outcome. */
+/* Randomizer.readItemPool with no plan: false on a KeyError outcome (or a full spot list, the logic then checked). */
 static bool read_item_pool(LadxRandomizer *r)
 {
 	static const int fillers[] = {I(RUPEES_50), I(RUPEES_20), I(RUPEES_200), I(MESSAGE), I(MEDICINE), I(GEL),
@@ -30,13 +31,14 @@ static bool read_item_pool(LadxRandomizer *r)
 			ladx_logic_place(&r->logic, i, spot->forced_item);
 		} else if (ladx_logic_spot_options(&r->logic, i, &first, 1) == 1) {
 			if (!ladx_itempool_contains(pool, first)) {
-				key_error(&r->outcome, first);
+				ladx_outcome_key_error(&r->outcome, first);
 				return false;
 			}
 			ladx_itempool_set(pool, first, ladx_itempool_get(pool, first) - 1);
 			ladx_logic_place(&r->logic, i, first);
 		} else {
-			r->spots[r->spot_count++] = i;
+			if (!ladx_placer_add_spot(&r->placer, i))
+				return false;
 			ladx_logic_place(&r->logic, i, LADX_ITEM_NONE);
 		}
 	}
@@ -81,8 +83,6 @@ LadxRandomizeStatus ladx_randomize(LadxRandomizer *r, const LadxSettings *valida
 	r->ws_done = false;
 	r->pool_done = false;
 	r->read_done = false;
-	r->spot_count = 0;
-	ladx_itempool_clear(&r->placer_pool);
 	ladx_rng_init(&r->rnd, LADX_RNG_RND, sink, ctx);
 	ladx_rng_init(&r->global, LADX_RNG_GLOBAL, sink, ctx);
 	ladx_rng_seed(&r->rnd, LADX_STAGE_RANDOMIZER_INIT, seed, seed_len);
@@ -103,15 +103,16 @@ LadxRandomizeStatus ladx_randomize(LadxRandomizer *r, const LadxSettings *valida
 		return status;
 	r->words_after = r->rnd.py.words;
 	r->pool_done = true;
+	ladx_placer_init(&r->placer, &r->logic, &r->settings);
 	if (!read_item_pool(r))
-		return LADX_RANDOMIZE_OK;
+		return r->outcome.kind == LADX_OUTCOME_UNFINISHED ? LADX_RANDOMIZE_BROKEN : LADX_RANDOMIZE_OK;
 	if (ladx_logic_broken(&r->logic))
 		return LADX_RANDOMIZE_BROKEN;
 	r->read_done = true;
 	for (i = 0; ladx_itempool_entry(&r->read_pool, i, &item, &count); i++)
 		if (count > 0)
-			ladx_itempool_add(&r->placer_pool, item, count);
-	return LADX_RANDOMIZE_OK;
+			ladx_placer_add_item(&r->placer, item, count);
+	return ladx_placer_run(&r->placer, &r->rnd, &r->outcome);
 }
 
 const LadxOutcome *ladx_randomizer_outcome(const LadxRandomizer *r)
@@ -138,4 +139,14 @@ const LadxItemPool *ladx_randomizer_pool(const LadxRandomizer *r, uint64_t *word
 const LadxItemPool *ladx_randomizer_read_pool(const LadxRandomizer *r)
 {
 	return r->read_done ? &r->read_pool : NULL;
+}
+
+const LadxLogic *ladx_randomizer_placement(const LadxRandomizer *r)
+{
+	return r->outcome.kind == LADX_OUTCOME_OK ? &r->logic : NULL;
+}
+
+const LadxRng *ladx_randomizer_rng(const LadxRandomizer *r, LadxRngGen gen)
+{
+	return gen == LADX_RNG_GLOBAL ? &r->global : &r->rnd;
 }

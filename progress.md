@@ -104,7 +104,7 @@
     - [x] Chunk 2: ladx_gen, e2e driver and the init claim
     - [x] Chunk 3: world setup and maze: the ws claim
     - [x] Chunk 4: item pool: the pool claim
-    - [ ] Chunk 5: item placer: the fill claim
+    - [x] Chunk 5: item placer: the fill claim
     - [ ] Chunk 6: fill outcomes on refused seeds
     - [ ] Chunk 7: measure
   - [ ] Step 3.5 Table application

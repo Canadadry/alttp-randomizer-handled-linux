@@ -460,7 +460,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -526,13 +526,16 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   over its buffer); the 13 `ws` lines of a hand-built `LadxWorldSetup`
   equal to `goal-maze`'s (`sign_maze`), `boss-random`'s and
   `goal-specific`'s, `goal open`, `goal_count -1` and a false flag as `0`,
-  nothing past the 13th line or over its buffer. It prints
+  nothing past the 13th line or over its buffer; `place` lines of a
+  hand-built logic (`place 0 HeartPiece 0x0A1 SWORD`, an unplaced spot
+  with an empty `nameId` as `place 1 KeyLocation "" -`), nothing for a
+  spot out of range or over its buffer. It prints
   `test_run_text: float.hex as CPython's, <g> golden lines rendered
   byte-identical, sink numbering ok (<c> checks)`.
   `test_world_setup` checks `ladx_randomize` up to the world setup
   (`ladx_world_setup_randomize`, `ladx/include/ladx_randomizer.h`) against
   LADXR's own results: `goal=maze` on `item_pools.txt`'s three seeds (the
-  first two finish with `rnd`'s MT word count at their `words_before`, 80
+  first two reach `ItemPool` with `rnd`'s MT word count at their `words_before`, 80
   and 77, and 22 signs; the third gives `crash IndexError Cannot choose
   from an empty sequence` and no world setup); two `buildMaze` vectors
   CPython ran on LADXR's `patches/maze.py` at the pin (a seed rolling
@@ -542,6 +545,24 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   `LADX_RANDOMIZE_UNSUPPORTED`. It prints `test_world_setup: goal=maze's
   crash and words on item_pools.txt's seeds, buildMaze's and
   goal=specific's vectors, goal=bingo unsupported (<c> checks)`.
+  `test_fill` checks LADXR's `RandomItemPlacer` (`ladx_placer_*`,
+  `ladx/include/ladx_randomizer.h`) on hand-built graphs
+  (`ladx_logic_builder.h`) against LADXR's own `RandomItemPlacer` run on
+  the same graphs, at the pin, with `random.Random(bytes([<seed>]))`:
+  every draw (`shuffle`'s length, each `choice`'s length and index) and
+  the placement equal; a five-spot graph (a dungeon key placed first,
+  failed placements undone and their spot re-appended at the end of the
+  list); three four-spot graphs on which `canStillPlaceItemPool`'s answer
+  turns on its sort (the `nameId` tie-break, the dungeon spots' score 0,
+  the stable item order); a two-spot graph where every placement fails,
+  LADXR's `Error` "Failed to place an item for a bunch of retries" after
+  the eleventh, with its 22 draws; `AssertionError` `3 != 2` and
+  "Sanity check failed: False" drawing nothing; and `boomerang=default`
+  with `accessibility=all` (unsupported, `ladx_settings_supported`) giving
+  `AssertionError` "Sanity check failed: False" and no placement through
+  `ladx_randomize` on three seeds. It prints `test_fill: LADXR's
+  placements, draws and outcomes on hand-built graphs, the boomerang
+  pair's AssertionError (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -762,19 +783,21 @@ e2e` and `e2e-combos`.
   `<case_dir>/seed` (32 lowercase hex digits, one optional newline),
   refuses unsupported settings (`ladx_settings_supported`), runs
   `ladx_randomize` (`ladx/include/ladx_randomizer.h`, `Randomizer.__init__`
-  as far as it is ported: so far the seeding, the `race` draw,
+  to the end of `item_placer.run`: the seeding, the `race` draw,
   `WorldSetup.randomize` for tier 1 with `buildMaze`, the global
   generator's copy, the logic built on that world setup, `ItemPool`
-  with `__randomizeRupees` (`ladx/include/ladx_itempool.h`) and
-  `readItemPool`) with the
+  with `__randomizeRupees` (`ladx/include/ladx_itempool.h`),
+  `readItemPool`, the placer's `addItem` calls and `RandomItemPlacer.run`
+  with `placeSpecificItem` and `__placeItem`) with the
   run-text trace sink, and writes `<out_dir>/run.txt` in the oracle's
   format, already in its fill projection's form (below): `seed`,
-  `settings`, the sections of the stages ported (the 13 `ws` lines once
+  `settings`, the sections of the stages reached (the 13 `ws` lines once
   `WorldSetup.randomize` returned, none when it raised; `words_before`,
   `pool` and `words_after` once `ItemPool` returned, `placer_pool` once
-  `readItemPool` returned), the trace, then the
-  `outcome` line once LADXR's outcome is known (none while the run stops
-  at the end of the ported stages, `LADX_OUTCOME_UNFINISHED`).
+  `readItemPool` returned, one `place` line per spot of `iteminfo_list`
+  once `run` returned), the trace, then the `outcome` line when no
+  `place` line was written (LADXR's error or exception; an ok run's
+  `outcome ok` belongs to the whole run).
 - `ladx_gen --time <case_dir>` runs the same with no sink and prints only
   the run's elapsed microseconds (`CLOCK_MONOTONIC`), no file.
 - Exit 0 with the file written, whatever LADXR's outcome (it is in the
@@ -817,7 +840,7 @@ order: `init`, `ws`, `pool`, `fill`.
 stages; blank lines and `#` comments skipped) that applies to every case
 of the directory run, cases and combos alike. An unknown stage, a second
 `stage` line, no `stage` line or any other line exits 2. Stage claimed
-now: `pool`.
+now: `fill`.
 
 `python3 -I -B tests/ladx/run_e2e.py [--cases <dir>] [--claims <file>]
 [--gen <binary>] [<case>...]` (defaults `tests/ladx/cases`,

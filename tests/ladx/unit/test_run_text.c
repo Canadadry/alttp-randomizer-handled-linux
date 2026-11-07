@@ -1,3 +1,4 @@
+#include "ladx_logic_builder.h"
 #include "ladx_randomizer.h"
 #include "ladx_rng.h"
 #include "ladx_run_text.h"
@@ -373,6 +374,28 @@ static void test_ws_lines(void)
 	check(ladx_run_text_ws_line(line, 8, &ws, 1) == 0 && line[0] == '\0', "ws line over capacity");
 }
 
+/* ladx_oracle.place_lines: the class, the nameId as a field, the item or `-`. */
+static void test_place_lines(void)
+{
+	static LadxLogic logic;
+	static const int options[] = {LADX_ITEM_BOMB, LADX_ITEM_SWORD};
+	char line[LADX_RUN_TEXT_MAX_LINE];
+	int a;
+
+	ladx_logic_begin(&logic);
+	a = ladx_logic_new_location(&logic, -1, "A");
+	ladx_logic_add_spot(&logic, a, LADX_SPOT_HEART_PIECE, "0x0A1", options, 2);
+	ladx_logic_add_spot(&logic, a, LADX_SPOT_KEY_LOCATION, "", options, 2);
+	check(ladx_logic_finish(&logic, a), "a two-spot logic");
+	ladx_logic_place(&logic, 0, LADX_ITEM_SWORD);
+	check(ladx_run_text_place_line(line, sizeof line, &logic, 0) > 0, "place line rendered");
+	check_text(line, "place 0 HeartPiece 0x0A1 SWORD", "a placed spot");
+	check(ladx_run_text_place_line(line, sizeof line, &logic, 1) > 0, "unplaced line rendered");
+	check_text(line, "place 1 KeyLocation \"\" -", "an unplaced spot, an empty nameId");
+	check(ladx_run_text_place_line(line, sizeof line, &logic, 2) == 0 && line[0] == '\0', "no spot 2");
+	check(ladx_run_text_place_line(line, 10, &logic, 0) == 0, "a line past cap");
+}
+
 int main(void)
 {
 	test_float_hex();
@@ -380,6 +403,7 @@ int main(void)
 	test_other_lines();
 	test_outcome_lines();
 	test_ws_lines();
+	test_place_lines();
 	test_capacity();
 	test_sink();
 	printf("%s: float.hex as CPython's, %d golden lines rendered byte-identical, sink numbering ok (%d checks)\n",

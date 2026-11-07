@@ -55,6 +55,13 @@ size_t ladx_run_text_words_line(char *buf, size_t cap, const char *tag, uint64_t
  */
 size_t ladx_run_text_pool_line(char *buf, size_t cap, const char *tag, const LadxItemPool *pool);
 
+/*
+ * `place <i> <class> <nameId> <item or ->` for spot i of the logic
+ * (ladx_oracle.place_lines); same return as ladx_run_text_trace_line, 0 for
+ * a spot out of range.
+ */
+size_t ladx_run_text_place_line(char *buf, size_t cap, const LadxLogic *logic, int i);
+
 /* A trace sink numbering the records from 0 and writing each line to out. */
 typedef struct LadxRunTextTrace {
 	FILE *out;

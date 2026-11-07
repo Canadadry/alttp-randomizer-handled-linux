@@ -30,8 +30,9 @@ in `docs/`, then `README.md`.
   `world_setup_randomize.c`, `WorldSetup.randomize` with `buildMaze`, and
   `randomizer.c`, `ladx_randomize`, both in `ladx_randomizer.h`, tested by
   `test_world_setup`; `itempool.c`, `ItemPool` with Python's dict order,
-  `ladx_itempool.h`, tested by `test_itempool`, contract in
-  `tests/ladx/README.md`, "Unit tests and lint");
+  `ladx_itempool.h`, tested by `test_itempool`; `placer.c`,
+  `RandomItemPlacer`, `ladx_placer_*` in `ladx_randomizer.h`, tested by
+  `test_fill`; contract in `tests/ladx/README.md`, "Unit tests and lint");
   pure C99 like `alttp/`, built with only `ladx/include` on the include path,
   never including `alttp/` or `app/`. `ladx/host/` is host-side code on top
   of it (C99, stdio allowed, `ladx/include` and itself on the include path):
