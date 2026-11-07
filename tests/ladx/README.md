@@ -350,8 +350,10 @@ integer pointer. `flags` bit 0: the pointer bytes are KS; bit 1 (table 0
 only): the bank byte is KS. An alt entry ends there. An index entry with a
 span then has its de-duplication, `0`, or `1 r index-hi r index-lo r
 offset-hi r offset-lo` when its bytes equal the suffix at that offset of
-the earlier index entry in the same bank (a whole entry, offset 0, for the
-sprite data), in store order on the unchanged state. Then, by table kind:
+an earlier index entry in the same bank (a whole entry, offset 0, for the
+sprite data), in store order on the unchanged state: the entry
+`PointerTable.store`'s map gives, the last earlier entry stored whole
+(not itself de-duplicated) that holds those bytes. Then, by table kind:
 the sprite data's four values as one token; for texts and backgrounds one
 fingerprint per suffix, the suffix at offset `i` the `i`-th token, each the
 first 8 bytes of SHA-512 of the suffix's bytes as eight numbers.
@@ -374,6 +376,37 @@ rebuild their span, sprite slots, one fingerprint per suffix, a
 de-duplication naming an earlier span; or a room file's span unlike
 save-layout's) per finding, exit 1; else `extract: <n> fixtures, <b>
 bytes, every inventory extraction present`. A malformed inventory exits 2.
+
+**Generate and verify.** With the ROM (`tmp/ladx/base.gbc`) and LADXR at
+the pin (`oracle/setup.sh`), else a `setup:` line (exit 2):
+
+- `oracle/gen_extract.sh [--out <dir>]` writes the six files into
+  `extract/` (or a directory inside `tmp/`; any other is refused, exit 2)
+  through `extract.py generate`: the ROM parsed by `known_source.parse`
+  and by LADXR's `ROMWithTables` (the storage regions are its
+  `PointerTable`s'), cross-checked (`known_source.check_ladxr`, every
+  entry's bytes, `RoomEditor`'s entities and objects, `BackgroundEditor`'s
+  tile maps), rendered in memory and checked with the Nintendo-bytes
+  check's `check_blob` under the strict scope; any mismatch or literal
+  run writes nothing (exit 1). About 10 s.
+- `oracle/gen_extract.sh --check` renders twice under `tmp/ladx-extract/`
+  (A: the setup checkout, `PYTHONHASHSEED=0`; B: a fresh clone in
+  `tmp/ladx-oracle/ladxr-extract-b`, `=1`) and prints one `DIFFERENT`,
+  `MISSING` or `EXTRA` line per file unlike the other run or `extract/`,
+  else `extract: 6 files byte-identical on two runs and to
+  tests/ladx/extract`. About 25 s and the network.
+- `python3 -I oracle/extract.py verify [--root <dir>]` prints `ok <check>`
+  or `BAD <check>: <detail>` (labels and offsets, never a byte value) for
+  `parse` (the check above), `ks` (the map rebuilt from the six files
+  equal to `known_source.build(rom)`, span by span and byte by byte),
+  `flags`, `bosses`, `backgrounds` (each tile map equal to
+  `BackgroundEditor`'s) and `fingerprints` (each the hash of its ROM
+  suffix, no two suffixes sharing one), then `extract-verify: 6 files, <k>
+  KS spans, <b> KS bytes rebuilt, <n> bad` (exit 1 on any bad). About
+  1 s.
+
+The files are committed only as `gen_extract.sh`'s output, in a commit of
+their own, never edited by hand.
 
 ## Nintendo-bytes policy
 

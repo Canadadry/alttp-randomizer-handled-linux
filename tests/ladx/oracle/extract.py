@@ -1,11 +1,14 @@
 """Usage: python3 -I tests/ladx/oracle/extract.py check [--root <dir>] [--inventory <file>]
+       python3 tests/ladx/oracle/extract.py generate --out <dir> [--rom <file>] [--ladxr <dir>]
+       python3 -I tests/ladx/oracle/extract.py verify [--root <dir>] [--inventory <file>]
+              [--rom <file>] [--ladxr <dir>]
 
 The extraction fixtures, tests/ladx/extract/: the source ROM's structure the inventory's
 Extractions table names, so that C rebuilds the known-source map KS (known_source.py) and makes
 the C groups' decisions without the ROM. This module is their format (`parse`, `render`, `read`,
-`write`), the KS rebuild from the fixtures alone (`ks_spans`, `ks_rebuild`) and `check`, the
-ROM-free check against the inventory. The layout of each file is in tests/ladx/README.md
-("Extraction fixtures").
+`write`), the KS rebuild from the fixtures alone (`ks_spans`, `ks_rebuild`), `check`, the
+ROM-free check against the inventory, `from_rom` and `generate`, the generator, and `verify`.
+The layout of each file is in tests/ladx/README.md ("Extraction fixtures").
 
 Format: only the characters `0-9`, `=`, `r` and the newline. Every line starts with `=`; tokens
 are separated by `=`; the numbers inside a token by `r`; each number is 0..255 in decimal
@@ -13,13 +16,31 @@ without a leading zero; a larger quantity is split into bytes, high first. Line 
 
 `check` prints one MISSING <name>, EXTRA <file> or BADFILE <name>: <reason> line per finding
 (exit 1), else `extract: <n> fixtures, <b> bytes, every inventory extraction present`; a
-malformed inventory exits 2. It proves itself first on planted trees.
+malformed inventory exits 2. Every command proves `check` first on planted trees.
+
+`generate` (driven by gen_extract.sh) needs the ROM (default tmp/ladx/base.gbc, SHA-1
+d90ac17e...) and LADXR at the pin (default LADXR_DIR or tests/ladx/oracle/ladxr), else a
+`setup:` line (exit 2). It parses the ROM with known_source.parse and with LADXR's
+ROMWithTables (the storage regions from its PointerTables), cross-checks them
+(known_source.check_ladxr, every entry's bytes, RoomEditor's entities and objects,
+BackgroundEditor's tile maps), renders the six files in memory, runs the Nintendo-bytes check's
+check_blob on each under the strict scope, and writes them only when nothing differs and no
+literal run is found (else exit 1, nothing written, offsets and lengths only).
+
+`verify` (ROM and LADXR, else `setup:`) prints `ok <check>` or `BAD <check>: <detail>` for parse
+(the check above), ks (the map rebuilt from the fixtures equal to known_source.build(rom), span
+by span and byte by byte), flags, bosses, backgrounds (tile maps against BackgroundEditor) and
+fingerprints (each the hash of its ROM suffix, no two suffixes sharing one), then
+`extract-verify: 6 files, <k> KS spans, <b> KS bytes rebuilt, <n> bad`; exit 1 on any bad.
+Never prints a byte value.
 """
 
 import collections
+import hashlib
 import importlib.util
 import os
 import re
+import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -39,6 +60,7 @@ def _sibling(name):
 
 
 known_source = _sibling("known_source")
+nintendo_bytes = _sibling("nintendo_bytes")
 LAYOUT, BOSSES, BANK = known_source.LAYOUT, known_source.BOSSES, known_source.BANK
 
 NAMES = ["room-entities", "room-objects", "boss-sources", "backgrounds", "save-layout",
@@ -555,6 +577,216 @@ def check(root, inventory_text, layout=LAYOUT, bosses=BOSSES):
         len(names), size)
 
 
+# source-flags: (bank, offset, value, flag when the byte equals value): the keyhole hook not
+# installed, the witch off, the boomerang trade not patched.
+FLAG_BYTES = [(0x02, 0x2FA9, 0xF0, True), (0x05, 0x08EF, 0x00, False), (0x19, 0x06C5, 0x00, True)]
+
+
+def fingerprint(data):
+    """The fingerprint of a suffix: the first 8 bytes of its SHA-512, as numbers."""
+    return tuple(hashlib.sha512(data).digest()[:FINGERPRINT])
+
+
+def _rom_entries(rom, table, spans):
+    """{key: (flags, bank, start, length, raw)} of a table's pointers in store order."""
+    out = {}
+    size = table.info.get("data_size")
+    by_key = {key: (where, length, bank, raw)
+              for key, where, length, bank, raw in known_source._pointers(rom, table.info)}
+    for key in _keys(table):
+        where, length, bank, raw = by_key[key]
+        span = spans[key]
+        if isinstance(span, int):
+            rebuilt, start, n = struct.pack("<H", span), None, None
+        else:
+            start, n = span[0] % BANK, span[1] - span[0]
+            rebuilt = (bytes([(start - table.info["data_addr"]) // size]) if size is not None
+                       else struct.pack("<H", start | 0x4000))
+        flags = int(rom[where:where + length] == rebuilt)
+        if "banks_bank" in table.info and isinstance(key, int):
+            at = table.info["banks_bank"] * BANK + table.info["banks_addr"] + key
+            flags |= 2 * (rom[at] == bank)
+        out[key] = (flags, bank, start, n, span if isinstance(span, int) else None)
+    return out
+
+
+def _room_entry(rom, kind, bank, start, length):
+    data = rom[bank * BANK + start:bank * BANK + start + length]
+    parts = known_source.fields(kind, data)
+    if parts is not None and known_source.rebuild(kind, parts) == data:
+        return Entry(1, bank, start, length, parts)
+    return Entry(0, bank, start, length, None)
+
+
+def from_rom(rom, regions, layout=LAYOUT, bosses=BOSSES, flag_bytes=FLAG_BYTES):
+    """{name: structure} of the six fixtures of a source ROM, as `read` gives them; regions
+    [[(bank, start, end)]] are each table's storage regions after LADXR's parse."""
+    spans = known_source.parse(rom, layout)
+    rooms = {name: {} for name in ROOM_FILES}
+    kinds = {kind: name for name, kind in ROOM_FILES.items()}
+    sections = []
+    for t, table in enumerate(layout):
+        size = table.info.get("data_size")
+        variable = size is None
+        done = collections.defaultdict(dict)
+        entries = {}
+        for key, (flags, bank, start, length, raw) in _rom_entries(
+                rom, table, spans[table.name]).items():
+            if raw is not None:
+                entries[key] = SaveEntry(flags, bank, None, None, raw, None, None)
+                if table.kind in kinds and _known(table, key):
+                    rooms[kinds[table.kind]][(t, key)] = None
+                continue
+            data = rom[bank * BANK + start:bank * BANK + start + length]
+            if table.kind in kinds and _known(table, key):
+                rooms[kinds[table.kind]][(t, key)] = _room_entry(rom, table.kind, bank, start,
+                                                                 length)
+            if isinstance(key, str):
+                entries[key] = SaveEntry(flags, bank, start, length, None, None, None)
+                continue
+            dedup = done[bank].get(data)
+            if dedup is None:
+                if variable:
+                    for skip in range(len(data)):
+                        done[bank][data[skip:]] = (key, skip)
+                done[bank][data] = (key, 0)
+            extra = None
+            if table.kind == "sprite":
+                extra = list(data)
+            elif table.kind in ("text", "background"):
+                extra = [fingerprint(data[i:]) for i in range(len(data))]
+            entries[key] = SaveEntry(flags, bank, start, length, None, dedup, extra)
+        sections.append(Section(t, list(regions[t]), entries))
+    out = {name: rooms[name] for name in ROOM_FILES}
+    out["save-layout"] = sections
+    out["boss-sources"] = _boss_sources(rom, bosses)
+    out["source-flags"] = _source_flags(rom, flag_bytes)
+    return out
+
+
+def _boss_sources(rom, bosses):
+    zero = bosses.zero_bank * BANK + bosses.zero_addr
+    item = bosses.item_bank * BANK + bosses.item_addr
+    return BossSources(
+        bosses.zero_bank, bosses.zero_addr, bosses.zero_count,
+        [bosses.zero_addr + i for i in range(bosses.zero_count) if rom[zero + i] == 0x00],
+        bosses.item_bank, bosses.item_addr,
+        [(room, rom[item + room]) for room in bosses.rooms])
+
+
+def _source_flags(rom, flag_bytes):
+    return tuple(int((rom[bank * BANK + at] == value) == equal)
+                 for bank, at, value, equal in flag_bytes)
+
+
+def guard(texts, rom, corpus):
+    """[(name, view, offset, length)] of the literal runs of the rendered fixtures {name: text}
+    under the Nintendo-bytes check's strict scope against rom."""
+    index = nintendo_bytes.RomIndex(rom)
+    out = []
+    for name, text in texts.items():
+        literals, _ = nintendo_bytes.check_blob(name, text.encode("ascii"), index, corpus,
+                                                scope="strict")
+        out += [(name, view, offset, length) for view, offset, length, _ in literals]
+    return out
+
+
+def write_fixtures(out, structures, rom, corpus, layout=LAYOUT):
+    """Renders the six fixtures, refuses (ExtractError, nothing written) when the strict guard
+    finds a literal run, else writes them into out."""
+    texts = {name: write(name, structures[name], layout) for name in NAMES}
+    found = guard(texts, rom, corpus)
+    if found:
+        raise ExtractError("refused, literal runs: " + ", ".join(
+            "%s %s @%d %d bytes" % run for run in found))
+    os.makedirs(out, exist_ok=True)
+    for name, text in texts.items():
+        with open(os.path.join(out, name + ".txt"), "w", encoding="ascii", newline="\n") as f:
+            f.write(text)
+
+
+def tile_map(parts):
+    """{VRAM address: value} of a background entry's fields, as BackgroundEditor reads it."""
+    tiles = {}
+    for address, vertical, repeat, amount, values in parts:
+        for n in range(amount + 1):
+            tiles[address + n * (0x20 if vertical else 1)] = values[0 if repeat else n]
+    return tiles
+
+
+def _verify_ks(fixtures, rom, ks, layout):
+    want = {label: (start, rom[start:stop]) for start, stop, label in ks.spans}
+    got = {label: (start, data) for start, data, label in ks_spans(fixtures, layout)}
+    bad = []
+    for label, (start, data) in want.items():
+        if label not in got:
+            bad.append("%s: missing" % label)
+        elif got[label][0] != start or len(got[label][1]) != len(data):
+            bad.append("%s: another span" % label)
+        elif got[label][1] != data:
+            bad.append("%s: bytes differ" % label)
+    bad += ["%s: not in KS" % label for label in got if label not in want]
+    if not bad:
+        rebuilt = ks_rebuild(fixtures, layout)
+        if len(rebuilt) != len(ks) or any(q not in ks or rom[q] != b for q, b in rebuilt.items()):
+            bad.append("map: offsets or bytes differ")
+    return bad
+
+
+def _verify_bosses(sources, rom, bosses):
+    want = _boss_sources(rom, bosses)
+    bad = ["zero %x" % q for q in sorted(set(want.zeros) ^ set(sources.zeros))]
+    got = dict(sources.items)
+    bad += ["item of room %x" % room for room, item in want.items if got.get(room) != item]
+    return bad
+
+
+def _verify_fingerprints(sections, rom, layout):
+    bad, by_print, by_suffix = [], {}, {}
+    for section in sections:
+        if layout[section.table].kind not in ("text", "background"):
+            continue
+        for key, e in section.entries.items():
+            if e.extra is None:
+                continue
+            data = rom[e.bank * BANK + e.start:e.bank * BANK + e.start + e.length]
+            for i, fp in enumerate(e.extra):
+                where = "%s suffix %d" % (_label(section.table, key), i)
+                suffix = data[i:]
+                if fp != fingerprint(suffix):
+                    bad.append("%s: not the hash of its suffix" % where)
+                if by_print.setdefault(fp, suffix) != suffix:
+                    bad.append("%s: shared with another suffix" % where)
+                if by_suffix.setdefault(suffix, fp) != fp:
+                    bad.append("%s: another fingerprint of the same suffix" % where)
+    return bad
+
+
+def verify(fixtures, rom, tiles, layout=LAYOUT, bosses=BOSSES, flag_bytes=FLAG_BYTES):
+    """(lines, KS spans, KS bytes) of the fixtures ({name: structure}) against the source ROM:
+    `ok <check>` or `BAD <check>: <detail>` for ks, flags, bosses, backgrounds (tiles: {(table,
+    key): {address: value}}, LADXR's BackgroundEditor maps) and fingerprints; offsets and labels
+    only, never a byte value."""
+    ks = known_source.build(rom, layout, bosses)
+    want_flags = _source_flags(rom, flag_bytes)
+    backgrounds = fixtures["backgrounds"]
+    checks = [
+        ("ks", _verify_ks(fixtures, rom, ks, layout)),
+        ("flags", ["flag %d" % i for i, (a, b) in enumerate(zip(want_flags,
+                                                                 fixtures["source-flags"]), 1)
+                   if a != b]),
+        ("bosses", _verify_bosses(fixtures["boss-sources"], rom, bosses)),
+        ("backgrounds", [_label(*k) for k in sorted(set(backgrounds) | set(tiles), key=str)
+                         if backgrounds.get(k) is None or not backgrounds[k].known
+                         or tile_map(backgrounds[k].parts) != tiles.get(k)]),
+        ("fingerprints", _verify_fingerprints(fixtures["save-layout"], rom, layout)),
+    ]
+    lines = []
+    for name, bad in checks:
+        lines += ["BAD %s: %s" % (name, detail) for detail in bad] or ["ok " + name]
+    return lines, len(ks.spans), len(ks)
+
+
 _PLANT_LAYOUT = [
     known_source.Table("rooms", {"count": 2, "pointers_bank": 1, "pointers_addr": 0,
                                  "data_bank": 1, "alt_pointers": {"Alt06": (0, 0x10)}},
@@ -642,28 +874,193 @@ def self_test():
 
 TOP = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 USAGE = __doc__.split("\n\n")[0]
+LADX_SHA1 = "d90ac17e9bf17b6c61624ad9f05447bdb5efc01a"
+ROOM_BASES = {"rooms_overworld_top": 0, "rooms_overworld_bottom": 0x80, "rooms_indoor_a": 0x100,
+              "rooms_indoor_b": 0x200, "rooms_color_dungeon": 0x300}
+
+
+class SetupError(Exception):
+    pass
+
+
+def read_rom(path):
+    """The bytes of the LADX source ROM at path; SetupError when absent or another ROM."""
+    if not os.path.isfile(path):
+        raise SetupError("no ROM at %s (run fetch_rom.sh)" % path)
+    with open(path, "rb") as f:
+        rom = f.read()
+    sha1 = hashlib.sha1(rom).hexdigest()
+    if sha1 != LADX_SHA1:
+        raise SetupError("ROM SHA-1 %s is not the LADX English 1.0 ROM (%s...)" % (sha1,
+                                                                                LADX_SHA1[:8]))
+    return rom
+
+
+def ladxr_corpus(ladxr):
+    """The LADXR checkout's Corpus, checked at the pin; SetupError otherwise."""
+    try:
+        return nintendo_bytes.load_ladxr(ladxr)
+    except nintendo_bytes.SetupError as e:
+        raise SetupError(str(e))
+
+
+def _ladxr_modules(ladxr):
+    sys.path.insert(0, os.path.abspath(ladxr))
+    sys.dont_write_bytecode = True
+    import romTables
+    import roomEditor
+    import backgroundEditor
+    return romTables, roomEditor, backgroundEditor
+
+
+def ladxr_source(rom_path, ladxr):
+    """LADXR's ROMWithTables of the source ROM, parsed at the pin."""
+    romTables, _, _ = _ladxr_modules(ladxr)
+    with open(rom_path, "rb") as f:
+        return romTables.ROMWithTables(f)
+
+
+def ladxr_regions(source, layout=LAYOUT):
+    """[[(bank, start, end)]] of each table's storage regions after LADXR's parse."""
+    return [[(st["bank"], st["start"], st["end"])
+             for st in getattr(source, table.name)._PointerTable__storage] for table in layout]
+
+
+def ladxr_tiles(source, ladxr, layout=LAYOUT):
+    """{(table, key): {address: value}} of BackgroundEditor for every background entry KS
+    rebuilds."""
+    _, _, backgroundEditor = _ladxr_modules(ladxr)
+    out = {}
+    for t, table in enumerate(layout):
+        if table.kind == "background":
+            for key in table.known:
+                editor = backgroundEditor.BackgroundEditor(
+                    source, key, attributes=table.name == "background_attributes")
+                out[(t, key)] = dict(editor.tiles)
+    return out
+
+
+def ladxr_crosscheck(rom_path, ladxr, rom, source, structures, layout=LAYOUT):
+    """MISMATCH lines between the structures and LADXR's own parse: known_source.check_ladxr
+    (spans and the RoomEditor round trip), every entry's bytes or integer pointer, RoomEditor's
+    entities and objects, BackgroundEditor's tile maps."""
+    _, roomEditor, _ = _ladxr_modules(ladxr)
+    lines = known_source.check_ladxr(rom_path, ladxr, rom)
+    for section in structures["save-layout"]:
+        table = getattr(source, layout[section.table].name)
+        for key, e in section.entries.items():
+            ours = e.raw if e.raw is not None else \
+                rom[e.bank * BANK + e.start:e.bank * BANK + e.start + e.length]
+            theirs = table[key] if isinstance(table[key], int) else bytes(table[key])
+            if ours != theirs:
+                lines.append("MISMATCH entry %s" % _label(section.table, key))
+    for (t, key), entry in structures["room-entities"].items():
+        if entry is not None and entry.known and _has_objects(source, key) and \
+                roomEditor.RoomEditor(source, key).entities != entry.parts:
+            lines.append("MISMATCH entities %s" % _label(t, key))
+    for (t, key), entry in structures["room-objects"].items():
+        if entry is None or not entry.known:
+            continue
+        room = key if isinstance(key, str) else ROOM_BASES[layout[t].name] + key
+        editor = roomEditor.RoomEditor(source, room)
+        data = bytes([editor.animation_id, editor.floor_object]) + b"".join(
+            bytes(obj.export()) for obj in editor.objects) + b"\xfe"
+        if data != known_source.rebuild("rooms", entry.parts):
+            lines.append("MISMATCH objects %s" % _label(t, key))
+    tiles = ladxr_tiles(source, ladxr, layout)
+    for k, entry in structures["backgrounds"].items():
+        if entry is None or not entry.known or tile_map(entry.parts) != tiles.get(k):
+            lines.append("MISMATCH background %s" % _label(*k))
+    return lines
+
+
+def _has_objects(source, room):
+    """Whether RoomEditor can open room: its object table holds it (0x2FF has none)."""
+    base, name = max((b, n) for n, b in ROOM_BASES.items() if b <= room)
+    return room - base < len(getattr(source, name))
+
+
+def generate(out, rom_path, ladxr):
+    """Writes the six fixtures of the ROM into out through LADXR at the pin; SetupError on a
+    wrong ROM or checkout, ExtractError on a cross-check mismatch or a literal run (nothing
+    written). Returns the summary line."""
+    rom = read_rom(rom_path)
+    corpus = ladxr_corpus(ladxr)
+    source = ladxr_source(rom_path, ladxr)
+    structures = from_rom(rom, ladxr_regions(source))
+    mismatches = ladxr_crosscheck(rom_path, ladxr, rom, source, structures)
+    if mismatches:
+        raise ExtractError("LADXR disagrees: " + ", ".join(mismatches[:10]) +
+                           (" (%d in all)" % len(mismatches) if len(mismatches) > 10 else ""))
+    write_fixtures(out, structures, rom, corpus)
+    size = sum(os.path.getsize(os.path.join(out, name + ".txt")) for name in NAMES)
+    return "extract: %d files written to %s, %d bytes, 0 literal runs (strict)" % (
+        len(NAMES), out, size)
+
+
+def verify_tree(root, inventory_text, rom_path, ladxr):
+    """(lines, exit code) of `verify`: parse (the ROM-free check), then `verify`'s checks."""
+    rom = read_rom(rom_path)
+    ladxr_corpus(ladxr)
+    lines, _ = check(root, inventory_text)
+    if lines:
+        lines = ["BAD parse: " + line for line in lines]
+        return lines + ["extract-verify: %d files, 0 KS spans, 0 KS bytes rebuilt, %d bad" % (
+            len(NAMES), len(lines))], 1
+    fixtures = load(root)
+    found, spans, size = verify(fixtures, rom, ladxr_tiles(ladxr_source(rom_path, ladxr), ladxr))
+    lines = ["ok parse"] + found
+    bad = sum(line.startswith("BAD ") for line in lines)
+    return lines + ["extract-verify: %d files, %d KS spans, %d KS bytes rebuilt, %d bad" % (
+        len(NAMES), spans, size, bad)], 1 if bad else 0
+
+
+OPTIONS = {"check": ("--root", "--inventory"), "generate": ("--out", "--rom", "--ladxr"),
+           "verify": ("--root", "--inventory", "--rom", "--ladxr")}
 
 
 def main(argv):
     options = {"--root": os.path.join(TOP, "tests", "ladx", "extract"),
-               "--inventory": os.path.join(TOP, "notes", "ladx-inventory.md")}
-    if not argv or argv[0] != "check" or len(argv) % 2 == 0:
+               "--inventory": os.path.join(TOP, "notes", "ladx-inventory.md"),
+               "--rom": os.path.join(TOP, "tmp", "ladx", "base.gbc"),
+               "--ladxr": os.environ.get("LADXR_DIR") or os.path.join(HERE, "ladxr"),
+               "--out": None}
+    if not argv or argv[0] not in OPTIONS or len(argv) % 2 == 0:
         print(USAGE, file=sys.stderr)
         return 2
+    command = argv[0]
     for flag, value in zip(argv[1::2], argv[2::2]):
-        if flag not in options:
+        if flag not in OPTIONS[command]:
             print(USAGE, file=sys.stderr)
             return 2
         options[flag] = value
+    if command == "generate" and options["--out"] is None:
+        print(USAGE, file=sys.stderr)
+        return 2
     failed = self_test()
     if failed:
         print("extract: self-test failed: %s" % failed)
         return 1
     print("extract: self-test, %d planted trees as expected" % (len(_plant_variants()) + 1))
     try:
+        if command == "generate":
+            print(generate(options["--out"], options["--rom"], options["--ladxr"]))
+            return 0
         with open(options["--inventory"], encoding="utf-8") as f:
-            lines, summary = check(options["--root"], f.read())
-    except (OSError, UnicodeDecodeError, ExtractError) as e:
+            inventory = f.read()
+        if command == "verify":
+            lines, code = verify_tree(options["--root"], inventory, options["--rom"],
+                                      options["--ladxr"])
+            print("\n".join(lines))
+            return code
+        lines, summary = check(options["--root"], inventory)
+    except SetupError as e:
+        print("setup: extract: %s" % e)
+        return 2
+    except ExtractError as e:
+        print("extract: %s" % e, file=sys.stderr)
+        return 2 if command == "check" else 1
+    except (OSError, UnicodeDecodeError) as e:
         print("extract: %s" % e, file=sys.stderr)
         return 2
     print("\n".join(lines or [summary]))

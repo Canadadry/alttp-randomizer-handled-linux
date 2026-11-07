@@ -5,6 +5,7 @@ files, trees and a synthetic ROM; no ROM, no LADXR.
 """
 
 import contextlib
+import hashlib
 import importlib.util
 import io
 import os
@@ -214,7 +215,56 @@ def synthetic_rom():
     put(5, 0x800, [0x00, 0x09, 0x00, 0x08])
     put(5, 0x901, [17])
     put(5, 0x903, [34])
+    put(0, 0x20, [0xF0, 0x00, 0x00])
     return bytes(rom)
+
+
+FLAGS = [(0, 0x20, 0xF0, True), (0, 0x21, 0x00, False), (0, 0x22, 0x00, True)]
+
+
+def regions():
+    return [section.regions for section in read("save-layout")]
+
+
+def fingerprints(data):
+    return [tuple(hashlib.sha512(data[i:]).digest()[:8]) for i in range(len(data))]
+
+
+def expected_save(rom):
+    """save-layout's sections of TREE with the true fingerprints of rom's entries."""
+    sections = read("save-layout")
+    for section in sections:
+        for key, e in section.entries.items():
+            if e.extra is not None and LAYOUT[section.table].kind in ("text", "background"):
+                at = e.bank * BANK + e.start
+                section.entries[key] = e._replace(extra=fingerprints(rom[at:at + e.length]))
+    return sections
+
+
+class FromRom(unittest.TestCase):
+    def from_rom(self, rom):
+        return extract.from_rom(rom, regions(), LAYOUT, BOSSES, FLAGS)
+
+    def test_the_structures_of_a_rom_are_the_tree_s_with_true_fingerprints(self):
+        rom = synthetic_rom()
+        got = self.from_rom(rom)
+        self.assertEqual(sorted(got), sorted(extract.NAMES))
+        for name in extract.NAMES:
+            with self.subTest(name=name):
+                want = expected_save(rom) if name == "save-layout" else read(name)
+                self.assertEqual(got[name], want)
+                self.assertEqual(extract.read(name, extract.write(name, got[name], LAYOUT),
+                                              LAYOUT, BOSSES), want)
+
+    def test_an_entry_equal_to_an_earlier_suffix_names_it_whole_for_sprite_data(self):
+        rom = bytearray(synthetic_rom())
+        rom[2 * BANK + 0x103:2 * BANK + 0x105] = b"\x05\xff"
+        rom[5 * BANK + 2] = 0
+        rom[5 * BANK + 1] = 2
+        rom[5 * BANK + 0x108:5 * BANK + 0x10C] = b"\x31\x32\x33\x34"
+        got = self.from_rom(bytes(rom))["save-layout"]
+        self.assertEqual(got[1].entries[2].dedup, (0, 1))
+        self.assertEqual([got[3].entries[k].dedup for k in range(3)], [None, None, (0, 0)])
 
 
 def write_tree(root, tree):
@@ -253,6 +303,93 @@ class KnownSource(unittest.TestCase):
         os.remove(os.path.join(self.dir, "boss-sources.txt"))
         with self.assertRaises(extract.ExtractError):
             extract.load(self.dir, LAYOUT, BOSSES)
+
+
+class Guard(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.out = os.path.join(self.dir, "out")
+        self.rom = synthetic_rom()
+        self.corpus = extract.nintendo_bytes.Corpus([])
+        self.structures = extract.from_rom(self.rom, regions(), LAYOUT, BOSSES, FLAGS)
+
+    def tearDown(self):
+        shutil.rmtree(self.dir)
+
+    def test_a_fixture_holding_a_4_byte_run_of_the_rom_is_found(self):
+        rom = self.rom + b"r34="
+        self.assertEqual(extract.guard({"a": "=1\n=12r34=5\n", "b": "=1\n=12r35=5\n"}, rom,
+                                       self.corpus), [("a", "raw", 6, 4)])
+
+    def test_the_fixtures_are_written_when_clean(self):
+        extract.write_fixtures(self.out, self.structures, self.rom, self.corpus, LAYOUT)
+        self.assertEqual(sorted(os.listdir(self.out)), sorted(n + ".txt" for n in extract.NAMES))
+        with open(os.path.join(self.out, "source-flags.txt")) as f:
+            self.assertEqual(f.read(), TREE["source-flags"])
+
+    def test_nothing_is_written_when_one_fixture_holds_a_run(self):
+        rom = self.rom + TREE["boss-sources"].split("\n")[2][:6].encode()
+        with self.assertRaises(extract.ExtractError) as caught:
+            extract.write_fixtures(self.out, self.structures, rom, self.corpus, LAYOUT)
+        self.assertIn("boss-sources raw @", str(caught.exception))
+        self.assertFalse(os.path.exists(self.out))
+
+
+TILES = {(4, 1): {0x9800: 1, 0x9801: 2, 0x9802: 3, 0x9820: 7, 0x9840: 7}}
+
+
+class Verify(unittest.TestCase):
+    def setUp(self):
+        self.rom = synthetic_rom()
+        self.fixtures = extract.from_rom(self.rom, regions(), LAYOUT, BOSSES, FLAGS)
+
+    def verify(self, tiles=TILES):
+        return extract.verify(self.fixtures, self.rom, tiles, LAYOUT, BOSSES, FLAGS)
+
+    def bad(self, tiles=TILES):
+        return [line for line in self.verify(tiles)[0] if not line.startswith("ok ")]
+
+    def entry(self, t, key):
+        return self.fixtures["save-layout"][t].entries[key]
+
+    def set_entry(self, t, key, **change):
+        entries = self.fixtures["save-layout"][t].entries
+        entries[key] = entries[key]._replace(**change)
+
+    def test_the_fixtures_of_a_rom_verify_against_it(self):
+        ks = extract.known_source.build(self.rom, LAYOUT, BOSSES)
+        self.assertEqual(self.verify(), (["ok ks", "ok flags", "ok bosses", "ok backgrounds",
+                                          "ok fingerprints"], len(ks.spans), len(ks)))
+
+    def test_a_ks_span_rebuilt_wrong_or_left_out_is_named(self):
+        self.set_entry(3, 1, extra=[0x34, 0x35, 0x36, 0x38])
+        self.set_entry(2, 0, flags=2)
+        self.assertEqual(self.bad(), ["BAD ks: texts pointer 0: missing",
+                                      "BAD ks: sprites 1: bytes differ"])
+
+    def test_a_ks_span_more_than_known_source_s_is_named(self):
+        self.set_entry(2, 1, flags=3)
+        self.assertEqual(self.bad(), ["BAD ks: texts bank 1: not in KS"])
+
+    def test_wrong_flags_and_boss_sources_are_named(self):
+        self.fixtures["source-flags"] = (1, 1, 1)
+        sources = self.fixtures["boss-sources"]
+        self.fixtures["boss-sources"] = sources._replace(zeros=[0x800],
+                                                         items=[(1, 17), (3, 35)])
+        self.assertEqual([l for l in self.bad() if not l.startswith("BAD ks")], [
+            "BAD flags: flag 2", "BAD bosses: zero 802", "BAD bosses: item of room 3"])
+
+    def test_a_tile_map_unlike_ladxr_s_is_named(self):
+        self.assertEqual(self.bad({(4, 1): {**TILES[(4, 1)], 0x9840: 8}}),
+                         ["BAD backgrounds: table 4 entry 1"])
+        self.assertEqual(self.bad({}), ["BAD backgrounds: table 4 entry 1"])
+
+    def test_a_wrong_or_shared_fingerprint_is_named(self):
+        first = self.entry(2, 0).extra
+        self.set_entry(2, 1, extra=[first[0], self.entry(2, 1).extra[1]])
+        self.assertEqual(self.bad(), [
+            "BAD fingerprints: table 2 entry 1 suffix 0: not the hash of its suffix",
+            "BAD fingerprints: table 2 entry 1 suffix 0: shared with another suffix"])
 
 
 INVENTORY = """# Inventory
@@ -355,6 +492,26 @@ class Check(unittest.TestCase):
         self.assertIn("inventory.md", err)
         self.assertEqual(self.main("list")[0], 2)
         self.assertEqual(self.main("check", "--rom", "x")[0], 2)
+
+    def test_generate_and_verify_refuse_a_missing_or_wrong_rom_with_a_setup_line(self):
+        wrong = os.path.join(self.dir, "wrong.gbc")
+        with open(wrong, "wb") as f:
+            f.write(bytes(64))
+        out = os.path.join(self.dir, "out")
+        for args in (["generate", "--out", out, "--rom", os.path.join(self.dir, "none.gbc")],
+                     ["generate", "--out", out, "--rom", wrong],
+                     ["verify", "--root", self.root, "--rom", wrong]):
+            with self.subTest(args=args):
+                code, out_text, _ = self.main(*args)
+                self.assertEqual(code, 2)
+                self.assertRegex(out_text.splitlines()[-1], r"^setup: extract: (no ROM|ROM SHA-1)")
+                self.assertNotIn(bytes(64).hex(), out_text)
+        self.assertFalse(os.path.exists(out))
+
+    def test_generate_needs_out_and_each_command_its_own_options(self):
+        self.assertEqual(self.main("generate")[0], 2)
+        self.assertEqual(self.main("generate", "--root", self.root)[0], 2)
+        self.assertEqual(self.main("verify", "--out", self.root)[0], 2)
 
     def test_the_self_test_passes(self):
         self.assertIsNone(extract.self_test())

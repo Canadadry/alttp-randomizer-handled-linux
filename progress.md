@@ -76,6 +76,8 @@
   - [ ] Step 2.7 Extraction fixtures
     - [x] Chunk 1: fixture format and ROM-free check
     - [ ] Chunk 2: generator, fixtures and verification
+      - [x] Generator, guard and verify
+      - [ ] Fixtures generated in tests/ladx/extract
     - [ ] Chunk 3: store model
     - [ ] Chunk 4: fixture re-run and close
   - [ ] Step 2.8 Nintendo-bytes check over everything committed
