@@ -37,7 +37,7 @@ ROM = bytes(ROM)
 
 INDEX = nintendo_bytes.RomIndex(ROM)
 NO_CORPUS = nintendo_bytes.Corpus([])
-STRICT = "tests/ladx/extract/x.bin"
+STRICT = "tests/ladx/cases/x.bin"
 GENERAL = "notes/x.md"
 
 
@@ -81,14 +81,13 @@ class Thresholds(unittest.TestCase):
                          [("bytelist", 10, 8, "general")])
 
     def test_every_strict_prefix_is_strict_and_other_paths_general(self):
-        for path in ("tests/ladx/cases/c/g.txt", "tests/ladx/combos/k.txt",
-                     "tests/ladx/extract/rooms.txt"):
+        for path in ("tests/ladx/cases/c/g.txt", "tests/ladx/combos/k.txt"):
             self.assertEqual(nintendo_bytes.scope_of(path), "strict", path)
         for path in ("data/base.bps", "tests/ladx/oracle/x.txt", "data/ladxr.txt", "README.md"):
             self.assertEqual(nintendo_bytes.scope_of(path), "general", path)
 
-    def test_an_extraction_fixture_is_held_to_the_strict_4_bytes(self):
-        path = "tests/ladx/extract/rooms.txt"
+    def test_a_case_folder_s_other_file_is_held_to_the_strict_4_bytes(self):
+        path = "tests/ladx/cases/c/config.txt"
         self.assertEqual(check(path, b"<" + ROM[100:103] + b">"), ([], []))
         self.assertEqual(check(path, b"<" + ROM[100:104] + b">"), ([("raw", 1, 4, "strict")], []))
 
@@ -288,7 +287,7 @@ class CaseFolders(unittest.TestCase):
             for other in ("seed", "config.txt", "meta.txt", "out.gbc"):
                 self.assertEqual(nintendo_bytes.scope_of(folder + other), "strict", other)
         for path in ("tests/ladx/cases/run.txt", "tests/ladx/cases/c/d/run.txt",
-                     "tests/ladx/cases/c/d/rom_writes.txt", "tests/ladx/extract/run.txt"):
+                     "tests/ladx/cases/c/d/rom_writes.txt"):
             self.assertEqual(nintendo_bytes.scope_of(path), "strict", path)
 
     def test_run_txt_and_spoiler_json_are_held_to_the_general_thresholds(self):
@@ -678,7 +677,7 @@ class CommandLine(unittest.TestCase):
         real = nintendo_bytes.TOP
         nintendo_bytes.TOP = self.dir
         try:
-            strict = self.write("tests/ladx/extract/t.bin", ROM[100:104])
+            strict = self.write("tests/ladx/cases/t.bin", ROM[100:104])
             general = self.write("data/t.bin", ROM[100:104])
             code, lines = self.run_main(strict, general)
         finally:

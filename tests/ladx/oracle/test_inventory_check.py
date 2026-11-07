@@ -166,13 +166,12 @@ def _named(name, columns, rows):
                       "|" + "---|" * len(columns)] + rows + [""])
 
 
-def _inventory(generate_rows=None, groups=None, coverage=(), extractions=(), blind=None):
+def _inventory(generate_rows=None, groups=None, coverage=(), blind=None):
     rows = GENERATE_ROWS if generate_rows is None else generate_rows
     return "# Inventory\n\nFree text.\n\n" + "\n".join(
         [_table("generator.py generateRom", rows)] + OTHER_TABLES + [
             _named("Groups", inventory_check.GROUP_COLUMNS, GROUPS if groups is None else groups),
             _named("Read coverage", inventory_check.COVERAGE_COLUMNS, list(coverage)),
-            _named("Extractions", inventory_check.EXTRACTION_COLUMNS, list(extractions)),
             _named("Blind spots", inventory_check.BLIND_COLUMNS, BLIND if blind is None else blind),
             "## ROMWithTables.save\n\nProse.\n"])
 
@@ -349,34 +348,29 @@ class Tables(Fixture):
                 "BAD Groups: items: a C group whose Evidence does not name its write-log group "
                 "items"], evidence)
 
-    def test_every_extraction_named_must_be_listed(self):
+    def test_rom_content_is_never_an_extraction(self):
         groups = [g.replace("| g | items |", "| g | items, extract:rooms |") for g in GROUPS]
         coverage = ["| items | `spot.patch(rom, spot.item)` | bank 0x01 | * | extract:types | "
                     "decides the item |"]
         self.assertEqual(self.check(_inventory(groups=groups, coverage=coverage)), [
-            "BAD Groups: items: extraction rooms is not in Extractions",
-            "BAD Read coverage: items `spot.patch(rom, spot.item)`: extraction types is not in "
-            "Extractions"])
-        extractions = ["| rooms | items | room types | the source rooms | decimal lines |",
-                       "| types | items | entity types | the source rooms | decimal lines |"]
-        self.assertEqual(self.check(_inventory(groups=groups, coverage=coverage,
-                                               extractions=extractions)), [])
+            "BAD Groups: items: Evidence extract:rooms: ROM content is never committed, use rom",
+            "BAD Read coverage: items `spot.patch(rom, spot.item)`: kind 'extract:types' is not "
+            "one of copy, written, computed, table, rom, cut:<id>"])
+        groups = [g.replace("| g | items |", "| g | items, rom |") for g in GROUPS]
+        coverage = ["| items | `spot.patch(rom, spot.item)` | bank 0x01 | * | rom | "
+                    "decides the item |"]
+        self.assertEqual(self.check(_inventory(groups=groups, coverage=coverage)), [])
 
     def test_coverage_kinds_and_groups(self):
         coverage = ["| items | * | bank 0x01 | 0x0010..0x0012 | %s | r |" % kind
-                    for kind in ("copy", "written", "computed", "table", "cut:entrances")]
+                    for kind in ("copy", "written", "computed", "table", "rom", "cut:entrances")]
         self.assertEqual(self.check(_inventory(coverage=coverage)), [])
         bad = ["| items | * | bank 0x01 | * | guessed | r |",
                "| nowhere | * | bank 0x01 | * | copy | r |"]
         self.assertEqual(self.check(_inventory(coverage=bad)), [
             "BAD Read coverage: items *: kind 'guessed' is not one of copy, written, computed, "
-            "table, extract:<name>, cut:<id>",
+            "table, rom, cut:<id>",
             "BAD Read coverage: nowhere *: group nowhere is not in Groups"])
-
-    def test_an_extraction_of_an_unknown_group(self):
-        extractions = ["| rooms | nowhere | room types | the source rooms | decimal lines |"]
-        self.assertEqual(self.check(_inventory(extractions=extractions)), [
-            "BAD Extractions: rooms: group nowhere is not in Groups"])
 
     def test_blind_spots_match_read_trace_one_to_one(self):
         self.assertEqual(self.check(_inventory(blind=[])), [
@@ -394,8 +388,8 @@ class Tables(Fixture):
             "BAD Blind spots: utils.py: data = memoryview(b): empty Verdict"])
 
     def test_a_missing_table(self):
-        text = _inventory().replace("## Extractions", "## Extraction")
-        self.assertEqual(self.check(text), ["BAD Extractions: no table under ## Extractions"])
+        text = _inventory().replace("## Read coverage", "## Read cover")
+        self.assertEqual(self.check(text), ["BAD Read coverage: no table under ## Read coverage"])
 
 
 class Main(Fixture):

@@ -1,16 +1,16 @@
 """Usage: python3 -I tests/ladx/oracle/known_source.py [--rom <file>] [--ladxr <dir>]
 
 The C-knowable source map (KS) of write_log.py's encoding rule: the source ROM offsets whose
-values Phase 3 step 7's extractions let C rebuild without the ROM. `build(rom) -> KnownSource`
-parses the eleven tables of ROMWithTables like LADXR at the pin (LAYOUT, from romTables.py) and
-keeps, each only when its extracted fields rebuild its bytes exactly (`fields`, `rebuild`):
-  every room's entity entry 0x000..0x315 (room-entities) and every room's object entry, alt
-  rooms included (room-objects);
-  background entries 3, 4 and 0x0D of the tiles, 3 and 4 of the attributes (backgrounds);
+values C can parse from the user's ROM at runtime, built here from the ROM itself and only with
+the ROM present (never committed in any form). `build(rom) -> KnownSource` parses the eleven
+tables of ROMWithTables like LADXR at the pin (LAYOUT, from romTables.py) and keeps, each only
+when its parsed fields rebuild its bytes exactly (`fields`, `rebuild`):
+  every room's entity entry 0x000..0x315 and every room's object entry, alt rooms included;
+  background entries 3, 4 and 0x0D of the tiles, 3 and 4 of the attributes;
   every room sprite data entry, and the pointer bytes (and bank bytes) of every table `save`
-  re-serializes, recomputed from the entries' spans or integer pointers (save-layout);
+  re-serializes, recomputed from the entries' spans or integer pointers;
   the bytes of bank 0x14 0x04E0..0x051F that hold 0x00, and the item ids at bank 0x3E 0x3300
-  plus each boss room (boss-sources).
+  plus each boss room.
 A span whose fields do not rebuild it is left out and named in `failures`.
 
 With --rom (default tmp/ladx/base.gbc) it prints `NOT-REBUILT <span>` per failure and the
@@ -155,7 +155,7 @@ def parse(rom, layout=LAYOUT):
 
 
 def fields(kind, data):
-    """The extraction's fields of one entry (decimal-sized numbers), None when the entry is not
+    """The parsed fields of one entry (decimal-sized numbers), None when the entry is not
     made of whole fields ending at its terminator."""
     try:
         if kind == "sprite":

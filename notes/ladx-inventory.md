@@ -8,7 +8,7 @@ at `4325207e4e55076e05f209fbdf16b860a90e42ef` with `tests/ladx/oracle/ladxr.patc
 Check it with `python3 -I tests/ladx/oracle/inventory_check.py` (after
 `tests/ladx/oracle/setup.sh`): it extracts every statement of the six sections below from the
 patched checkout and diffs them, row by row, against these tables, then checks the Groups, Read
-coverage, Extractions and Blind spots tables against the rows and against
+coverage and Blind spots tables against the rows and against
 `read_trace.py --blind-spots`; `--print` writes the extracted tables with the kept columns, to
 refresh this file by hand.
 
@@ -29,7 +29,7 @@ Groups with the same side.
 Settled on the real-data run (`inventory_trace.sh`: the 19 cases of `determinism_cases.txt`,
 each under its own seed and the two of `side_seeds.txt`, 57 runs), refreshed in Phase 2 step 5
 over every case (the 116 case folders and the 19 as `det-<name>`, 405 runs: the keyhole, witch
-and boomerang-trade reads of `items` and `spoiler` gained the `source-flags` extraction): `changeEntrances` is `C`
+and boomerang-trade reads of `items` and `spoiler` gained a `rom` coverage): `changeEntrances` is `C`
 (group `entrances`), `addFrameCounter` is `table` (group `frame-counter`), and `noText` and
 `warpHome` left `options` for their own `C` groups `notext` and `warp-home` (each reads bytes a
 `C` group wrote); each row's Notes give the reason, and those of the `STABLE` rows kept `C` why.
@@ -40,22 +40,22 @@ output rows moved to `output`, and the row that builds the log is `C`, group `sp
 The other tables: **Groups** (Side; Settings key, the settings its rows name, what a `table`
 group's table is keyed on; Depends on, the groups whose writes it reads, from the trace's
 provenance (written by `read_check.py --print`); Evidence, required for a `C` group: its write-log group,
-its own name, then the ROM-free fixtures and `extract:<name>` extractions its Phase 3 claim
-needs). **Read coverage**: how each read of a `C` group is covered (Row `*` for every row of the
-group; Kind `copy`, `written`, `computed`, `table`, `extract:<name>` or `cut:<id>`).
-**Extractions**: the fixtures step 7 produces under `tests/ladx/extract/` (the Nintendo-bytes
-check's strict scope). **Blind spots**: every line `read_trace.py --blind-spots` lists, judged
+its own name, then the ROM-free fixtures its Phase 3 claim needs, and `rom` when it reads the
+source ROM's content). **Read coverage**: how each read of a `C` group is covered (Row `*` for
+every row of the group; Kind `copy`, `written`, `computed`, `table`, `rom` or `cut:<id>`; `rom`:
+C reads those bytes from the user's ROM at runtime, verified with the real ROM by `rom-check`).
+**Blind spots**: every line `read_trace.py --blind-spots` lists, judged
 either not a ROM read or a ROM read covered by a named row.
 
 Decisions taken on the real data (under `guideline`):
 
 - A read whose value decides, in a group that runs on every seed (`sprites`, `entrances`,
-  `title`, `save`, `spoiler`, `warp-home`, the minibosses of `bosses`), is covered by an
-  extraction, never cut. Extractions hold structure only, in decimal numbers of at most three
-  digits (no hex-digit run reaches 4 bytes): ids, types, positions, offsets, lengths, counts, and
-  fingerprints. Never graphics, text or code bytes, transformed or not. A value that needs those
-  is a scope cut, if its group runs only under a tier-1 value that can be cut: `goal-bingo` in
-  `notes/plan3-scope-cuts.md`.
+  `title`, `save`, `spoiler`, `warp-home`, the minibosses of `bosses`), is covered by `rom`
+  (C reads it from the user's ROM at runtime, verified with the real ROM by `rom-check`), never
+  cut. Nothing derived from the ROM's content is committed, in any encoding: the step-7
+  extractions (`tests/ladx/extract/`, structure in decimal plus per-suffix fingerprints) were
+  removed by the owner's decision, since ROM bytes rebuild from them. `goal-bingo` stays a scope
+  cut in `notes/plan3-scope-cuts.md`.
 - A `RoomEditor` reads the room's 80-byte overlay (banks 0x26, 0x27) whole; it is stored back
   unchanged, or not at all, by every traced group. Those reads are `copy`.
 - A table entry's bytes that an earlier group assigned are `written` for the reader even when
@@ -341,12 +341,10 @@ What C has to reproduce, on every seed: the whole packing of every table. Any ch
 and `warp-home`) shifts what follows it, so no table's output is settings-only: the group is
 `C`, its two `STABLE` rows included. The pointers and the packing are computed; an unchanged
 entry's bytes are a copy of its source span (a source reference at its new offset); a changed
-entry's bytes are its group's own writes. The de-duplication decides by content: for entities
-and rooms the `room-entities` and `room-objects` extractions give that content in decimal; for
-texts and backgrounds, whose content may not be extracted, `save-layout` gives a fingerprint of
-every source suffix; for the sprite data, `sprites` computes every room's four values and
-`save-layout` gives those of the entries it leaves. `save-layout` also gives the storage regions
-and every entry's source span, so C never parses the ROM.
+entry's bytes are its group's own writes. The de-duplication decides by content: C parses the
+source entries, the storage regions and every entry's source span from the user's ROM at
+runtime (Evidence `rom`); for the sprite data, `sprites` computes every room's four values and
+the ROM gives those of the entries it leaves.
 
 `self.patch(0x00, 0x0DFA, ...)` is derived, not read: `room_sprite_data_overworld.store` returns
 its leftover storage, whose first region starts right after the last overworld sprite data entry
@@ -362,37 +360,37 @@ sprite data entries, which `sprites` decides on every seed.
 |---|---|---|---|---|
 | asm-consts | none | dungeon_beaks, dungeon_keys, dungeon_maps, hardmode, nightmare_keys, overworld, textmode | - | - |
 | bank3e | C | race, * | - | bank3e, settings.txt |
-| bosses | C | boss, miniboss | entrances, items, options | bosses, pyrandom_vectors.txt, extract:room-entities, extract:room-objects, extract:boss-sources |
+| bosses | C | boss, miniboss | entrances, items, options | bosses, pyrandom_vectors.txt, rom |
 | debug | unused | - | - | - |
 | endscreen | C | - | - | endscreen, pyrandom_vectors.txt |
-| enemizer | C | enemies | entrances, fixed | enemizer, pyrandom_vectors.txt, extract:room-entities, extract:room-objects |
-| entrances | C | overworld | fixed, goal, goal-fixed, options | entrances, extract:room-entities, extract:room-objects |
+| enemizer | C | enemies | entrances, fixed | enemizer, pyrandom_vectors.txt, rom |
+| entrances | C | overworld | fixed, goal, goal-fixed, options | entrances, rom |
 | fixed | table | - | - | - |
 | frame-counter | table | boomerang, dungeon_beaks, dungeon_keys, goal, nightmare_keys, owlstatues, rooster, tradequest | - | - |
 | generate | none | - | - | - |
 | gfxmod | unused | gfxmod | - | - |
-| goal | C | goal, goalcount | fixed | goal, pyrandom_vectors.txt, extract:room-entities, extract:room-objects |
+| goal | C | goal, goalcount | fixed | goal, pyrandom_vectors.txt, rom |
 | goal-fixed | table | goal | - | - |
 | header | C | - | bank3e, bosses, endscreen, enemizer, entrances, fixed, frame-counter, goal, goal-fixed, items, music, music-fixed, options, save, sprites, title, warp-home | header, rom-check (the values of 0x14D..0x14F), fixHeader unit tests |
 | hints | C | - | - | hints, pyrandom_vectors.txt |
-| items | C | - | fixed, goal | items, extract:source-flags |
+| items | C | - | fixed, goal | items, rom |
 | locals | none | - | - | - |
 | marin | C | - | - | marin, pyrandom_vectors.txt |
 | music | C | music | - | music, pyrandom_vectors.txt |
 | music-ffa | unused | music | - | - |
 | music-fixed | table | music | - | - |
-| notext | C | textmode | bank3e, fixed, hints, marin | notext, extract:save-layout |
+| notext | C | textmode | bank3e, fixed, hints, marin | notext, rom |
 | options | table | bowwow, dungeon_beaks, dungeon_keys, evilshop, follower, hardmode, hpmode, linkspalette, lowhpbeep, nagmessages, nightmare_keys, noflash, overworld, owlstatues, quickswap, rooster, shopsanity, steal, superweapons, textmode, tradequest, witch | fixed | - |
 | output | none | race | - | - |
 | overworld | unused | overworld | - | - |
 | parse | none | - | - | - |
 | pymod | unused | - | - | - |
-| save | C | - | - | save, extract:save-layout, extract:room-entities, extract:room-objects, extract:backgrounds |
+| save | C | - | - | save, rom |
 | shopsanity | unused | shopsanity | - | - |
-| spoiler | C | race | bank3e, bosses, enemizer, entrances, items, options, title | spoiler, extract:room-entities, extract:room-objects, extract:source-flags |
-| sprites | C | - | bosses, enemizer, entrances, fixed, goal, items, options | sprites, extract:room-entities, extract:room-objects |
-| title | C | race, * | - | title, extract:backgrounds |
-| warp-home | C | entranceshuffle, overworld | entrances | warp-home, extract:room-objects, extract:backgrounds |
+| spoiler | C | race | bank3e, bosses, enemizer, entrances, items, options, title | spoiler, rom |
+| sprites | C | - | bosses, enemizer, entrances, fixed, goal, items, options | sprites, rom |
+| title | C | race, * | - | title, rom |
+| warp-home | C | entranceshuffle, overworld | entrances | warp-home, rom |
 
 ## Read coverage
 
@@ -400,83 +398,72 @@ sprite data entries, which `sprites` decides on every seed.
 |---|---|---|---|---|---|
 | sprites | * | bank 0x26 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere; updateSpriteData never stores a room |
 | sprites | * | bank 0x27 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere; updateSpriteData never stores a room |
-| sprites | * | table entities | * | extract:room-entities | RoomEditor parses the room's entity list; the entity types and positions decide: each entity type selects its sprite slots |
-| sprites | * | table rooms_color_dungeon | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
-| sprites | * | table rooms_indoor_a | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
-| sprites | * | table rooms_indoor_b | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
-| sprites | * | table rooms_overworld_bottom | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
-| sprites | * | table rooms_overworld_top | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
-| bosses | * | bank 0x14 | 0x04E0..0x051F | extract:boss-sources | changeBosses sets to 0xFF each byte of the color dungeon warp table that is 0x00: the offsets of those zeros decide |
-| bosses | * | bank 0x3E | 0x3300..0x37FF | extract:boss-sources | the source item id of a boss room's second item table, rewritten for the dungeon the boss moves to (boss shuffle only) |
+| sprites | * | table entities | * | rom | RoomEditor parses the room's entity list; the entity types and positions decide: each entity type selects its sprite slots |
+| sprites | * | table rooms_color_dungeon | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
+| sprites | * | table rooms_indoor_a | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
+| sprites | * | table rooms_indoor_b | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
+| sprites | * | table rooms_overworld_bottom | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
+| sprites | * | table rooms_overworld_top | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) on an overworld room sets slot 3 |
+| bosses | * | bank 0x14 | 0x04E0..0x051F | rom | changeBosses sets to 0xFF each byte of the color dungeon warp table that is 0x00: the offsets of those zeros decide |
+| bosses | * | bank 0x3E | 0x3300..0x37FF | rom | the source item id of a boss room's second item table, rewritten for the dungeon the boss moves to (boss shuffle only) |
 | bosses | * | bank 0x3E | 0x3800..0x3FFF | written | the boss room's chest item, written by `items` |
-| bosses | * | table entities | * | extract:room-entities | RoomEditor parses the room's entity list; the entity types and positions decide (miniboss rooms keep their warp entity 0x61) |
-| bosses | * | table rooms_color_dungeon | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide (clean boss rooms drop warps, stairs and lava; minibosses filter by position and type) |
-| bosses | * | table rooms_indoor_a | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide (clean boss rooms drop warps, stairs and lava; minibosses filter by position and type) |
-| bosses | * | table rooms_indoor_b | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide (clean boss rooms drop warps, stairs and lava; minibosses filter by position and type) |
+| bosses | * | table entities | * | rom | RoomEditor parses the room's entity list; the entity types and positions decide (miniboss rooms keep their warp entity 0x61) |
+| bosses | * | table rooms_color_dungeon | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide (clean boss rooms drop warps, stairs and lava; minibosses filter by position and type) |
+| bosses | * | table rooms_indoor_a | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide (clean boss rooms drop warps, stairs and lava; minibosses filter by position and type) |
+| bosses | * | table rooms_indoor_b | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide (clean boss rooms drop warps, stairs and lava; minibosses filter by position and type) |
 | enemizer | * | bank 0x26 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere |
 | enemizer | * | bank 0x27 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere |
-| enemizer | * | table entities | * | extract:room-entities | RoomEditor parses the room's entity list; the entity types and positions decide: which entities are enemies and the sprite slots the others hold |
-| enemizer | * | table rooms_overworld_bottom | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) fixes slot 3 |
-| enemizer | * | table rooms_overworld_top | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) fixes slot 3 |
+| enemizer | * | table entities | * | rom | RoomEditor parses the room's entity list; the entity types and positions decide: which entities are enemies and the sprite slots the others hold |
+| enemizer | * | table rooms_overworld_bottom | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) fixes slot 3 |
+| enemizer | * | table rooms_overworld_top | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: a pushable gravestone (0xC5) fixes slot 3 |
 | entrances | * | bank 0x26 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere |
 | entrances | * | bank 0x27 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere |
-| entrances | * | table entities | * | extract:room-entities | RoomEditor parses and stores back each entrance room's entities unchanged (identity mapping in tier 1) |
-| entrances | * | table rooms_color_dungeon | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
-| entrances | * | table rooms_indoor_a | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
-| entrances | * | table rooms_indoor_b | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
-| entrances | * | table rooms_overworld_bottom | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
-| entrances | * | table rooms_overworld_top | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
+| entrances | * | table entities | * | rom | RoomEditor parses and stores back each entrance room's entities unchanged (identity mapping in tier 1) |
+| entrances | * | table rooms_color_dungeon | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
+| entrances | * | table rooms_indoor_a | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
+| entrances | * | table rooms_indoor_b | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
+| entrances | * | table rooms_overworld_bottom | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
+| entrances | * | table rooms_overworld_top | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide: the warps found and replaced by themselves (identity mapping in tier 1) |
 | goal | `patches.bingo.setBingoGoal(rom, world_setup.bingo_goals, world_setup.goal)` | * | * | cut:goal-bingo | the bingo card's tiles are source graphics shifted, flipped and recoloured per drawn goal |
 | goal | `patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])` | bank 0x26 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere |
 | goal | `patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])` | bank 0x27 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere |
-| goal | `patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])` | table entities | * | extract:room-entities | RoomEditor parses the room's entity list; the entity types and positions decide: the sign is inserted first, the egg room drops its 0xDE entities |
-| goal | `patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])` | table rooms_overworld_bottom | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide; stored back unchanged |
-| goal | `patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])` | table rooms_overworld_top | * | extract:room-objects | RoomEditor parses the room's objects; their kinds, types, positions and warps decide; stored back unchanged |
+| goal | `patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])` | table entities | * | rom | RoomEditor parses the room's entity list; the entity types and positions decide: the sign is inserted first, the egg room drops its 0xDE entities |
+| goal | `patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])` | table rooms_overworld_bottom | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide; stored back unchanged |
+| goal | `patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])` | table rooms_overworld_top | * | rom | RoomEditor parses the room's objects; their kinds, types, positions and warps decide; stored back unchanged |
 | items | * | bank 0x27 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere (the beach room, 0xF2) |
 | items | * | bank 0x3E | * | copy | AnglerKey copies the angler key's two item bytes (rooms 0x0CE to 0x1F8) |
-| items | * | bank 0x02 | 0x2FA9..0x2FA9 | extract:source-flags | KeyHole.patch tests whether the room-status hook is installed: the source opcode at the first changed keyhole, items' own hook after (keyholesanity) |
+| items | * | bank 0x02 | 0x2FA9..0x2FA9 | rom | KeyHole.patch tests whether the room-status hook is installed: the source opcode at the first changed keyhole, items' own hook after (keyholesanity) |
 | items | * | bank 0x02 | 0x2FAA..0x2FAB | written | the hook's call target, written by the first changed keyhole (items) |
 | items | * | table entities | * | written | the beach room (0xF2) as `fixed` (or the maze) last stored it |
 | items | * | table rooms_overworld_bottom | * | written | the beach room (0xF2) as `fixed` (or the maze) last stored it |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x00 | * | written | read back from the groups that wrote it (race flag, seed, short settings, every location's item) |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x05 | 0x08D5..0x08D5 | written | the witch's item, written by items |
-| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x05 | 0x08EF..0x08EF | extract:source-flags | Witch.read tests whether the witch is enabled: the byte options wrote, or the source byte when witch is off |
+| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x05 | 0x08EF..0x08EF | rom | Witch.read tests whether the witch is enabled: the byte options wrote, or the source byte when witch is off |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x14 | * | written | read back from the groups that wrote it (race flag, seed, short settings, every location's item) |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x18 | * | written | read back from the groups that wrote it (race flag, seed, short settings, every location's item) |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x19 | 0x0640..0x0640 | written | the traded item, written by items (boomerang trade) |
-| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x19 | 0x06C5..0x072B | extract:source-flags | BoomerangGuy.read tests 0x06C5 (the source byte under the boomerang trade, else written by items), then reads the item items wrote at 0x072B |
+| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x19 | 0x06C5..0x072B | rom | BoomerangGuy.read tests 0x06C5 (the source byte under the boomerang trade, else written by items), then reads the item items wrote at 0x072B |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x36 | * | written | read back from the groups that wrote it (race flag, seed, short settings, every location's item) |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x3E | * | written | read back from the groups that wrote it (race flag, seed, short settings, every location's item) |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x26 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere; the spoiler never stores a room |
 | spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | bank 0x27 | * | copy | RoomEditor.__init__ copies the room's 80-byte overlay; stored back unchanged when the room is stored (a source reference), else it goes nowhere; the spoiler never stores a room |
-| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table entities | * | extract:room-entities | the boss and miniboss mappings read back from the boss rooms' entities |
-| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_color_dungeon | * | extract:room-objects | the entrance and boss mappings read back from the rooms' warps |
-| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_indoor_a | * | extract:room-objects | the entrance and boss mappings read back from the rooms' warps |
-| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_indoor_b | * | extract:room-objects | the entrance and boss mappings read back from the rooms' warps |
-| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_overworld_bottom | * | extract:room-objects | the entrance and boss mappings read back from the rooms' warps |
-| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_overworld_top | * | extract:room-objects | the entrance and boss mappings read back from the rooms' warps |
-| title | * | table background_attributes | * | extract:backgrounds | BackgroundEditor parses title backgrounds 3 and 4; their tile values decide its run-length re-encoding |
-| title | * | table background_tiles | * | extract:backgrounds | BackgroundEditor parses title backgrounds 3 and 4; their tile values decide its run-length re-encoding |
+| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table entities | * | rom | the boss and miniboss mappings read back from the boss rooms' entities |
+| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_color_dungeon | * | rom | the entrance and boss mappings read back from the rooms' warps |
+| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_indoor_a | * | rom | the entrance and boss mappings read back from the rooms' warps |
+| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_indoor_b | * | rom | the entrance and boss mappings read back from the rooms' warps |
+| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_overworld_bottom | * | rom | the entrance and boss mappings read back from the rooms' warps |
+| spoiler | `log = spoilerLog.SpoilerLog(settings, args, rom)` | table rooms_overworld_top | * | rom | the entrance and boss mappings read back from the rooms' warps |
+| title | * | table background_attributes | * | rom | BackgroundEditor parses title backgrounds 3 and 4; their tile values decide its run-length re-encoding |
+| title | * | table background_tiles | * | rom | BackgroundEditor parses title backgrounds 3 and 4; their tile values decide its run-length re-encoding |
 | warp-home | * | table entities | * | written | the start house (0x2A3) as `entrances` stored it back; its warp's room and target |
 | warp-home | * | table rooms_indoor_b | * | written | the start house (0x2A3) as `entrances` stored it back; its warp's room and target |
-| warp-home | * | table background_tiles | * | extract:backgrounds | BackgroundEditor parses background 0x0D; its tile values decide the moved rows and the re-encoding |
-| notext | * | table texts | * | copy | each text keeps only its last byte, the terminator; the save-layout extraction says which entries are pointers |
+| warp-home | * | table background_tiles | * | rom | BackgroundEditor parses background 0x0D; its tile values decide the moved rows and the re-encoding |
+| notext | * | table texts | * | copy | each text keeps only its last byte, the terminator; the user's ROM, parsed at runtime, says which entries are pointers |
 | bank3e | * | table texts | * | copy | text 0x111 copied whole to 0xBE |
 | marin | * | table texts | * | written | text 0xEA, written by marin a line earlier, copied to 0xEB and 0xEC |
 | header | `checksum -= c + 1` | * | * | computed | the header checksum 0x14D over 0x134..0x14C |
 | header | `checksum = (checksum + sum(bank)) & 0xFFFF` | * | * | computed | the global checksum 0x14E..0x14F over every bank |
 | save | * | * | * | written | PointerTable.store reads back an entry it stored this pass, to assert a de-duplicated pointer |
-
-## Extractions
-
-| Name | Group | Holds | Derived from | Format |
-|---|---|---|---|---|
-| room-entities | sprites | For every room 0x000..0x315 in the source state: the span of its entity entry (bank 0x16 offset, length) and each entity's x, y and type | `ROMWithTables.entities` of the source ROM, parsed like `RoomEditor.__init__` | `extract/<name>.txt` under `tests/ladx/`, numeric only, layout in `tests/ladx/README.md` ("Extraction fixtures") |
-| room-objects | sprites | For every room 0x000..0x315 and alt room (Alt06, Alt0E, Alt1B, Alt2B, Alt79, Alt8C, Alt1F5) in the source state: the span of its object entry (bank, offset, length), animation id, floor object and each object's kind (single, horizontal, vertical, warp), x, y, type and count, or a warp's type, map, room and target x, y | the five room tables of the source ROM, parsed like `RoomEditor.__init__` | `extract/<name>.txt` under `tests/ladx/`, numeric only, layout in `tests/ladx/README.md` ("Extraction fixtures") |
-| boss-sources | bosses | The offsets in bank 0x14 0x04E0..0x051F that hold 0x00, and the item id at bank 0x3E 0x3300 + each of the nine boss rooms | the source ROM's bytes at those offsets | `extract/<name>.txt` under `tests/ladx/`, numeric only, layout in `tests/ladx/README.md` ("Extraction fixtures") |
-| backgrounds | title | For background tables 3, 4 and 0x0D (tiles) and 3, 4 (attributes): the span of the entry and its parsed tile map, each VRAM address with its value | `ROMWithTables.background_tiles` and `background_attributes` of the source ROM, parsed like `BackgroundEditor.__init__` | `extract/<name>.txt` under `tests/ladx/`, numeric only, layout in `tests/ladx/README.md` ("Extraction fixtures") |
-| save-layout | save | For each table `ROMWithTables.save` re-serializes: the storage regions after parsing (bank, start, end), every entry's source span or integer pointer, the alt pointers' spans, the de-duplication among source entries (entry and suffix equal to an earlier one), the four values of every source room sprite data entry of both tables (a superset of those `updateSpriteData` leaves, because KS rebuilds every entry), and a 64-bit fingerprint of every suffix of every source text and background entry (the tables no other extraction holds), so a written entry can be matched against them without the ROM | the parsed `PointerTable`s of the source ROM | `extract/<name>.txt` under `tests/ladx/`, numeric only, layout in `tests/ladx/README.md` ("Extraction fixtures") |
-| source-flags | items | Three source bytes tested against a constant, as flags: bank 0x02 0x2FA9 is 0xF0 (KeyHole.patch: the room-status hook not installed yet), bank 0x05 0x08EF is not 0x00 (Witch.read: the witch off), bank 0x19 0x06C5 is 0x00 (BoomerangGuy.read: the trade not patched); spoiler uses the last two | the source ROM's bytes at those offsets | `extract/<name>.txt` under `tests/ladx/`, numeric only, layout in `tests/ladx/README.md` ("Extraction fixtures") |
 
 ## Blind spots
 

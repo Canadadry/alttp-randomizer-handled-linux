@@ -369,7 +369,7 @@ def _cases(rom):
         ("link-in-parent", lambda r: (r.commit("add", [("old.txt", PLANTED_LINK + "\n")]),
                                       r.commit("drop", removed=["old.txt"])),
          False, "the link is in commit"),
-        ("strict-rom-4", lambda r: r.commit("slice", [("tests/ladx/extract/s.bin",
+        ("strict-rom-4", lambda r: r.commit("slice", [("tests/ladx/cases/s.bin",
                                                         b"<" + rom[2000:2004] + b">")]),
          False, "literal run of 4 bytes at @1 (raw, strict)"),
         ("general-english-12", lambda r: r.commit("say", [("notes/n.md", b"<" + text[:12] + b">")]),

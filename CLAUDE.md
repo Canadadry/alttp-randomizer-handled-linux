@@ -109,14 +109,9 @@ in `docs/`, then `README.md`.
   coverage runs' encodings, keys, reachable tuples, coverage runs, entries
   cut from each run's encoding), its rules in its docstring; its `build`
   command, with the ROM, is `gen_tables.sh`'s worker; `table_replay.py`,
-  the tables' host replay against the goldens; `extract.py`, the format of
-  the extraction fixtures `tests/ladx/extract/` (Phase 2 step 7,
-  documented in `tests/ladx/README.md`, "Extraction fixtures"; `parse`,
-  `render`, `read`, `write`, the ROM-free KS rebuild `ks_spans` and
-  `ks_rebuild`, the ROM-free model of `PointerTable.store`
-  `store_table` and of `ROMWithTables.save`'s stores `store_model`,
-  `check`, and with the ROM `generate`, driven by `gen_extract.sh`, and
-  `verify`); `rom_check.py`, the full-ROM check's driver (Phase 2 step 9;
+  the tables' host replay against the goldens; `known_source.py`, the
+  C-knowable source map KS built from the ROM, only with the ROM present
+  (`tests/ladx/README.md`, "Encoding rule"); `rom_check.py`, the full-ROM check's driver (Phase 2 step 9;
   its generator contract in `tests/ladx/README.md`, "Full-ROM check"),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
@@ -154,11 +149,7 @@ in `docs/`, then `README.md`.
   (absent on `race` cases) and `rom_writes.txt`, the write log (format v1,
   every source byte a reference, its encoding rule, KS, `I` lines,
   projection and decode documented in `tests/ladx/README.md`, the
-  reference for Phase 3's C logger). `tests/ladx/extract/` holds the six extraction fixtures
-  the inventory's Extractions table names (Phase 2 step 7; `room-entities`,
-  `room-objects`, `boss-sources`, `backgrounds`, `save-layout`,
-  `source-flags`, each `<name>.txt`, numeric only, about 2.6 MB), under the
-  Nintendo-bytes check's strict scope, written only by `gen_extract.sh`.
+  reference for Phase 3's C logger).
   `tests/ladx/Makefile` holds LADX's own targets (`help`, the default;
   `test`, `lint` and `logic`, run by the root `make test`, `make lint`
   and `make logic`;
@@ -211,7 +202,7 @@ in `docs/`, then `README.md`.
   JP 1.0 ROM (MD5, with or without a copier header), whatever its name; it
   proves itself first on planted files in throwaway repositories; no git or
   no work tree gives a `setup:` line; else `rom_guard: <n> tracked files, no
-  ROM`; plus `ladx-tables`; plus `ladx-extract`.
+  ROM`; plus `ladx-tables`.
 - `make test-ladx` (`make -C tests/ladx test`, run by `make test`): LADX's
   unit tests on the host; contract in `tests/ladx/README.md`, "Unit tests
   and lint".
@@ -256,48 +247,6 @@ in `docs/`, then `README.md`.
   0/1, `count` decimal); one `MISSING`, `EXTRA`, `BADFILE`, `BADROW`, `DUP`
   or `BADKEY` line per mismatch (exit 1), else `ladx-tables: <u> units in
   <g> groups, <e> entries, <s> bytes`; a malformed input exits 2.
-- `make ladx-extract` (`python3 -I tests/ladx/oracle/extract.py check
-  [--root <dir>] [--inventory <file>]`, no ROM, no LADXR, no network; run
-  by `make test`) proves itself on planted trees (`extract: self-test, <n> planted
-  trees as expected`, else `extract: self-test failed: <case>`, exit 1),
-  then checks `<root>` (default `tests/ladx/extract/`) against the
-  inventory's Extractions names: one `MISSING <name>`, `EXTRA <file>` or
-  `BADFILE <name>: <reason>` line per finding (not canonical, a structural
-  count or rule broken against `known_source.LAYOUT` and `BOSSES`, a room
-  file's span unlike `save-layout`'s), exit 1, else `extract: <n>
-  fixtures, <b> bytes, every inventory extraction present`; a malformed
-  inventory exits 2.
-- The extraction fixtures' generator, outside the net (the ROM
-  `tmp/ladx/base.gbc` of SHA-1 `d90ac17e…`, LADXR at the pin and python3
-  >= 3.11, else a `setup:` line, exit 2): `tests/ladx/oracle/gen_extract.sh
-  [--out <dir>]` runs `setup.sh`, then `extract.py generate` with
-  `PYTHONHASHSEED=0`: the ROM parsed by `known_source.parse` and by LADXR's
-  `ROMWithTables` (storage regions from its `PointerTable`s),
-  cross-checked (`known_source.check_ladxr`, every entry's bytes,
-  `RoomEditor`'s entities and objects, `BackgroundEditor`'s tile maps), the
-  six files rendered in memory and checked by the Nintendo-bytes check's
-  `check_blob` under the strict scope; a mismatch or a literal run writes
-  nothing (exit 1, offsets and lengths only). It writes
-  `tests/ladx/extract/` (default) or a `<dir>` inside `tmp/` (else exit 2);
-  about 10 s. `gen_extract.sh --check` renders twice under
-  `tmp/ladx-extract/` (A: the setup checkout, `PYTHONHASHSEED=0`; B: a
-  fresh clone in `tmp/ladx-oracle/ladxr-extract-b`, `=1`) and prints one
-  `DIFFERENT`, `MISSING` or `EXTRA` line per file unlike the other run or
-  the committed one, else `extract: 6 files byte-identical on two runs and
-  to tests/ladx/extract`; about 25 s and the network.
-  `python3 -I tests/ladx/oracle/extract.py verify [--root <dir>]
-  [--inventory <file>] [--rom <file>] [--ladxr <dir>]` prints `ok <check>`
-  or `BAD <check>: <detail>` (labels and offsets, never a byte value) for
-  `parse` (the check above), `ks` (the known-source map rebuilt from the
-  six files alone equal to `known_source.build(rom)`, span by span and
-  byte by byte), `flags`, `bosses`, `backgrounds` (tile maps against
-  `BackgroundEditor`), `fingerprints` (each the first 8 bytes of SHA-512
-  of its ROM suffix, no two suffixes sharing one) and `store` (`store_model`
-  driven by the fixtures alone, every placement, pointer byte and the
-  `ld hl` at 0x0DFA equal to LADXR's own `ROMWithTables.save` stores of
-  the unchanged tables, the file write skipped), then `extract-verify: 6
-  files, <k> KS spans, <b> KS bytes rebuilt, <n> bad`, exit 1 on any bad;
-  about 1 s.
 - The LADX oracle, outside the net (it needs git, the network for GitHub and
   python3 >= 3.11, else a `setup:` line; no ROM): `tests/ladx/oracle/setup.sh
   [--fresh]` clones LADXR at its pin into `LADXR_DIR` (default
@@ -486,8 +435,8 @@ in `docs/`, then `README.md`.
   tables) is `tables`; in a case folder
   (`tests/ladx/cases|combos/<case>/`) `run.txt` and `spoiler.json` are
   `general` and `rom_writes.txt` is `writes`; else `strict` under
-  `tests/ladx/cases/`, `tests/ladx/combos/`,
-  `tests/ladx/extract/` (the ROM-derived artifacts), `general` for any
+  `tests/ladx/cases/` and `tests/ladx/combos/` (the ROM-derived
+  artifacts), `general` for any
   other path or a file outside the repository (`--scope` overrides). Scope
   `writes`: the file must parse as a write log (else one `writes ...
   unparsed` literal), its literal tokens are checked at 4 bytes at their
@@ -626,10 +575,11 @@ in `docs/`, then `README.md`.
   `notes/ladx-inventory.md`'s tables (default): one `MISSING`, `STALE`,
   `MISMATCH <section>: <call>: <column> inventory <a>, source <b>` or `BAD`
   (a `Side` other than `table`, `C`, `none`, `unused`, an empty `Group`, a
-  malformed table) line each, then checks the Groups, Read coverage,
-  Extractions and Blind spots tables (every row's group listed with its
-  side, a `C` group's Evidence naming itself, every `extract:<name>`
-  listed, the blind spots equal to `read_trace.py --blind-spots`), exit 1
+  malformed table) line each, then checks the Groups, Read coverage and
+  Blind spots tables (every row's group listed with its side, a `C`
+  group's Evidence naming itself and no `extract:<name>`, every coverage
+  Kind `copy`, `written`, `computed`, `table`, `rom` (read from the user's
+  ROM at runtime, verified by `rom-check`) or `cut:<id>`, the blind spots equal to `read_trace.py --blind-spots`), exit 1
   on a finding, else `inventory: <rows> rows in 6 sections match <commit>`.
   `--print` writes the extracted tables, hand-written columns kept, to
   refresh the file by hand.
@@ -647,7 +597,7 @@ in `docs/`, then `README.md`.
   information lines `STABLE <row>` and `UNREACHED <row>`, then
   `read-check: <cases> cases, <reads> reads, <groups> groups covered`, else
   `read-check: <n> findings`, exit 1. A `cut:<id>` coverage needs its id in
-  `notes/plan3-scope-cuts.md`. `--print` writes the inventory with its
+  `notes/plan3-scope-cuts.md`; a `rom` coverage needs a Reason. `--print` writes the inventory with its
   `Reads (trace)` cells and Depends on column taken from the traces.
 - The full-ROM check, outside the net (python3; the ROM and Phase 3's
   generator, else a `setup:` line): `make -C tests/ladx rom-check
@@ -840,7 +790,6 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
   `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh`, `gen_tables.sh`,
-  `gen_extract.sh`, `extract.py verify`,
   `table_replay.py`, `gen_fill_outcomes.py` and `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
@@ -879,7 +828,10 @@ in `docs/`, then `README.md`.
   fetched by `fetch_rom.sh` into `tmp/ladx/` and refused unless SHA-1
   `d90ac17e…`. Nothing committed holds a literal run of that ROM, checked
   by `nintendo_bytes.py` and, while Phase 2's push gate is armed, before
-  every push.
+  every push. Nothing committed may hold ROM content in any encoding
+  either: re-encoded numbers, per-piece hashes, or anything from which ROM
+  bytes can be rebuilt, not only literal runs; code that needs source-ROM
+  content reads it from the user's ROM at runtime, verified by `rom-check`.
   *Goal: a legal repository, verifiable without the ROM.*
 - **VT is frozen** at `219fcafd`, with no tracking of later alttpr.com
   updates. *Goal: a stable oracle.*

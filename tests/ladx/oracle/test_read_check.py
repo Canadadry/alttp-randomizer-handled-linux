@@ -247,8 +247,14 @@ class Coverage(Fixture):
         self.replace("| copy | moved to bank 0x01 |", "| computed | moved |")
         self.assertEqual(self.kinds(), ["BAD-COVER"])
 
-    def test_extract_must_be_listed(self):
-        self.replace("extract:entity-types", "extract:other")
+    def test_rom_needs_a_reason(self):
+        self.replace("| rom | decides the sprite sets |", "| rom |  |")
+        self.assertEqual(self.check().findings, [
+            "BAD-COVER items `patches.p.items(rom,` table entities 0x0000..0x00FF: a rom read "
+            "needs a Reason saying what its value decides"])
+
+    def test_an_extraction_kind_is_unknown(self):
+        self.replace("| rom | decides the sprite sets |", "| extract:types | decides |")
         self.assertEqual(self.kinds(), ["BAD-COVER"])
 
     def test_cut_must_be_in_the_scope_cuts_note(self):

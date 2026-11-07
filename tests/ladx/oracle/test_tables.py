@@ -183,7 +183,6 @@ INVENTORY = ("# planted inventory\n\n" + _section("generator.py generateRom", [
         ["items", "C", "-", "-", "items"], ["locals", "none", "-", "-", "-"],
         ["options", "table", "lowhpbeep", "-", "-"]])
     + "\n## Read coverage\n\n" + _table(["Group", "Row", "Target", "Range", "Kind", "Reason"], [])
-    + "\n## Extractions\n\n" + _table(["Name", "Group", "Holds", "Derived from", "Format"], [])
     + "\n## Blind spots\n\n" + _table(["File", "Line", "Verdict"], []))
 
 SETTINGS = """# planted settings.txt

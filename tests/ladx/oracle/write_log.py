@@ -48,7 +48,7 @@ C can know it (a literal, or a reference into the C-knowable map), else is a lit
 the segment ends, each maximal run of its net literal bytes (bank bytes at contiguous offsets,
 each entry alone) is matched, left to right, longest first, against the C-knowable map taken as
 maximal runs of contiguous source offsets: a match of at least 4 bytes inside one run becomes a
-copy of its lowest offset (KS-match; C rebuilds those bytes from step 7's extractions). The
+copy of its lowest offset (KS-match; C parses those bytes from the user's ROM at runtime). The
 replaced byte is the same offset's for a bank write; for a table entry the previous value, the
 new one aligned to it by common prefix, then common suffix, each stopping at a byte C cannot
 know; between them, left to right, the longest run of at least 4 bytes without a carried origin

@@ -50,7 +50,7 @@ DEFAULT_INVENTORY = os.path.join(TOP, "notes", "ladx-inventory.md")
 LADXR_PIN = "4325207e4e55076e05f209fbdf16b860a90e42ef"
 
 
-STRICT_PREFIXES = ("tests/ladx/cases/", "tests/ladx/combos/", "tests/ladx/extract/")
+STRICT_PREFIXES = ("tests/ladx/cases/", "tests/ladx/combos/")
 TABLES_PREFIX = "data/ladx/"
 THRESHOLDS = {
     ("strict", "raw"): 4, ("strict", "hex"): 4, ("strict", "bytelist"): 4,
@@ -595,7 +595,7 @@ def _planted_cases(rom):
         "hex": lambda run: b"x = 7" + run.hex().upper().encode() + b";\n",
         "bytelist": lambda run: b"db " + ", ".join("$%02X" % b for b in run).encode() + b"\n",
     }
-    paths = {"strict": "tests/ladx/extract/planted.bin", "general": "notes/planted.c"}
+    paths = {"strict": "tests/ladx/cases/planted.bin", "general": "notes/planted.c"}
     # The policy table restated, not read from THRESHOLDS, so that an edit there fails the proof.
     expected = {"strict": {"raw": 4, "hex": 4, "bytelist": 4},
                 "general": {"raw": 16, "hex": 8, "bytelist": 8}}
@@ -674,8 +674,6 @@ def planted_inventory(rows, coverage=()):
                                                   "Reason"],
                                                  [[g, r, t, "*", k, "planted"]
                                                   for g, r, t, k in coverage])
-            + "\n## Extractions\n\n" + table(["Name", "Group", "Holds", "Derived from",
-                                                "Format"], [])
             + "\n## Blind spots\n\n" + table(["File", "Line", "Verdict"], []))
 
 

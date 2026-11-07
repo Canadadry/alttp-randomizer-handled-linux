@@ -81,9 +81,9 @@ class Pushes(unittest.TestCase):
 
     def test_the_scope_follows_the_pushed_path(self):
         status, output = self.push(lambda r: r.commit("c", [
-            ("tests/ladx/extract/a.bin", ROM[300:305]), ("data/a.bin", ROM[300:315])]))
+            ("tests/ladx/cases/a.bin", ROM[300:305]), ("data/a.bin", ROM[300:315])]))
         self.assertEqual(status, 1)
-        self.assertRegex(output, r"push-gate: refused: tests/ladx/extract/a.bin \(blob "
+        self.assertRegex(output, r"push-gate: refused: tests/ladx/cases/a.bin \(blob "
                                  r"[0-9a-f]{12}\): literal run of 5 bytes at @0 \(raw, strict\)")
         self.assertNotIn("data/a.bin", output)
 
@@ -94,11 +94,11 @@ class Pushes(unittest.TestCase):
         self.assertIn("push-gate: refused: the link is in commit ", output)
 
     def test_a_literal_only_in_an_intermediate_commit_is_refused(self):
-        path = "tests/ladx/extract/s.bin"
+        path = "tests/ladx/cases/s.bin"
         status, output = self.push(lambda r: (r.commit("add", [(path, ROM[100:106])]),
                                               r.commit("drop", removed=[path])))
         self.assertEqual(status, 1)
-        self.assertRegex(output, r"push-gate: refused: tests/ladx/extract/s.bin \(blob "
+        self.assertRegex(output, r"push-gate: refused: tests/ladx/cases/s.bin \(blob "
                                  r"[0-9a-f]{12}\): literal run of 6 bytes at @0 \(raw, strict\)")
 
     def test_a_patch_table_is_checked_in_the_tables_scope(self):

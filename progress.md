@@ -113,6 +113,7 @@
     - [x] Chunk 3: driver group claims and self-test
     - [x] Chunk 4: ladx_gen writes the table groups
   - [ ] Step 3.6 Seed-dependent writes
+    - [x] Owner decision: ROM-content extractions removed
     - [ ] Step 3.6.1 ROM-free proof of save's packing
     - [ ] Step 3.6.2 C write logger and KS
     - [ ] Step 3.6.3 bank3e

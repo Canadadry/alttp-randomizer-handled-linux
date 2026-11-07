@@ -31,8 +31,8 @@ Coverage entry (Group, Row `*` or a row key, Target `*` or a trace target, Range
 Every entry: a listed `C` group, a row of that group, at least one matched read. Kind `copy`:
 a Reason; `written`: every matched read `written:` by groups listed under Groups; `table`: the
 same, by `table` groups; `computed`: group `header`, a named row whose text names `checksum`
-(the checksum rows, whose reads decide only 0x14D..0x14F); `extract:<name>`: a Name under
-Extractions; `cut:<id>`: a heading's or a list item's first word in --scope-cuts (default
+(the checksum rows, whose reads decide only 0x14D..0x14F); `rom`: a Reason (the bytes are read
+from the user's ROM at runtime, verified by rom-check, never committed); `cut:<id>`: a heading's or a list item's first word in --scope-cuts (default
 notes/plan3-scope-cuts.md).
 
 Reads (trace) cell: per target and provenance, `<target> <provenance> <range>` (`0xLO..0xHI`,
@@ -433,6 +433,9 @@ class Checker:
         if kind == "copy":
             if not e["Reason"]:
                 faults.append("a copy needs a Reason saying where the bytes go")
+        elif kind == "rom":
+            if not e["Reason"]:
+                faults.append("a rom read needs a Reason saying what its value decides")
         elif kind in ("written", "table"):
             for prov in provs:
                 writers = _writers(prov)
@@ -445,10 +448,6 @@ class Checker:
         elif kind == "computed":
             if group != HEADER_GROUP or row_key is None or not COMPUTED_ROW.search(row_key):
                 faults.append("computed is only for the %s group's checksum rows" % HEADER_GROUP)
-        elif kind.startswith("extract:"):
-            name = kind[len("extract:"):]
-            if name not in {x["Name"] for x in self.named["Extractions"]}:
-                faults.append("extraction %s is not under Extractions" % name)
         elif kind.startswith("cut:"):
             if kind[len("cut:"):] not in self.cuts:
                 faults.append("cut %s is not in the scope-cuts note" % kind[len("cut:"):])
@@ -575,12 +574,12 @@ PLANTED_ROWS = [
 PLANTED_GROUPS = [
     # (group, side, depends on, evidence)
     ("parse", "none", "-", "-"), ("fixed", "table", "-", "-"),
-    ("items", "C", "fixed", "items, extract:entity-types"), ("sum", "C", "items", "sum"),
+    ("items", "C", "fixed", "items, rom"), ("sum", "C", "items", "sum"),
     ("later", "table", "fixed", "-"), ("consts", "none", "-", "-"),
     ("debug", "unused", "-", "-"), ("never", "table", "-", "-"), ("header", "C", "-", "header"),
 ]
 PLANTED_COVERAGE = [
-    "| items | `patches.p.items(rom,` | table entities | 0x0000..0x00FF | extract:entity-types | "
+    "| items | `patches.p.items(rom,` | table entities | 0x0000..0x00FF | rom | "
     "decides the sprite sets |",
     "| items | * | bank 0x03 | * | cut:no-x | read only under x |",
     "| items | * | bank 0x04 | 0x0000..0x0001 | table | the fixed patch's bytes |",
@@ -612,8 +611,6 @@ def planted_inventory(rows=None, groups=None, coverage=None):
                   (PLANTED_GROUPS if groups is None else groups)])
     out += table("Read coverage", inventory_check.COVERAGE_COLUMNS,
                  PLANTED_COVERAGE if coverage is None else coverage)
-    out += table("Extractions", inventory_check.EXTRACTION_COLUMNS,
-                 ["| entity-types | items | entity types per room | the source rooms | decimal |"])
     out += table("Blind spots", inventory_check.BLIND_COLUMNS, [])
     return "\n".join(out)
 
@@ -736,8 +733,8 @@ SELF_TEST_CASES = [
      _cover("| bank 0x01 | * | written |", "| bank 0x01 | * | table |"), None, ["BAD-COVER"]),
     ("computed outside the header checksum", None, None,
      _cover("| copy | moved to bank 0x01 |", "| computed | moved |"), None, ["BAD-COVER"]),
-    ("unknown extraction", None, None, _cover("extract:entity-types", "extract:nope"), None,
-     ["BAD-COVER"]),
+    ("rom read without a Reason", None, None,
+     _cover("| rom | decides the sprite sets |", "| rom |  |"), None, ["BAD-COVER"]),
     ("unknown cut", None, None, _cover("cut:no-x", "cut:no-y"), None, ["BAD-COVER"]),
     ("entry matching no read", None, None, lambda c: c + [
         "| items | * | bank 0x30 | * | copy | nowhere |"], None, ["BAD-COVER"]),

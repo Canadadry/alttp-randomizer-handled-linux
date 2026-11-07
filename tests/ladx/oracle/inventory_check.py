@@ -3,7 +3,7 @@
 The check of notes/ladx-inventory.md against LADXR's frozen (patched) sources (--ladxr, default
 tests/ladx/oracle/ladxr). It extracts every statement of the sections below and diffs them, row
 by row, against the inventory's table under `## <file> <function>`, then validates the tables
-under `## Groups`, `## Read coverage`, `## Extractions` and `## Blind spots`; prints one
+under `## Groups`, `## Read coverage` and `## Blind spots`; prints one
 `MISSING`, `STALE`, `MISMATCH` or `BAD` line per finding, else
 `inventory: <rows> rows in <n> sections match <commit>`. Exit 1 on a finding, 2 on `setup:`.
 `--print` writes the extracted section tables instead (Reads (trace), Notes, Side and Group kept
@@ -12,10 +12,10 @@ every run, on a planted tree and inventory.
 
 Section columns: COLUMNS; Side one of SIDES. Validation: every row's group is listed under Groups
 with the row's side, and every listed group is used by a row; a `C` group's Evidence (comma
-separated) names the group itself (its write-log group); every `extract:<name>` of an Evidence or
-a coverage Kind is a Name under Extractions; a coverage Kind is one of COVERAGE_KINDS,
-`extract:<name>` or `cut:<id>`, and its group is listed; an extraction's group is listed; the
-Blind spots rows (File, `Line`) equal read_trace.py's `blind_spots` one to one (`MISSING`,
+separated) names the group itself (its write-log group) and no `extract:<name>` (ROM content is
+never committed: a value read from the source ROM is Evidence `rom`, read from the user's ROM at
+runtime and verified by rom-check); a coverage Kind is one of COVERAGE_KINDS or `cut:<id>`, and
+its group is listed; the Blind spots rows (File, `Line`) equal read_trace.py's `blind_spots` one to one (`MISSING`,
 `STALE`), each with a Verdict.
 
 Sections: generator.py generateRom; randomizer.py Randomizer.__init__ after
@@ -66,11 +66,10 @@ KEPT_COLUMNS = COLUMNS[5:]
 SIDES = ("table", "C", "none", "unused")
 GROUP_COLUMNS = ["Group", "Side", "Settings key", "Depends on", "Evidence"]
 COVERAGE_COLUMNS = ["Group", "Row", "Target", "Range", "Kind", "Reason"]
-EXTRACTION_COLUMNS = ["Name", "Group", "Holds", "Derived from", "Format"]
 BLIND_COLUMNS = ["File", "Line", "Verdict"]
 NAMED_TABLES = {"Groups": GROUP_COLUMNS, "Read coverage": COVERAGE_COLUMNS,
-                "Extractions": EXTRACTION_COLUMNS, "Blind spots": BLIND_COLUMNS}
-COVERAGE_KINDS = ("copy", "written", "computed", "table")
+                "Blind spots": BLIND_COLUMNS}
+COVERAGE_KINDS = ("copy", "written", "computed", "table", "rom")
 
 HEADER = re.compile(r"(if|elif|else|for|while|try|except)\b")
 SKIPPED = re.compile(r"(#|return\b|import\b|from\s+\S+\s+import\b|print\()")
@@ -354,8 +353,8 @@ def parse_inventory(text):
 
 
 def parse_named(text):
-    """({table name: [row dict]}, [BAD lines]) of the Groups, Read coverage, Extractions and
-    Blind spots tables; a missing one is a BAD line."""
+    """({table name: [row dict]}, [BAD lines]) of the Groups, Read coverage and Blind spots
+    tables; a missing one is a BAD line."""
     raw, bad = _tables(text, NAMED_TABLES)
     named = {}
     for name, columns in NAMED_TABLES.items():
@@ -411,7 +410,7 @@ def _unquote(cell):
 
 
 def validate(tables, named, blind):
-    """Finding lines of the Groups, Read coverage, Extractions and Blind spots tables against the
+    """Finding lines of the Groups, Read coverage and Blind spots tables against the
     section rows and `blind` ([(file, stripped line)] of read_trace.py --blind-spots)."""
     findings = []
     groups = {}
@@ -438,14 +437,6 @@ def validate(tables, named, blind):
                 findings.append("BAD %s: %s: Side %s, its group %s is %s"
                                 % (section, row["key"], row["Side"], row["Group"],
                                    group["Side"]))
-    extractions = set()
-    for row in named["Extractions"]:
-        if row["Name"] in extractions:
-            findings.append("BAD Extractions: %s: listed twice" % row["Name"])
-        extractions.add(row["Name"])
-        if row["Group"] not in groups:
-            findings.append("BAD Extractions: %s: group %s is not in Groups"
-                            % (row["Name"], row["Group"]))
     for name, row in groups.items():
         if name not in used:
             findings.append("BAD Groups: %s: no row uses it" % name)
@@ -454,20 +445,16 @@ def validate(tables, named, blind):
             findings.append("BAD Groups: %s: a C group whose Evidence does not name its "
                             "write-log group %s" % (name, name))
         for item in evidence:
-            if item.startswith("extract:") and item[len("extract:"):] not in extractions:
-                findings.append("BAD Groups: %s: extraction %s is not in Extractions"
-                                % (name, item[len("extract:"):]))
+            if item.startswith("extract:"):
+                findings.append("BAD Groups: %s: Evidence %s: ROM content is never committed, "
+                                "use rom" % (name, item))
     for row in named["Read coverage"]:
         where = "BAD Read coverage: %s %s: " % (row["Group"], row["Row"])
         kind = row["Kind"]
         if row["Group"] not in groups:
             findings.append(where + "group %s is not in Groups" % row["Group"])
-        if kind.startswith("extract:") and len(kind) > len("extract:"):
-            if kind[len("extract:"):] not in extractions:
-                findings.append(where + "extraction %s is not in Extractions"
-                                % kind[len("extract:"):])
-        elif not (kind in COVERAGE_KINDS or kind.startswith("cut:") and len(kind) > 4):
-            findings.append(where + "kind %r is not one of %s, extract:<name>, cut:<id>"
+        if not (kind in COVERAGE_KINDS or kind.startswith("cut:") and len(kind) > 4):
+            findings.append(where + "kind %r is not one of %s, cut:<id>"
                             % (kind, ", ".join(COVERAGE_KINDS)))
     listed = []
     for row in named["Blind spots"]:
@@ -634,7 +621,7 @@ PLANTED_INVENTORY = ("""\
     "| save | C | - | items | save |\n"]) + "\n"
     + _planted_table("Read coverage", COVERAGE_COLUMNS, [
         "| items | `spot.patch(rom, spot.item)` | bank 0x00 | 0x0000..0x0001 | copy | moved |\n"])
-    + "\n" + _planted_table("Extractions", EXTRACTION_COLUMNS, []) + "\n"
+    + "\n"
     + _planted_table("Blind spots", BLIND_COLUMNS, [
         "| patches/planted.py | `view = memoryview(rom.banks[0])` | not a ROM read |\n"]))
 
@@ -659,7 +646,7 @@ SELF_TEST_CASES = [
      ["BAD"]),
     ("C group without evidence", lambda t: t.replace("| - | music |\n", "| - | - |\n"),
      ["BAD"]),
-    ("unlisted extraction", lambda t: t.replace("| music | items |\n",
+    ("extraction in Evidence", lambda t: t.replace("| music | items |\n",
                                                    "| music | items, extract:x |\n"),
      ["BAD"]),
     ("unknown coverage kind", lambda t: t.replace("| copy | moved |", "| guess | moved |"),
