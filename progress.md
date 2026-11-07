@@ -96,7 +96,7 @@
     - [x] Chunk 2: graph core, explorer and harness
     - [x] Chunk 3: location kinds and metadata
     - [x] Chunk 4: requirement settings and dungeons 1 to 4
-    - [ ] Chunk 5: dungeons 5 to 8 and the colour dungeon
+    - [x] Chunk 5: dungeons 5 to 8 and the colour dungeon
     - [ ] Chunk 6: overworld and the full logic
     - [ ] Chunk 7: every configuration and explorer vector
   - [ ] Step 3.4 Item pool and fill

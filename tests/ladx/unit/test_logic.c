@@ -539,11 +539,11 @@ static void test_graph_spots(void)
 	       TEST, spots, graphs, GRAPHS);
 }
 
-#define DUNGEON_FIRST 1
-#define DUNGEON_LAST 4
+#define DUNGEON_FIRST 0
+#define DUNGEON_LAST 8
 
 /*
- * Each ported dungeon built alone (ladx_logic_build_dungeon) under each
+ * Each dungeon built alone (ladx_logic_build_dungeon) under each
  * baseline's settings and WorldSetup()'s defaults, which every baseline's
  * ws lines equal (checked with --fixtures), equal to the dungeon in the
  * fixture's whole graph: lf_dungeon_compare's walk from "D<n> Entrance".
@@ -702,11 +702,49 @@ static void forced_text(char *out, size_t cap)
 	}
 }
 
+/* The requirement text of from's only edge. */
+static void only_edge_text(const char *from, char *out, size_t cap)
+{
+	const LadxLocation *loc = ladx_logic_location(&logic, location_named(from));
+
+	if (loc->edge_count != 1)
+		test_fail(TEST, "%s has %d edges, want 1", from, loc->edge_count);
+	out[0] = '\0';
+	lf_requirement_text(TEST, ladx_logic_arena(&logic), ladx_logic_edge(&logic, loc->edge_first)->req, out, cap);
+}
+
+/* "<location name or ->:<class> <name id>" of the spots outside any
+ * dungeon, in iteminfo_list order, and the names of the locations outside. */
+static void outside_text(char *out, size_t cap)
+{
+	int i;
+
+	out[0] = '\0';
+	for (i = 0; i < ladx_logic_location_count(&logic); i++) {
+		const LadxLocation *loc = ladx_logic_location(&logic, i);
+
+		if (loc->dungeon == -1)
+			snprintf(out + strlen(out), cap - strlen(out), "%s%s", out[0] ? "," : "",
+				 loc->name ? loc->name : "-");
+	}
+	for (i = 0; i < ladx_logic_spot_count(&logic); i++) {
+		const LadxSpot *sp = ladx_logic_spot(&logic, i);
+
+		if (ladx_logic_location(&logic, sp->location)->dungeon == -1)
+			snprintf(out + strlen(out), cap - strlen(out), ",%s %s", ladx_spot_kind_name(sp->kind),
+				 sp->name_id);
+	}
+}
+
 /*
  * ladx_logic_build_dungeon beyond the baselines: the world setup read
- * (dungeon1.py lines 60-63: miniboss_mapping[0], boss_mapping[0]),
- * dungeon3.py lines 131-135 (forced KEY3 only when dungeon_keys is ""),
- * and the refusals.
+ * (dungeon1.py lines 60-63: miniboss_mapping[0], boss_mapping[0];
+ * dungeonColor.py lines 54-55 and 63: miniboss_mapping["c2"], ["c1"],
+ * boss_mapping[8]), the forced keys (dungeon3.py lines 131-135, dungeon7.py
+ * lines 159-160: only when dungeon_keys is ""), the locations outside the
+ * dungeon the walk skips (dungeon6.py lines 43 and 82-84: the raft island
+ * and its Chest(0x06C); dungeon8.py lines 77 and 93-96: the Tal Tal
+ * connector and its HeartPiece(0x000)), and the refusals.
  */
 static void test_dungeon_build(void)
 {
@@ -731,11 +769,38 @@ static void test_dungeon_build(void)
 	forced_text(got, sizeof got);
 	expect(strcmp(got, "") == 0, "D3 forces nothing under keysanity");
 
+	expect(build_dungeon("", &ws, 7) == LADX_LOGIC_OK, "D7 builds");
+	forced_text(got, sizeof got);
+	expect(strcmp(got, "0x210=KEY7") == 0, "D7 forces KEY7 on its entrance key drop");
+	expect(build_dungeon("dungeon_keys=keysanity", &ws, 7) == LADX_LOGIC_OK, "D7 builds under keysanity");
+	forced_text(got, sizeof got);
+	expect(strcmp(got, "") == 0, "D7 forces nothing under keysanity");
+
+	ws.miniboss_mapping[8] = LADX_MINIBOSS_DODONGO;
+	ws.miniboss_mapping[9] = LADX_MINIBOSS_CUE_BALL;
+	ws.boss_mapping[8] = 5;
+	expect(build_dungeon("", &ws, 0) == LADX_LOGIC_OK, "D0 builds under a shuffled world setup");
+	edge_text("D0 Center Miniboss", "D0 Hidden Button Room", got, sizeof got);
+	expect(strcmp(got, "BOMB") == 0, "D0's centre miniboss reads miniboss_mapping[\"c1\"] (DODONGO: BOMB)");
+	only_edge_text("D0 NE Miniboss", got, sizeof got);
+	expect(strcmp(got, "SWORD") == 0, "D0's NE miniboss reads miniboss_mapping[\"c2\"] (CUE_BALL: SWORD)");
+	edge_text("D0 Boss Room", "D0 Fairy Room", got, sizeof got);
+	expect(strcmp(got, "BOMB") == 0, "D0's boss reads boss_mapping[8] (5: BOMB)");
+	ladx_world_setup_defaults(&ws);
+
+	expect(build_dungeon("", &ws, 6) == LADX_LOGIC_OK, "D6 builds");
+	outside_text(got, sizeof got);
+	expect(strcmp(got, "D6 Raft Ride Island,-,Chest 0x06C") == 0,
+	       "D6's raft island and its chest outside the dungeon");
+	expect(build_dungeon("", &ws, 8) == LADX_LOGIC_OK, "D8 builds");
+	outside_text(got, sizeof got);
+	expect(strcmp(got, "D8 Tal Tal Connector,-,HeartPiece 0x000") == 0,
+	       "D8's Tal Tal connector and its heart piece 0x000 outside the dungeon");
+
 	expect(build_dungeon("boomerang=default,accessibility=all", &ws, 1) == LADX_LOGIC_OK,
 	       "the pair LADXR's fill refuses still builds its logic");
 	expect(build_dungeon("overworld=random", &ws, 1) == LADX_LOGIC_UNSUPPORTED, "an unsupported value refused");
 	expect(ladx_logic_broken(&logic) && ladx_logic_location_count(&logic) == 0, "nothing built when refused");
-	expect(build_dungeon("", &ws, 5) == LADX_LOGIC_BROKEN, "D5 not ported yet");
 	expect(build_dungeon("", &ws, 9) == LADX_LOGIC_BROKEN && build_dungeon("", &ws, -1) == LADX_LOGIC_BROKEN,
 	       "a dungeon out of range");
 	ws.boss_mapping[2] = 9;

@@ -197,9 +197,9 @@ typedef enum LadxLogicStatus {
 } LadxLogicStatus;
 
 /*
- * Dungeon n alone (0 the colour dungeon, 1 to 8; D1 to D4 ported so far,
- * any other n BROKEN): RequirementsSettings, then DungeonN with its
- * entrance as the start, discovery and configure. Not LADXR's whole graph:
+ * Dungeon n alone (0 the colour dungeon, 1 to 8; any other n BROKEN):
+ * RequirementsSettings, then DungeonN with its entrance as the start,
+ * discovery and configure. Not LADXR's whole graph:
  * for the per-dungeon claims and for narrowing a divergence.
  */
 LadxLogicStatus ladx_logic_build_dungeon(LadxLogic *out, const LadxSettings *validated, const LadxWorldSetup *ws,

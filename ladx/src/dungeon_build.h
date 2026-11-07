@@ -19,6 +19,8 @@
 
 #define I(name) ladx_req_item(LADX_ITEM_##name)
 #define NONE ladx_req_none()
+/* back=True */
+#define YES ladx_req_true()
 /* back=False */
 #define NO ladx_req_false()
 #define AND(...) LADX_AND(A, __VA_ARGS__)
@@ -27,12 +29,21 @@
 #define COUNT(item, n) ladx_req_count(A, LADX_ITEM_##item, (n))
 #define ENEMY(name) ladx_dungeon_enemy(c, LADX_ENEMY_##name)
 #define MINIBOSS(i) (R->miniboss_requirements[c->world_setup->miniboss_mapping[(i)]])
+/* miniboss_mapping["c1"], ["c2"]: ladx_miniboss_key's order. */
+#define MAPPING_C1 8
+#define MAPPING_C2 9
+/* r.miniboss_requirements["<NAME>"], not through the mapping. */
+#define MINIBOSS_NAMED(name) (R->miniboss_requirements[LADX_MINIBOSS_##name])
 #define BOSS(i) (R->boss_requirements[c->world_setup->boss_mapping[(i)]])
 
 /* Location(name, dungeon=DUNGEON); NULL for no name. */
 #define LOC(name) ladx_logic_new_location(L, DUNGEON, (name))
+/* Location(name) with no dungeon=. */
+#define LOC_OUTSIDE(name) ladx_logic_new_location(L, -1, (name))
 /* .add(<Kind>(room)) and .add(KeyLocation(item)), each returning the location. */
 #define ADD(loc, kind, room) ladx_logic_add_to(L, (loc), LADX_SPOT_##kind, (room), -1)
+/* .add(<Kind>(index)): TunicFairy's index. */
+#define ADD_INDEX(loc, kind, index) ladx_logic_add_to(L, (loc), LADX_SPOT_##kind, -1, (index))
 #define ADD_KEY(loc, item) ladx_logic_add_to(L, (loc), LADX_SPOT_KEY_LOCATION, -1, LADX_ITEM_##item)
 
 /* a.connect(b, req): back is req. */

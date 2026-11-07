@@ -559,13 +559,17 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   `OwlStatue`, `KeyLocation`) under the settings it reads, LADXR's errors
   and the unported shopsanity branch breaking the logic, and
   `ladx_logic_build_dungeon` (`RequirementsSettings`, then one `DungeonN`
-  of `logic/dungeon<n>.py` alone, its entrance the start, discovery and
-  configure; D1 to D4 so far): the world setup read (`miniboss_mapping[0]`
-  and `boss_mapping[0]` on D1's edges), D3's `forced_item` `KEY3` on its
-  south and west key drops when `dungeon_keys` is `""` and on none under
-  `keysanity`, the pair LADXR's fill refuses built, an unsupported value
-  refused (`LADX_LOGIC_UNSUPPORTED`, nothing built), an unported or
-  out-of-range dungeon and a boss mapping out of range broken. It prints
+  of `logic/dungeon<n>.py`, `DungeonColor` for `n` 0, alone, its entrance
+  the start, discovery and configure): the world setup read
+  (`miniboss_mapping[0]` and `boss_mapping[0]` on D1's edges,
+  `miniboss_mapping["c1"]`, `["c2"]` and `boss_mapping[8]` on D0's), the
+  `forced_item` `KEY3` on D3's south and west key drops and `KEY7` on
+  D7's entrance key drop when `dungeon_keys` is `""` and none under
+  `keysanity`, the locations outside the dungeon (D6's raft island and
+  its `Chest` `0x06C`, D8's Tal Tal connector and its `HeartPiece`
+  `0x000`), the pair LADXR's fill refuses built, an unsupported value
+  refused (`LADX_LOGIC_UNSUPPORTED`, nothing built), an out-of-range
+  dungeon and a boss mapping out of range broken. It prints
   `test_logic: synthetic graphs, renderer, explorer, constructors and
   configure ok (<c> checks)`. Then, without a flag, it rebuilds every
   `spot` line of `oracle/logic_graphs.txt` (its five graphs' locations
@@ -576,7 +580,7 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   options equal the line's; it prints `test_logic: <n> spot lines of <g>
   graphs of oracle/logic_graphs.txt rebuilt from class and name id: name
   id, metadata and options after configure equal`. Then it builds each
-  ported dungeon alone under each graph's settings and `WorldSetup()`'s
+  dungeon (D0 to D8) alone under each graph's settings and `WorldSetup()`'s
   defaults and compares it with the graph (`lf_dungeon_compare`): both
   walked in preorder from the location named `D<n> Entrance`, following
   in order only the edges whose target has dungeon `n`, locations paired
@@ -585,7 +589,7 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   requirement text) equal, edges leaving the dungeon skipped (`Logic`'s
   entrance loop adds them). A difference fails with `dungeon D<n>, graph
   <name>: walk position <p> (<name>): ...` and the first differing name,
-  spot or edge; it prints `test_logic: D1 to D4 built alone equal to the
+  spot or edge; it prints `test_logic: D0 to D8 built alone equal to the
   5 graphs of oracle/logic_graphs.txt (<w> dungeon walks, <l>
   locations)`. With `--fixtures` it then reads every configuration of
   `oracle/logic_vectors.txt`: its settings set on defaults (`""` the

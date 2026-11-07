@@ -168,5 +168,11 @@ int ladx_dungeon1(const LadxDungeonContext *c);
 int ladx_dungeon2(const LadxDungeonContext *c);
 int ladx_dungeon3(const LadxDungeonContext *c);
 int ladx_dungeon4(const LadxDungeonContext *c);
+int ladx_dungeon5(const LadxDungeonContext *c);
+int ladx_dungeon6(const LadxDungeonContext *c);
+int ladx_dungeon7(const LadxDungeonContext *c);
+int ladx_dungeon8(const LadxDungeonContext *c);
+/* DungeonColor(...).entrance. */
+int ladx_dungeon_color(const LadxDungeonContext *c);
 
 #endif

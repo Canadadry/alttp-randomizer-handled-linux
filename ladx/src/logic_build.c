@@ -44,7 +44,8 @@ static bool world_setup_valid(const LadxWorldSetup *ws)
 typedef int (*DungeonBuild)(const LadxDungeonContext *c);
 
 static const DungeonBuild dungeons[9] = {
-	NULL, ladx_dungeon1, ladx_dungeon2, ladx_dungeon3, ladx_dungeon4, NULL, NULL, NULL, NULL,
+	ladx_dungeon_color, ladx_dungeon1, ladx_dungeon2, ladx_dungeon3, ladx_dungeon4,
+	ladx_dungeon5, ladx_dungeon6, ladx_dungeon7, ladx_dungeon8,
 };
 
 LadxLogicStatus ladx_logic_build_dungeon(LadxLogic *out, const LadxSettings *validated, const LadxWorldSetup *ws,
@@ -59,7 +60,7 @@ LadxLogicStatus ladx_logic_build_dungeon(LadxLogic *out, const LadxSettings *val
 		out->broken = true;
 		return LADX_LOGIC_UNSUPPORTED;
 	}
-	if (n < 0 || n > 8 || !dungeons[n] || !world_setup_valid(ws)) {
+	if (n < 0 || n > 8 || !world_setup_valid(ws)) {
 		out->broken = true;
 		return LADX_LOGIC_BROKEN;
 	}
