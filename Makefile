@@ -8,7 +8,7 @@ help:
 	@echo "make test-ladx-oracle the LADX oracle's helper unit tests (tests/ladx/oracle), no LADXR, no network, run by make test"
 	@echo "make ladx-cases     tests/ladx/cases/ and combos/ checked against tier1.txt and combos.txt, their goldens and size budget, no ROM, no LADXR, run by make test"
 	@echo "make ladx-tables    data/ladx/ (LADX patch tables) parsed and checked against the inventory, no ROM, no LADXR, run by make test"
-	@echo "make ladx-extract   tests/ladx/extract/ (extraction fixtures) parsed and checked against the inventory's Extractions names, no ROM, no LADXR"
+	@echo "make ladx-extract   tests/ladx/extract/ (extraction fixtures) parsed and checked against the inventory's Extractions names, no ROM, no LADXR, run by make test"
 	@echo "make rom-guard      fails if git's index holds a .gb/.gbc/.sfc/.smc file or a LADX/ALttP ROM by digest, run by make test"
 	@echo "make ui-cli         builds tests/alttp/build/ui_cli, the agent's text view of the app"
 	@echo "make lint           alttp/ and app/ built as strict ISO C99 (-pedantic-errors)"
@@ -41,7 +41,7 @@ install:
 	@echo "install: no dependency to install (host gcc, make, python3)"
 
 # The fast loop. Keep it a few seconds, with no network and no external service.
-test: test-rando test-template rom-guard test-ladx-oracle ladx-cases ladx-tables
+test: test-rando test-template rom-guard test-ladx-oracle ladx-cases ladx-tables ladx-extract
 
 test-rando:
 	$(MAKE) -C tests/alttp test
