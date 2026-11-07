@@ -176,15 +176,29 @@ typedef enum LadxGoal {
 	LADX_GOAL_COUNT
 } LadxGoal;
 
+/* patches/maze.py buildMaze's signs: the 20 of its walk, the connection and the egg. */
+#define LADX_SIGN_MAZE_SIGNS 22
+
+typedef struct LadxSign {
+	int x, y;
+} LadxSign;
+
 typedef struct LadxWorldSetup {
 	int boss_mapping[9];
 	LadxMiniboss miniboss_mapping[LADX_MINIBOSS_KEY_COUNT];
 	LadxGoal goal;
 	char goal_instruments[9]; /* SPECIFIC: digits 1 to 8, NUL-terminated */
 	int goal_count;
+	/* sign_maze: sign_count 0 is None, else LADX_SIGN_MAZE_SIGNS signs and one direction fewer. */
+	int sign_count;
+	LadxSign signs[LADX_SIGN_MAZE_SIGNS];
+	int directions[LADX_SIGN_MAZE_SIGNS - 1];
+	int multichest; /* an item */
+	bool inside_to_outside, keep_two_way, one_on_one;
 } LadxWorldSetup;
 
-/* WorldSetup(): bosses in place, the vanilla minibosses, goal vanilla, 8. */
+/* WorldSetup(): bosses in place, the vanilla minibosses, goal vanilla, 8,
+ * no sign maze, multichest RUPEES_20, the three entrance flags true. */
 void ladx_world_setup_defaults(LadxWorldSetup *ws);
 /* NULL out of range; key i of miniboss_mapping ("c1"). */
 const char *ladx_miniboss_key(int i);

@@ -12,6 +12,8 @@
 #define BASELINE "cases/baseline/run.txt"
 #define RACE "cases/race-1/run.txt"
 #define GOAL_SPECIFIC "cases/goal-specific/run.txt"
+#define GOAL_MAZE "cases/goal-maze/run.txt"
+#define BOSS_RANDOM "cases/boss-random/run.txt"
 #define KEYSANITY "combos/dungeon_keys-keysanity+nightmare_keys-keysanity+dungeon_beaks-keysanity+dungeon_maps-keysanity+keyholesanity-1/run.txt"
 
 static int checks;
@@ -308,12 +310,76 @@ static void test_outcome_lines(void)
 	check(ladx_run_text_outcome_line(line, 5, &o) == 0 && line[0] == '\0', "outcome line over capacity");
 }
 
+/* Every ws line of a golden, rendered from a world setup built by hand. */
+static void check_ws_lines(const char *path, const LadxWorldSetup *ws)
+{
+	static const char *const fields[LADX_RUN_TEXT_WS_LINES] = {
+		"entrance_mapping", "boss_mapping", "miniboss_mapping", "goal", "goal_count", "bingo_goals", "sign_maze",
+		"multichest", "map", "dungeon_chain", "inside_to_outside", "keep_two_way", "one_on_one",
+	};
+	char line[LADX_RUN_TEXT_MAX_LINE], prefix[64];
+	int i;
+
+	for (i = 0; i < LADX_RUN_TEXT_WS_LINES; i++) {
+		check(ladx_run_text_ws_line(line, sizeof line, ws, i) > 0, "ws line renders");
+		snprintf(prefix, sizeof prefix, "ws %s ", fields[i]);
+		check_golden(path, prefix, line);
+	}
+	check(ladx_run_text_ws_line(line, sizeof line, ws, LADX_RUN_TEXT_WS_LINES) == 0 && line[0] == '\0',
+	      "no ws line past the last");
+}
+
+static void test_ws_lines(void)
+{
+	static const LadxSign signs[] = {
+		{27, 84}, {27, 75}, {37, 75},	{37, 59},   {68, 59},  {68, 66},  {22, 66}, {7, 66},
+		{7, 33},  {73, 33}, {73, 68},	{73, 73},   {56, 73},  {56, 84},  {56, 122}, {134, 122},
+		{134, 67}, {17, 67}, {17, 99},	{24, 99},   {24, 5},   {65, 5}};
+	static const int directions[] = {1, 2, 1, 2, 0, 3, 3, 1, 2, 0, 0, 3, 0, 0, 2, 129, 3, 128, 2, 1, 2};
+	static const int bosses[9] = {2, 5, 0, 2, 3, 4, 6, 5, 8};
+	LadxWorldSetup ws;
+	char line[LADX_RUN_TEXT_MAX_LINE];
+	int i;
+
+	ladx_world_setup_defaults(&ws);
+	ws.goal = LADX_GOAL_MAZE;
+	ws.sign_count = (int)(sizeof signs / sizeof signs[0]);
+	memcpy(ws.signs, signs, sizeof signs);
+	memcpy(ws.directions, directions, sizeof directions);
+	check_ws_lines(GOAL_MAZE, &ws);
+
+	ladx_world_setup_defaults(&ws);
+	for (i = 0; i < 9; i++)
+		ws.boss_mapping[i] = bosses[i];
+	ws.multichest = LADX_ITEM_BOMB;
+	check_ws_lines(BOSS_RANDOM, &ws);
+
+	ladx_world_setup_defaults(&ws);
+	ws.goal = LADX_GOAL_SPECIFIC;
+	strcpy(ws.goal_instruments, "1764");
+	ws.goal_count = 4;
+	ws.multichest = LADX_ITEM_RUPEES_100;
+	check_ws_lines(GOAL_SPECIFIC, &ws);
+
+	ws.goal = LADX_GOAL_OPEN;
+	ws.goal_count = -1;
+	ws.inside_to_outside = false;
+	check(ladx_run_text_ws_line(line, sizeof line, &ws, 3) > 0, "ws goal open renders");
+	check_text(line, "ws goal open", "goal open");
+	check(ladx_run_text_ws_line(line, sizeof line, &ws, 4) > 0, "ws goal_count -1 renders");
+	check_text(line, "ws goal_count -1", "goal_count -1");
+	check(ladx_run_text_ws_line(line, sizeof line, &ws, 10) > 0, "ws flag renders");
+	check_text(line, "ws inside_to_outside 0", "a false flag as 0");
+	check(ladx_run_text_ws_line(line, 8, &ws, 1) == 0 && line[0] == '\0', "ws line over capacity");
+}
+
 int main(void)
 {
 	test_float_hex();
 	test_golden_trace();
 	test_other_lines();
 	test_outcome_lines();
+	test_ws_lines();
 	test_capacity();
 	test_sink();
 	printf("%s: float.hex as CPython's, %d golden lines rendered byte-identical, sink numbering ok (%d checks)\n",

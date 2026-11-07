@@ -6,7 +6,7 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -ffp-contract=off
 LADX := ../../ladx
 BUILD := build
 
-UNIT_TESTS := test_sha512 test_pyrandom test_rng test_run_text test_settings test_requirements test_logic
+UNIT_TESTS := test_sha512 test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup
 # Run again with --fixtures by make logic and unit-arm.
 LOGIC_TESTS := test_logic
 

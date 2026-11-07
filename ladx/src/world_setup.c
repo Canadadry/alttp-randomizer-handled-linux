@@ -27,6 +27,11 @@ void ladx_world_setup_defaults(LadxWorldSetup *ws)
 	ws->goal = LADX_GOAL_VANILLA;
 	ws->goal_instruments[0] = '\0';
 	ws->goal_count = 8;
+	ws->sign_count = 0;
+	ws->multichest = LADX_ITEM_RUPEES_20;
+	ws->inside_to_outside = true;
+	ws->keep_two_way = true;
+	ws->one_on_one = true;
 }
 
 const char *ladx_miniboss_key(int i)

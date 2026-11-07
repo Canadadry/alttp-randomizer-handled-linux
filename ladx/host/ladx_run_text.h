@@ -35,6 +35,16 @@ size_t ladx_run_text_settings_line(char *buf, size_t cap, const char *short_stri
  */
 size_t ladx_run_text_outcome_line(char *buf, size_t cap, const LadxOutcome *outcome);
 
+/* The ws lines of run.txt, one per WorldSetup attribute. */
+#define LADX_RUN_TEXT_WS_LINES 13
+
+/*
+ * Line i of the world setup, `ws <field> <value>`, in WorldSetup's attribute
+ * order (ladx_oracle.ws_lines); same return as ladx_run_text_trace_line, 0
+ * for i outside 0 to LADX_RUN_TEXT_WS_LINES - 1.
+ */
+size_t ladx_run_text_ws_line(char *buf, size_t cap, const LadxWorldSetup *ws, int i);
+
 /* A trace sink numbering the records from 0 and writing each line to out. */
 typedef struct LadxRunTextTrace {
 	FILE *out;

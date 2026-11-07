@@ -197,6 +197,81 @@ size_t ladx_run_text_outcome_line(char *buf, size_t cap, const LadxOutcome *outc
 	return finish(&t);
 }
 
+size_t ladx_run_text_ws_line(char *buf, size_t cap, const LadxWorldSetup *ws, int i)
+{
+	Text t;
+	int n;
+
+	open_text(&t, buf, cap);
+	switch (i) {
+	case 0:
+		put(&t, "ws entrance_mapping identity");
+		break;
+	case 1:
+		put(&t, "ws boss_mapping ");
+		for (n = 0; n < 9; n++)
+			put(&t, n ? ",%d" : "%d", ws->boss_mapping[n]);
+		break;
+	case 2:
+		put(&t, "ws miniboss_mapping ");
+		for (n = 0; n < LADX_MINIBOSS_KEY_COUNT; n++) {
+			const char *name = ladx_miniboss_name(ws->miniboss_mapping[n]);
+
+			if (!name)
+				t.over = 1;
+			put(&t, n ? ",%s=%s" : "%s=%s", ladx_miniboss_key(n), name);
+		}
+		break;
+	case 3:
+		if (ws->goal == LADX_GOAL_SPECIFIC)
+			put(&t, "ws goal =%s", ws->goal_instruments);
+		else if (ladx_goal_name(ws->goal))
+			put(&t, "ws goal %s", ladx_goal_name(ws->goal));
+		else
+			t.over = 1;
+		break;
+	case 4:
+		put(&t, "ws goal_count %d", ws->goal_count);
+		break;
+	case 5:
+		put(&t, "ws bingo_goals -");
+		break;
+	case 6:
+		put(&t, "ws sign_maze ");
+		if (ws->sign_count == 0)
+			put(&t, "-");
+		for (n = 0; n < ws->sign_count; n++)
+			put(&t, n ? ",%d:%d" : "%d:%d", ws->signs[n].x, ws->signs[n].y);
+		for (n = 0; n + 1 < ws->sign_count; n++)
+			put(&t, n ? ",%d" : ";%d", ws->directions[n]);
+		break;
+	case 7:
+		if (ladx_item_name(ws->multichest))
+			put(&t, "ws multichest %s", ladx_item_name(ws->multichest));
+		else
+			t.over = 1;
+		break;
+	case 8:
+		put(&t, "ws map -");
+		break;
+	case 9:
+		put(&t, "ws dungeon_chain -");
+		break;
+	case 10:
+		put(&t, "ws inside_to_outside %d", ws->inside_to_outside ? 1 : 0);
+		break;
+	case 11:
+		put(&t, "ws keep_two_way %d", ws->keep_two_way ? 1 : 0);
+		break;
+	case 12:
+		put(&t, "ws one_on_one %d", ws->one_on_one ? 1 : 0);
+		break;
+	default:
+		t.over = 1;
+	}
+	return finish(&t);
+}
+
 void ladx_run_text_trace_init(LadxRunTextTrace *t, FILE *out)
 {
 	t->out = out;
