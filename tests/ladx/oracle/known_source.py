@@ -1,4 +1,4 @@
-"""Usage: python3 -I tests/ladx/oracle/known_source.py [--rom <file>] [--ladxr <dir>]
+"""Usage: python3 -I tests/ladx/oracle/known_source.py [--rom <file>] [--ladxr <dir>] [--spans <file>]
 
 The C-knowable source map (KS) of write_log.py's encoding rule: the source ROM offsets whose
 values C can parse from the user's ROM at runtime, built here from the ROM itself and only with
@@ -20,7 +20,9 @@ With --rom (default tmp/ladx/base.gbc) it prints `NOT-REBUILT <span>` per failur
 summary `known-source: <n> spans, <b> bytes, <f> not rebuilt`. With --ladxr too (a checkout at
 the pin) it also checks the parse against LADXR's own (every entry's source span, through
 read_trace.py's origins) and that RoomEditor round-trips every unchanged source room, entity
-and object entries included: one `MISMATCH <what>` line per difference, exit 1 on any.
+and object entries included: one `MISMATCH <what>` line per difference, exit 1 on any. With
+--spans it also writes `spans(ks)`, the span list C's KS writes (tests/ladx/README.md, "KS span
+list"): offsets, lengths and labels, never a byte value.
 """
 
 import argparse
@@ -307,6 +309,15 @@ def summary(ks):
                                                                len(ks.failures))
 
 
+def spans(ks):
+    """The span list text: `ladx-ks-spans 1`, `<start> <length> <label>` per span in hex in the
+    build's order, then `failure <label>` per span left out."""
+    lines = ["ladx-ks-spans 1"]
+    lines += ["%x %x %s" % (start, stop - start, label) for start, stop, label in ks.spans]
+    lines += ["failure " + label for label in ks.failures]
+    return "".join(line + "\n" for line in lines)
+
+
 def check_ladxr(rom_path, ladxr, rom):
     """MISMATCH lines between this parse and LADXR's, and for every unchanged source room that
     RoomEditor does not store back byte for byte."""
@@ -371,6 +382,7 @@ def main(argv):
     parser = argparse.ArgumentParser(prog="known_source.py")
     parser.add_argument("--rom", default=DEFAULT_ROM)
     parser.add_argument("--ladxr")
+    parser.add_argument("--spans")
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
@@ -384,6 +396,9 @@ def main(argv):
     with open(args.rom, "rb") as f:
         rom = f.read()
     ks = build(rom)
+    if args.spans:
+        with open(args.spans, "w") as f:
+            f.write(spans(ks))
     for label in ks.failures:
         print("NOT-REBUILT " + label)
     mismatches = check_ladxr(args.rom, args.ladxr, rom) if args.ladxr else []

@@ -6,8 +6,11 @@ Unit tests of known_source.py on a synthetic ROM with a planted table layout, no
 import importlib.util
 import os
 import random
+import contextlib
+import io
 import struct
 import sys
+import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -158,6 +161,58 @@ class Build(unittest.TestCase):
         self.assertEqual(known_source.summary(self.known),
                          "known-source: %d spans, %d bytes, 2 not rebuilt"
                          % (len(self.known.spans), len(self.known)))
+
+
+class Spans(unittest.TestCase):
+    """The span list of the planted layout, written out here from Planted, in build's order."""
+
+    def expected(self):
+        lines = ["ladx-ks-spans 1"]
+
+        def span(start, length, label):
+            lines.append("%x %x %s" % (start, length, label))
+
+        span(at(0, 0x10), 2, "rooms pointer Alt06")
+        span(at(1, 0), 2, "rooms pointer 0")
+        span(at(1, 2), 2, "rooms pointer 1")
+        span(at(1, 0x100), 0xD, "rooms 0")
+        span(at(1, 0x10D), 3, "rooms 1")
+        span(at(1, 0x300), 6, "rooms Alt06")
+        for n in range(3):
+            span(at(2, 2 * n), 2, "entities pointer %x" % n)
+        span(at(2, 0x100), 3, "entities 0")
+        span(at(3, 0), 2, "texts pointer 0")
+        span(at(3, 0x200), 1, "texts bank 0")
+        span(at(3, 2), 2, "texts pointer 1")
+        for n in range(3):
+            span(at(5, n), 1, "sprites pointer %x" % n)
+        for n in range(3):
+            span(at(5, 0x100 + 4 * n), 4, "sprites %x" % n)
+        span(at(5, 0x200), 2, "backgrounds pointer 0")
+        span(at(5, 0x300), 0xB, "backgrounds 0")
+        span(at(5, 0x800), 1, "boss zero %x" % at(5, 0x800))
+        span(at(5, 0x802), 1, "boss zero %x" % at(5, 0x802))
+        span(at(5, 0x901), 1, "boss item 1")
+        span(at(5, 0x903), 1, "boss item 3")
+        lines += ["failure entities 2", "failure texts bank 1"]
+        return "".join(line + "\n" for line in lines)
+
+    def test_spans_lists_every_span_in_build_order_then_the_failures(self):
+        planted = Planted()
+        known = known_source.build(bytes(planted.rom), planted.layout, planted.bosses)
+        self.assertEqual(known_source.spans(known), self.expected())
+
+    def test_the_spans_option_writes_the_list_of_the_rom_s_map(self):
+        rom = bytearray(random.Random(7).randbytes(0x40 * BANK))
+        with tempfile.TemporaryDirectory() as tmp:
+            rom_path, out = os.path.join(tmp, "rom.gbc"), os.path.join(tmp, "spans.txt")
+            with open(rom_path, "wb") as f:
+                f.write(rom)
+            with contextlib.redirect_stdout(io.StringIO()):
+                known_source.main(["--rom", rom_path, "--spans", out])
+            with open(out) as f:
+                text = f.read()
+        self.assertEqual(text, known_source.spans(known_source.build(bytes(rom))))
 
 
 class Fields(unittest.TestCase):

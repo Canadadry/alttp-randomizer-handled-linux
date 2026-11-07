@@ -419,7 +419,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `ladx/src/`; pure C99, no allocation, no platform library, nothing of
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
-(`test_sha512`, `test_pyrandom`, `test_rng`, `test_run_text`,
+(`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
 `test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
@@ -430,7 +430,9 @@ keeps the flag. Library objects see only `-I ladx/include`; the host
 layer `ladx/host/` (C99, stdio allowed, never built into the device's
 library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
-`test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`. Build output goes to `tests/ladx/build/`.
+`test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
+those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
+`test_rom`, `test_ks`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -441,6 +443,50 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   and `../../notes/plan3-scope-cuts.md`), then prints
   `test: <n> LADX unit tests ran`. `test_sha512` prints `test_sha512:
   FIPS 180-4 vectors, padding boundaries and streaming splits ok`;
+  `test_sha1` checks `ladx_sha1.h` the same way (FIPS 180 `""`, `abc`,
+  the 448-bit message and one million `a`; the padding boundaries 55,
+  56, 63, 64, 119 and 120 bytes, digests from `hashlib`; every split of a
+  200-byte stream; `NULL, 0`) and prints `test_sha1: FIPS 180-4 vectors,
+  padding boundaries and streaming splits ok`.
+  `test_rom` checks `ladx_rom.h`: the base check (`ladx_rom_check`: a
+  planted 1 MiB buffer refused as wrong SHA-1, 1 MiB minus 1 byte as
+  wrong size, each with its SHA-1 as the digest; the accepted SHA-1
+  `d90ac17e…`); then the reader (`ladx_rom_tables_parse`, LADXR's
+  `ROMWithTables` tables as `PointerTable` and each table's `_readData`
+  read them) on a synthetic 1 MiB ROM that `unit/synth_rom.c` builds
+  from a fixed PRNG in LADXR's layout (`romTables.py` written out in the
+  builder, not taken from the library: the pointer tables, the texts'
+  banks table, the seven alt pointers, entries of every kind, integer
+  pointers, every byte synthetic), recording where it put each entry:
+  every table's name, count, alt count and first entry, and every
+  entry's key, span or integer pointer, bank, pointer place and length
+  and banks-table byte equal to the builder's record, through the entry
+  array and `ladx_rom_entry`; and each fault refused with its table
+  (`LADX_ROM_PARSE_BAD_SIZE` for 1 MiB minus 1 byte; `PAST_BANK` for a
+  text, an entity list, a room object, a room header and a background
+  run reaching their bank's end; `ALT_POINTER` for `Alt8C` at `0x1234`
+  and `0x8034`). It prints `test_rom: base check, the tables of a
+  synthetic ROM parsed as built, faults refused (<c> checks)`.
+  `test_ks` checks `ladx_ks.h` (KS, `known_source.build` ported) on the
+  same builder's ROM, which plants entity lists whose `0xFF` falls on a
+  pair's second byte and texts' banks bytes over `0x3F`: the span list
+  (below, "KS span list") equal to the one the test writes from the
+  builder's record in `known_source.build`'s order (per table the
+  pointers, alt keys first, each text's banks byte after its pointer,
+  then the entries of the KS keys, then the boss zero bytes and item
+  ids, then the failures), with its span, byte and failure counts;
+  `entries` of every key (none for an integer pointer, a key outside KS
+  or a failure); `span_at` of each entry's last byte its own span; on
+  hand-built maps, `span_at` with nested, duplicate and overlapping spans
+  (the lowest start, the longest on a tie, nothing before `finish`),
+  membership, the maximal runs, `find` (the lowest offset inside one
+  run, nothing across two runs or a gap, under 4 bytes or outside KS), a
+  key added twice giving its later span, and the statuses (an empty
+  span, a span past the source, an add after `finish`, the span
+  capacity's overflow). It prints `test_ks: the span list of a synthetic
+  ROM (<s> spans, <b> bytes, <f> not rebuilt, <e> entries)` and
+  `test_ks: build, span list, entries, span_at, runs, find and statuses
+  (<c> checks)`.
   `test_pyrandom` replays every fixture line and fails on an unknown kind
   or op, a malformed line, or a missing kind or op, then prints
   `test_pyrandom: <n> fixture lines ok (<kind> <count>, ...)`. Its
@@ -778,6 +824,21 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
   <n> LADX unit tests and <m> fixture replays passed under qemu-arm`; any
   failure exits
   non-zero.
+
+## KS span list
+
+The C-knowable source map's spans as text, offsets, lengths and labels
+only, never a byte value: written by `known_source.py --spans <file>`
+(`spans(ks)`) and by C's `ladx_ks_render_spans`, so that the two builds
+compare as text. Line 1 is `ladx-ks-spans 1`; then one `<start> <length>
+<label>` line per span (lowercase hex, no `0x`), in `known_source.build`'s
+order; then one `failure <label>` line per span left out because its
+fields do not rebuild it. Labels: `<table> pointer <key>`, `<table> bank
+<key>`, `<table> <key>` (an entry span), `boss zero <offset>` and `boss
+item <room>`, a key in hex or its alt name. On the LADX ROM both give
+6105 spans, 59,971 bytes and 186 failures (all texts' banks bytes). The
+list derives from the ROM: it is written only under `tmp/`, never
+committed.
 
 ## Generator `ladx_gen`
 

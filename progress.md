@@ -119,6 +119,15 @@
       - [x] Fragment finder, checks and encoder rule
       - [x] Goldens and tables regenerated
     - [ ] Step 3.6.2 C write logger and KS
+      - [x] Chunk 1: SHA-1 and the base check
+      - [x] Chunk 2: ROM reader on a synthetic ROM
+      - [x] Chunk 3: KS in C and the span list
+      - [ ] Chunk 4: write-log parsing and projection in C
+      - [ ] Chunk 5: encoder fixture
+      - [ ] Chunk 6: encoder core rules
+      - [ ] Chunk 7: KS-match and fragment rule
+      - [ ] Chunk 8: pipeline and ladx_gen --rom
+      - [ ] Chunk 9: driver, e2e-rom and the real-ROM run
     - [ ] Step 3.6.3 bank3e
     - [ ] Step 3.6.4 title
     - [ ] Step 3.6.5 marin

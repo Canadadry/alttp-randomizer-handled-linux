@@ -6,7 +6,7 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -ffp-contract=off
 LADX := ../../ladx
 BUILD := build
 
-UNIT_TESTS := test_sha512 test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
+UNIT_TESTS := test_sha512 test_sha1 test_rom test_ks test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
 	test_itempool test_fill test_wlog test_tables
 # Run again with --fixtures by make logic and unit-arm.
 LOGIC_TESTS := test_logic test_itempool test_fill
@@ -23,6 +23,9 @@ LADX_LIB := $(BUILD)/libladx.a
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 SUPPORT_OBJ := $(BUILD)/support.o
 LOGIC_FIXTURE_OBJ := $(BUILD)/logic_fixture.o
+SYNTH_ROM_OBJ := $(BUILD)/synth_rom.o
+# Linked with the synthetic ROM builder unit/synth_rom.c.
+SYNTH_TESTS := test_rom test_ks
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
 MAIN_SRC := $(wildcard $(LADX)/host/main/*.c)
 GEN := $(BUILD)/ladx_gen
@@ -96,7 +99,7 @@ unit-arm:
 	@rm -rf $(ARM_UNIT_DIR) && mkdir -p $(ARM_UNIT_DIR)/obj
 	@echo "unit-arm: building $(words $(UNIT_TESTS)) LADX unit tests in $(ARM_UNIT_DIR) with Onion's toolchain"
 	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include -I$(LADX)/host"; \
-		for s in $(LADX_SRC) $(HOST_SRC) unit/support.c unit/logic_fixture.c; do "$$cc" $$f -c -o $(ARM_UNIT_DIR)/obj/$$(basename $$s .c).o $$s; done; \
+		for s in $(LADX_SRC) $(HOST_SRC) unit/support.c unit/logic_fixture.c unit/synth_rom.c; do "$$cc" $$f -c -o $(ARM_UNIT_DIR)/obj/$$(basename $$s .c).o $$s; done; \
 		for t in $(UNIT_TESTS); do "$$cc" $$f -Iunit -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o -lm; done'
 	@file $(ARM_UNIT_DIR)/test_pyrandom | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_UNIT_DIR)/test_pyrandom; echo "unit-arm: $(ARM_UNIT_DIR)/test_pyrandom is not a 32-bit ARM EABI executable" >&2; exit 1; }
 	@qemu-arm --version | head -n 1
@@ -119,6 +122,12 @@ $(LADX_LIB): $(LADX_OBJ)
 
 $(SUPPORT_OBJ): unit/support.c unit/support.h | $(BUILD)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(SYNTH_ROM_OBJ): unit/synth_rom.c unit/synth_rom.h | $(BUILD)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(addprefix $(BUILD)/,$(SYNTH_TESTS)): $(BUILD)/test_%: unit/test_%.c unit/support.h unit/synth_rom.h $(SUPPORT_OBJ) $(SYNTH_ROM_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(SYNTH_ROM_OBJ) $(LADX_LIB)
 
 $(LOGIC_FIXTURE_OBJ): unit/logic_fixture.c unit/logic_fixture.h unit/support.h $(LADX_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -c -o $@ $<

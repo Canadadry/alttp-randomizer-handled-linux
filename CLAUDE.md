@@ -19,7 +19,11 @@ in `docs/`, then `README.md`.
   spoiler JSON, the playthrough, the output, and the generator's `main`
   (`host/main/rando_gen.c`).
 - `ladx/` is LADX's C library (Phase 3): `include/` its public headers,
-  `src/` its sources (`sha512.c`, `pyrandom.c`, CPython's `random.Random`;
+  `src/` its sources (`sha512.c`, `sha1.c`, `pyrandom.c`, CPython's `random.Random`;
+  `rom.c`, the base check and LADXR's `ROMWithTables` tables read from the
+  user's ROM, `ladx_rom.h`, tested by `test_rom` on `unit/synth_rom.c`'s
+  synthetic ROM; `ks.c`, KS as `known_source.build`, `ladx_ks.h`, tested
+  by `test_ks`, span list in `tests/ladx/README.md`, "KS span list";
   `settings.c`, LADXR's settings table, parsing, `validate`, short string
   and the unsupported values and pair with their reason ids; `items.c`,
   LADXR's item names; `requirements.c`, its requirement nodes and the
@@ -111,7 +115,8 @@ in `docs/`, then `README.md`.
   command, with the ROM, is `gen_tables.sh`'s worker; `table_replay.py`,
   the tables' host replay against the goldens; `known_source.py`, the
   C-knowable source map KS built from the ROM, only with the ROM present
-  (`tests/ladx/README.md`, "Encoding rule"); `rom_check.py`, the full-ROM check's driver (Phase 2 step 9;
+  (`tests/ladx/README.md`, "Encoding rule"; `--spans <file>` writes its
+  span list, "KS span list"); `rom_check.py`, the full-ROM check's driver (Phase 2 step 9;
   its generator contract in `tests/ladx/README.md`, "Full-ROM check"),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
