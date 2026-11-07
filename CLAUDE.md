@@ -62,7 +62,12 @@ in `docs/`, then `README.md`.
   `tests/ladx/README.md`, "Pipeline"; `music.c`, the `C` group `music`
   (`randomizeMusic`), tested by `test_music`, claimed `rom-group` by
   `e2e-rom` with its trace lines, its draws run without the ROM too,
-  contract in `tests/ladx/README.md`, "Pipeline"; `tables.c`, the patch tables' reader, key, walk, records
+  contract in `tests/ladx/README.md`, "Pipeline"; `endscreen.c`, the `C`
+  group `endscreen` (`updateEndScreen`, the drawn cat's image from
+  `data/ladx/endscreen.txt`), tested by `test_endscreen`, claimed
+  `rom-group` by `e2e-rom` with its trace line, its draw run without the
+  ROM too, contract in `tests/ladx/README.md`, "Pipeline" and "Patch
+  tables"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
@@ -108,8 +113,9 @@ in `docs/`, then `README.md`.
   the base patch `base.bps`. Press Start 2P is `google/fonts`
   `ofl/pressstart2p/` at `24ddc1f324cac5d9f5aedca126d298f56e3f1640`, renamed.
   `data/ladx/` holds LADX's patch tables (`order.txt` and one `<group>.txt`
-  per `table` group of the inventory, plus `bank3e.txt`, the `C` group
-  `bank3e`'s constants file; format, units, keys, entries and the
+  per `table` group of the inventory, plus `bank3e.txt` and
+  `endscreen.txt`, the `C` groups `bank3e`'s and `endscreen`'s constants
+  files, the latter holding LADXR's 24 cat images; format, units, keys, entries and the
   order walk in `tests/ladx/README.md`'s "Patch tables"), written only by
   `gen_tables.sh`, never by hand.
 - `tests/alttp/` holds its tests: `unit/test_<module>.c`, one binary per
@@ -380,8 +386,9 @@ in `docs/`, then `README.md`.
   `DIFFERENT`, `MISSING` or `EXTRA` line per file unlike `data/ladx/`
   (exit 1), else `tables: <n> files byte-identical to data/ladx`.
   `gen_tables.sh --const [--out <dir>]` (with the ROM, outside the net)
-  rewrites only the `C` groups' constants files (`bank3e.txt`; contract
-  in `tests/ladx/README.md`, "Patch tables"), about 1 minute.
+  rewrites only the `C` groups' constants files (`bank3e.txt` and
+  `endscreen.txt`; contract in `tests/ladx/README.md`, "Patch tables"),
+  about 70 seconds.
   `gen_tables.sh --sample [--ladxr <dir>]` (the checkout at the pin, no
   ROM) appends the 12 `sample <nn> k=v ...` lines to `combos.txt`
   (`gen_tables.py sample`: line `i` takes each setting's tier-1 value at

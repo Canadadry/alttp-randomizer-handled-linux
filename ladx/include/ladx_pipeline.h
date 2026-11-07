@@ -91,4 +91,10 @@ LadxPipelineStatus ladx_pipeline_run(LadxPipeline *p, LadxEncoder *enc, LadxPipe
  */
 int ladx_pipeline_const(LadxEncoder *enc, LadxPipeline *p, const char *group);
 
+/* ladx_pipeline_const of units first to first + count - 1 alone (0-based in the file); 0 when out of range. */
+int ladx_pipeline_const_units(LadxEncoder *enc, LadxPipeline *p, const char *group, int first, int count);
+
+/* The number of units of group's constants file; -1 when it has none. */
+int ladx_pipeline_const_unit_count(const LadxPipeline *p, const char *group);
+
 #endif

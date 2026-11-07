@@ -7,6 +7,7 @@ group music-fixed
 group options
 group hints
 rom-group bank3e
+rom-group endscreen
 rom-group marin
 rom-group music
 rom-group title

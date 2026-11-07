@@ -86,7 +86,7 @@ typedef struct Calls {
 	char text[128];
 	int fail_beta;
 	int rommy_saw_tables;
-	int rommy_const; /* rommy also writes its constants file */
+	int rommy_const; /* rommy also writes its constants file: 1 whole, 2 its second unit alone, 3 units 1 and 2 */
 } Calls;
 
 static void called(Calls *c, const char *name)
@@ -125,7 +125,13 @@ static int run_rommy(LadxEncoder *e, LadxPipeline *p)
 
 	called(c, "rommy");
 	c->rommy_saw_tables = rom && rom->tables == &rom_tables && rom->ks == &ks;
-	return rom && write_byte(e, "rommy", 0x50, rom) && (!c->rommy_const || ladx_pipeline_const(e, p, "rommy"));
+	if (!rom || !write_byte(e, "rommy", 0x50, rom))
+		return 0;
+	if (c->rommy_const == 1)
+		return ladx_pipeline_const(e, p, "rommy");
+	if (c->rommy_const > 1)
+		return ladx_pipeline_const_units(e, p, "rommy", 1, c->rommy_const - 1);
+	return 1;
 }
 
 static int run_drawy(LadxEncoder *e, LadxPipeline *p)
@@ -170,10 +176,11 @@ static void open_tables(const char *alpha)
 	open_with(alpha, NULL);
 }
 
+static LadxPipeline pipeline_of_run;
+
 static LadxPipelineStatus run(const LadxPipelineRom *rom, Calls *calls, LadxPipelineError *err)
 {
 	static LadxSettings settings;
-	static LadxPipeline p;
 
 	ladx_settings_defaults(&settings);
 	ladx_settings_validate(&settings);
@@ -186,15 +193,15 @@ static LadxPipelineStatus run(const LadxPipelineRom *rom, Calls *calls, LadxPipe
 	if (ladx_enc_init(&enc, rom ? rom->bytes : NULL, rom ? rom->len : 0, rom ? rom->ks : NULL,
 			  rom ? rom->tables : NULL, &wlog) != LADX_ENC_OK)
 		test_fail(TEST, "encoder initialises");
-	p.tables = &tables;
-	p.settings = &settings;
-	p.spot_count = 0;
-	p.randomizer = NULL;
-	p.rom = rom;
-	p.groups = planted;
-	p.group_count = 3;
-	p.ctx = calls;
-	return ladx_pipeline_run(&p, &enc, err);
+	pipeline_of_run.tables = &tables;
+	pipeline_of_run.settings = &settings;
+	pipeline_of_run.spot_count = 0;
+	pipeline_of_run.randomizer = NULL;
+	pipeline_of_run.rom = rom;
+	pipeline_of_run.groups = planted;
+	pipeline_of_run.group_count = 3;
+	pipeline_of_run.ctx = calls;
+	return ladx_pipeline_run(&pipeline_of_run, &enc, err);
 }
 
 static void test_without_rom(void)
@@ -279,6 +286,23 @@ static void test_const(void)
 		 synth.rom[0x200], synth.rom[0x201], synth.rom[0x58] ^ 0xffu);
 	check(strcmp(out, want) == 0, "constants: values, the keyed unit's entry for the key, computed literals");
 
+	check(ladx_pipeline_const_unit_count(&pipeline_of_run, "rommy") == 2 &&
+		      ladx_pipeline_const_unit_count(&pipeline_of_run, "alpha") == 2 &&
+		      ladx_pipeline_const_unit_count(&pipeline_of_run, "nobody") == -1,
+	      "a group's unit count, -1 without a file");
+	rommy_const_mode = 2;
+	check(run(&rom, &calls, &err) == LADX_PIPELINE_OK, "a group writes one unit of its constants file");
+	snprintf(want, sizeof want,
+		 HEADER "G alpha\nB 10 0102\nG beta\nB 40 %02x\nG rommy\nB 50 %02x\nT texts 3 41%02x%02x\n"
+			"T texts 4 p1234\nG drawy\nB 58 %02x\nG alpha\nB 20 03\n",
+		 synth.rom[0x40] ^ 0xffu, synth.rom[0x50] ^ 0xffu, synth.rom[0x200], synth.rom[0x201],
+		 synth.rom[0x58] ^ 0xffu);
+	check(strcmp(out, want) == 0, "constants units: the second unit alone");
+	rommy_const_mode = 3;
+	check(run(&rom, &calls, &err) == LADX_PIPELINE_GROUP && strcmp(err.group, "rommy") == 0,
+	      "units past the file's end fail the group");
+	rommy_const_mode = 1;
+
 	open_with(alpha_text, "ladx-tables 1\ngroup rommy\ntables " TABLES "\nunit rommy.1\nE\nB 60 @fffff+2\n");
 	check(run(&rom, &calls, &err) == LADX_PIPELINE_GROUP && strcmp(err.group, "rommy") == 0,
 	      "a reference beyond the ROM fails the group");
@@ -339,13 +363,14 @@ static void test_errors(void)
 	{
 		const LadxPipelineGroup *g = ladx_pipeline_groups(&count);
 
-		check(count == 5 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
+		check(count == 6 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
 			      strcmp(g[1].name, "marin") == 0 && g[1].needs_rom && g[1].draw &&
 			      strcmp(g[2].name, "hints") == 0 && !g[2].needs_rom && !g[2].draw &&
 			      strcmp(g[3].name, "music") == 0 && g[3].needs_rom && g[3].draw &&
-			      strcmp(g[4].name, "title") == 0 && g[4].needs_rom && !g[4].draw,
-		      "the library registers bank3e, marin, hints, music then title, in LADXR's order, hints "
-		      "alone ROM-free, marin and music drawing without the ROM");
+			      strcmp(g[4].name, "title") == 0 && g[4].needs_rom && !g[4].draw &&
+			      strcmp(g[5].name, "endscreen") == 0 && g[5].needs_rom && g[5].draw,
+		      "the library registers bank3e, marin, hints, music, title then endscreen, in LADXR's order, "
+		      "hints alone ROM-free, marin, music and endscreen drawing without the ROM");
 	}
 }
 

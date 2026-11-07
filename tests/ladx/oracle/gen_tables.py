@@ -765,13 +765,14 @@ class _IndexedRom(bytes):
         return super().find(sub, *args)
 
 
-def const_group(group, order, components, runs, own, rom, known):
+def const_group(group, order, components, runs, own, rom, known, variants=False):
     """The text of a C group's constants file (tables.py's group format): runs [(key tuple,
     [write])], one per reachable tuple of components, each the writes of the group's call in
     order; own [("T", table, key) or ("B", offset)], the writes C makes itself, left out and
     required in every run. The writes equal in every run form unit <group>.1 (no component), the
-    others <group>.2 keyed by components; either is omitted when empty. TablesPlanError on an
-    own write a run misses, or a position both units write."""
+    others <group>.2 keyed by components; either is omitted when empty. With variants (no
+    component), each run's other writes are instead their own unit <group>.<k+2>, in run order.
+    TablesPlanError on an own write a run misses, or a position both units write."""
     kept = []
     for values, events in runs:
         for o in own:
@@ -797,7 +798,11 @@ def const_group(group, order, components, runs, own, rom, known):
     if fixed:
         units.append(tables.Unit("", [], [tables.Entry([], _const_records(fixed_net, rom, known,
                                                                           order), {}, {})]))
-    if any(events for _, events in keyed):
+    if variants:
+        units += [tables.Unit("", [], [tables.Entry([], _const_records(_net(events), rom, known,
+                                                                       order), {}, {})])
+                  for _, events in keyed]
+    elif any(events for _, events in keyed):
         units.append(tables.Unit("", list(components), [
             tables.Entry(list(values), _const_records(_net(events), rom, known, order), {}, {})
             for values, events in sorted(keyed)]))
@@ -807,12 +812,40 @@ def const_group(group, order, components, runs, own, rom, known):
 
 
 class ConstSpec:
-    """A C group whose call writes settings-only bytes C cannot compute (LADXR's assembler):
-    call, its text evaluated in generator.py's namespace with the seed-dependent arguments
-    None; components, ordered as a unit's; own, the writes C makes itself."""
+    """A C group whose call writes settings-only bytes C cannot compute (LADXR's assembler, or
+    LADXR's files): call, its text evaluated in generator.py's namespace with the seed-dependent
+    arguments None; components, ordered as a unit's; own, the writes C makes itself; variants,
+    the dotted name of the module whose one choice the call draws (no component), or None."""
 
-    def __init__(self, call, components, own):
-        self.call, self.components, self.own = call, components, own
+    def __init__(self, call, components, own, variants=None):
+        self.call, self.components, self.own, self.variants = call, components, own, variants
+
+
+def variant_runs(module, call):
+    """[call()'s result], one per element of the sequence call draws from module.choice, the
+    k-th with that choice returning the k-th element; module.choice restored after.
+    TablesPlanError when a run does not draw exactly once."""
+    def pinned(k):
+        seen = []
+
+        def choice(seq):
+            seen.append(len(seq))
+            return seq[min(k, len(seq) - 1)]
+        missing = object()
+        before = vars(module).get("choice", missing)
+        module.choice = choice
+        try:
+            result = call()
+        finally:
+            if before is missing:
+                del module.choice
+            else:
+                module.choice = before
+        if len(seen) != 1:
+            raise TablesPlanError("the call draws %d times, not once" % len(seen))
+        return result, seen[0]
+    first, n = pinned(0)
+    return [first] + [pinned(k)[0] for k in range(1, n)]
 
 
 CONST_GROUPS = {
@@ -820,6 +853,8 @@ CONST_GROUPS = {
                         ["asm:HARD_MODE", "asm:KEYSANITY_BEAKS", "asm:KEYSANITY_KEYS",
                          "asm:KEYSANITY_MAPS", "asm:KEYSANITY_NIGHTMARE_KEYS"],
                         [("T", "texts", 0xBE)]),
+    "endscreen": ConstSpec("patches.endscreen.updateEndScreen(rom)", [], [],
+                           variants="random"),
 }
 ASM_CONSTS_GROUP = "asm-consts"
 BANK_SIZE = 0x4000
@@ -867,7 +902,8 @@ def const_runs(spec, model, statements, rom_path, table_names):
     """[(tuple, writes)] of spec's call, one per reachable tuple of its components, each on a
     fresh parse of the ROM after generateRom's asm-consts statements on the tuple's witness
     (validated by LADXR); run inside the LADXR checkout. Every rom.patch's old bytes must
-    match: a patch LADXR skips as already applied is refused."""
+    match: a patch LADXR skips as already applied is refused. With spec.variants, one run per
+    element its call draws, in order (variant_runs)."""
     import assembler
     import generator
     import romTables
@@ -876,8 +912,8 @@ def const_runs(spec, model, statements, rom_path, table_names):
     found, unreached = reachable(spec.components, model)
     if unreached:
         raise TablesPlanError("unreached tuples %s" % unreached)
-    runs = []
-    for values, witness in found:
+
+    def one(witness):
         settings = ladxr_settings.Settings()
         for line in assignment_lines(witness):
             settings.set(line)
@@ -904,7 +940,16 @@ def const_runs(spec, model, statements, rom_path, table_names):
         if skipped:
             raise TablesPlanError("%s: patches skipped as already applied at %s"
                                   % (spec.call, skipped))
-        runs.append((tuple(values), events))
+        return events
+
+    runs = []
+    for values, witness in found:
+        if spec.variants:
+            module = importlib.import_module(spec.variants)
+            runs += [(tuple(values), events)
+                     for events in variant_runs(module, lambda: one(witness))]
+        else:
+            runs.append((tuple(values), one(witness)))
     return runs
 
 
@@ -913,7 +958,8 @@ def const_files(model, inventory_text, rom_path, rom, known, table_names):
     statements = _const_statements(inventory_text)
     return {"%s.txt" % group: const_group(group, table_names, spec.components,
                                           const_runs(spec, model, statements, rom_path,
-                                                     table_names), spec.own, rom, known)
+                                                     table_names), spec.own, rom, known,
+                                          variants=spec.variants is not None)
             for group, spec in sorted(CONST_GROUPS.items())}
 
 

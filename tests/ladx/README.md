@@ -250,8 +250,9 @@ follow the table groups' encoding rule, the fragment rule included
   `tables <table>...` (ROMWithTables' tables in their order, as in a write
   log), then its units.
 - `<group>.txt` for a `C` group, its **constants file** (today
-  `bank3e.txt`): the settings-only writes of the group's call that C
-  cannot compute (LADXR's assembler), in the same format; below.
+  `bank3e.txt` and `endscreen.txt`): the settings-only writes of the
+  group's call that C cannot compute (LADXR's assembler, LADXR's binary
+  files), in the same format; below.
 
 **Units.** `unit <group>.<n> <component>...`, numbered from 1 in their
 first row's order. A unit is one `table` row, fused with the rows it is
@@ -339,7 +340,21 @@ None, None)` keyed by `asm:HARD_MODE`, `asm:KEYSANITY_BEAKS`,
 `asm:KEYSANITY_NIGHTMARE_KEYS` (32 entries of 9,953 to 9,978 bytes of
 assembled code and the handler pointer; the trampolines, bank 3 flags,
 owl rupees, photo-album fix and texts 0x89, 0xC8 to 0xCB and 0xD9 in the
-fixed unit); text 0xBE, the copy of 0x111, is C's own. `tables.py check`
+fixed unit); text 0xBE, the copy of 0x111, is C's own. A group whose call
+draws once from a module's `random.choice` (`variants`, no component)
+runs once per element of the drawn list, the `k`-th with `choice` pinned
+to return the `k`-th (a run drawing other than once is refused): the
+writes equal in every run form `<group>.1`, each run's others its own
+unit `<group>.<k+2>`, no component, one entry. `endscreen`:
+`updateEndScreen(rom)` over the global `random`, the fixed unit the
+call's `rom.patch` writes, then the image of the `k`-th of LADXR's 24
+sorted `patches/cats/*.bin` at unit `endscreen.<k+2>` (one 6,184-byte
+`B` record at bank 0x3F 0x0400; 312,737 bytes in all). The cats are
+LADXR's art, but 2bpp tiles of few values coincide with ROM runs
+(measured with the ROM: 5,060 strict literal runs over the 24 files, the
+longest match of more than 3 values 56 bytes at about 1.2 bits per
+byte), so they reach C only through this file, under the `tables`
+scope, their coincidences as references read back from the user's ROM. `tables.py check`
 accepts at most one such file per `C` group of the inventory (any other
 name is `EXTRA`), checks its domains and duplicates, and matches its
 units to no row.
@@ -347,7 +362,7 @@ units to no row.
 **Regenerate.** `oracle/gen_tables.sh` rebuilds `data/ladx/` (coverage
 runs under `tmp/ladx-tables/`), the constants files included;
 `gen_tables.sh --const [--out <dir>]` rewrites only the constants files
-(`gen_tables.py const`, `PYTHONHASHSEED=0`, about 1 minute; any other
+(`gen_tables.py const`, `PYTHONHASHSEED=0`, about 70 seconds; any other
 file untouched); `gen_tables.sh --check` rebuilds them with
 another hash seed on a fresh clone and compares every file byte for byte.
 
@@ -473,7 +488,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -485,7 +500,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -674,10 +689,10 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   hand-built graph with `KeyLocation` spots and an unreached one. Then
   it opens the real
   `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
-  file): 5 groups, 91 units, 676 entries, one unit keyed by `count`; and
+  file): 7 groups (`bank3e.txt` and `endscreen.txt` included), 118 units, 734 entries, one unit keyed by `count`; and
   for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
   supported, every unit without `count` selects an entry. It prints
-  `test_tables: data/ladx opened (5 groups, 91 units, 676 entries); <n>
+  `test_tables: data/ladx opened (7 groups, 118 units, 734 entries); <n>
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
@@ -729,9 +744,12 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   fixed unit with a keep, a copy and a literal, a unit keyed by `music`
   with a `T` record and a pointer) as computed literals for the key, and
   fails the group on a reference beyond the ROM, a unit with no entry or
-  no file; the library's registry is `bank3e`, `marin`, `hints`, `music`
-  then `title`, `hints` alone needing no ROM and `marin` and `music` alone
-  with a draw-only run. It
+  no file; `ladx_pipeline_const_units` writes the keyed unit alone and
+  fails on units past the file's end; `ladx_pipeline_const_unit_count`
+  counts a file's units, -1 without one; the library's registry is
+  `bank3e`, `marin`, `hints`, `music`, `title` then `endscreen`, `hints`
+  alone needing no ROM and `marin`, `music` and `endscreen` alone with a
+  draw-only run. It
   prints `test_pipeline: <c> checks ok`.
   `test_bank3e` runs the library's registry on a synthetic ROM and a
   planted `bank3e.txt` (a fixed unit and one keyed by `asm:HARD_MODE`):
@@ -817,6 +835,19 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   with it; failing without the generators, with or without the ROM. It
   prints `test_music: randomizeMusic against LADXR, the group on a
   synthetic ROM (<c> checks)`.
+  `test_endscreen` checks `ladx_endscreen_draw` against CPython 3.13
+  (`random.Random(b"LADX-endscreen-test")`, six `choice` of 24, then
+  `random()`), each draw one traced `choice 24` at
+  `patches.endscreen:updateEndScreen`; then the group through the
+  library's registry on a synthetic ROM and a planted `endscreen.txt` (a
+  fixed unit, then 24 cat units, cat `k`'s bytes `k`, 0xE0 and a 4-byte
+  reference): the fixed unit then exactly the drawn cat's unit, its
+  reference read from the ROM as literals, the draw from the
+  randomizer's own global generator; without the ROM nothing written but
+  the same draw; a file of 23 or 25 cats, no file, or no generators
+  (with or without the ROM) failing the group. It prints
+  `test_endscreen: the drawn cat's constants on a synthetic ROM, the
+  draw without it (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1065,8 +1096,8 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music` and `title`, in LADXR's order,
-`hints` alone needing no ROM and `marin` and `music` alone with a `draw`
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `title` and `endscreen`, in LADXR's order,
+`hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
 A group's `run` takes the encoder and the pipeline itself (tables,
@@ -1084,6 +1115,10 @@ bytes (a reference or keep from `p->rom`) and written by
 `ladx_enc_bank`, `_table` or `_pointer` with no origin; it returns 0 when
 the group has no file, a unit has no entry, a reference falls outside
 the ROM (or there is none), or the encoder refuses.
+`ladx_pipeline_const_units(enc, p, group, first, count)` writes only
+units `first` to `first + count - 1` (0-based, file order) the same way,
+0 when they pass the file's end; `ladx_pipeline_const_unit_count` gives
+a file's unit count, -1 without one.
 `ladx_enc_entry_value` gives an entry's current bytes and origins, and
 `ladx_randomizer_seed` the seed's first 32 bytes.
 
@@ -1171,6 +1206,19 @@ inherit-on-equal, KS-match and fragment rule have nothing to find, as
 they find nothing with it. A raise of `formatText` ends the walk
 `RAISED`; none is reachable on LADXR's names and areas.
 
+**`endscreen`** (`patches.endscreen.updateEndScreen`): unit 0 of
+`data/ladx/endscreen.txt` (`rom.patch`'s writes: the trampoline at bank
+0 0x391D, five bank 0x17 patches, the loader at bank 0x3F 0x0200), then
+`random.choice` of LADXR's 24 sorted cats from the global generator
+(`ladx_endscreen_draw`, stage `patches.endscreen:updateEndScreen`), then
+unit `1 + k` for the drawn index `k`, the cat's 6,184 bytes at bank 0x3F
+0x0400; every byte computed, with no origin. LADXR draws after its
+patches; the draw reads no ROM byte and no two writes share a position,
+so the segment is the same. It needs the ROM (the file's references,
+and its goldens' KS copies) and fails unless the file has 25 units; its
+`draw` makes the one draw without the ROM, so a ROM-free `run.txt`
+keeps the line.
+
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
 0x3E 0x2F00, then, unless `race`, the short settings string's length
@@ -1212,12 +1260,12 @@ e2e` and `e2e-combos`.
 - `ladx_gen --tables <dir> <case_dir> <out_dir>` does the same, then,
   after an ok fill (`ladx_randomizer_placement` not NULL), writes
   `<out_dir>/rom_writes.txt`: the tables of `<dir>` (`order.txt` and every
-  other `.txt` file, read whole, 2 MiB in all at most; today 1,050,951
+  other `.txt` file, read whole, 2 MiB in all at most; today 1,363,688
   bytes) opened, the key of the validated settings and the placed logic's
   spot count, the library's pipeline ("Pipeline") walks `order.txt`:
   each selected entry's records through the encoder's `fixed` calls
   under its unit's group, and at `C` rows the library's ported groups
-  (without `--rom` `hints` and `marin`'s and `music`'s draws, since `bank3e`, `marin`, `music` and `title` need the ROM, so consecutive
+  (without `--rom` `hints` and `marin`'s, `music`'s and `endscreen`'s draws, since `bank3e`, `marin`, `music`, `title` and `endscreen` need the ROM, so consecutive
   entries of one group merge into one segment across the `C` rows). The file is a valid version-1 write log, no `I`
   line; the version and `tables` lines are written even when nothing
   else is. Without `--rom` the encoder has no ROM, KS or parsed tables
@@ -1310,16 +1358,23 @@ repeated or `spoiler` group, a group both `group` and `rom-group`, a
 `rom-group` of another side, either refusal or any other line exits 2.
 Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
 `goal-fixed`, `music-fixed` and `options` (the five table groups) and
-`hints`; `rom-group bank3e`, `rom-group marin`, `rom-group music` and
-`rom-group title`.
+`hints`; `rom-group bank3e`, `rom-group endscreen`, `rom-group marin`,
+`rom-group music` and `rom-group title`.
 
 A claimed `C` group that draws also claims its `trace` lines: those of
 `run.txt` whose stage (the 4th field) is one of its LADXR frames
 (`run_e2e.py`'s `GROUP_TRACE`; today `marin`:
 `patches.aesthetics:getMarinStartingText` and `utils:randomNumber`;
-`hints`: `hints:addHints`; `music`: `patches.music:randomizeMusic`),
+`hints`: `hints:addHints`; `music`: `patches.music:randomizeMusic`;
+`endscreen`: `patches.endscreen:updateEndScreen`),
 whole (number, generator, arguments, result, words) and in order,
-golden against C, wherever they fall in the trace. They are claimed with
+golden against C, wherever they fall in the trace. The golden's number
+is first lowered by the count of its trace lines before it drawn in a
+frame C does not port (in neither the fill stages nor `GROUP_TRACE`, such
+as `patches.enemies:randomizeEnemies`, whose own generator C does not run
+yet): the trace projected onto the ported frames, as C numbers it. A
+draw of a ported frame is never skipped, so an extra or missing draw of
+C still shifts the number. They are claimed with
 the group: by `e2e` for a `group` line, by `e2e-rom` for a `rom-group`
 line; a divergence is reported as section `trace <group>`, unredacted
 (trace lines are draws, never ROM bytes).
@@ -1420,7 +1475,11 @@ equal, 2 spans, 4 bytes, 1 not rebuilt`, its detail lines holding `
 tokens)`; `rom-group marin` with C's first `marin` trace line's result
 changed `PASS`es under `e2e` (skipped) and is `DIVERGENT` under
 `e2e-rom` with `trace marin: line 1:`, and C's `run.txt` without the
-`marin` trace lines is `DIVERGENT` under `e2e-rom` with `c: <end>`; a different span list exits 1 with `KS DIFFERENT: line 3:
+`marin` trace lines is `DIVERGENT` under `e2e-rom` with `c: <end>`;
+`rom-group endscreen` on a golden holding one more trace line of
+`patches.enemies:randomizeEnemies` before its draw, later numbers
+shifted, `PASS`es under `e2e-rom`, and the same with a `hints:addHints`
+line instead is `DIVERGENT` with `trace endscreen: line 1:`; a different span list exits 1 with `KS DIFFERENT: line 3:
 boss item 3`; a ROM of another SHA-1 and no ROM exit 2 with a `setup:
 e2e-rom:` line; `group hints` (no source reference) `PASS`es; `group
 hints` with a planted inventory adding `rom` to its Evidence exits 2;
@@ -1429,7 +1488,7 @@ segment exits 2 naming the case; `rom-group fixed`, `group marin` with
 `rom-group marin`, and `rom-group marin` twice each exit 2; and the KS
 comparator on equal lists (no line), one span's length changed (`line
 2: texts 1`) and one span missing (lines 2 to 4). It prints `e2e:
-self-test, 54 planted runs as expected`, else one `e2e: self-test failed: <case> (expected <v>, got
+self-test, 56 planted runs as expected`, else one `e2e: self-test failed: <case> (expected <v>, got
 <w>)` line each, exit 1.
 
 `make -C tests/ladx selftest` runs the self-test; `make -C tests/ladx e2e

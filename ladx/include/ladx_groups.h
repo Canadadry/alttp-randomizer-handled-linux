@@ -129,4 +129,21 @@ uint64_t ladx_title_seed_number(const char *text, size_t n);
  */
 int ladx_title_edit(LadxBackground *bg, int attributes, const char *text, size_t n, uint64_t seed_number);
 
+/*
+ * patches/endscreen.py updateEndScreen: rom.patch's writes (unit 0 of
+ * data/ladx/endscreen.txt), random.choice of LADXR's sorted cats from
+ * p->global, then the chosen cat's image (unit 1 + its index), each byte
+ * written with no origin. Needs p->rom; 0 unless the file has 1 +
+ * LADX_ENDSCREEN_CAT_COUNT units.
+ */
+int ladx_group_endscreen(LadxEncoder *enc, LadxPipeline *p);
+
+/* endscreen's draw without the ROM, nothing written. */
+int ladx_group_endscreen_draws(LadxEncoder *enc, LadxPipeline *p);
+
+#define LADX_ENDSCREEN_CAT_COUNT 24 /* the .bin files of patches/cats at the pin */
+
+/* updateEndScreen's random.choice(cats) on global: the index into the sorted cats. */
+LadxRngStatus ladx_endscreen_draw(LadxRng *global, size_t *cat);
+
 #endif

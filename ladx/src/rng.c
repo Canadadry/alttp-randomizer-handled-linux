@@ -16,6 +16,7 @@ static const char *const stage_names[LADX_STAGE_COUNT] = {
 	"utils:randomNumber",
 	"hints:addHints",
 	"patches.music:randomizeMusic",
+	"patches.endscreen:updateEndScreen",
 };
 
 static const char *const method_names[LADX_RNG_METHOD_COUNT] = {

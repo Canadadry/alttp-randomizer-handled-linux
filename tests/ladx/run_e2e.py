@@ -50,7 +50,9 @@ GROUP_TRACE = {
     "marin": ("patches.aesthetics:getMarinStartingText", "utils:randomNumber"),
     "hints": ("hints:addHints",),
     "music": ("patches.music:randomizeMusic",),
+    "endscreen": ("patches.endscreen:updateEndScreen",),
 }
+PORTED_STAGES = set().union(*STAGE_TRACE.values(), *GROUP_TRACE.values())
 
 
 class FormatError(Exception):
@@ -109,11 +111,23 @@ def project(lines, stage):
     return out
 
 
-def group_trace(lines, group):
-    """The trace lines of run.txt's lines drawn in group's frames (GROUP_TRACE), whole, in order."""
+def group_trace(lines, group, renumber=False):
+    """The trace lines of run.txt's lines drawn in group's frames (GROUP_TRACE), whole, in order.
+    With renumber (a golden's), each line's number less the trace lines before it drawn in a
+    frame C does not port (in neither STAGE_TRACE nor GROUP_TRACE), which C never draws."""
     stages = GROUP_TRACE.get(group, ())
-    return [line for line in lines
-            if line.startswith("trace ") and len(line.split(" ")) >= 5 and line.split(" ")[3] in stages]
+    out, unported = [], 0
+    for line in lines:
+        fields = line.split(" ")
+        if not line.startswith("trace ") or len(fields) < 5:
+            continue
+        if fields[3] not in PORTED_STAGES:
+            unported += 1
+        elif fields[3] in stages:
+            if renumber and unported and fields[1].isdigit():
+                fields[1] = "%d" % (int(fields[1]) - unported)
+            out.append(" ".join(fields))
+    return out
 
 
 def read_lines(path):
@@ -469,7 +483,7 @@ def run(cases_dir, claims, gen, names, out, tables, inventory, rom=None):
         goldens, logs = load_goldens(cases_dir, cases, stage, bool(claimed.groups or claimed.rom_groups), raw)
         check_needs_rom(claimed, inventory, cases, logs)
         golden_logs = {case: parsed_projections(logs[case], groups) for case in logs}
-        golden_traces = {case: {g: group_trace(raw[case], g) for g in groups} for case in cases}
+        golden_traces = {case: {g: group_trace(raw[case], g, renumber=True) for g in groups} for case in cases}
         data = read_rom(rom.rom, rom.sha1) if rom else None
     except Usage as e:
         print(str(e) if str(e).startswith("setup:") else "run_e2e: %s" % e, file=out)
@@ -625,6 +639,18 @@ def _replace(lines, index, old, new):
     if old not in out[index]:
         raise AssertionError("self-test: %r not in line %d" % (old, index))
     out[index] = out[index].replace(old, new, 1)
+    return out
+
+
+def _drawn_before(lines, index, stage):
+    """lines with one rnd choice traced in stage inserted before line index, later traces renumbered."""
+    out, number = list(lines[:index]), int(lines[index].split(" ")[1])
+    out.append("trace %d rnd %s choice 2 -> 0 [1]" % (number, stage))
+    for line in lines[index:]:
+        fields = line.split(" ")
+        if fields[0] == "trace":
+            fields[1] = "%d" % (int(fields[1]) + 1)
+        out.append(" ".join(fields))
     return out
 
 
@@ -831,11 +857,13 @@ PLANTED_SPANS = "ladx-ks-spans 1\n10 4 texts 1\n12 1 boss item 3\nfailure texts 
 
 
 def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=None, rom=None, rom_log=None,
-                     spans=PLANTED_SPANS, c_run=None):
+                     spans=PLANTED_SPANS, c_run=None, gold_run=None):
     """run's (code, text) on one planted case tree whose fake generator writes c_log, or rom_log
     when it receives --rom, the planted spans for --ks-spans, and c_run's lines (default the
     golden's) as run.txt. rom: "ok", "other" (a ROM of another SHA-1) or "missing" for e2e-rom
-    mode, None for e2e."""
+    mode, None for e2e. gold_run: the golden's run.txt lines instead of golden."""
+    c_run = c_run if c_run is not None else golden
+    golden = gold_run if gold_run is not None else golden
     case = os.path.join(root, "cases", "planted")
     os.makedirs(case)
     shutil.copy(config, case)
@@ -886,6 +914,9 @@ def _rom_checks(tmp, config, golden, golden_log):
     marin = [i for i, line in enumerate(golden) if line.split(" ")[3:4] == [GROUP_TRACE["marin"][0]]]
     redrawn = _replace(golden, marin[0], "-> ", "-> 1") if marin else None
     undrawn = [line for i, line in enumerate(golden) if i not in marin]
+    end = [i for i, line in enumerate(golden) if line.split(" ")[3:4] == [GROUP_TRACE["endscreen"][0]]]
+    enemies = _drawn_before(golden, end[0], "patches.enemies:randomizeEnemies") if end else None
+    hinted = _drawn_before(golden, end[0], GROUP_TRACE["hints"][0]) if end else None
     runs = [
         # (name, kwargs, expected verdict, a line the output must hold)
         ("rom-group divergent in its group, skipped by e2e",
@@ -905,6 +936,12 @@ def _rom_checks(tmp, config, golden, golden_log):
         ("a rom-group's trace lines missing from C's run.txt under e2e-rom",
          dict(gold_log=golden_log, c_log=golden_log, claims=fill + "rom-group marin\n", rom="ok", c_run=undrawn),
          "DIVERGENT", "c: <end>"),
+        ("a golden draw in a frame C does not port, before a claimed one, renumbered away",
+         dict(gold_log=golden_log, c_log=golden_log, claims=fill + "rom-group endscreen\n", rom="ok",
+              gold_run=enemies), "PASS", "rom-groups endscreen"),
+        ("a golden draw in a ported frame before a claimed one still shifts its number",
+         dict(gold_log=golden_log, c_log=golden_log, claims=fill + "rom-group endscreen\n", rom="ok",
+              gold_run=hinted), "DIVERGENT", "trace endscreen: line 1:"),
         ("e2e-rom with KS different", dict(gold_log=golden_log, c_log=golden_log, claims=fill, rom="ok",
                                           spans=PLANTED_SPANS.replace("12 1", "12 2")),
          "exit 1", "KS DIFFERENT: line 3: boss item 3"),

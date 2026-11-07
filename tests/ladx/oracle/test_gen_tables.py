@@ -707,6 +707,39 @@ class ConstGroups(unittest.TestCase):
         self.assertEqual(self.group(runs, components=()).splitlines()[-2:],
                          ["B 10 e0f1", "T texts c9 pc0a0"])
 
+    def test_variants_give_the_fixed_unit_then_one_unit_per_run_in_run_order(self):
+        runs = [((), [("B", 0x800, b"\xF1"), ("B", 0x900, b"\xE2")]),
+                ((), [("B", 0x800, b"\xF1"), ("B", 0x900, b"\xE1")]),
+                ((), [("B", 0x800, b"\xF1")])]
+        text = gen_tables.const_group("g", self.ORDER, [], runs, [], bytes(ROM), None, variants=True)
+        self.assertEqual(text, "ladx-tables 1\ngroup g\ntables texts entities\n"
+                               "unit g.1\nE\nB 800 f1\nunit g.2\nE\nB 900 e2\n"
+                               "unit g.3\nE\nB 900 e1\nunit g.4\nE\nnothing\n")
+        gen_tables.tables.parse(text)
+
+
+class VariantRuns(unittest.TestCase):
+    """variant_runs: a call drawing once from a module's choice, run once per element."""
+
+    class Module:
+        def choice(self, seq):
+            raise AssertionError("the real choice was called")
+
+    def test_one_run_per_element_in_order_and_the_choice_restored(self):
+        module = self.Module()
+        real = module.choice
+        runs = gen_tables.variant_runs(module, lambda: ["picked", module.choice("abc")])
+        self.assertEqual(runs, [["picked", "a"], ["picked", "b"], ["picked", "c"]])
+        self.assertEqual(module.choice, real)
+
+    def test_a_call_drawing_twice_or_never_is_refused(self):
+        module = self.Module()
+        with self.assertRaisesRegex(gen_tables.TablesPlanError, "draws 2 times"):
+            gen_tables.variant_runs(module, lambda: [module.choice("ab"), module.choice("ab")])
+        with self.assertRaisesRegex(gen_tables.TablesPlanError, "draws 0 times"):
+            gen_tables.variant_runs(module, lambda: [])
+        self.assertFalse("choice" in vars(module))
+
 
 if __name__ == "__main__":
     unittest.main()

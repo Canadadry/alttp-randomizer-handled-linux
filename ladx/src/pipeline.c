@@ -9,6 +9,7 @@ static const LadxPipelineGroup groups[] = {
 	{"hints", 0, ladx_group_hints, NULL},
 	{"music", 1, ladx_group_music, ladx_group_music_draws},
 	{"title", 1, ladx_group_title, NULL},
+	{"endscreen", 1, ladx_group_endscreen, ladx_group_endscreen_draws},
 };
 
 const LadxPipelineGroup *ladx_pipeline_groups(int *count)
@@ -115,7 +116,26 @@ static int resolve(const LadxPipeline *p, const LadxAtom *atoms, size_t n, uint8
 	return 1;
 }
 
+int ladx_pipeline_const_unit_count(const LadxPipeline *p, const char *group)
+{
+	LadxSpan name;
+	int g, first;
+
+	name.at = group;
+	name.len = strlen(group);
+	if ((g = ladx_tables_find_group(p->tables, name)) < 0)
+		return -1;
+	return ladx_tables_group_units(p->tables, g, &first);
+}
+
 int ladx_pipeline_const(LadxEncoder *enc, LadxPipeline *p, const char *group)
+{
+	int count = ladx_pipeline_const_unit_count(p, group);
+
+	return count >= 0 && ladx_pipeline_const_units(enc, p, group, 0, count);
+}
+
+int ladx_pipeline_const_units(LadxEncoder *enc, LadxPipeline *p, const char *group, int from, int n)
 {
 	LadxSpan name;
 	LadxTablesStep step;
@@ -130,7 +150,9 @@ int ladx_pipeline_const(LadxEncoder *enc, LadxPipeline *p, const char *group)
 	if ((g = ladx_tables_find_group(p->tables, name)) < 0)
 		return 0;
 	count = ladx_tables_group_units(p->tables, g, &first);
-	for (u = first; u < first + count; u++) {
+	if (from < 0 || n < 0 || from > count || n > count - from)
+		return 0;
+	for (u = first + from; u < first + from + n; u++) {
 		if (!ladx_tables_select(p->tables, u, p->settings, p->spot_count, &step, &err))
 			return 0;
 		ladx_tables_records_init(&it, p->tables, &step);
