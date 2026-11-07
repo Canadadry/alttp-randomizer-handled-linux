@@ -125,6 +125,35 @@ class Build(unittest.TestCase):
     def test_text_data_is_not_in_the_map(self):
         self.assertFalse(any(q in self.known for q in range(at(4, 0x100), at(4, 0x105))))
 
+    def test_entries_holds_every_rebuilt_entry_and_none_of_the_failed_ones(self):
+        self.assertEqual(self.known.entries, {
+            ("rooms", 0): (at(1, 0x100), at(1, 0x10D)), ("rooms", 1): (at(1, 0x10D), at(1, 0x110)),
+            ("rooms", "Alt06"): (at(1, 0x300), at(1, 0x306)),
+            ("entities", 0): (at(2, 0x100), at(2, 0x103)),
+            ("sprites", 0): (at(5, 0x100), at(5, 0x104)),
+            ("sprites", 1): (at(5, 0x104), at(5, 0x108)),
+            ("sprites", 2): (at(5, 0x108), at(5, 0x10C)),
+            ("backgrounds", 0): (at(5, 0x300), at(5, 0x30B))})
+
+    def test_span_at_gives_the_lowest_start_span_holding_an_offset(self):
+        self.assertEqual(self.known.span_at(at(1, 0x105)), (at(1, 0x100), at(1, 0x10D)))
+        self.assertEqual(self.known.span_at(at(1, 0x10D)), (at(1, 0x10D), at(1, 0x110)))
+        self.assertEqual(self.known.span_at(at(0, 0x11)), (at(0, 0x10), at(0, 0x12)))
+        self.assertIsNone(self.known.span_at(at(2, 0x103)))
+        self.assertIsNone(self.known.span_at(-1))
+        self.assertIsNone(self.known.span_at(len(self.planted.rom)))
+
+    def test_span_at_takes_the_lowest_start_of_nested_and_duplicate_spans(self):
+        ks = known_source.KnownSource(0x40)
+        ks.add(0x10, 0x18, "inner")
+        ks.add(0x08, 0x20, "outer")
+        ks.add(0x08, 0x20, "same")
+        ks.add(0x1C, 0x28, "overlap")
+        self.assertEqual(ks.span_at(0x12), (0x08, 0x20))
+        self.assertEqual(ks.span_at(0x1F), (0x08, 0x20))
+        self.assertEqual(ks.span_at(0x20), (0x1C, 0x28))
+        self.assertIsNone(ks.span_at(0x28))
+
     def test_the_summary_counts_spans_bytes_and_failures(self):
         self.assertEqual(known_source.summary(self.known),
                          "known-source: %d spans, %d bytes, 2 not rebuilt"

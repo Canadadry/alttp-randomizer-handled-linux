@@ -16,10 +16,14 @@ pool-only run (gen_tables.py's model; LADXR checkout --ladxr, fixtures in --inpu
   key          every unit has an entry for the case's key;
   align        the golden's segments match the stream's, and each C segment's row is a C row
                of its group in order.txt.
+Before the replays it scans every `B` and `T` record of the tables for fragments
+(write_log.py's record_fragments against known_source.build: a literal piece of the record that
+occurs in the source bytes it replaces): one `BAD tables: fragments <file> line <n>: <k>
+fragments, <b> bytes` line per record holding one.
 It proves itself first on planted tables, goldens and streams (`table-replay: self-test, <n>
 planted replays as expected`, else `self-test failed: <case>`, exit 1), then prints `ok <case>` or
-one `BAD <case>: <check>: <detail>` line per problem, then `table-replay: <n> cases, <b> bad`;
-exit 1 on any BAD. A missing ROM, table, stream or LADXR checkout is a `setup:` line, exit 2.
+one `BAD <case>: <check>: <detail>` line per problem, then `table-replay: <n> cases, <b> bad, <f>
+table fragments`; exit 1 on any BAD. A missing ROM, table, stream or LADXR checkout is a `setup:` line, exit 2.
 Never prints a ROM byte.
 """
 
@@ -48,6 +52,7 @@ def _load(name):
 
 tables = _load("tables")
 write_log = tables._sibling("write_log")
+known_source = _load("known_source")
 
 
 class SetupError(Exception):
@@ -140,6 +145,22 @@ def replay(tabs, values, golden, events, rom, sha1):
     return problems
 
 
+def table_fragments(texts, rom, known):
+    """[(file, line number, fragments, bytes)] of every `B` or `T` record of the table files
+    texts {file: text} holding a fragment (write_log.record_fragments against KS known), files
+    in name order."""
+    out = []
+    for name in sorted(texts):
+        for number, line in enumerate(texts[name].split("\n"), 1):
+            if not line.startswith(("B ", "T ")):
+                continue
+            where, atoms = write_log.parse_record(line)
+            found = write_log.record_fragments(where, atoms, rom, known)
+            if found:
+                out.append((name, number, len(found), sum(n for _, n in found)))
+    return out
+
+
 # The self-proof ----------------------------------------------------------------------------------
 
 _SECTION = "generator.py generateRom"
@@ -168,8 +189,8 @@ def _plant_stream(rom):
 
 def self_test():
     """Replays a planted case, correct then with a flipped table byte, a copy token swapped for
-    the same bytes as a literal and an entry under another key; the first variant that does not
-    give exactly its checks, or None."""
+    the same bytes as a literal and an entry under another key, then scans planted tables with
+    and without a fragment; the first variant that does not give exactly its checks, or None."""
     rom = bytes((i * 7 + 3) % 256 for i in range(0x100))
     stream = _plant_stream(rom)
     sha1 = hashlib.sha1(write_log.decode(_GOLDEN, rom)).hexdigest()
@@ -188,10 +209,18 @@ def self_test():
             return name
         if [check for check, _ in got] != want:
             return name
+    known = known_source.KnownSource(len(rom))
+    known.add(0x40, 0x48, "texts 2", ("texts", 2))
+    clean = {"fixed.txt": _FIXED, "opts.txt": _OPTS}
+    planted = dict(clean, **{"opts.txt": _OPTS.replace("T texts 2 05",
+                                                       "T texts 2 " + rom[0x41:0x42].hex())})
+    if table_fragments(clean, rom, known) or \
+            table_fragments(planted, rom, known) != [("opts.txt", 7, 1, 1)]:
+        return "table fragment"
     return None
 
 
-SELF_TEST_CASES = 4
+SELF_TEST_CASES = 5
 
 
 # The command line --------------------------------------------------------------------------------
@@ -304,6 +333,12 @@ def main(argv):
                              % args.ladxr)
         rom = _read(args.rom, True)
         tabs = load_tables(args.tables)
+        found = table_fragments({g + ".txt": _read(os.path.join(args.tables, g + ".txt"))
+                                 for g in tabs.groups}, rom, known_source.build(rom))
+        for name, number, k, b in found:
+            print("BAD tables: fragments %s line %d: %d fragments, %d bytes" % (name, number, k,
+                                                                               b), flush=True)
+        table_frags = sum(k for _, _, k, _ in found)
         components = sorted({c for g in tabs.groups.values() for u in g.units
                              for c in u.components})
         folders = case_folders(args.root, args.cases)
@@ -333,8 +368,9 @@ def main(argv):
     finally:
         if keys is not None:
             keys.close()
-    print("table-replay: %d cases, %d bad" % (len(folders), bad))
-    return 1 if bad else 0
+    print("table-replay: %d cases, %d bad, %d table fragments" % (len(folders), bad,
+                                                                   table_frags))
+    return 1 if bad or table_frags else 0
 
 
 if __name__ == "__main__":

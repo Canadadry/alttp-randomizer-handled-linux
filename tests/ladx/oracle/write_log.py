@@ -41,14 +41,22 @@ Encoding rule. A byte's origin in the stream is `src(q)` (an unchanged copy of s
 the write identity of the computed byte it copies unchanged; a carried origin is the reference q,
 or the encoding that byte got when it was first written. Table groups (side `table`), per byte:
 keep when it equals the source at its own offset (bank records); else its carried origin; else
-the longest source match of at least 4 bytes among the bytes left, lowest offset; else a
+the longest source match of at least 4 bytes among the bytes left, lowest offset; else the
+fragment rule below (not a longest match: gen_tables.py's couplings never see it); else a
 literal. C groups, per byte: a carried origin; else a byte equal to the byte it replaces
 inherits that byte's encoding when
 C can know it (a literal, or a reference into the C-knowable map), else is a literal; then, once
 the segment ends, each maximal run of its net literal bytes (bank bytes at contiguous offsets,
 each entry alone) is matched, left to right, longest first, against the C-knowable map taken as
 maximal runs of contiguous source offsets: a match of at least 4 bytes inside one run becomes a
-copy of its lowest offset (KS-match; C parses those bytes from the user's ROM at runtime). The
+copy of its lowest offset (KS-match; C parses those bytes from the user's ROM at runtime); then
+the fragment rule, the writes its pieces name renamed as KS-match does. The fragment rule, on a
+record's net atoms: a `T` entry is cut against the source bytes of its own KS entry (KnownSource
+`entries`, alt keys included; none for texts or a key outside KS), bank bytes against the KS span
+holding each offset with the lowest start (`span_at`; runs cut where it changes, offsets outside
+KS skipped); each maximal literal run is walked left to right, the longest prefix of at least 1
+byte occurring in those source bytes becoming a copy of its lowest offset there, the walk moving
+on one byte where no byte occurs; nothing applies when known has no `entries`. The
 replaced byte is the same offset's for a bank write; for a table entry the previous value, the
 new one aligned to it by common prefix, then common suffix, each stopping at a byte C cannot
 know; between them, left to right, the longest run of at least 4 bytes without a carried origin
@@ -258,6 +266,45 @@ def _table_atoms(rom, values, origins, offset=None, matches=None):
     return atoms
 
 
+def _fragment_atoms(rom, known, where, atoms):
+    """atoms with the fragment rule applied: within the source bytes each literal replaces (a
+    table entry's KS entry at where = (table, key); for bank bytes at offset where, the
+    lowest-start KS span of each offset, runs cut where it changes), each maximal literal run
+    walked left to right, the longest prefix of at least 1 byte occurring there a copy of its
+    lowest offset there; atoms itself when known has no `entries` and `span_at`."""
+    entries, span_at = getattr(known, "entries", None), getattr(known, "span_at", None)
+    if entries is None or span_at is None or isinstance(atoms, int):
+        return atoms
+    if isinstance(where, tuple):
+        cuts = [(0, len(atoms), entries[where])] if where in entries else []
+    else:
+        cuts = []
+        for i in range(len(atoms)):
+            span = span_at(where + i)
+            if span is None:
+                continue
+            if cuts and cuts[-1][1] == i and cuts[-1][2] == span:
+                cuts[-1] = (cuts[-1][0], i + 1, span)
+            else:
+                cuts.append((i, i + 1, span))
+    out = list(atoms)
+    for start, stop, (low, high) in cuts:
+        source = rom[low:high]
+        j = start
+        while j < stop:
+            n = 0
+            while j + n < stop and out[j + n] < 0 \
+                    and bytes(-1 - a for a in out[j:j + n + 1]) in source:
+                n += 1
+            if n:
+                at = low + source.find(bytes(-1 - a for a in out[j:j + n]))
+                out[j:j + n] = range(at, at + n)
+                j += n
+            else:
+                j += 1
+    return out
+
+
 class _KnownRuns:
     """The C-knowable source map as maximal runs of contiguous offsets: `match` finds the
     longest run of at least MIN_MATCH bytes inside one of them, at its lowest offset."""
@@ -454,6 +501,7 @@ class _Encoder:
                 table_flags[(table, key)] = [bool(flag and flag[i]) for i in range(len(value))]
             tables[(table, key)] = self.entries[(table, key)] = atoms
         self._match_known(banks, tables, named)
+        self._match_fragments(banks, tables, named)
         lines = _records(group, banks, tables, self.tables)
         marks = {}
         if flags is not None:
@@ -514,6 +562,24 @@ class _Encoder:
                     tables[(table, key)] = self.entries[(table, key)] = new
                     self._rename(named[("T", table, key)], new)
 
+    def _match_fragments(self, banks, tables, named):
+        """A C segment's net literal pieces of the source bytes they replace become copies (the
+        fragment rule, _fragment_atoms); the writes they name follow."""
+        for start, stop in _spans(sorted(banks)):
+            old = [banks[p] for p in range(start, stop)]
+            new = _fragment_atoms(self.rom, self.known, start, old)
+            for i, (a, b) in enumerate(zip(old, new)):
+                if a != b:
+                    p = start + i
+                    banks[p] = self.state[p] = b
+                    self._rename(named[("B", p)], [b])
+        for (table, key), value in tables.items():
+            if isinstance(value, list):
+                new = _fragment_atoms(self.rom, self.known, (table, key), value)
+                if new != value:
+                    tables[(table, key)] = self.entries[(table, key)] = new
+                    self._rename(named[("T", table, key)], new)
+
     def _rename(self, origins, atoms):
         for q, atom in zip(origins, atoms):
             if q < KNOWN and atom >= 0:
@@ -544,11 +610,14 @@ class _Encoder:
                 values = bytes(net[p][0] for p in range(start, stop))
                 origins = [self.carried(net[p][1]) for p in range(start, stop)]
                 found = []
-                for i, atom in enumerate(_table_atoms(self.rom, values, origins, start, found)):
+                atoms = _fragment_atoms(self.rom, self.known, start,
+                                        _table_atoms(self.rom, values, origins, start, found))
+                for i, atom in enumerate(atoms):
                     banks[start + i] = atom
                 matches += [(start + i, n) for i, n in found]
-            tables = {k: v if isinstance(v, int) else
-                      _table_atoms(self.rom, v, [self.carried(q) for q in o])
+            tables = {k: v if isinstance(v, int) else _fragment_atoms(
+                          self.rom, self.known, k,
+                          _table_atoms(self.rom, v, [self.carried(q) for q in o]))
                       for k, (v, o) in entries.items()}
         self.table_segments.append((banks, tables))
         self.table_details.append((group, list(events), banks, tables, matches))
@@ -852,6 +921,90 @@ def groups(text):
         if name not in seen:
             seen.append(name)
     return seen
+
+
+# Fragments -------------------------------------------------------------------------------------
+
+def parse_record(line):
+    """(where, atoms or int pointer) of one `B` or `T` record line: where its offset, or its
+    (table, key); WriteLogError on any other line."""
+    fields = line.split(" ")
+    if fields[0] == "B" and len(fields) >= 3:
+        offset = _hex_int(fields[1], "offset")
+        return offset, _parse_tokens(fields[2:], offset, 0)
+    if fields[0] == "T" and len(fields) >= 3 and NAME.fullmatch(fields[1]):
+        return (fields[1], _key(fields[2])), _parse_tokens(fields[3:], None, 0)
+    raise WriteLogError("not a B or T record: %r" % line[:40])
+
+
+def _reference_cuts(where, length, known):
+    """[(start, stop, source start, source stop)]: a record's indices start..stop and the source
+    bytes they replace, for a table entry its KS entry, for bank bytes the lowest-start KS span
+    holding each offset (indices outside KS have none)."""
+    entries, span_at = getattr(known, "entries", None), getattr(known, "span_at", None)
+    if entries is None or span_at is None:
+        return []
+    if isinstance(where, tuple):
+        span = entries.get(where)
+        return [] if span is None else [(0, length) + tuple(span)]
+    cuts = []
+    for i in range(length):
+        span = span_at(where + i)
+        if span is None:
+            continue
+        if cuts and cuts[-1][1] == i and tuple(cuts[-1][2:]) == tuple(span):
+            cuts[-1][1] = i + 1
+        else:
+            cuts.append([i, i + 1] + list(span))
+    return [tuple(c) for c in cuts]
+
+
+def record_fragments(where, atoms, rom, known):
+    """[(start, n)] of one record's fragments: within each cut of its indices (_reference_cuts),
+    each maximal literal run walked left to right, a piece the longest prefix of at least 1 byte
+    occurring in the cut's source bytes, the walk moving on one byte where none does."""
+    if isinstance(atoms, int):
+        return []
+    out = []
+    for start, stop, low, high in _reference_cuts(where, len(atoms), known):
+        hay = rom[low:high]
+        i = start
+        while i < stop:
+            if atoms[i] >= 0:
+                i += 1
+                continue
+            end = i
+            while end < stop and atoms[end] < 0:
+                end += 1
+            values = bytes(-1 - a for a in atoms[i:end])
+            j = 0
+            while j < len(values):
+                n = 0
+                while j + n < len(values) and values[j:j + n + 1] in hay:
+                    n += 1
+                if n:
+                    out.append((i + j, n))
+                    j += n
+                else:
+                    j += 1
+            i = end
+    return out
+
+
+def fragments(text, rom, known):
+    """[(group, line number, start, n)] of every fragment (record_fragments) of a log's `B` and
+    `T` records, the log checked as parse does; none when known has no `entries` and
+    `span_at`."""
+    parse(text)
+    out, group = [], None
+    for number, line in enumerate(text.split("\n"), 1):
+        if line.startswith("G "):
+            group = line[2:]
+        elif line.startswith(("B ", "T ")):
+            where, atoms = parse_record(line)
+            out += [(group, number, start, n)
+                    for start, n in record_fragments(where, atoms, rom, known)]
+    return out
 
 
 # Scrambled-ROM comparison ----------------------------------------------------------------------

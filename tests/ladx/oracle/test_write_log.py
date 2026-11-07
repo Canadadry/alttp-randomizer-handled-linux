@@ -15,6 +15,11 @@ _spec = importlib.util.spec_from_file_location("write_log", os.path.join(HERE, "
 write_log = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(write_log)
 
+_spec = importlib.util.spec_from_file_location("known_source", os.path.join(HERE,
+                                                                           "known_source.py"))
+known_source = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(known_source)
+
 K = write_log.KNOWN
 
 
@@ -122,6 +127,133 @@ class KnownSourceMatch(unittest.TestCase):
         events = stream([bank("cg", 0x10, self.value)])
         self.assertEqual(write_log.compare_scrambled(events, self.rom, SIDES,
                                                      set(range(0x300, 0x306))), [])
+
+
+def planted_known(rom):
+    """A KS of entries rooms 3 (0x100..0x110) and rooms 4 (0x208..0x210) and a span that is not
+    an entry (0x200..0x208)."""
+    ks = known_source.KnownSource(len(rom))
+    ks.add(0x100, 0x110, "rooms 3", ("rooms", 3))
+    ks.add(0x200, 0x208, "pointers")
+    ks.add(0x208, 0x210, "rooms 4", ("rooms", 4))
+    return ks
+
+
+def absent(data):
+    """Byte values that are not in data."""
+    return bytes(v for v in range(256) if v not in data)
+
+
+LOG_HEADER = "ladx-rom-writes 1\ntables texts rooms\n"
+
+
+class Fragments(unittest.TestCase):
+    """The finder: literal pieces of a record that occur in the source bytes it replaces."""
+
+    def setUp(self):
+        self.rom = synthetic_rom()
+        self.known = planted_known(self.rom)
+        self.entry = self.rom[0x100:0x110]
+        self.x = absent(self.entry)
+
+    def find(self, records, known=None):
+        text = LOG_HEADER + "G cg\n" + "".join(r + "\n" for r in records)
+        return write_log.fragments(text, self.rom, self.known if known is None else known)
+
+    def test_one_two_and_three_byte_pieces_of_the_replaced_entry_are_found(self):
+        e, x = self.entry, self.x
+        values = e[0:1] + x[:1] + e[4:6] + x[:1] + e[8:11] + x[:1]
+        self.assertEqual(self.find(["T rooms 3 " + values.hex()]),
+                         [("cg", 4, 0, 1), ("cg", 4, 2, 2), ("cg", 4, 5, 3)])
+
+    def test_a_literal_not_in_the_entry_is_not_one_even_when_elsewhere_in_the_rom(self):
+        self.assertTrue(all(self.rom.find(bytes([v])) >= 0 for v in self.x[:4]))
+        self.assertEqual(self.find(["T rooms 3 " + self.x[:4].hex()]), [])
+
+    def test_an_empty_entry_has_no_fragment(self):
+        self.assertEqual(self.find(["T rooms 3"]), [])
+
+    def test_references_are_not_scanned(self):
+        self.assertEqual(self.find(["T rooms 3 @100+2 " + self.x[:1].hex()]), [])
+
+    def test_texts_and_keys_outside_ks_are_never_scanned(self):
+        self.assertEqual(self.find(["T texts 3 " + self.entry[:3].hex(),
+                                    "T rooms 9 " + self.entry[:3].hex()]), [])
+
+    def test_a_bank_run_is_cut_at_span_boundaries_and_offsets_outside_ks_skipped(self):
+        r = self.rom
+        self.assertEqual(self.find(["B 1fe " + r[0x200:0x202].hex(),
+                                    "B 206 " + r[0x206:0x20A].hex()]),
+                         [("cg", 5, 0, 2), ("cg", 5, 2, 2)])
+
+    def test_a_plain_container_has_no_reference_bytes(self):
+        self.assertEqual(self.find(["T rooms 3 " + self.entry[:3].hex()], known=set()), [])
+
+    def test_every_group_and_record_is_scanned_with_its_line(self):
+        text = (LOG_HEADER + "G fix\nB 200 %s\nG cg\nT rooms 4 %s\n"
+                % (self.rom[0x200:0x201].hex(), self.rom[0x209:0x20B].hex()))
+        self.assertEqual(write_log.fragments(text, self.rom, self.known),
+                         [("fix", 4, 0, 1), ("cg", 6, 0, 2)])
+
+
+class FragmentRule(unittest.TestCase):
+    """The encoder's fragment rule: a literal piece of a record that occurs in the source bytes it
+    replaces becomes a copy of its lowest offset there, for both sides."""
+
+    def setUp(self):
+        self.rom = synthetic_rom()
+        self.known = planted_known(self.rom)
+        self.entry = self.rom[0x100:0x110]
+        self.x = absent(self.entry)[:1]
+
+    def encode(self, events, known=None, rom=None):
+        return write_log.encode(stream(events), rom or self.rom, SIDES,
+                                self.known if known is None else known)
+
+    def test_a_c_group_entry_s_piece_of_its_source_entry_becomes_a_copy(self):
+        x = self.x.hex()
+        log = self.encode([entry("cg", "rooms", 3, self.x + self.entry[5:8] + self.x)])
+        self.assertEqual(body(log), ["G cg", "T rooms 3 %s @105+3 %s" % (x, x)])
+        self.assertEqual(write_log.fragments(log, self.rom, self.known), [])
+
+    def test_the_lowest_offset_is_taken_when_the_piece_is_twice_in_the_entry(self):
+        rom = bytearray(self.rom)
+        rom[0x103:0x105] = rom[0x10A:0x10C] = b"\xab\xcd"
+        rom = bytes(rom)
+        x = absent(rom[0x100:0x110])[:1]
+        log = self.encode([entry("cg", "rooms", 3, b"\xab\xcd" + x)], rom=rom)
+        self.assertEqual(body(log), ["G cg", "T rooms 3 @103+2 " + x.hex()])
+
+    def test_a_c_group_bank_piece_at_a_ks_offset_becomes_a_copy_of_its_span(self):
+        r = self.rom
+        log = self.encode([bank("cg", 0x1FE, r[0x204:0x206] * 2)])
+        self.assertEqual(body(log), ["G cg", "B 1fe %s @204+2" % r[0x204:0x206].hex()])
+
+    def test_a_carried_copy_of_a_renamed_write_inherits_the_reference(self):
+        value = self.rom[0x204:0x206]
+        log = self.encode([bank("cg", 0x200, value, [V(0), V(1)]),
+                           bank("other", 0x900, value, [V(0), V(1)])])
+        self.assertEqual(body(log), ["G cg", "B 200 @204+2", "G other", "B 900 @204+2"])
+
+    def test_a_plain_container_leaves_the_encoding_as_before(self):
+        value = self.x + self.entry[5:8] + self.x
+        log = self.encode([entry("cg", "rooms", 3, value)],
+                          known=set(range(0x100, 0x110)) | set(range(0x200, 0x210)))
+        self.assertEqual(body(log), ["G cg", "T rooms 3 " + value.hex()])
+
+    def test_the_scramble_keeps_the_rule_s_references(self):
+        events = stream([entry("cg", "rooms", 3, self.x + self.entry[5:8] + self.x),
+                         bank("cg", 0x200, self.rom[0x204:0x206])])
+        self.assertEqual(write_log.compare_scrambled(events, self.rom, SIDES, self.known), [])
+
+    def test_a_table_group_s_piece_is_a_reference_but_not_a_longest_match(self):
+        x = self.x.hex()
+        events = [entry("fix", "rooms", 3, self.x + self.entry[5:7] + self.x),
+                  bank("fix", 0x200, self.rom[0x204:0x206])]
+        self.assertEqual(body(self.encode(events)),
+                         ["G fix", "B 200 @204+2", "T rooms 3 %s @105+2 %s" % (x, x)])
+        segments = write_log.table_segments(stream(events), self.rom, SIDES, self.known)
+        self.assertEqual([s[4] for s in segments], [[]])
 
 
 class Invariant(unittest.TestCase):

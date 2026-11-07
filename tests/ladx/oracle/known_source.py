@@ -12,6 +12,9 @@ when its parsed fields rebuild its bytes exactly (`fields`, `rebuild`):
   the bytes of bank 0x14 0x04E0..0x051F that hold 0x00, and the item ids at bank 0x3E 0x3300
   plus each boss room.
 A span whose fields do not rebuild it is left out and named in `failures`.
+Its lookups: `entries` {(table, key): (start, stop)} of the entry spans kept, and `span_at(q)`,
+the span holding source offset q with the lowest start, None outside the map (write_log.py's
+fragment rule).
 
 With --rom (default tmp/ladx/base.gbc) it prints `NOT-REBUILT <span>` per failure and the
 summary `known-source: <n> spans, <b> bytes, <f> not rebuilt`. With --ladxr too (a checkout at
@@ -77,16 +80,33 @@ END_OF_DATA = {"text": (0xFE, 0xFF), "data": (0xFF,)}
 
 class KnownSource:
     """The map: `q in ks` for a source offset; `spans` [(start, stop, label)], `failures`
-    [label] of the spans left out, len() the number of offsets."""
+    [label] of the spans left out, len() the number of offsets; `entries` {(table, key): (start,
+    stop)} of the table entries among the spans (pointer, bank and boss bytes are not entries)."""
 
     def __init__(self, size):
         self.mask = bytearray(size)
         self.spans = []
         self.failures = []
+        self.entries = {}
+        self._span_of = None
 
-    def add(self, start, stop, label):
+    def add(self, start, stop, label, entry=None):
+        """entry: the (table, key) whose source entry the span is, None for any other span."""
         self.spans.append((start, stop, label))
         self.mask[start:stop] = b"\x01" * (stop - start)
+        if entry is not None:
+            self.entries[entry] = (start, stop)
+        self._span_of = None
+
+    def span_at(self, q):
+        """The (start, stop) of the span holding source offset q with the lowest start (the
+        longest of those), None outside the map."""
+        if self._span_of is None:
+            self._span_of = {}
+            for start, stop, _ in sorted(self.spans, key=lambda s: (s[0], -s[1]), reverse=True):
+                for p in range(start, stop):
+                    self._span_of[p] = (start, stop)
+        return self._span_of.get(q)
 
     def __contains__(self, q):
         return 0 <= q < len(self.mask) and self.mask[q] == 1
@@ -265,7 +285,7 @@ def build(rom, layout=LAYOUT, bosses=BOSSES):
             parts = fields(table.kind, data)
             label = "%s %s" % (table.name, _key_text(key))
             if parts is not None and rebuild(table.kind, parts) == data:
-                ks.add(entry[0], entry[1], label)
+                ks.add(entry[0], entry[1], label, (table.name, key))
             else:
                 ks.failures.append(label)
     zero = bosses.zero_bank * BANK + bosses.zero_addr

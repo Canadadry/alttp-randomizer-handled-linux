@@ -116,9 +116,12 @@ segment ends, per net byte:
 2. else its carried origin;
 3. else the longest source match of at least 4 bytes among the bytes left,
    at its lowest offset;
-4. else a literal.
+4. else the **fragment rule** below, on the bytes left;
+5. else a literal.
 
-No aligned 4-byte literal of a table group occurs in the ROM.
+No aligned 4-byte literal of a table group occurs in the ROM. The fragment
+rule's pieces are not longest matches: `gen_tables.py` never couples or
+fuses units because of them.
 
 **C groups** (side `C`: what Phase 3 computes on the device), event by
 event against the state before:
@@ -138,8 +141,35 @@ Then, once the segment ends, **KS-match**: each maximal run of the
 segment's net literal bytes (bank bytes at contiguous offsets; each table
 entry alone) is matched left to right, longest first, against KS taken as
 maximal runs of contiguous source offsets. A match of at least 4 bytes
-inside one KS run becomes a copy of its lowest offset. No other ROM
+inside one KS run becomes a copy of its lowest offset. Then the
+**fragment rule** below, on the segment's net literal bytes; the write
+identities a piece names are renamed to its copy, as KS-match does, so a
+later carried copy (`save`'s packing) inherits the reference. No other ROM
 matching ever applies to a C group.
+
+**Fragment rule** (no 1–3-byte piece of a source entry stays a literal;
+`golden_check.py`'s `fragments` check and `table_replay.py`'s table scan
+prove it). It needs only KS, so C reproduces it from its own KS, which
+must give two lookups with these exact rules:
+
+- `entries`: the source span `(start, stop)` of every KS entry, by table
+  and key (alt keys included); pointer, bank and boss bytes are not
+  entries;
+- `span_at(q)`: the KS span holding source offset `q` with the lowest
+  start (the longest of those on a tie), or none outside KS.
+
+A record's **reference bytes**: for a `T` record, the source bytes of the
+KS entry at the same table and key (none for `texts`, an integer-pointer
+entry, or a key outside KS: background entries other than 3, 4 and 0x0D
+of the tiles, 3 and 4 of the attributes); for a `B` record, its indices
+are cut where `span_at` of their offset changes, each piece against the
+source bytes of its span, offsets outside KS skipped. **The walk**: in each
+piece, each maximal run of literal bytes is walked left to right; at each
+position the longest prefix of at least 1 byte that occurs in the
+reference bytes becomes a copy (`@q+n`) of its lowest offset there, and
+the walk goes on after it; where no byte occurs, the walk moves on one
+byte. Copies merge with their neighbours by the canonical rendering; `I`
+lines are computed from the literals left.
 
 **KS**, the C-knowable source map (`oracle/known_source.py`), is the set of
 source offsets whose values C parses from the user's ROM at runtime:
@@ -206,7 +236,9 @@ LADXR's assembler. They are ROM-derived like the goldens: written only by
 `oracle/gen_tables.sh` (with the ROM and LADXR at the pin), never edited
 by hand. The format's module is `oracle/tables.py` (`parse`, `render`,
 `select`, `check`); `tables.py check` (`make ladx-tables`, in `make test`)
-checks the files against the inventory without the ROM.
+checks the files against the inventory without the ROM. Their records
+follow the table groups' encoding rule, the fragment rule included
+("Encoding rule"), when `gen_tables.sh` builds them with KS.
 
 **Files.** Line-based ASCII, single spaces, one version line first.
 
@@ -260,7 +292,10 @@ C writes there. The result is LADXR's output ROM.
 `python3 -I oracle/table_replay.py [<case>...]` proves it on every case
 folder, the `C` writes taken from the golden and placed by the mirror's
 event stream: the SHA-1 equals `run.txt`'s `rom_sha1`, and each table
-group's projection equals the golden's.
+group's projection equals the golden's. Before the replays it scans every
+`B` and `T` record of the tables for fragments, as `golden_check.py`'s
+`fragments` check does for the goldens (`BAD tables: fragments <file> line
+<n>: ...`).
 
 **Random sample.** The tables are built from coverage runs only; the case
 goldens and a random sample are independent evidence. The sample is
@@ -1045,7 +1080,9 @@ oracle, in their own commit stating the reason. With the ROM
 - `python3 -I oracle/golden_check.py [<case>...]` checks each golden
   against its mirror: `decode`, `encode`, `tags` (every group a `table` or
   `C` group; the union over all goldens equal to the inventory's writing
-  groups less `spoiler`), `scrambled`, `projection` and `nintendo`;
+  groups less `spoiler`), `scrambled`, `projection`, `nintendo` and
+  `fragments` (no literal piece of a record, of any length, occurs in the
+  KS bytes it replaces; "Encoding rule", the fragment walk);
 - `oracle/determinism.sh --full --all [<case>...]` runs every case (or
   the named ones) twice (hash seeds 0 and 1, a fresh clone, a tagged work
   root) and compares every file, `rom_writes.txt` included.

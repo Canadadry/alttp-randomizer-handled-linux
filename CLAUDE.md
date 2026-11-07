@@ -296,12 +296,14 @@ in `docs/`, then `README.md`.
   `table` or `C` group of the inventory), `scrambled` (no C group's
   projection changes with every byte outside the C-knowable map
   scrambled), `projection` (dropping or changing another group's records
-  never changes a group's projection) and `nintendo` (the Nintendo-bytes
-  policy of a case folder, 0 literal runs); `ok <case>` or `BAD <case>:
-  <check>: <detail>` lines, with no case named the union of the goldens'
-  groups against the inventory's writing groups less `spoiler` (`BAD
-  tags: ...`), then `golden-check: <n> cases, <b> bad, <k> literal runs`;
-  about 13 s per case.
+  never changes a group's projection), `nintendo` (the Nintendo-bytes
+  policy of a case folder, 0 literal runs) and `fragments` (no literal
+  piece, of any length, of a `B` or `T` record occurs in the KS bytes it
+  replaces: `<group> <n> fragments, <b> bytes, first at line <l>`); `ok
+  <case>` or `BAD <case>: <check>: <detail>` lines, with no case named the
+  union of the goldens' groups against the inventory's writing groups less
+  `spoiler` (`BAD tags: ...`), then `golden-check: <n> cases, <b> bad, <k>
+  literal runs, <f> fragments`; about 13 s per case.
   `oracle_run.py --rom --dir <dir> --reads [--inventory <file>]` (off by
   default; `run.txt`, `out.gbc` and `spoiler.json` unchanged by it) also
   traces the whole run with `read_trace.py` and writes `reads.txt`,
@@ -355,8 +357,11 @@ in `docs/`, then `README.md`.
   <file>] [--inputs <dir>] [<case>...]` (with the ROM, the LADXR checkout
   and the mirror's event streams, else a `setup:` line, exit 2) proves
   itself on planted tables, goldens and streams (a flipped table byte, a
-  copy token swapped for the same bytes, an entry under another key;
-  `table-replay: self-test, 4 planted replays as expected`), then, per
+  copy token swapped for the same bytes, an entry under another key, a
+  table holding a fragment; `table-replay: self-test, 5 planted replays
+  as expected`), scans every `B` and `T` record of the tables for
+  fragments (one `BAD tables: fragments <file> line <n>: <k> fragments,
+  <b> bytes` line each, as `golden_check.py`'s `fragments`), then, per
   case and combo (default every one), walks `order.txt` for the case's key
   (`config.txt` validated by LADXR, constants and the spot count through
   `gen_tables.py`'s model), applying each unit's entry at its first row and,
@@ -367,7 +372,7 @@ in `docs/`, then `README.md`.
   not `run.txt`'s `rom_sha1`, with the first differing offset and its last
   writer in the replay and the golden; `projection`: a table group's
   projection differs from the golden's), then `table-replay: <n> cases, <b>
-  bad`, exit 1 on a bad one; about 1 minute for 128 cases. Never prints a
+  bad, <f> table fragments`, exit 1 on a bad one or a fragment; about 1 minute for 128 cases. Never prints a
   ROM byte.
   `inventory_trace.sh [--out <dir>] [--cases <file>] [--seeds <file>]
   [<case>...]` runs every case that way (default: the case folders, like

@@ -98,6 +98,32 @@ class Replay(unittest.TestCase):
         self.assertEqual([k for k, _ in got], ["align"])
 
 
+class Fragments(unittest.TestCase):
+    """The tables' scan: no literal piece of a record occurs in the source bytes it replaces."""
+
+    def setUp(self):
+        self.known = table_replay.known_source.KnownSource(len(ROM))
+        self.known.add(0x40, 0x48, "texts 2", ("texts", 2))
+        self.known.add(0x10, 0x18, "pointers")
+
+    def scan(self, fixed=FIXED, opts=OPTS):
+        return table_replay.table_fragments({"fixed.txt": fixed, "opts.txt": opts}, ROM,
+                                            self.known)
+
+    def test_clean_tables_have_no_fragment(self):
+        self.assertEqual(self.scan(), [])
+
+    def test_a_piece_of_the_replaced_entry_is_reported_by_file_and_line(self):
+        piece = ROM[0x41:0x43] + b"\x05" + ROM[0x46:0x47]
+        self.assertEqual(self.scan(opts=OPTS.replace("T texts 2 05", "T texts 2 " + piece.hex())),
+                         [("opts.txt", 7, 2, 3)])
+
+    def test_a_bank_literal_inside_a_ks_span_is_a_fragment(self):
+        self.assertEqual(self.scan(fixed=FIXED.replace("B 10 @20+4",
+                                                       "B 10 @20+4 " + ROM[0x11:0x13].hex())),
+                         [("fixed.txt", 6, 1, 2)])
+
+
 class SelfTest(unittest.TestCase):
     def test_self_test_passes(self):
         self.assertIsNone(table_replay.self_test())
@@ -112,7 +138,7 @@ class Main(unittest.TestCase):
             code = table_replay.main(["--rom", os.path.join(root, "none.gbc")])
         self.assertEqual(code, 2)
         lines = out.getvalue().splitlines()
-        self.assertEqual(lines[0], "table-replay: self-test, 4 planted replays as expected")
+        self.assertEqual(lines[0], "table-replay: self-test, 5 planted replays as expected")
         self.assertTrue(lines[-1].startswith("setup: table-replay: no ROM at "))
 
 

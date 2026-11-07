@@ -136,6 +136,33 @@ class Case(unittest.TestCase):
                               ["@3 4 bytes writes"] if name == "rom_writes.txt" else [])
         self.assertEqual(problems, [("nintendo", "rom_writes.txt: @3 4 bytes writes")])
 
+    def known_source(self):
+        """A KS of self.known's offsets, texts 0 (0x100..0x108) its one entry."""
+        ks = golden_check._sibling("known_source").KnownSource(len(self.rom))
+        ks.add(0x100, 0x108, "texts 0", ("texts", 0))
+        ks.add(0x108, 0x180, "other")
+        return ks
+
+    def test_a_golden_of_its_stream_has_no_fragment(self):
+        ks = self.known_source()
+        self.known = ks
+        log = write_log.encode(self.events, self.rom, SIDES, ks)
+        write(os.path.join(self.folder, "rom_writes.txt"), log)
+        self.assertEqual(self.check(), [])
+
+    def test_a_piece_of_the_replaced_entry_kept_as_a_literal_is_a_fragment(self):
+        self.known = self.known_source()
+        old = self.rom[0x100:0x108]
+        other = bytes(v for v in range(256) if v not in old)[:1]
+        lines = self.log.splitlines()
+        n = next(i for i, line in enumerate(lines) if line.startswith("T texts 0 "))
+        lines[n] = "T texts 0 " + (old[1:3] + other + old[5:6]).hex()
+        write(os.path.join(self.folder, "rom_writes.txt"), "".join(l + "\n" for l in lines))
+        problems = self.check()
+        self.assertIn(("fragments", "cg 2 fragments, 3 bytes, first at line %d" % (n + 1)),
+                      problems)
+        self.assertEqual([c for c, _ in problems], ["encode", "fragments"])
+
     def test_an_unparsable_log_stops_at_its_format(self):
         write(os.path.join(self.folder, "rom_writes.txt"), "ladx-rom-writes 2\n")
         self.assertEqual([c for c, _ in self.check()], ["format"])

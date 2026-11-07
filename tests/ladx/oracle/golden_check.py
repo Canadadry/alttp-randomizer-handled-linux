@@ -16,11 +16,14 @@ stream gen_golden.sh left in <mirror>/<case>/events.txt (default tmp/ladx-golden
                every other group's projection unchanged, and the change shows in h's own;
   nintendo     the Nintendo-bytes check (nintendo_bytes.py's policy for a case folder:
                rom_writes.txt in scope writes, run.txt and spoiler.json general, its computed
-               and invariant clearances included) finds 0 literal runs; never prints a byte.
+               and invariant clearances included) finds 0 literal runs; never prints a byte;
+  fragments    no literal piece of a B or T record, of any length, occurs in the source bytes it
+               replaces (write_log.py fragments: a T record's KS entry, a B byte's KS span):
+               `<group> <n> fragments, <b> bytes, first at line <l>` per group holding one.
 It prints `ok <case>` or one `BAD <case>: <check>: <detail>` line per problem, then, when no case
 is named, `BAD tags: <detail>` unless the union of the goldens' groups is the inventory's table
-and C groups less spoiler, then `golden-check: <n> cases, <b> bad, <k> literal runs`; exit 1 on
-any BAD. A missing ROM, inventory, stream or LADXR checkout is a `setup:` line, exit 2.
+and C groups less spoiler, then `golden-check: <n> cases, <b> bad, <k> literal runs, <f>
+fragments` (<f> over every case checked); exit 1 on any BAD. A missing ROM, inventory, stream or LADXR checkout is a `setup:` line, exit 2.
 """
 
 import argparse
@@ -137,7 +140,20 @@ def check_case(folder, events, rom, sides, known, nintendo, scramble_known=None,
         if os.path.exists(path):
             problems += [("nintendo", "%s: %s" % (name, run))
                          for run in nintendo(name, _read(path, True), scope)]
+    problems += [("fragments", detail) for detail in fragment_details(text, rom, known)]
     return problems
+
+
+def fragment_details(text, rom, known):
+    """`<group> <n> fragments, <b> bytes, first at line <l>` per group of the log holding a
+    fragment (write_log.fragments), in first-fragment order."""
+    found = {}
+    for group, line, _, n in write_log.fragments(text, rom, known):
+        count = found.setdefault(group, [0, 0, line])
+        count[0] += 1
+        count[1] += n
+    return ["%s %d fragments, %d bytes, first at line %d" % (group, n, b, line)
+            for group, (n, b, line) in found.items()]
 
 
 def union_problems(found, sides):
@@ -203,7 +219,7 @@ def main(argv):
         known = _sibling("known_source").build(rom)
         nintendo = _nintendo(args, rom)
         folders = _case_folders(args.root, args.cases)
-        bad, literals, found = 0, 0, set()
+        bad, literals, fragments, found = 0, 0, 0, set()
         for name, folder in folders:
             stream = os.path.join(args.mirror, name, "events.txt")
             if not os.path.isfile(stream):
@@ -218,6 +234,8 @@ def main(argv):
             problems = check_case(folder, events, rom, sides, known, nintendo,
                                   invariant=invariant)
             literals += sum(1 for check, _ in problems if check == "nintendo")
+            fragments += sum(int(detail.split(" ")[1]) for check, detail in problems
+                             if check == "fragments")
             try:
                 found.update(write_log.groups(_read(os.path.join(folder, "rom_writes.txt"))))
             except write_log.WriteLogError:
@@ -233,7 +251,8 @@ def main(argv):
     union = [] if args.cases else union_problems(found, sides)
     for detail in union:
         print("BAD tags: %s" % detail)
-    print("golden-check: %d cases, %d bad, %d literal runs" % (len(folders), bad, literals))
+    print("golden-check: %d cases, %d bad, %d literal runs, %d fragments"
+          % (len(folders), bad, literals, fragments))
     return 1 if bad or union else 0
 
 
