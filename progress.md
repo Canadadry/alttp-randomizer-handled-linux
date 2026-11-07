@@ -33,7 +33,7 @@
     - [x] Chunk 4: read trace
     - [x] Chunk 5: inventory checker and draft
   - [x] Step 1.10 check-net
-- [ ] Phase 2 — LADXR oracle, with the ROM
+- [x] Phase 2 — LADXR oracle, with the ROM
   - [x] Step 2.1 Fetch and check the ROM
     - [x] Chunk 1: scoped Nintendo-bytes policy
     - [x] Chunk 2: push gate on the policy
