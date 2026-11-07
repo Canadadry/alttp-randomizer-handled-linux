@@ -604,16 +604,16 @@ static void test_real_tables(void)
 	int cases, combos, u, with_count = 0;
 
 	open_real();
-	check(ladx_tables_group_count(&tables) == 11, "data/ladx: 11 groups, bank3e's, bosses', endscreen's, enemizer's, goal's and items' constants included");
-	check(ladx_tables_unit_count(&tables) == 398, "data/ladx: 398 units");
-	check(ladx_tables_entry_count(&tables) == 1007, "data/ladx: 1007 entries");
+	check(ladx_tables_group_count(&tables) == 12, "data/ladx: 12 groups, bank3e's, bosses', endscreen's, enemizer's, goal's, items' and warp-home's constants included");
+	check(ladx_tables_unit_count(&tables) == 399, "data/ladx: 399 units");
+	check(ladx_tables_entry_count(&tables) == 1008, "data/ladx: 1008 entries");
 	for (u = 0; u < ladx_tables_unit_count(&tables); u++)
 		with_count += ladx_tables_unit_uses_count(&tables, u);
 	check(with_count == 1, "data/ladx: one unit keyed by count");
 	cases = check_cases("cases");
 	combos = check_cases("combos");
 	check(cases > 0 && combos > 0, "case and combo folders");
-	printf("%s: data/ladx opened (11 groups, 398 units, 1007 entries); %d cases and %d combos select %d entries\n",
+	printf("%s: data/ladx opened (12 groups, 399 units, 1008 entries); %d cases and %d combos select %d entries\n",
 	       TEST, cases, combos, units_selected);
 }
 

@@ -29,6 +29,9 @@ int ladx_background_decode(LadxBackground *bg, const uint8_t *data, size_t n);
 /* addr below LADX_BACKGROUND_ADDR_SPAN (else nothing changes and 0). */
 int ladx_background_set(LadxBackground *bg, uint32_t addr, uint8_t value);
 
+/* tiles[addr] into *value; 0 when addr is absent (Python's KeyError). */
+int ladx_background_get(const LadxBackground *bg, uint32_t addr, uint8_t *value);
+
 /*
  * BackgroundEditor.store's bytes into out, terminator included: their
  * count, or 0 when bg is empty (LADXR's min() of an empty dict), an

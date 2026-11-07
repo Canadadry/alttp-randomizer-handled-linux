@@ -7,6 +7,14 @@ static int present(const LadxBackground *bg, uint32_t addr)
 	return addr < LADX_BACKGROUND_ADDR_SPAN && (bg->present[addr / 8] >> (addr % 8) & 1);
 }
 
+int ladx_background_get(const LadxBackground *bg, uint32_t addr, uint8_t *value)
+{
+	if (!present(bg, addr))
+		return 0;
+	*value = bg->tile[addr];
+	return 1;
+}
+
 int ladx_background_set(LadxBackground *bg, uint32_t addr, uint8_t value)
 {
 	if (addr >= LADX_BACKGROUND_ADDR_SPAN)

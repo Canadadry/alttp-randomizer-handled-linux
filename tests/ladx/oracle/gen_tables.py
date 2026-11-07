@@ -826,10 +826,37 @@ def _kept(group, k, events, keep):
     return [e for e in events if e in kept]
 
 
+def _drop_bytes(group, k, events, offsets):
+    """events with the bank bytes at offsets removed from every write covering them, each write
+    split around them; TablesPlanError on an offset no write covers."""
+    def covers(e, o):
+        return e[0] == "B" and e[1] <= o < e[1] + len(e[2])
+    for o in sorted(offsets):
+        if not any(covers(e, o) for e in events):
+            raise TablesPlanError("%s: call %d never writes byte %x" % (group, k, o))
+    out = []
+    for e in events:
+        if not any(covers(e, o) for o in offsets):
+            out.append(e)
+            continue
+        start, piece = e[1], bytearray()
+        for i, v in enumerate(e[2]):
+            if e[1] + i in offsets:
+                if piece:
+                    out.append(("B", start, bytes(piece)))
+                start, piece = e[1] + i + 1, bytearray()
+            else:
+                piece.append(v)
+        if piece:
+            out.append(("B", start, bytes(piece)))
+    return out
+
+
 def calls_group(group, order, runs, owns, rom, known, keeps=None):
     """The text of a C group's constants file in calls mode: runs [[write]], one per call in
-    order, owns [[("T", table, key) or ("B", offset)]] each call's writes C makes itself, left
-    out and required; keeps, per call, None or [(absolute offset, length)], the only bank ranges
+    order, owns [[("T", table, key), ("B", offset) or ("byte", offset)]] each call's writes C
+    makes itself, left out and required (a "byte" one byte cut out of the write covering it,
+    _drop_bytes); keeps, per call, None or [(absolute offset, length)], the only bank ranges
     its unit keeps (_kept). Each call's other writes form its own unit <group>.<k+1>, no
     component, one entry (`nothing` when empty); there is no fixed unit. TablesPlanError on an
     own write a call misses."""
@@ -837,6 +864,8 @@ def calls_group(group, order, runs, owns, rom, known, keeps=None):
     units = []
     keeps = keeps or [None] * len(runs)
     for k, (events, own, keep) in enumerate(zip(runs, owns, keeps), 1):
+        events = _drop_bytes(group, k, events, {o[1] for o in own if o[0] == "byte"})
+        own = [o for o in own if o[0] != "byte"]
         for o in own:
             if not any(e[:len(o)] == tuple(o) for e in events):
                 raise TablesPlanError("%s: call %d never writes %s" % (
@@ -924,6 +953,13 @@ def _bosses_calls():
     ]
 
 
+def _warp_home_calls():
+    """warp-home's call: warpHome on a fresh parse less the five `ld a, $NN` operands of its
+    handler (bank 1 0x3E39 + 5k: type, map, room, x, y) and background 0x0D's tiles, C's own."""
+    operands = [("byte", 1 * BANK_SIZE + 0x3E39 + 5 * k) for k in range(5)]
+    return [("patches.core.warpHome(rom)", operands + [("T", "background_tiles", 0x0D)])]
+
+
 def variant_runs(module, call):
     """[call()'s result], one per element of the sequence call draws from module.choice, the
     k-th with that choice returning the k-th element; module.choice restored after.
@@ -966,6 +1002,7 @@ CONST_GROUPS = {
            for lst in _specific_lists()])),
     "items": ConstSpec(None, [], [], calls=_items_calls()),
     "bosses": ConstSpec(None, [], [], calls=_bosses_calls()),
+    "warp-home": ConstSpec(None, [], [], calls=_warp_home_calls()),
     "enemizer": ConstSpec(None, [], [], calls=[
         ("patches.enemies.randomizeEnemies(rom, bytes(16))", [],
          [(0x36 * 0x4000 + 0x23DD, 3), (0x36 * 0x4000 + 0x3F00, 16)])]),

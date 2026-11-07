@@ -756,6 +756,22 @@ class ConstGroups(unittest.TestCase):
                                              bytes(ROM), None, keeps=[None]))
 
 
+    def test_warp_home_owns_its_five_operands_and_background_0x0d(self):
+        (call, own), = gen_tables.CONST_GROUPS["warp-home"].calls
+        self.assertEqual(call, "patches.core.warpHome(rom)")
+        self.assertEqual(own, [("byte", 0x7E39), ("byte", 0x7E3E), ("byte", 0x7E43),
+                               ("byte", 0x7E48), ("byte", 0x7E4D), ("T", "background_tiles", 0x0D)])
+
+    def test_owned_bytes_are_cut_out_of_the_writes_covering_them_and_required(self):
+        runs = [[("B", 0x800, b"\xF1\xF2\xF3\xF4"), ("B", 0x900, b"\xE1")]]
+        text = gen_tables.calls_group("g", self.ORDER, runs, [[("byte", 0x801), ("byte", 0x803)]],
+                                      bytes(ROM), None)
+        self.assertEqual(text, "ladx-tables 1\ngroup g\ntables texts entities\n"
+                               "unit g.1\nE\nB 800 f1\nB 802 f3\nB 900 e1\n")
+        with self.assertRaisesRegex(gen_tables.TablesPlanError, "call 1 never writes byte 804"):
+            gen_tables.calls_group("g", self.ORDER, runs, [[("byte", 0x804)]], bytes(ROM), None)
+
+
 class VariantRuns(unittest.TestCase):
     """variant_runs: a call drawing once from a module's choice, run once per element."""
 

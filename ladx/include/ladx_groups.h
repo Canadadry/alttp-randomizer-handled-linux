@@ -292,4 +292,29 @@ LadxRngStatus ladx_enemizer_pick(LadxRoom *r, LadxRng *rng, int evilshop, int *f
 /* randomizeEnemies' room loop: rooms 0..0xFF less 0x24, 0xE2, 0xF2, 0x5A and 0x58, loaded from enc's state; 0 on a room that does not load or store, or a draw error. */
 int ladx_enemizer_rooms(LadxEncoder *enc, LadxSpan group, LadxRoom *room, LadxRng *rng, int evilshop);
 
+/*
+ * patches/core.py warpHome (tests/ladx/README.md, "Pipeline"):
+ * data/ladx/warp-home.txt's one unit (the S&Q menu's assembled patches
+ * less five operands, the menu sprite), the operands from the start house
+ * 0x2A3's first warp as the encoder's state holds it, then background
+ * 0x0D's tiles edited, with no origin. Needs p->rom; draws nothing;
+ * returns 0 with p->raised set where LADXR raises.
+ */
+int ladx_group_warp_home(LadxEncoder *enc, LadxPipeline *p);
+
+#define LADX_WARP_HOME_ROOM 0x2A3
+#define LADX_WARP_HOME_OPERANDS 5
+
+typedef enum LadxWarpHomeStatus {
+	LADX_WARP_HOME_OK = 0,
+	LADX_WARP_HOME_RAISED /* IndexError (no warp), AssemblerException (room 0x100), KeyError (a missing tile): *raised filled */
+} LadxWarpHomeStatus;
+
+/* warpHome's handler operands (type, map, room, x, y) from the start house r. */
+LadxWarpHomeStatus ladx_warp_home_target(const LadxRoom *r, int force_inside, uint8_t out[LADX_WARP_HOME_OPERANDS],
+					 LadxOutcome *raised);
+
+/* warpHome's edits of background 0x0D's tiles: the S&Q screen's rows moved down, its third option written. */
+LadxWarpHomeStatus ladx_warp_home_edit(LadxBackground *bg, LadxOutcome *raised);
+
 #endif

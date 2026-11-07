@@ -91,7 +91,10 @@ in `docs/`, then `README.md`.
   `sprite_data.c`, `entityData.SPRITE_DATA`, tested by
   `test_sprite_data`), tested by `test_enemizer`, claimed `rom-group`
   with its trace by `e2e-rom`, contract in `tests/ladx/README.md`,
-  "Pipeline" and "Patch tables"; `tables.c`, the patch tables' reader, key, walk, records
+  "Pipeline" and "Patch tables"; `warp_home.c`, the `C` group
+  `warp-home` (`warpHome`, assembled bytes from `data/ladx/warp-home.txt`),
+  tested by `test_warp_home`, claimed `rom-group` by `e2e-rom`, contract
+  in `tests/ladx/README.md`, "Pipeline" and "Patch tables"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
@@ -138,8 +141,8 @@ in `docs/`, then `README.md`.
   `ofl/pressstart2p/` at `24ddc1f324cac5d9f5aedca126d298f56e3f1640`, renamed.
   `data/ladx/` holds LADX's patch tables (`order.txt` and one `<group>.txt`
   per `table` group of the inventory, plus `bank3e.txt`, `bosses.txt`,
-  `endscreen.txt`, `enemizer.txt`, `goal.txt` and `items.txt`, the `C` groups `bank3e`'s,
-  `bosses`', `endscreen`'s, `enemizer`'s, `goal`'s and `items`' constants files, `endscreen.txt` holding
+  `endscreen.txt`, `enemizer.txt`, `goal.txt`, `items.txt` and `warp-home.txt`, the `C` groups `bank3e`'s,
+  `bosses`', `endscreen`'s, `enemizer`'s, `goal`'s, `items`' and `warp-home`'s constants files, `endscreen.txt` holding
   LADXR's 24 cat images; format, units, keys, entries and the
   order walk in `tests/ladx/README.md`'s "Patch tables"), written only by
   `gen_tables.sh`, never by hand.
@@ -412,7 +415,7 @@ in `docs/`, then `README.md`.
   (exit 1), else `tables: <n> files byte-identical to data/ladx`.
   `gen_tables.sh --const [--out <dir>]` (with the ROM, outside the net)
   rewrites only the `C` groups' constants files (`bank3e.txt`,
-  `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt` and `items.txt`; contract in `tests/ladx/README.md`, "Patch tables"),
+  `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt`, `items.txt` and `warp-home.txt`; contract in `tests/ladx/README.md`, "Patch tables"),
   about 70 seconds.
   `gen_tables.sh --sample [--ladxr <dir>]` (the checkout at the pin, no
   ROM) appends the 12 `sample <nn> k=v ...` lines to `combos.txt`

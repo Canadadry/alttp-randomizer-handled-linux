@@ -250,7 +250,7 @@ follow the table groups' encoding rule, the fragment rule included
   `tables <table>...` (ROMWithTables' tables in their order, as in a write
   log), then its units.
 - `<group>.txt` for a `C` group, its **constants file** (today
-  `bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt` and `items.txt`): the settings-only writes of the
+  `bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt`, `items.txt` and `warp-home.txt`): the settings-only writes of the
   group's call that C cannot compute (LADXR's assembler, LADXR's binary
   files), in the same format; below.
 
@@ -361,7 +361,10 @@ writes less its own positions forming its own unit `<group>.<k>` in list
 order (`nothing` when empty), with no common unit. A call given as
 `(call, own, keep)` keeps only its bank writes inside `keep`'s
 `(offset, length)` ranges, every other write dropped; a range not
-written whole, or a write straddling a range's edge, is refused. `goal` (265 units,
+written whole, or a write straddling a range's edge, is refused. An own
+position `("byte", offset)` cuts that one bank byte out of every write
+covering it, splitting the write around it (`_drop_bytes`); a call
+writing no such byte is refused. `goal` (265 units,
 28,499 bytes): `goal.1` is `patchMaze(rom, [], [])` less room 6's three
 stores (entities 6, `rooms_overworld_top` 6, its overlay at bank 0x26
 0x1E0): the zeroed sign tables at bank 0x0C 0x3800..0x39FF, the egg
@@ -397,7 +400,12 @@ genie's `ld [hl], $91` (bank 4 0x0521) and the eagle check `cp $06`
 (bank 4 0x121D, 0x1226, 0x127F). `enemizer` (1 unit, 19 bytes):
 `enemizer.1` is `randomizeEnemies(rom, bytes(16))` kept at the colour
 ghouls' two patches (`call $7F00` at bank 0x36 0x23DD, the 16-byte check
-at 0x3F00), its rooms dropped. `tables.py check`
+at 0x3F00), its rooms dropped. `warp-home` (1 unit, 13 records):
+`warp-home.1` is `warpHome(rom)` less the five `ld a, $NN` operands of
+its handler (bank 1 0x3E39 + 5k, k = 0..4: type, map, room, x, y) and
+background 0x0D's tiles: the S&Q menu's patches (bank 1 0x00B7, 0x012A,
+0x3E02 and the handler at 0x3E20 around its operands) and the menu
+sprite (bank 0x0F 0x08E0, 32 bytes). `tables.py check`
 accepts at most one such file per `C` group of the inventory (any other
 name is `EXTRA`), checks its domains and duplicates, and matches its
 units to no row.
@@ -532,7 +540,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -544,7 +552,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -733,10 +741,10 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   hand-built graph with `KeyLocation` spots and an unreached one. Then
   it opens the real
   `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
-  file): 11 groups (`bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt` and `items.txt` included), 398 units, 1007 entries, one unit keyed by `count`; and
+  file): 12 groups (`bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt`, `items.txt` and `warp-home.txt` included), 399 units, 1008 entries, one unit keyed by `count`; and
   for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
   supported, every unit without `count` selects an entry. It prints
-  `test_tables: data/ladx opened (11 groups, 398 units, 1007 entries); <n>
+  `test_tables: data/ladx opened (12 groups, 399 units, 1008 entries); <n>
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
@@ -794,7 +802,7 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   reads a unit's resolved bank bytes (keep, copy and literal; inside a
   record) and gives 0 for bytes it does not all write, a unit or a group
   out of range; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `title` then `endscreen`,
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title` then `endscreen`,
   `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
@@ -1009,6 +1017,23 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   failing) and the registry (right after `bosses`, ROM, no draw). It
   prints `test_enemizer: randomizeEnemies' picks against LADXR on planted
   rooms, the room loop and the group on a synthetic ROM (<c> checks)`.
+  `test_warp_home` checks `ladx_warp_home_target` on planted rooms (an
+  overworld warp's room and target, the first warp winning; a one-way
+  entrance's room, the first and last names, a room over 0x100 and
+  `force_inside` giving the indoor fallback 1, 0x10, 0xA3, 0x50, 0x7F;
+  D2 not one-way; room 0x100 raising LADXR's `AssemblerException`
+  message, measured at the pin; no warp `IndexError`),
+  `ladx_warp_home_edit` on a planted background (every moved tile, the
+  third option's five tiles, nothing else added; a missing row 0x9980
+  raising `KeyError` `39298`), then the group in the pipeline on a
+  synthetic ROM with a planted start house, background 0x0D and
+  `warp-home.txt` (the operands from the warp, the unit and the edited
+  background in one segment; `overworld=dungeonchain` and
+  `entranceshuffle=madness` forcing the fallback, `simple` not; no warp
+  and a missing row raising; an operand not after `ld a` (0x3E) or a file
+  without 1 unit failing) and the registry (between `enemizer` and
+  `title`, ROM, no draw). It prints `test_warp_home: warpHome's target,
+  the S&Q background and the group on a synthetic ROM (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1257,7 +1282,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `title` and `endscreen`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title` and `endscreen`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1609,6 +1634,30 @@ its trace lines and numbers `endscreen`'s draw lower, which only
 `e2e-rom` claims. It fails on a room that does not load or store, a file
 without 1 unit, or no `rnd`.
 
+**`warp-home`** (`patches.core.warpHome(rom, force_inside)`,
+`ladx_group_warp_home`), after `entrances` (the start house it stored),
+with `data/ladx/warp-home.txt` ("Patch tables", 1 unit). The byte before
+each of the handler's five operands must be the unit's `ld a` opcode
+0x3E, else the group fails. The start house 0x2A3 is loaded from the
+encoder's state ("Room editor"); `ladx_warp_home_target` takes its first
+warp's room and target (type 0, map 0), or the indoor fallback (type 1,
+map 0x10, room 0xA3, x 0x50, y 0x7F) when the room is one of the 15
+one-way entrances' overworld rooms (`ENTRANCE_INFO`'s `d0`, `d1`, `d3`,
+`d4`, `d6`, `d8`, `animal_cave`, `right_fairy`, `rooster_grave`,
+`prairie_left_cave2`, `prairie_left_fairy`, `armos_fairy`,
+`boomerang_cave`, `madbatter_taltal`, `forest_madbatter`), is over
+0x100, or `force_inside` (`overworld=dungeonchain` or `entranceshuffle`
+`chaos`, `insane` or `madness`; never in tier 1). Then the unit, the five
+operands with no origin, and background 0x0D's tiles decoded from their
+current value ("Pipeline"'s `p->background`, as `title`),
+`ladx_warp_home_edit`ed (for columns 2..17, rows 0x9960..0x99C0 take the
+rows above them, 0x98E0 moving to 0x9960; then 0xCE, 0xCF, 0xC4, 0x7F,
+0x7F at 0x996A) and re-encoded with no origin. LADXR's raises are
+outcomes: no warp `IndexError`, a room of exactly 0x100 the assembler's
+`AssemblerException` (`([NUMBER:256:21], '8 bit value out of range')`),
+an absent tile read `KeyError` with its decimal address. It needs the
+ROM (`rom-group warp-home`), draws nothing and has no `draw`.
+
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
 0x3E 0x2F00, then, unless `race`, the short settings string's length
@@ -1620,7 +1669,7 @@ not matter, since no two writes of the call share a position.
 
 `ladx/include/ladx_room.h`: `roomEditor.py`'s `RoomEditor` at the pin,
 for every `C` group that edits rooms (`goal`, `items`, `entrances`,
-`bosses`, `enemizer`, and later `warp-home`, `sprites`). Caller-owned (`LadxRoom`,
+`bosses`, `enemizer`, `warp-home`, and later `sprites`). Caller-owned (`LadxRoom`,
 about 10 KB; the pipeline holds one as `p->room`), no allocation.
 `ladx_room_load(r, enc, room, alt)` reads, from the encoder's current
 state, an index room (0..0x31F: objects from `rooms_overworld_top`
