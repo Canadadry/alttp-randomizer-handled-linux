@@ -811,14 +811,49 @@ def const_group(group, order, components, runs, own, rom, known, variants=False)
     return tables.render(tables.Group(group, list(order), units))
 
 
+def calls_group(group, order, runs, owns, rom, known):
+    """The text of a C group's constants file in calls mode: runs [[write]], one per call in
+    order, owns [[("T", table, key) or ("B", offset)]] each call's writes C makes itself, left
+    out and required. Each call's other writes form its own unit <group>.<k+1>, no component,
+    one entry (`nothing` when empty); there is no fixed unit. TablesPlanError on an own write a
+    call misses."""
+    rom = _IndexedRom(rom)
+    units = []
+    for k, (events, own) in enumerate(zip(runs, owns), 1):
+        for o in own:
+            if not any(e[:len(o)] == tuple(o) for e in events):
+                raise TablesPlanError("%s: call %d never writes %s" % (
+                    group, k, " ".join(o[:1] + tuple("%x" % x if isinstance(x, int) else x
+                                                     for x in o[1:]))))
+        kept = [e for e in events if not any(e[:len(o)] == tuple(o) for o in own)]
+        unit = tables.Unit("", [], [tables.Entry([], _const_records(_net(kept), rom, known, order),
+                                                 {}, {})])
+        unit.id = "%s.%d" % (group, k)
+        units.append(unit)
+    return tables.render(tables.Group(group, list(order), units))
+
+
 class ConstSpec:
     """A C group whose call writes settings-only bytes C cannot compute (LADXR's assembler, or
     LADXR's files): call, its text evaluated in generator.py's namespace with the seed-dependent
     arguments None; components, ordered as a unit's; own, the writes C makes itself; variants,
-    the dotted name of the module whose one choice the call draws (no component), or None."""
+    the dotted name of the module whose one choice the call draws (no component), or None;
+    calls, a list of (call, own) run once each with no component (calls_group), call and own
+    then unused."""
 
-    def __init__(self, call, components, own, variants=None):
+    def __init__(self, call, components, own, variants=None, calls=None):
         self.call, self.components, self.own, self.variants = call, components, own, variants
+        self.calls = calls
+
+
+def _specific_lists():
+    """setSpecificInstruments' sorted lists, one per non-empty subset of 1..8, by mask 1..255
+    (bit i-1 for instrument i)."""
+    return [[i for i in range(1, 9) if mask >> (i - 1) & 1] for mask in range(1, 256)]
+
+
+_GOAL_TEXT = [("T", "texts", 0x1A3)]
+_MAZE_ROOM6 = [("T", "entities", 6), ("T", "rooms_overworld_top", 6), ("B", 0x26 * 0x4000 + 6 * 80)]
 
 
 def variant_runs(module, call):
@@ -855,6 +890,12 @@ CONST_GROUPS = {
                         [("T", "texts", 0xBE)]),
     "endscreen": ConstSpec("patches.endscreen.updateEndScreen(rom)", [], [],
                            variants="random"),
+    "goal": ConstSpec(None, [], [], calls=(
+        [("patches.maze.patchMaze(rom, [], [])", _MAZE_ROOM6)]
+        + [("patches.goal.setRequiredInstrumentCount(rom, %d)" % c, _GOAL_TEXT)
+           for c in range(-1, 8)]
+        + [("patches.goal.setSpecificInstruments(rom, %r)" % lst, _GOAL_TEXT)
+           for lst in _specific_lists()])),
 }
 ASM_CONSTS_GROUP = "asm-consts"
 BANK_SIZE = 0x4000
@@ -913,7 +954,7 @@ def const_runs(spec, model, statements, rom_path, table_names):
     if unreached:
         raise TablesPlanError("unreached tuples %s" % unreached)
 
-    def one(witness):
+    def one(witness, call=spec.call):
         settings = ladxr_settings.Settings()
         for line in assignment_lines(witness):
             settings.set(line)
@@ -936,12 +977,18 @@ def const_runs(spec, model, statements, rom_path, table_names):
                 skipped.append((bank, addr))
         rom.patch = checked
         with contextlib.redirect_stdout(io.StringIO()):
-            eval(spec.call, namespace)
+            eval(call, namespace)
         if skipped:
             raise TablesPlanError("%s: patches skipped as already applied at %s"
-                                  % (spec.call, skipped))
+                                  % (call, skipped))
         return events
 
+    if spec.calls:
+        (values, witness), = found
+        runs = []
+        for call, _ in spec.calls:
+            runs.append(one(witness, call))
+        return runs
     runs = []
     for values, witness in found:
         if spec.variants:
@@ -956,11 +1003,17 @@ def const_runs(spec, model, statements, rom_path, table_names):
 def const_files(model, inventory_text, rom_path, rom, known, table_names):
     """{<group>.txt: text} of CONST_GROUPS, inside the LADXR checkout."""
     statements = _const_statements(inventory_text)
-    return {"%s.txt" % group: const_group(group, table_names, spec.components,
-                                          const_runs(spec, model, statements, rom_path,
-                                                     table_names), spec.own, rom, known,
-                                          variants=spec.variants is not None)
-            for group, spec in sorted(CONST_GROUPS.items())}
+    files = {}
+    for group, spec in sorted(CONST_GROUPS.items()):
+        runs = const_runs(spec, model, statements, rom_path, table_names)
+        if spec.calls:
+            files["%s.txt" % group] = calls_group(group, table_names, runs,
+                                                  [own for _, own in spec.calls], rom, known)
+        else:
+            files["%s.txt" % group] = const_group(group, table_names, spec.components, runs,
+                                                  spec.own, rom, known,
+                                                  variants=spec.variants is not None)
+    return files
 
 
 # Building ----------------------------------------------------------------------------------------

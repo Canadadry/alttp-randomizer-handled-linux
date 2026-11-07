@@ -295,6 +295,20 @@ int32_t ladx_enc_bank_origin(const LadxEncoder *enc, uint32_t offset)
 	return offset < enc->positions ? enc->origin[offset] : (int32_t)offset;
 }
 
+int ladx_enc_bank_value(const LadxEncoder *enc, uint32_t offset, uint8_t *value, int32_t *origin)
+{
+	LadxAtom a;
+
+	if (offset >= enc->positions)
+		return 0;
+	a = enc->state[offset];
+	if (a >= 0 && (!enc->rom || (size_t)a >= enc->rom_len))
+		return 0;
+	*value = (uint8_t)atom_value(enc, a);
+	*origin = enc->origin[offset];
+	return 1;
+}
+
 int ladx_enc_entry_origins(const LadxEncoder *enc, int table, LadxWlogKey key, int32_t *out, size_t cap,
 			   size_t *n)
 {

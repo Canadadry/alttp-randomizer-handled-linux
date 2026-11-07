@@ -11,4 +11,5 @@ rom-group endscreen
 rom-group marin
 rom-group music
 rom-group notext
+rom-group goal
 rom-group title

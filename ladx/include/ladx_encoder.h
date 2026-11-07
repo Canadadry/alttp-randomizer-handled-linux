@@ -115,6 +115,12 @@ LadxEncStatus ladx_enc_end(LadxEncoder *enc);
 int32_t ladx_enc_bank_origin(const LadxEncoder *enc, uint32_t offset);
 
 /*
+ * The byte now at offset into *value and its origin into *origin: 1, or 0
+ * when offset is out of range or the byte is a reference and there is no ROM.
+ */
+int ladx_enc_bank_value(const LadxEncoder *enc, uint32_t offset, uint8_t *value, int32_t *origin);
+
+/*
  * The origins of the entry's current bytes copied into out: 1 with *n set,
  * 0 when the entry is unknown, an integer pointer, or over cap bytes.
  */

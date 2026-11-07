@@ -9,6 +9,7 @@
 #include "ladx_ks.h"
 #include "ladx_randomizer.h"
 #include "ladx_rom.h"
+#include "ladx_room.h"
 #include "ladx_settings.h"
 #include "ladx_tables.h"
 
@@ -77,6 +78,7 @@ struct LadxPipeline {
 	uint8_t values[LADX_WLOG_ATOM_MAX];   /* a C group's, one record's bytes */
 	int32_t origins[LADX_WLOG_ATOM_MAX];
 	LadxBackground background; /* a C group's, one background being edited */
+	LadxRoom room;		   /* a C group's, one room being edited */
 };
 
 /* enc initialised over p->rom's bytes, KS and tables (or none), its log begun. */

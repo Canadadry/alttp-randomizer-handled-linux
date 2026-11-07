@@ -250,7 +250,7 @@ follow the table groups' encoding rule, the fragment rule included
   `tables <table>...` (ROMWithTables' tables in their order, as in a write
   log), then its units.
 - `<group>.txt` for a `C` group, its **constants file** (today
-  `bank3e.txt` and `endscreen.txt`): the settings-only writes of the
+  `bank3e.txt`, `endscreen.txt` and `goal.txt`): the settings-only writes of the
   group's call that C cannot compute (LADXR's assembler, LADXR's binary
   files), in the same format; below.
 
@@ -354,7 +354,21 @@ LADXR's art, but 2bpp tiles of few values coincide with ROM runs
 (measured with the ROM: 5,060 strict literal runs over the 24 files, the
 longest match of more than 3 values 56 bytes at about 1.2 bits per
 byte), so they reach C only through this file, under the `tables`
-scope, their coincidences as references read back from the user's ROM. `tables.py check`
+scope, their coincidences as references read back from the user's ROM.
+A group in **calls** mode (`ConstSpec.calls`, `calls_group`) lists
+`(call, own)` pairs, each run once on a fresh parse (no component), its
+writes less its own positions forming its own unit `<group>.<k>` in list
+order (`nothing` when empty), with no common unit. `goal` (265 units,
+28,499 bytes): `goal.1` is `patchMaze(rom, [], [])` less room 6's three
+stores (entities 6, `rooms_overworld_top` 6, its overlay at bank 0x26
+0x1E0): the zeroed sign tables at bank 0x0C 0x3800..0x39FF, the egg
+event's three bank 0x19 patches, entity 0x4C's bank 0x03 and 0x20
+patches, the sign handler at bank 0x0C 0x0000..0x07FF and its tiles at
+bank 0x3F 0x3700; `goal.2` to `goal.10` are
+`setRequiredInstrumentCount(rom, c)` for `c` = -1 to 7 less text 0x1A3;
+`goal.11` to `goal.265` are `setSpecificInstruments(rom, list)` less
+text 0x1A3, for the mask `m` = 1 to 255 (bit `i - 1` for instrument
+`i`), the list `m`'s instruments ascending. `tables.py check`
 accepts at most one such file per `C` group of the inventory (any other
 name is `EXTRA`), checks its domains and duplicates, and matches its
 units to no row.
@@ -388,8 +402,9 @@ group, or a capacity exceeded is an error. An error has a status
 `bad-values`, `bad-token`, `tables-differ`, `dup-group`, `dup-unit`,
 `no-group-file`, `no-unit`, `overflow`, `no-entry`, `buffer`, `range`),
 the caller's file name and the 1-based line; nothing is half-opened.
-Capacities: 16 groups, 256 units, 512 `order.txt` rows, 2048 entries, 12
-components per unit (today 5, 91, 147, 676 and 6).
+Capacities: 16 groups, 512 units, 512 `order.txt` rows, 2048 entries, 12
+components per unit (today 8, 383, 147, 999 and 6, the constants files
+included; units raised from 256 for `goal.txt`'s 265).
 
 **Key.** From validated, supported settings and the spot count: a
 setting renders `ladx_setting_value_name`'s name, `""` for the empty
@@ -488,7 +503,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -500,7 +515,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -689,10 +704,10 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   hand-built graph with `KeyLocation` spots and an unreached one. Then
   it opens the real
   `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
-  file): 7 groups (`bank3e.txt` and `endscreen.txt` included), 118 units, 734 entries, one unit keyed by `count`; and
+  file): 8 groups (`bank3e.txt`, `endscreen.txt` and `goal.txt` included), 383 units, 999 entries, one unit keyed by `count`; and
   for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
   supported, every unit without `count` selects an entry. It prints
-  `test_tables: data/ladx opened (7 groups, 118 units, 734 entries); <n>
+  `test_tables: data/ladx opened (8 groups, 383 units, 999 entries); <n>
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
@@ -747,7 +762,7 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   no file; `ladx_pipeline_const_units` writes the keyed unit alone and
   fails on units past the file's end; `ladx_pipeline_const_unit_count`
   counts a file's units, -1 without one; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `notext`, `title` then `endscreen`,
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `title` then `endscreen`,
   `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
@@ -856,6 +871,36 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   literal's last byte; with any other `textmode`, or without the ROM,
   nothing written. It prints `test_notext: texts cut to their
   terminator on a synthetic ROM (<c> checks)`.
+  `test_room` drives `ladx_room.h` ("Room editor") through an encoder
+  over a synthetic ROM: every room loaded and stored unchanged gives its
+  overlay as a keep and its entries as copies of themselves (KS's
+  inherit-on-equal), the planted ones (an integer entry, the entities'
+  0xFF off a pair) refused; a planted room parsed into each object kind,
+  a warp's room offset by its map (colour dungeon, indoor A, indoor B at
+  maps 0x06..0x19), the entity and object helpers, `updateOverlay` with
+  and without the floor (an index Python refuses is `RANGE`, a negative
+  one wraps), the floor's source offset carried into the overlay, alt
+  rooms (`Alt06`'s overlay in bank 0x27, `Alt1F5` none), a store under
+  another index with the tileset, attribset and palette bytes, an indoor
+  store with its tileset alone; refusals (no 0xFE, a warp past the
+  entry, bytes after the terminators, no ROM for a source entry, a field
+  outside its byte, an overlay to store and none). It prints
+  `test_room: RoomEditor's load, edits and store on a synthetic ROM (<c>
+  checks)`.
+  `test_goal` runs the library's registry on a synthetic ROM, its
+  encoder without KS, after a planted table group giving every overworld
+  room literal entities (room 6 two 0xDE), with a planted 265-unit
+  `goal.txt` (unit 1 a code byte pair and the zeroed sign tables, unit
+  `k + 1` the number `k` at bank 0x19 `4k`): the goal projection equals
+  a model's for the counts 0, 4, 7 and vanilla's 8 (text, then unit `2 +
+  count`, none for 8), an `open-4` seed drawing -1 (`You need -1
+  instruments`, unit 1), specific goals of 1, 3, 7 and a random count
+  (the text in the drawn order, unit `9 + mask`), the maze (unit 0, each
+  sign's room with the sign entity first, its arrow, 0x40 for the last,
+  and number, room 6 last without its 0xDE entities); `open` and
+  `seashells` write nothing; a file of 264 units fails the group. It
+  prints `test_goal: the goal group on a synthetic ROM and planted
+  constants (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1104,7 +1149,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `title` and `endscreen`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `title` and `endscreen`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1128,6 +1173,8 @@ units `first` to `first + count - 1` (0-based, file order) the same way,
 0 when they pass the file's end; `ladx_pipeline_const_unit_count` gives
 a file's unit count, -1 without one.
 `ladx_enc_entry_value` gives an entry's current bytes and origins,
+`ladx_enc_bank_value` a bank byte's current value and origin (0 for a
+reference without the ROM),
 `ladx_enc_entry_pointer` whether it is an integer pointer (1), bytes (0)
 or unknown (-1), and
 `ladx_randomizer_seed` the seed's first 32 bytes.
@@ -1244,12 +1291,84 @@ reads and overwrites the texts of `bank3e`, `marin`, `hints` and the
 `fixed` table group, so it runs after them (`order.txt`'s `C notext`
 row, after `options`' second `fastText`).
 
+**`goal`** (`patches.maze.patchMaze`, `patches.goal.setSpecificInstruments`
+and `setRequiredInstrumentCount`, `ladx_group_goal`), on the world
+setup's goal (step 4's port), with `data/ladx/goal.txt` ("Patch
+tables", 265 units): for `vanilla` and `instruments` (the drawn counts of
+`open-4`, `5-8` and `goalcount=random` included), text 0x1A3
+`formatText("You need %d instruments")` (Python's `%d`, so `-1`), then,
+below 8, unit `goal.<c + 3>` (`c` negative as -1); for `specific`, text
+0x1A3 `formatText("You need:" + "\n{INSTRUMENT<d>}"...)` in the world
+setup's drawn order, then the unit of the instruments' mask; for `maze`,
+unit `goal.1`, then for each of the 22 signs in order the room `x // 10
+| (y // 8) << 4` loaded ("Room editor"), the sign entity `(x % 10, y %
+8, 0x4C)` inserted first, stored, bank 0x0C 0x3800 + room its arrow
+(`directions[idx]`, 0x40 for the last sign) and 0x3900 + room its index,
+each a byte with no origin; then room 6 loaded, its 0xDE entities
+removed, stored. LADXR zeroes the sign tables, places the signs, stores
+room 6, then patches; the unit's other writes share no position with the
+signs and rooms, and its zeroes come before the signs in both orders, so
+every event sees the same state before and the segment's net effect is
+the same. `open` and `seashells` write nothing (the `goal-fixed` rows),
+nor does the cut bingo (unsupported settings). Text writes have no origin.
+It needs the ROM (the file's references, the rooms, the KS copies in
+its goldens: `rom-group goal`), draws nothing (the world setup drew)
+and has no `draw`. It fails on a file without 265 units, a malformed
+room or a goal it cannot write. Not covered by C or the tables: on
+`goal=instruments` with `goalcount=random`, a drawn -1 makes the world
+setup's goal `open`, so LADXR writes `setRequiredInstrumentCount(rom,
+-1)` at the `goal-fixed.3` table row, keyed by `goal` alone, whose
+`instruments` entry is `nothing`; no case reaches it (step 3.6.10's
+note).
+
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
 0x3E 0x2F00, then, unless `race`, the short settings string's length
 byte at 0x2F20 and its bytes from 0x2F21 (over 255 bytes fails, as
 LADXR's `to_bytes` raises). LADXR writes the texts first; the order does
 not matter, since no two writes of the call share a position.
+
+## Room editor
+
+`ladx/include/ladx_room.h`: `roomEditor.py`'s `RoomEditor` at the pin,
+for every `C` group that edits rooms (`goal`, and later `entrances`,
+`bosses`, `enemizer`, `warp-home`, `sprites`). Caller-owned (`LadxRoom`,
+about 10 KB; the pipeline holds one as `p->room`), no allocation.
+`ladx_room_load(r, enc, room, alt)` reads, from the encoder's current
+state, an index room (0..0x31F: objects from `rooms_overworld_top`
+below 0x80, `rooms_overworld_bottom` below 0x100, `rooms_indoor_a`
+below 0x200, `rooms_indoor_b` below 0x300, else `rooms_color_dungeon`,
+at the index less its base; entities from `entities` at the room) or an
+alt key (objects only, from the first of the top, bottom and indoor A
+tables that holds it). It parses as LADXR does: the animation id, the
+floor object, then objects until 0xFE (a first byte's high nibble 0x8
+horizontal, 0xC vertical, each with its count; 0xE a warp of 5 bytes,
+its room plus 0x300 for map 0xFF, 0x200 for maps 0x06..0x19, else 0x100
+when its type is above 0; else a single object), entities in pairs until
+0xFF, each entry ending at its terminator (`MALFORMED` otherwise, and for
+an integer entry; `NO_ROM` for a source byte without a ROM). The overlay
+is the 80 bytes at bank 0x26 `room * 80` below 0xCC, at bank 0x27
+`(room - 0xCC) * 80` below 0x100, at bank 0x27 0x1040, 0x1090, 0x10E0,
+0x1130, 0x1180 and 0x11D0 for `Alt06`, `Alt0E`, `Alt1B`, `Alt2B`,
+`Alt79` and `Alt8C`, else none; each byte with its current value and
+origin (`ladx_enc_bank_value`). The floor's and each object's type's
+origins are kept, as LADXR's parsed ints carry them. The helpers are
+LADXR's (insert, add, remove and test entities; test, change, remove and
+move objects, a warp never matching an x, y or type; `updateOverlay`),
+an overlay index Python refuses giving `RANGE`, a negative one wrapping.
+`ladx_room_store(r, enc, group, new_room, new_alt)` (`-1, NULL`: its own
+room) writes, in LADXR's order, the objects entry (the header, each
+object's export, 0xFE), for an index room below 0x100 the set tileset
+(bank 0x3F 0x3F00 + room), attribset (bank 0x1A 0x2476 + room, then
+0x1E76 + 2 room, low then high) and palette (bank 0x21 0x02EF + room)
+bytes, above it the tileset at bank 0x20 0x2EB3 + room - 0x100, then
+the entities entry (pairs, 0xFF) and the overlay where the room has one.
+The entries' and extra bytes have no origin (LADXR builds plain
+`bytearray`s from ints), the overlay carries its bytes' origins (LADXR
+slices the tracked bank), so the encoder's carried origins and
+inherit-on-equal give LADXR's tokens. A field outside its byte, or an
+overlay to store and none loaded, is `RANGE`. Not ported (no tier-1
+caller): `loadFromJson`, `buildObjectList`, `getTileArray`.
 
 ## Generator `ladx_gen`
 
@@ -1285,12 +1404,12 @@ e2e` and `e2e-combos`.
 - `ladx_gen --tables <dir> <case_dir> <out_dir>` does the same, then,
   after an ok fill (`ladx_randomizer_placement` not NULL), writes
   `<out_dir>/rom_writes.txt`: the tables of `<dir>` (`order.txt` and every
-  other `.txt` file, read whole, 2 MiB in all at most; today 1,363,688
+  other `.txt` file, read whole, 2 MiB in all at most; today 1,392,187
   bytes) opened, the key of the validated settings and the placed logic's
   spot count, the library's pipeline ("Pipeline") walks `order.txt`:
   each selected entry's records through the encoder's `fixed` calls
   under its unit's group, and at `C` rows the library's ported groups
-  (without `--rom` `hints` and `marin`'s, `music`'s and `endscreen`'s draws, since `bank3e`, `marin`, `music`, `notext`, `title` and `endscreen` need the ROM, so consecutive
+  (without `--rom` `hints` and `marin`'s, `music`'s and `endscreen`'s draws, since `bank3e`, `marin`, `music`, `notext`, `goal`, `title` and `endscreen` need the ROM, so consecutive
   entries of one group merge into one segment across the `C` rows). The file is a valid version-1 write log, no `I`
   line; the version and `tables` lines are written even when nothing
   else is. Without `--rom` the encoder has no ROM, KS or parsed tables
@@ -1384,7 +1503,7 @@ repeated or `spoiler` group, a group both `group` and `rom-group`, a
 Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
 `goal-fixed`, `music-fixed` and `options` (the five table groups) and
 `hints`; `rom-group bank3e`, `rom-group endscreen`, `rom-group marin`,
-`rom-group music`, `rom-group notext` and `rom-group title`.
+`rom-group music`, `rom-group notext`, `rom-group goal` and `rom-group title`.
 
 A claimed `C` group that draws also claims its `trace` lines: those of
 `run.txt` whose stage (the 4th field) is one of its LADXR frames

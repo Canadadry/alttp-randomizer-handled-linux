@@ -718,6 +718,26 @@ class ConstGroups(unittest.TestCase):
         gen_tables.tables.parse(text)
 
 
+    def test_calls_give_one_unit_per_call_in_order_with_no_fixed_unit(self):
+        runs = [[("B", 0x800, b"\xF1"), ("T", "texts", 0x1A3, b"\x01")],
+                [("B", 0x800, b"\xF1"), ("B", 0x900, b"\xE1"), ("T", "texts", 0x1A3, b"\x02")],
+                [("T", "texts", 6, b"\xC5"), ("B", 0x10, b"\xF0")]]
+        owns = [[("T", "texts", 0x1A3)], [("T", "texts", 0x1A3)], [("T", "texts", 6)]]
+        text = gen_tables.calls_group("g", self.ORDER, runs, owns, bytes(ROM), None)
+        self.assertEqual(text, "ladx-tables 1\ngroup g\ntables texts entities\n"
+                               "unit g.1\nE\nB 800 f1\nunit g.2\nE\nB 800 f1\nB 900 e1\n"
+                               "unit g.3\nE\nB 10 f0\n")
+        gen_tables.tables.parse(text)
+
+    def test_a_call_writing_only_its_own_gives_nothing_and_a_missed_own_write_is_refused(self):
+        self.assertIn("unit g.1\nE\nnothing\n",
+                      gen_tables.calls_group("g", self.ORDER, [[("T", "texts", 3, b"\x01")]],
+                                             [[("T", "texts", 3)]], bytes(ROM), None))
+        with self.assertRaisesRegex(gen_tables.TablesPlanError, "call 2 never writes T texts 3"):
+            gen_tables.calls_group("g", self.ORDER, [[("T", "texts", 3, b"\x01")], [("B", 1, b"\x02")]],
+                                   [[("T", "texts", 3)], [("T", "texts", 3)]], bytes(ROM), None)
+
+
 class VariantRuns(unittest.TestCase):
     """variant_runs: a call drawing once from a module's choice, run once per element."""
 

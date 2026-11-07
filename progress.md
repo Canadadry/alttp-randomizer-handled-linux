@@ -135,7 +135,7 @@
     - [x] Step 3.6.7 music
     - [x] Step 3.6.8 endscreen
     - [x] Step 3.6.9 notext
-    - [ ] Step 3.6.10 goal
+    - [x] Step 3.6.10 goal
     - [ ] Step 3.6.11 items
     - [ ] Step 3.6.12 entrances
     - [ ] Step 3.6.13 bosses
