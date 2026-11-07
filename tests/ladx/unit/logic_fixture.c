@@ -520,3 +520,165 @@ int lf_graphs_next(const char *test, FILE *f, LfGraph *g)
 	vline[0] = '\0';
 	return 1;
 }
+
+#define WALK_LOC_MAX 1024
+#define WALK_SPOT_MAX 512
+#define WALK_EDGE_MAX 2048
+
+/* A canonical text cut into its lines' fields, edges and spots chained per
+ * location in text order. */
+typedef struct WalkGraph {
+	char text[LF_GRAPH_TEXT_MAX + 1];
+	int locs, spots, edges;
+	int dungeon[WALK_LOC_MAX];
+	const char *name[WALK_LOC_MAX];
+	int spot_head[WALK_LOC_MAX], spot_tail[WALK_LOC_MAX];
+	int edge_head[WALK_LOC_MAX], edge_tail[WALK_LOC_MAX];
+	const char *spot_text[WALK_SPOT_MAX];
+	int spot_next[WALK_SPOT_MAX];
+	int edge_to[WALK_EDGE_MAX];
+	const char *edge_req[WALK_EDGE_MAX];
+	int edge_next[WALK_EDGE_MAX];
+	int pos[WALK_LOC_MAX];
+	int walk[WALK_LOC_MAX];
+	int walk_len;
+} WalkGraph;
+
+static WalkGraph walk_want, walk_got;
+
+static void chain(int *head, int *tail, int *next, int i)
+{
+	next[i] = -1;
+	if (*tail < 0)
+		*head = i;
+	else
+		next[*tail] = i;
+	*tail = i;
+}
+
+static void walk_parse(const char *test, const char *what, WalkGraph *g, const char *text, size_t len)
+{
+	char *line, *end;
+	int i, a, b, off;
+
+	if (len > LF_GRAPH_TEXT_MAX)
+		test_fail(test, "%s: graph text over %d bytes", what, LF_GRAPH_TEXT_MAX);
+	memcpy(g->text, text, len);
+	g->text[len] = '\0';
+	g->locs = g->spots = g->edges = 0;
+	for (i = 0; i < WALK_LOC_MAX; i++) {
+		g->spot_head[i] = g->spot_tail[i] = -1;
+		g->edge_head[i] = g->edge_tail[i] = -1;
+		g->pos[i] = -1;
+	}
+	for (line = g->text; *line; line = end + 1) {
+		end = strchr(line, '\n');
+		if (!end)
+			test_fail(test, "%s: unterminated line", what);
+		*end = '\0';
+		if (sscanf(line, "loc %d %n", &a, &off) == 1) {
+			char *tab = strchr(line + off, '\t');
+
+			if (a != g->locs || a >= WALK_LOC_MAX || !tab)
+				test_fail(test, "%s: malformed %s", what, line);
+			*tab = '\0';
+			g->dungeon[a] = strcmp(line + off, "-") == 0 ? -1 : atoi(line + off);
+			g->name[a] = tab + 1;
+			g->locs++;
+		} else if (sscanf(line, "spot %d %n", &a, &off) == 1) {
+			if (a < 0 || a >= g->locs || g->spots >= WALK_SPOT_MAX)
+				test_fail(test, "%s: malformed %s", what, line);
+			g->spot_text[g->spots] = line + off;
+			chain(&g->spot_head[a], &g->spot_tail[a], g->spot_next, g->spots++);
+		} else if (sscanf(line, "edge %d %d %n", &a, &b, &off) == 2) {
+			if (a < 0 || a >= g->locs || b < 0 || b >= g->locs || g->edges >= WALK_EDGE_MAX)
+				test_fail(test, "%s: malformed %s", what, line);
+			g->edge_to[g->edges] = b;
+			g->edge_req[g->edges] = line + off;
+			chain(&g->edge_head[a], &g->edge_tail[a], g->edge_next, g->edges++);
+		} else {
+			test_fail(test, "%s: malformed %s", what, line);
+		}
+	}
+}
+
+/* Logic.__recursiveFindAll's preorder, restricted to dungeon n. */
+static void walk_from(WalkGraph *g, int loc, int n)
+{
+	int e;
+
+	g->pos[loc] = g->walk_len;
+	g->walk[g->walk_len++] = loc;
+	for (e = g->edge_head[loc]; e >= 0; e = g->edge_next[e])
+		if (g->dungeon[g->edge_to[e]] == n && g->pos[g->edge_to[e]] < 0)
+			walk_from(g, g->edge_to[e], n);
+}
+
+static void walk_dungeon(const char *test, const char *what, WalkGraph *g, int n)
+{
+	char entrance[32];
+	int i;
+
+	snprintf(entrance, sizeof entrance, "D%d Entrance", n);
+	g->walk_len = 0;
+	for (i = 0; i < g->locs; i++)
+		if (g->dungeon[i] == n && strcmp(g->name[i], entrance) == 0) {
+			walk_from(g, i, n);
+			return;
+		}
+	test_fail(test, "%s: no location %s", what, entrance);
+}
+
+/* The next in-dungeon edge from e on; -1 at the end. */
+static int next_inside(const WalkGraph *g, int e, int n)
+{
+	while (e >= 0 && g->dungeon[g->edge_to[e]] != n)
+		e = g->edge_next[e];
+	return e;
+}
+
+int lf_dungeon_compare(const char *test, const char *graph, int n, const char *want, size_t want_len,
+		       const char *got, size_t got_len)
+{
+	WalkGraph *w = &walk_want, *g = &walk_got;
+	int p, k;
+
+	walk_parse(test, graph, w, want, want_len);
+	walk_parse(test, "the C graph", g, got, got_len);
+	walk_dungeon(test, graph, w, n);
+	walk_dungeon(test, "the C graph", g, n);
+	for (p = 0; p < w->walk_len || p < g->walk_len; p++) {
+		int lw, lg, sw, sg, ew, eg;
+
+		if (p >= w->walk_len || p >= g->walk_len)
+			test_fail(test, "dungeon D%d, graph %s: walk position %d: %s only in %s", n, graph, p,
+				  p < w->walk_len ? w->name[w->walk[p]] : g->name[g->walk[p]],
+				  p < w->walk_len ? "the fixture" : "C");
+		lw = w->walk[p];
+		lg = g->walk[p];
+		if (strcmp(w->name[lw], g->name[lg]) != 0)
+			test_fail(test, "dungeon D%d, graph %s: walk position %d: name %s, fixture %s", n, graph, p,
+				  g->name[lg], w->name[lw]);
+		for (sw = w->spot_head[lw], sg = g->spot_head[lg], k = 0; sw >= 0 || sg >= 0;
+		     sw = sw >= 0 ? w->spot_next[sw] : -1, sg = sg >= 0 ? g->spot_next[sg] : -1, k++)
+			if (sw < 0 || sg < 0 || strcmp(w->spot_text[sw], g->spot_text[sg]) != 0)
+				test_fail(test, "dungeon D%d, graph %s: walk position %d (%s): spot %d: %s, fixture %s", n,
+					  graph, p, w->name[lw], k, sg >= 0 ? g->spot_text[sg] : "none",
+					  sw >= 0 ? w->spot_text[sw] : "none");
+		ew = next_inside(w, w->edge_head[lw], n);
+		eg = next_inside(g, g->edge_head[lg], n);
+		for (k = 0; ew >= 0 || eg >= 0; k++) {
+			if (ew < 0 || eg < 0 || w->pos[w->edge_to[ew]] != g->pos[g->edge_to[eg]] ||
+			    strcmp(w->edge_req[ew], g->edge_req[eg]) != 0)
+				test_fail(test,
+					  "dungeon D%d, graph %s: walk position %d (%s): in-dungeon edge %d: to %d %s, "
+					  "fixture to %d %s",
+					  n, graph, p, w->name[lw], k, eg >= 0 ? g->pos[g->edge_to[eg]] : -1,
+					  eg >= 0 ? g->edge_req[eg] : "none", ew >= 0 ? w->pos[w->edge_to[ew]] : -1,
+					  ew >= 0 ? w->edge_req[ew] : "none");
+			ew = next_inside(w, w->edge_next[ew], n);
+			eg = next_inside(g, g->edge_next[eg], n);
+		}
+	}
+	return w->walk_len;
+}

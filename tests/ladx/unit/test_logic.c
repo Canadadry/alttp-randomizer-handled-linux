@@ -539,6 +539,39 @@ static void test_graph_spots(void)
 	       TEST, spots, graphs, GRAPHS);
 }
 
+#define DUNGEON_FIRST 1
+#define DUNGEON_LAST 4
+
+/*
+ * Each ported dungeon built alone (ladx_logic_build_dungeon) under each
+ * baseline's settings and WorldSetup()'s defaults, which every baseline's
+ * ws lines equal (checked with --fixtures), equal to the dungeon in the
+ * fixture's whole graph: lf_dungeon_compare's walk from "D<n> Entrance".
+ */
+static void test_dungeons(void)
+{
+	FILE *f = lf_graphs_open(TEST, GRAPHS);
+	LadxWorldSetup ws;
+	int graphs = 0, walked = 0, n;
+	size_t len;
+
+	ladx_world_setup_defaults(&ws);
+	while (lf_graphs_next(TEST, f, &graph)) {
+		graphs++;
+		for (n = DUNGEON_FIRST; n <= DUNGEON_LAST; n++) {
+			checks++;
+			if (ladx_logic_build_dungeon(&logic, &graph.settings, &ws, n) != LADX_LOGIC_OK)
+				test_fail(TEST, "dungeon D%d, graph %s: the build fails", n, graph.name);
+			len = lf_graph_text(TEST, &logic, text, sizeof text);
+			walked += lf_dungeon_compare(TEST, graph.name, n, graph.text, graph.len, text, len);
+		}
+	}
+	fclose(f);
+	expect(graphs == 5, "5 graphs in " GRAPHS);
+	printf("%s: D%d to D%d built alone equal to the %d graphs of %s (%d dungeon walks, %d locations)\n", TEST,
+	       DUNGEON_FIRST, DUNGEON_LAST, graphs, GRAPHS, graphs * (DUNGEON_LAST - DUNGEON_FIRST + 1), walked);
+}
+
 /* Settings "k=v,..." on defaults, not validated: configure reads them raw. */
 static void settings_from(const char *text, LadxSettings *settings)
 {
@@ -618,6 +651,97 @@ static void expect_configure_breaks(LadxSpotKind kind, int room, int arg, int du
 	"BLUE_TUNIC,HEART_CONTAINER,BAD_HEART_CONTAINER,TOADSTOOL"
 
 /* Each class's configure, as locations/ writes it (file and lines cited). */
+static int location_named(const char *name)
+{
+	int i;
+
+	for (i = 0; i < ladx_logic_location_count(&logic); i++)
+		if (ladx_logic_location(&logic, i)->name && strcmp(ladx_logic_location(&logic, i)->name, name) == 0)
+			return i;
+	test_fail(TEST, "no location %s", name);
+	return -1;
+}
+
+/* The requirement text of from's connection to to. */
+static void edge_text(const char *from, const char *to, char *out, size_t cap)
+{
+	const LadxLocation *loc = ladx_logic_location(&logic, location_named(from));
+	int target = location_named(to), e;
+
+	for (e = loc->edge_first; e < loc->edge_first + loc->edge_count; e++)
+		if (ladx_logic_edge(&logic, e)->target == target) {
+			out[0] = '\0';
+			lf_requirement_text(TEST, ladx_logic_arena(&logic), ladx_logic_edge(&logic, e)->req, out, cap);
+			return;
+		}
+	test_fail(TEST, "no edge %s -> %s", from, to);
+}
+
+static LadxLogicStatus build_dungeon(const char *settings_text, const LadxWorldSetup *ws, int n)
+{
+	LadxSettings settings;
+
+	settings_from(settings_text, &settings);
+	ladx_settings_validate(&settings);
+	return ladx_logic_build_dungeon(&logic, &settings, ws, n);
+}
+
+/* The name ids of D3's spots with a forced item, each KEY3. */
+static void forced_text(char *out, size_t cap)
+{
+	int i;
+
+	out[0] = '\0';
+	for (i = 0; i < ladx_logic_spot_count(&logic); i++) {
+		const LadxSpot *sp = ladx_logic_spot(&logic, i);
+
+		if (sp->forced_item == LADX_ITEM_NONE)
+			continue;
+		snprintf(out + strlen(out), cap - strlen(out), "%s%s=%s", out[0] ? "," : "", sp->name_id,
+			 ladx_item_name(sp->forced_item));
+	}
+}
+
+/*
+ * ladx_logic_build_dungeon beyond the baselines: the world setup read
+ * (dungeon1.py lines 60-63: miniboss_mapping[0], boss_mapping[0]),
+ * dungeon3.py lines 131-135 (forced KEY3 only when dungeon_keys is ""),
+ * and the refusals.
+ */
+static void test_dungeon_build(void)
+{
+	LadxWorldSetup ws;
+	char got[256];
+
+	ladx_world_setup_defaults(&ws);
+	ws.miniboss_mapping[0] = LADX_MINIBOSS_DODONGO;
+	ws.boss_mapping[0] = 5;
+	expect(build_dungeon("", &ws, 1) == LADX_LOGIC_OK, "D1 builds under a shuffled world setup");
+	edge_text("D1 Miniboss", "D1 After Miniboss", got, sizeof got);
+	expect(strcmp(got, "BOMB") == 0, "D1's miniboss edge reads miniboss_mapping[0] (DODONGO: BOMB)");
+	edge_text("D1 Boss Room", "D1 After Miniboss", got, sizeof got);
+	expect(strcmp(got, "BOMB") == 0, "D1's boss back edge reads boss_mapping[0] (5: BOMB)");
+
+	ladx_world_setup_defaults(&ws);
+	expect(build_dungeon("", &ws, 3) == LADX_LOGIC_OK, "D3 builds");
+	forced_text(got, sizeof got);
+	expect(strcmp(got, "0x158=KEY3,0x155=KEY3") == 0,
+	       "D3 forces KEY3 on its south and west key drops, in iteminfo_list order");
+	expect(build_dungeon("dungeon_keys=keysanity", &ws, 3) == LADX_LOGIC_OK, "D3 builds under keysanity");
+	forced_text(got, sizeof got);
+	expect(strcmp(got, "") == 0, "D3 forces nothing under keysanity");
+
+	expect(build_dungeon("boomerang=default,accessibility=all", &ws, 1) == LADX_LOGIC_OK,
+	       "the pair LADXR's fill refuses still builds its logic");
+	expect(build_dungeon("overworld=random", &ws, 1) == LADX_LOGIC_UNSUPPORTED, "an unsupported value refused");
+	expect(ladx_logic_broken(&logic) && ladx_logic_location_count(&logic) == 0, "nothing built when refused");
+	expect(build_dungeon("", &ws, 5) == LADX_LOGIC_BROKEN, "D5 not ported yet");
+	expect(build_dungeon("", &ws, 9) == LADX_LOGIC_BROKEN && build_dungeon("", &ws, -1) == LADX_LOGIC_BROKEN,
+	       "a dungeon out of range");
+	ws.boss_mapping[2] = 9;
+	expect(build_dungeon("", &ws, 1) == LADX_LOGIC_BROKEN, "a boss mapping out of range");
+}
+
 static void test_configure(void)
 {
 	/* itemInfo.py configure, lines 28-48: the range(10) loop, then the
@@ -822,6 +946,22 @@ static void expect_settings_kept(const LfConfig *c)
 	}
 }
 
+/* The fields the logic reads equal WorldSetup()'s. */
+static bool ws_logic_defaults(const LadxWorldSetup *ws)
+{
+	LadxWorldSetup d;
+	int i;
+
+	ladx_world_setup_defaults(&d);
+	for (i = 0; i < 9; i++)
+		if (ws->boss_mapping[i] != d.boss_mapping[i])
+			return false;
+	for (i = 0; i < LADX_MINIBOSS_KEY_COUNT; i++)
+		if (ws->miniboss_mapping[i] != d.miniboss_mapping[i])
+			return false;
+	return ws->goal == d.goal && ws->goal_count == d.goal_count;
+}
+
 /* logic_vectors.txt: every configuration's settings parsed, validated and
  * supported, its ws lines read into LadxWorldSetup and rendered back. */
 static void replay_vectors(void)
@@ -829,7 +969,7 @@ static void replay_vectors(void)
 	FILE *f = lf_vectors_open(TEST, VECTORS);
 	char lines[13][LF_WS_LINE_MAX];
 	LadxSettingPair finding;
-	int n = 0, pairs = 0, i;
+	int n = 0, pairs = 0, baselines = 0, i;
 
 	while (lf_vectors_next(TEST, f, &config)) {
 		n++;
@@ -848,6 +988,10 @@ static void replay_vectors(void)
 				test_fail(TEST, "config %s: refused as %s", config.name, ladx_reason_id(finding.reason));
 			pairs++;
 		}
+		/* test_dungeons builds the baselines under WorldSetup()'s defaults. */
+		if (strstr(config.name, "/baseline") && !ws_logic_defaults(&config.ws))
+			test_fail(TEST, "config %s: a baseline's world setup is not WorldSetup()'s", config.name);
+		baselines += strstr(config.name, "/baseline") != NULL;
 		lf_ws_render(&config.ws, &config.ws_rest, lines);
 		for (i = 0; i < 13; i++) {
 			checks++;
@@ -858,9 +1002,11 @@ static void replay_vectors(void)
 	}
 	fclose(f);
 	expect(n == 425, "425 configurations in " VECTORS);
+	expect(baselines == 5, "5 baselines in " VECTORS);
 	printf("%s: %d configurations of %s read: settings kept by validate, every value supported alone "
-	       "(%d refused only as a pair LADXR's fill refuses), %d ws lines read back unchanged\n",
-	       TEST, n, VECTORS, pairs, 13 * n);
+	       "(%d refused only as a pair LADXR's fill refuses), %d ws lines read back unchanged, the %d "
+	       "baselines' world setup WorldSetup()'s\n",
+	       TEST, n, VECTORS, pairs, 13 * n, baselines);
 }
 
 int main(int argc, char **argv)
@@ -876,8 +1022,10 @@ int main(int argc, char **argv)
 	test_world_setup();
 	test_item_info();
 	test_configure();
+	test_dungeon_build();
 	printf("%s: synthetic graphs, renderer, explorer, constructors and configure ok (%d checks)\n", TEST, checks);
 	test_graph_spots();
+	test_dungeons();
 	if (fixtures)
 		replay_vectors();
 	return 0;

@@ -73,4 +73,17 @@ FILE *lf_graphs_open(const char *test, const char *path);
 /* The next graph, 0 at the end. */
 int lf_graphs_next(const char *test, FILE *f, LfGraph *g);
 
+/*
+ * Dungeon n of two canonical texts: each walked in preorder from the
+ * location named "D<n> Entrance" (dungeon n), following in order only the
+ * edges whose target has dungeon n, locations paired by walk position.
+ * Each pair's name, dungeon, spot lines (class, name id, options,
+ * metadata) and in-dungeon edges (target walk position, requirement text)
+ * must be equal; edges leaving the dungeon are skipped. A difference
+ * fails with the dungeon, the graph's name and the first differing
+ * location. Returns the walk's length.
+ */
+int lf_dungeon_compare(const char *test, const char *graph, int n, const char *want, size_t want_len,
+		       const char *got, size_t got_len);
+
 #endif

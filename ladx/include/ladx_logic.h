@@ -3,6 +3,7 @@
 
 #include "ladx_items.h"
 #include "ladx_requirements.h"
+#include "ladx_settings.h"
 
 #include <stdbool.h>
 
@@ -78,6 +79,7 @@ typedef struct LadxSpot {
 	int room;	  /* the constructor's room; -1 for None (KeyLocation) */
 	int index;	  /* ShopItem's, TunicFairy's, SeashellMansionBonus's; else -1 */
 	int default_item; /* KeyHole's reward, TradeSequenceItem's item, KeyLocation's key; else none */
+	int forced_item;  /* forced_item: LADX_ITEM_NONE (None) unless the logic forces one */
 	int item;	  /* LADX_ITEM_NONE until placed */
 } LadxSpot;
 
@@ -187,6 +189,21 @@ int ladx_miniboss_find(const char *name);
 const char *ladx_goal_name(int goal);
 /* -1 when unknown; never SPECIFIC. */
 int ladx_goal_find(const char *name);
+
+typedef enum LadxLogicStatus {
+	LADX_LOGIC_OK,
+	LADX_LOGIC_UNSUPPORTED, /* a value unsupported alone, or a pair other than LADXR_REFUSES; nothing built */
+	LADX_LOGIC_BROKEN	/* a capacity overflow or LADXR assertion; the logic is unusable */
+} LadxLogicStatus;
+
+/*
+ * Dungeon n alone (0 the colour dungeon, 1 to 8; D1 to D4 ported so far,
+ * any other n BROKEN): RequirementsSettings, then DungeonN with its
+ * entrance as the start, discovery and configure. Not LADXR's whole graph:
+ * for the per-dungeon claims and for narrowing a divergence.
+ */
+LadxLogicStatus ladx_logic_build_dungeon(LadxLogic *out, const LadxSettings *validated, const LadxWorldSetup *ws,
+					 int n);
 
 /* explorer.py Explorer over a finished graph. */
 typedef struct LadxExplorerTodo {

@@ -2,6 +2,7 @@
 #include "ladx_logic_builder.h"
 
 #include "check_metadata.h"
+#include "logic_internal.h"
 
 #include <stdio.h>
 
@@ -245,19 +246,6 @@ int ladx_logic_add_item_info(LadxLogic *logic, int location, LadxSpotKind kind, 
 	return s;
 }
 
-static bool is_value(const LadxSettings *settings, LadxSettingId id, const char *name)
-{
-	int v = ladx_setting_value_find(id, name);
-
-	return v >= 0 && settings->value[id] == v;
-}
-
-/* A boolean setting's truth. */
-static bool on(const LadxSettings *settings, LadxSettingId id)
-{
-	return is_value(settings, id, "1");
-}
-
 static void replace(LadxSpot *spot, int item)
 {
 	spot->base_options = &item_ids[item];
@@ -267,10 +255,10 @@ static void replace(LadxSpot *spot, int item)
 /* itemInfo.py ItemInfo.configure: the copy, then the appends. */
 static void item_info_configure(LadxLogic *logic, int s, const LadxSettings *settings)
 {
-	bool keys = is_value(settings, LADX_SETTING_DUNGEON_KEYS, "keysanity");
-	bool nightmare = is_value(settings, LADX_SETTING_NIGHTMARE_KEYS, "keysanity");
-	bool beaks = is_value(settings, LADX_SETTING_DUNGEON_BEAKS, "keysanity");
-	bool maps = is_value(settings, LADX_SETTING_DUNGEON_MAPS, "keysanity");
+	bool keys = ladx_setting_is(settings, LADX_SETTING_DUNGEON_KEYS, "keysanity");
+	bool nightmare = ladx_setting_is(settings, LADX_SETTING_NIGHTMARE_KEYS, "keysanity");
+	bool beaks = ladx_setting_is(settings, LADX_SETTING_DUNGEON_BEAKS, "keysanity");
+	bool maps = ladx_setting_is(settings, LADX_SETTING_DUNGEON_MAPS, "keysanity");
 	int d = logic->location[logic->spot[s].location].dungeon, n;
 
 	for (n = 0; n < 10; n++) {
@@ -312,14 +300,14 @@ static void configure_spot(LadxLogic *logic, int s, const LadxSettings *settings
 	case LADX_SPOT_KEY_LOCATION:
 		return;
 	case LADX_SPOT_START_ITEM:
-		if (!is_value(settings, LADX_SETTING_BOWWOW, "normal"))
+		if (!ladx_setting_is(settings, LADX_SETTING_BOWWOW, "normal"))
 			replace(spot, LADX_ITEM_SWORD);
-		else if (on(settings, LADX_SETTING_RANDOMSTARTLOCATION) &&
-			 !is_value(settings, LADX_SETTING_ENTRANCESHUFFLE, "none"))
+		else if (ladx_setting_on(settings, LADX_SETTING_RANDOMSTARTLOCATION) &&
+			 !ladx_setting_is(settings, LADX_SETTING_ENTRANCESHUFFLE, "none"))
 			logic->broken = true; /* its append to the class list is not ported */
 		return;
 	case LADX_SPOT_BOOMERANG_GUY:
-		if (is_value(settings, LADX_SETTING_BOOMERANG, "gift")) {
+		if (ladx_setting_is(settings, LADX_SETTING_BOOMERANG, "gift")) {
 			spot->base_options = boomerang_guy_gift_options;
 			spot->base_option_count = (int)(sizeof boomerang_guy_gift_options / sizeof(int));
 			item_info_configure(logic, s, settings);
@@ -327,24 +315,24 @@ static void configure_spot(LadxLogic *logic, int s, const LadxSettings *settings
 		return;
 	case LADX_SPOT_FISHING_MINIGAME:
 	case LADX_SPOT_HEART_PIECE:
-		if (on(settings, LADX_SETTING_HEARTPIECE))
+		if (ladx_setting_on(settings, LADX_SETTING_HEARTPIECE))
 			item_info_configure(logic, s, settings);
 		else
 			replace(spot, LADX_ITEM_HEART_PIECE);
 		return;
 	case LADX_SPOT_HEART_CONTAINER:
-		if (on(settings, LADX_SETTING_HEARTCONTAINERS) || is_value(settings, LADX_SETTING_HPMODE, "extralow") ||
-		    is_value(settings, LADX_SETTING_HPMODE, "5hit"))
+		if (ladx_setting_on(settings, LADX_SETTING_HEARTCONTAINERS) || ladx_setting_is(settings, LADX_SETTING_HPMODE, "extralow") ||
+		    ladx_setting_is(settings, LADX_SETTING_HPMODE, "5hit"))
 			item_info_configure(logic, s, settings);
-		else if (is_value(settings, LADX_SETTING_HPMODE, "inverted"))
+		else if (ladx_setting_is(settings, LADX_SETTING_HPMODE, "inverted"))
 			replace(spot, LADX_ITEM_BAD_HEART_CONTAINER);
-		else if (is_value(settings, LADX_SETTING_HPMODE, "low"))
+		else if (ladx_setting_is(settings, LADX_SETTING_HPMODE, "low"))
 			replace(spot, LADX_ITEM_HEART_PIECE);
 		else
 			replace(spot, LADX_ITEM_HEART_CONTAINER);
 		return;
 	case LADX_SPOT_INSTRUMENT:
-		if (on(settings, LADX_SETTING_INSTRUMENTS) || is_value(settings, LADX_SETTING_GOAL, "seashells"))
+		if (ladx_setting_on(settings, LADX_SETTING_INSTRUMENTS) || ladx_setting_is(settings, LADX_SETTING_GOAL, "seashells"))
 			item_info_configure(logic, s, settings);
 		else if (d >= 1 && d <= 8)
 			replace(spot, instrument_items[d]);
@@ -352,45 +340,45 @@ static void configure_spot(LadxLogic *logic, int s, const LadxSettings *settings
 			logic->broken = true;
 		return;
 	case LADX_SPOT_KEY_HOLE:
-		if (on(settings, LADX_SETTING_KEYHOLESANITY))
+		if (ladx_setting_on(settings, LADX_SETTING_KEYHOLESANITY))
 			item_info_configure(logic, s, settings);
 		else
 			replace(spot, spot->default_item);
 		return;
 	case LADX_SPOT_SEASHELL:
 	case LADX_SPOT_SEASHELL_MANSION_BONUS:
-		if (on(settings, LADX_SETTING_SEASHELLS))
+		if (ladx_setting_on(settings, LADX_SETTING_SEASHELLS))
 			item_info_configure(logic, s, settings);
 		else
 			replace(spot, LADX_ITEM_SEASHELL);
 		return;
 	case LADX_SPOT_SHOP_ITEM:
 		item_info_configure(logic, s, settings);
-		if (!is_value(settings, LADX_SETTING_SHOPSANITY, ""))
+		if (!ladx_setting_is(settings, LADX_SETTING_SHOPSANITY, ""))
 			logic->broken = true; /* shopsanity is not ported */
 		return;
 	case LADX_SPOT_OWL_STATUE:
 		item_info_configure(logic, s, settings);
-		if (is_value(settings, LADX_SETTING_OWLSTATUES, "both") ||
-		    (is_value(settings, LADX_SETTING_OWLSTATUES, "dungeon") && spot->room >= 0x100) ||
-		    (is_value(settings, LADX_SETTING_OWLSTATUES, "overworld") && spot->room < 0x100))
+		if (ladx_setting_is(settings, LADX_SETTING_OWLSTATUES, "both") ||
+		    (ladx_setting_is(settings, LADX_SETTING_OWLSTATUES, "dungeon") && spot->room >= 0x100) ||
+		    (ladx_setting_is(settings, LADX_SETTING_OWLSTATUES, "overworld") && spot->room < 0x100))
 			return;
 		logic->broken = true; /* "Tried to configure an owlstatue that was not enabled" */
 		return;
 	case LADX_SPOT_TOADSTOOL:
-		if (on(settings, LADX_SETTING_WITCH))
+		if (ladx_setting_on(settings, LADX_SETTING_WITCH))
 			item_info_configure(logic, s, settings);
 		else
 			replace(spot, LADX_ITEM_TOADSTOOL);
 		return;
 	case LADX_SPOT_WITCH:
-		if (on(settings, LADX_SETTING_WITCH))
+		if (ladx_setting_on(settings, LADX_SETTING_WITCH))
 			item_info_configure(logic, s, settings);
 		else
 			replace(spot, LADX_ITEM_MAGIC_POWDER);
 		return;
 	case LADX_SPOT_TRADE_SEQUENCE_ITEM:
-		if (on(settings, LADX_SETTING_TRADEQUEST))
+		if (ladx_setting_on(settings, LADX_SETTING_TRADEQUEST))
 			item_info_configure(logic, s, settings);
 		else
 			replace(spot, spot->default_item);

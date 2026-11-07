@@ -557,7 +557,15 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   `HeartContainer`, `Witch`, `Toadstool`, `Instrument`, `KeyHole`,
   `TradeSequenceItem`, `BoomerangGuy`, `StartItem`, `ShopItem`,
   `OwlStatue`, `KeyLocation`) under the settings it reads, LADXR's errors
-  and the unported shopsanity branch breaking the logic. It prints
+  and the unported shopsanity branch breaking the logic, and
+  `ladx_logic_build_dungeon` (`RequirementsSettings`, then one `DungeonN`
+  of `logic/dungeon<n>.py` alone, its entrance the start, discovery and
+  configure; D1 to D4 so far): the world setup read (`miniboss_mapping[0]`
+  and `boss_mapping[0]` on D1's edges), D3's `forced_item` `KEY3` on its
+  south and west key drops when `dungeon_keys` is `""` and on none under
+  `keysanity`, the pair LADXR's fill refuses built, an unsupported value
+  refused (`LADX_LOGIC_UNSUPPORTED`, nothing built), an unported or
+  out-of-range dungeon and a boss mapping out of range broken. It prints
   `test_logic: synthetic graphs, renderer, explorer, constructors and
   configure ok (<c> checks)`. Then, without a flag, it rebuilds every
   `spot` line of `oracle/logic_graphs.txt` (its five graphs' locations
@@ -567,7 +575,19 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   then validated): each spot's name id, `checkMetadata` name and area and
   options equal the line's; it prints `test_logic: <n> spot lines of <g>
   graphs of oracle/logic_graphs.txt rebuilt from class and name id: name
-  id, metadata and options after configure equal`. With `--fixtures` it then reads every configuration of
+  id, metadata and options after configure equal`. Then it builds each
+  ported dungeon alone under each graph's settings and `WorldSetup()`'s
+  defaults and compares it with the graph (`lf_dungeon_compare`): both
+  walked in preorder from the location named `D<n> Entrance`, following
+  in order only the edges whose target has dungeon `n`, locations paired
+  by walk position; each pair's name, spot lines (class, name id,
+  options, metadata) and in-dungeon edges (target walk position,
+  requirement text) equal, edges leaving the dungeon skipped (`Logic`'s
+  entrance loop adds them). A difference fails with `dungeon D<n>, graph
+  <name>: walk position <p> (<name>): ...` and the first differing name,
+  spot or edge; it prints `test_logic: D1 to D4 built alone equal to the
+  5 graphs of oracle/logic_graphs.txt (<w> dungeon walks, <l>
+  locations)`. With `--fixtures` it then reads every configuration of
   `oracle/logic_vectors.txt`: its settings set on defaults (`""` the
   empty value) and validated, each assignment kept by validate, every
   value supported alone (`ladx_setting_value_reason`; the pair
@@ -577,11 +597,13 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   `miniboss_mapping`, `goal`, `goal_count`) and the harness (`multichest`,
   `sign_maze`, `inside_to_outside`, `keep_two_way`, `one_on_one`, kept as
   text; `entrance_mapping identity`, `bingo_goals -`, `map -` and
-  `dungeon_chain -` required) and rendered back unchanged; it prints
-  `test_logic: <n> configurations of oracle/logic_vectors.txt read:
-  settings kept by validate, every value supported alone (<p> refused
-  only as a pair LADXR's fill refuses), <w> ws lines read back
-  unchanged`.
+  `dungeon_chain -` required) and rendered back unchanged, each of the
+  five baselines' logic fields `WorldSetup()`'s (the dungeon claim's
+  world setup); it prints `test_logic: <n> configurations of
+  oracle/logic_vectors.txt read: settings kept by validate, every value
+  supported alone (<p> refused only as a pair LADXR's fill refuses), <w>
+  ws lines read back unchanged, the 5 baselines' world setup
+  WorldSetup()'s`.
 - `make -C tests/ladx logic` (run by the root `make logic`, after
   `tests/alttp`'s, part of `make check`): runs each `LOGIC_TESTS` binary
   with `--fixtures` from `tests/ladx`, then prints `logic: <n> LADX unit

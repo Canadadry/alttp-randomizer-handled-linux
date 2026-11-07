@@ -2,6 +2,7 @@
 #include "ladx_logic_builder.h"
 
 #include "check_metadata.h"
+#include "logic_internal.h"
 
 #include <string.h>
 
@@ -230,6 +231,7 @@ int ladx_logic_add_spot(LadxLogic *logic, int location, LadxSpotKind kind, const
 	spot->room = -1;
 	spot->index = -1;
 	spot->default_item = LADX_ITEM_NONE;
+	spot->forced_item = LADX_ITEM_NONE;
 	spot->item = LADX_ITEM_NONE;
 	logic->build_spot_next[s] = -1;
 	loc = &logic->build_location[location];
@@ -324,4 +326,45 @@ void ladx_logic_spot_append_option(LadxLogic *logic, int spot, int item)
 	}
 	logic->option[logic->option_count++] = (unsigned char)item;
 	s->suffix_count++;
+}
+
+bool ladx_setting_is(const LadxSettings *settings, LadxSettingId id, const char *name)
+{
+	int v = ladx_setting_value_find(id, name);
+
+	return v >= 0 && settings->value[id] == v;
+}
+
+bool ladx_setting_on(const LadxSettings *settings, LadxSettingId id)
+{
+	return ladx_setting_is(settings, id, "1");
+}
+
+void ladx_logic_force_first_item(LadxLogic *logic, int location, int item)
+{
+	int s;
+
+	if (!building(logic) || !is_location(logic, location) || item < 0 || item >= LADX_ITEM_COUNT) {
+		fail(logic);
+		return;
+	}
+	s = logic->build_location[location].spot_head;
+	if (s < 0) {
+		fail(logic); /* items[0] of an empty list: IndexError */
+		return;
+	}
+	logic->build_spot[s].forced_item = item;
+}
+
+int ladx_logic_add_to(LadxLogic *logic, int location, LadxSpotKind kind, int room, int arg)
+{
+	return ladx_logic_add_item_info(logic, location, kind, room, arg) < 0 ? -1 : location;
+}
+
+void ladx_logic_connect_all(LadxLogic *logic, int from, int n, const int *targets, LadxReq req, LadxReq back)
+{
+	int i;
+
+	for (i = 0; i < n; i++)
+		ladx_logic_connect_back(logic, from, targets[i], req, back);
 }
