@@ -4,25 +4,25 @@ tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a 
 unit fixed.1
 E
 T texts 2b
-T entities 1ed ff
-T entities 1fc ff
-T entities 277 ff
-T entities 278 ff
-T entities 279 ff
-T entities 2c4 ff
-T entities 2d4 ff
-T rooms_indoor_a ed 0473fe
-T rooms_indoor_a fc 0473fe
-T rooms_indoor_b 77 0473fe
-T rooms_indoor_b 78 0473fe
-T rooms_indoor_b 79 0473fe
-T rooms_indoor_b c4 0473fe
-T rooms_indoor_b d4 0473fe
+T entities 1ed @58c61+1
+T entities 1fc @58c9e+1
+T entities 277 @58f05+1
+T entities 278 @58f06+1
+T entities 279 @58f07+1
+T entities 2c4 @59088+1
+T entities 2d4 @590da+1
+T rooms_indoor_a ed @2b62a+1 73 @2b66e+1
+T rooms_indoor_a fc 0473 @2ba97+1
+T rooms_indoor_b 77 @2da9c+1 73 @2dafe+1
+T rooms_indoor_b 78 @2da9c+1 73 @2dafe+1
+T rooms_indoor_b 79 @2da9c+1 73 @2dafe+1
+T rooms_indoor_b c4 @2ee14+2 @2ee6e+1
+T rooms_indoor_b d4 @2f222+1 73 @2f270+1
 unit fixed.2
 E
 B 98460 =50
-T entities e ff
-T rooms_overworld_top e @2478b+4 @247a2+49 25e1354afe
+T entities e @591be+1
+T rooms_overworld_top e @2478b+4 @247a2+49 @2478d+2 35 @247b8+1 @247eb+1
 unit fixed.3
 E
 B 50b11 =1 a84e
@@ -95,7 +95,7 @@ B a0492 c90000
 B a07cc @3+4
 unit fixed.11
 E
-T entities 312 13f616f7ff
+T entities 312 13 @596e9+1 16 @596eb+2
 T rooms_color_dungeon 12 @2bead+2a
 unit fixed.12 asm:DUNGEON_CHAIN
 E 0
@@ -131,22 +131,22 @@ T texts cb ff
 T texts cc ff
 T texts cd ff
 T texts d9 ff
-T entities 6 00deff
-T entities 8 24c2ff
-T entities 16 ff
-T entities 17 ff
-T entities 36 ff
-T entities 41 ff
-T entities 64 5244ff
-T entities 80 ff
-T entities 9c ff
+T entities 6 @5919e+2 @591a2+1
+T entities 8 @591a6+3
+T entities 16 @591e4+1
+T entities 17 @591e7+1
+T entities 36 @5925c+1
+T entities 41 @59285+1
+T entities 64 @59308+3
+T entities 80 @593a2+1
+T entities 9c @59430+1
 T entities 9d @59433+5
 T entities ac @59490+5
-T entities b6 ff
-T entities d2 433dff
-T entities ee ff
+T entities b6 @594d2+1
+T entities d2 @59580+3
+T entities ee @5961c+1
 T entities f2 @59632+5
-T entities 2a3 @58fd9+8 6741ff
+T entities 2a3 @58fd9+8 6741 @58fe1+1
 T rooms_overworld_top 6 @2441f+77
 T rooms_overworld_top 8 @24568+4c
 T rooms_overworld_top 16 @24a1a+4b
@@ -206,8 +206,8 @@ unit fixed.18
 E
 B 18ce =1 03
 B 98d70 =50
-T entities 2b ff
-T rooms_overworld_top 2b @2505c+1b @2507a+b 8a702c @250d8+5 @250d8+5 @250d8+5 @250d8+5 fe
+T entities 2b @59231+1
+T rooms_overworld_top 2b @2505c+1b @2507a+b @25077+2 @25073+1 @250d8+5 @250d8+5 @250d8+5 @250d8+5 @25099+1
 unit fixed.19
 E
 B 57f23 af @2bf42+4
@@ -352,18 +352,18 @@ B ae8f 3e0100
 B eeba =5 d8
 B 9b250 =50
 T entities a1 @5944f+9
-T entities 146 64e5ff
+T entities 146 @587f4+3
 T entities 155 @5886b+b
 T entities 1a9 @58adb+5
-T entities 1ea ff
-T entities 1f7 ff
+T entities 1ea @58c5a+1
+T entities 1f7 @58c77+1
 T entities 2b7 @59039+7
-T rooms_overworld_bottom 21 @68866+25 @6888e+14 7ff526e22644 @6886f+5 fe
+T rooms_overworld_bottom 21 @68866+25 @6888e+14 @688a8+2 @68899+1 @6886e+1 @688a2+2 @6886f+5 @688aa+1
 T rooms_indoor_a 46 @29147+3b @29185+16
 T rooms_indoor_a 55 @294e7+28 cf @29510+7 d0 @29518+8
 T rooms_indoor_a a9 @2a726+14 c7 @2a73b+19
-T rooms_indoor_a ea @2b538+1b 88401b57a7 @2b55a+2a
-T rooms_indoor_a f7 @2b90e+1c 1b @2b92b+11 1b @2b93d+e 1b @2b94c+10 1b @2b95d+10 1b @2b96e+1a
+T rooms_indoor_a ea @2b538+1b @2b54c+1 @2b554+2 57 @2b557+1 @2b55a+2a
+T rooms_indoor_a f7 @2b90e+1c @2b915+1 @2b92b+11 @2b915+1 @2b93d+e @2b915+1 @2b94c+10 @2b915+1 @2b95d+10 @2b915+1 @2b96e+1a
 T rooms_indoor_b b7 @2ea73+1f @2ea95+33
 unit fixed.23 asm:ITEM_DIALOGS
 E 0
@@ -676,12 +676,12 @@ B 51310 0101
 B 546b6 af @3+4
 B 67a4e =1 e0 =1
 B 67a5a =1 f0 =1
-T entities 2e2 ff
+T entities 2e2 @59112+1
 T rooms_indoor_b e2 @2f54d+28 a0 @2f576+21
 unit fixed.41
 E
 B 9cf50 =50
-T entities fd 26c4ff
+T entities fd 26 @5965a+2
 T rooms_overworld_bottom 7d @69dc2+3a
 unit fixed.42
 E
@@ -712,7 +712,7 @@ T room_sprite_data_indoor 200 11ff10ff
 T room_sprite_data_indoor 201 0f4dffff
 T room_sprite_data_indoor 202 @90ce+4
 T room_sprite_data_indoor 203 0b0cff0d
-T room_sprite_data_indoor 204 ff91ffff
+T room_sprite_data_indoor 204 ff @8364c+1 ffff
 T room_sprite_data_indoor 205 @82f33+4
 T room_sprite_data_indoor 206 @82f33+4
 T room_sprite_data_indoor 207 @34986+4

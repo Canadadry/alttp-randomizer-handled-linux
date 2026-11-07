@@ -95,34 +95,34 @@ T texts 244
 T texts 245
 T texts 247
 T texts 248
-T entities 6 00deff
-T entities 8 24c2ff
-T entities e ff
-T entities 16 ff
-T entities 17 ff
-T entities 36 ff
-T entities 41 ff
-T entities 64 5244ff
-T entities 80 ff
-T entities 9c ff
+T entities 6 @5919e+2 @591a2+1
+T entities 8 @591a6+3
+T entities e @591be+1
+T entities 16 @591e4+1
+T entities 17 @591e7+1
+T entities 36 @5925c+1
+T entities 41 @59285+1
+T entities 64 @59308+3
+T entities 80 @593a2+1
+T entities 9c @59430+1
 T entities 9d @59433+5
 T entities ac @59490+5
-T entities b6 ff
-T entities d2 433dff
-T entities ee ff
+T entities b6 @594d2+1
+T entities d2 @59580+3
+T entities ee @5961c+1
 T entities f2 @59632+5
-T entities 1ed ff
-T entities 1fc ff
-T entities 277 ff
-T entities 278 ff
-T entities 279 ff
-T entities 2a3 @58fd9+8 6741ff
-T entities 2c4 ff
-T entities 2d4 ff
-T entities 312 13f616f7ff
+T entities 1ed @58c61+1
+T entities 1fc @58c9e+1
+T entities 277 @58f05+1
+T entities 278 @58f06+1
+T entities 279 @58f07+1
+T entities 2a3 @58fd9+8 6741 @58fe1+1
+T entities 2c4 @59088+1
+T entities 2d4 @590da+1
+T entities 312 13 @596e9+1 16 @596eb+2
 T rooms_overworld_top 6 @2441f+77
 T rooms_overworld_top 8 @24568+4c
-T rooms_overworld_top e @2478b+4 @247a2+49 25e1354afe
+T rooms_overworld_top e @2478b+4 @247a2+49 @2478d+2 35 @247b8+1 @247eb+1
 T rooms_overworld_top 16 @24a1a+4b
 T rooms_overworld_top 17 @24a65+6d
 T rooms_overworld_top 36 @25382+3a
@@ -136,14 +136,14 @@ T rooms_overworld_bottom 36 @68cfa+4a
 T rooms_overworld_bottom 52 @693a0+1d
 T rooms_overworld_bottom 6e @69a55+38
 T rooms_overworld_bottom 72 @69b17+41
-T rooms_indoor_a ed 0473fe
-T rooms_indoor_a fc 0473fe
-T rooms_indoor_b 77 0473fe
-T rooms_indoor_b 78 0473fe
-T rooms_indoor_b 79 0473fe
+T rooms_indoor_a ed @2b62a+1 73 @2b66e+1
+T rooms_indoor_a fc 0473 @2ba97+1
+T rooms_indoor_b 77 @2da9c+1 73 @2dafe+1
+T rooms_indoor_b 78 @2da9c+1 73 @2dafe+1
+T rooms_indoor_b 79 @2da9c+1 73 @2dafe+1
 T rooms_indoor_b a3 @2e5cb+30
-T rooms_indoor_b c4 0473fe
-T rooms_indoor_b d4 0473fe
+T rooms_indoor_b c4 @2ee14+2 @2ee6e+1
+T rooms_indoor_b d4 @2f222+1 73 @2f270+1
 T rooms_color_dungeon 12 @2bead+2a
 G bank3e
 B 8 67faafdbf53e3ecd0c087cc30040
@@ -322,14 +322,14 @@ B fe800 =6 @c5006+1 =1 @c5008+15 =1 @c501e+1 =1 @c5020+1 =1 @c5022+1b =1 @c503e+
 B fed20 @c9500+7 =1 @c9508+13 =1 @c951c+3 =1 @c9520+7 =1 55aa =1 ff55aa =1 ff55aa =1 ff55aa =1 ff =1 ff @c953a+1 =1 @c953c+3 =1 @c9540+7 =1 55aa =1 ff55aa =1 ff55aa =1 ff55aa =1 ff =1 ff @c955a+1 =1 @c955c+3 =1 @c9560+7 =1 @c9568+13 =1 @c957c+3 =1 @c9800+1 =1 @c9802+1d =1 @c9820+1 =1 @c9822+1d =1 @c9840+1 =1 @c9842+1d =1 @c9860+1 =1 @c9862+1d =b @b912a+1 =1 @b912c+13 =1 @b9140+1 =1 @b9142+1d =13 @b9172+1 =1 @b9174+b =5 @ca504+1 =1 @ca506+3 =1 @ca50a+15 =7 @ca526+1 =1 @ca528+17 =3 @ca542+1 =1 @ca544+3 =1 @ca548+13 =1 @ca55c+3 =5 @ca564+1 =1 @ca566+19 =1 @ba400+1 =1 @ba402+3 =1 @ba406+1 =1 @ba408+9 =1 @ba412+b =1 @ba41e+1 =1 @ba420+1 =1 @ba422+3 =1 @ba426+19 =1 @ba440+1 =1 @ba442+3 =1 @ba446+1 =1 @ba448+1 =1 @ba44a+f =1 @ba45a+1 =1 @ba45c+1 =1 @ba45e+1 =1 @ba460+1 =1 @ba462+3 =1 @ba466+1 =1 @ba468+9 =1 @ba472+1 =1 @ba474+3 =1 @ba478+1 =1 @ba47a+1 =1 @ba47c+1 =1 @ba47e+1 =1 @ba480+1 =1 @ba482+3 =1 @ba486+1 =1 @ba488+13 =1 @ba49c+1 =1 @ba49e+1 =1 @ba4a0+1 =1 @ba4a2+3 =1 @ba4a6+9 =1 @ba4b0+1 =1 @ba4b2+1 =1 @ba4b4+3 =1 @ba4b8+1 =1 @ba4ba+1 =1 @ba4bc+1 =1 @ba4be+1 =1 @ba4c0+1 =1 @ba4c2+3 =1 @ba4c6+1 =1 @ba4c8+1 =1 @ba4ca+1 =1 @ba4cc+1 =1 @ba4ce+1 =1 @ba4d0+1 =1 @ba4d2+1 =1 @ba4d4+1 =1 @ba4d6+1 =1 @ba4d8+1 =1 @ba4da+1 =1 @ba4dc+1 =1 @ba4de+1 =b @ba4ea+1 =1 @ba4ec+9 =d @b0902+1c =2 @b0920+20 =2 @b08e2+1c =8 @b28c6+16 =4
 B ff0a0 =2 @b28e2+1e =2 @b0c02+1e =2 @b0c22+1e =2 @b0c42+1e =2 @b0c62+1e =2 @b0ca2+1e =2 @cbd02+1c =4 @cbd22+1c =6 @cbd44+18 =6 @cbd62+1c =6 @cbda4+1a =2 @b09a0+1e =2 @b09c0+1e =8 @b0406+16 =4 @b0420+16 =a @b0440+1c =4 @b0460+1c =8 @b0484+1a =2 @b04a0+1e =2 @b04c0+1e =2 @b04e0+1e =2 @b0500+1e =2 @b0520+1e =2 @b0540+1e =2 @b0560+1e =2 @b0580+1e =2 @b05a0+1e =4 @b05c2+18 =8 @b05e2+18 =10 @b060a+14 =2 @b0620+1c =c @b0648+16 =2 @b0660+1e =2 @b0680+1c =4 @b06a0+1c =8 @b06c4+16 =c @b06e6+16 =6 @b0702+1c =2 @b0720+16 =a
 B ff680 =2 @d3f02+c =4 @d3f12+c =4 @d3f22+c =4 @d3f32+c =4 @d3f42+c =4 @d3f52+c =4 @d3f62+c =4 @d3f72+c =2
-T entities 2b ff
-T rooms_overworld_top 2b @2505c+1b @2507a+b 8a702c @250d8+5 @250d8+5 @250d8+5 @250d8+5 fe
+T entities 2b @59231+1
+T rooms_overworld_top 2b @2505c+1b @2507a+b @25077+2 @25073+1 @250d8+5 @250d8+5 @250d8+5 @250d8+5 @25099+1
 G options
 B dd4b faa2 @1aaad+4 8d3f0000
 B dd6f =1 50 =1 f13e02cf21a2dacbae0000
 B 148d4 1e0921a2da7ee630cbe6cbee28021e09 @57df4+4 02cf3e03 @3b6df+4
 B 99900 =50
-T entities 50 323a3235ff
+T entities 50 @592b8+2 @592b8+1 35 @592ba+1
 T rooms_overworld_top 50 @25a3f+50
 G fixed
 B 5295 080810 =1
@@ -343,18 +343,18 @@ B 5192f =1 20
 B 9b250 =50
 T texts 9a @53990+a @52dc6+5 @5b59c+7 ff
 T entities a1 @5944f+9
-T entities 146 64e5ff
+T entities 146 @587f4+3
 T entities 155 @5886b+b
 T entities 1a9 @58adb+5
-T entities 1ea ff
-T entities 1f7 ff
+T entities 1ea @58c5a+1
+T entities 1f7 @58c77+1
 T entities 2b7 @59039+7
-T rooms_overworld_bottom 21 @68866+25 @6888e+14 7ff526e22644 @6886f+5 fe
+T rooms_overworld_bottom 21 @68866+25 @6888e+14 @688a8+2 @68899+1 @6886e+1 @688a2+2 @6886f+5 @688aa+1
 T rooms_indoor_a 46 @29147+3b @29185+16
 T rooms_indoor_a 55 @294e7+28 cf @29510+7 d0 @29518+8
 T rooms_indoor_a a9 @2a726+14 c7 @2a73b+19
-T rooms_indoor_a ea @2b538+1b 88401b57a7 @2b55a+2a
-T rooms_indoor_a f7 @2b90e+1c 1b @2b92b+11 1b @2b93d+e 1b @2b94c+10 1b @2b95d+10 1b @2b96e+1a
+T rooms_indoor_a ea @2b538+1b @2b54c+1 @2b554+2 57 @2b557+1 @2b55a+2a
+T rooms_indoor_a f7 @2b90e+1c @2b915+1 @2b92b+11 @2b915+1 @2b93d+e @2b915+1 @2b94c+10 @2b915+1 @2b95d+10 @2b915+1 @2b96e+1a
 T rooms_indoor_b b7 @2ea73+1f @2ea95+33
 G options
 B 13748 =1 67 =5 a8 =3
@@ -622,7 +622,7 @@ B 51310 0101
 B 546b6 af @3+4
 B 67a4e =1 e0 =1
 B 67a5a =1 f0 =1
-T entities 2e2 ff
+T entities 2e2 @59112+1
 T rooms_indoor_b e2 @2f54d+28 a0 @2f576+21
 G options
 B 5fb3 @5fb9+4 @1ab5d+5 @311d+7 f0f7 =1 162815 @7d747+4 =1 13280d @2f5c+4 fe0a38050ed5cd9960 @2022+5 @6a596+5 @9baa+5 162852fe14284efe13284afeff2846fe0a38420ec1cd9960 @61a5d+6 9260f099 =1 75d1cd9260f0a2 @60cc+4 92 @5778b+7 @60d8+1f @140e6+5 49 @2141+5 43f0f6fe222814fe23 =1 10fe24280cfe322808fe33 @5774+5 290e6dcd9960 @61a5d+6 92 @19f22+4 75d1cd9260f0a2 @60cc+4 92 @5778b+7 @60d8+6 @6117+8 @5fda+9 b9 @5fe5+10 e979cd86 =1 f098 =1 00 =3 @6153+f @3+24 =1 @3+15 =1 @3+25 =1 @3+20 =1 @3+12
@@ -637,7 +637,7 @@ B d0b2 @140bc+4 db3e02be28071d23 =1 f9 @d392+4 @55fe0+4 @3+1c =1 @3+19 =1 @3+27 
 B dfc5 =1 b250
 B 1f653 =2 00 =1
 B 9cf50 =50
-T entities fd 26c4ff
+T entities fd 26 @5965a+2
 T rooms_overworld_bottom 7d @69dc2+3a
 G marin
 T texts 1 5468617420677265656e206865726f2c6f6620616c6c20706c616365732e2e2eff
@@ -755,7 +755,7 @@ T room_sprite_data_indoor 200 11ff10ff
 T room_sprite_data_indoor 201 0f4dffff
 T room_sprite_data_indoor 202 @90ce+4
 T room_sprite_data_indoor 203 0b0cff0d
-T room_sprite_data_indoor 204 ff91ffff
+T room_sprite_data_indoor 204 ff @8364c+1 ffff
 T room_sprite_data_indoor 205 @82f33+4
 T room_sprite_data_indoor 206 @82f33+4
 T room_sprite_data_indoor 207 @34986+4
@@ -864,13 +864,13 @@ T entities 4 @59198+3
 T entities 7 @591a3+1
 T entities a @591aa+5
 T entities d @591b9+5
-T entities e ff
+T entities e @591be+1
 T entities f @591bf+5
 T entities 10 @591c4+7
 T entities 11 @591cb+3
 T entities 13 @591d5+5
 T entities 15 @591df+3
-T entities 17 ff
+T entities 17 @591e7+1
 T entities 18 @591e8+1
 T entities 19 @591e9+3
 T entities 1d @591ef+3
@@ -880,7 +880,7 @@ T entities 20 @591f8+7
 T entities 21 @591ff+7
 T entities 24 @59212+b
 T entities 2a @5922c+5
-T entities 2b ff
+T entities 2b @59231+1
 T entities 2e @5923a+3
 T entities 2f @5923d+5
 T entities 30 @59242+3
@@ -893,7 +893,7 @@ T entities 45 @59295+1
 T entities 49 @592a3+1
 T entities 4a @592a4+3
 T entities 4b @592a7+1
-T entities 50 323a3235ff
+T entities 50 @592b8+2 @592b8+1 35 @592ba+1
 T entities 52 @592be+5
 T entities 59 @592db+1
 T entities 62 @59300+3
@@ -915,7 +915,7 @@ T entities 8d @593df+1
 T entities 8f @593e5+3
 T entities 92 @593f2+f
 T entities 93 @59401+5
-T entities 9c ff
+T entities 9c @59430+1
 T entities 9d @59433+5
 T entities a1 @5944f+9
 T entities a2 @59458+5
@@ -977,7 +977,7 @@ T entities 1f3 @58c6d+3
 T entities 1f4 @58c70+1
 T entities 1f5 @58c71+3
 T entities 1f6 @58c74+3
-T entities 1f7 ff
+T entities 1f7 @58c77+1
 T entities 1f9 @58c81+1
 T entities 1fa @58c82+13
 T entities 1fb @58c95+3
@@ -1008,7 +1008,7 @@ T entities 29f @58fb9+9
 T entities 2a0 @58fc2+3
 T entities 2a1 @58fc5+3
 T entities 2a2 @58fc8+11
-T entities 2a3 @58fd9+8 6741ff
+T entities 2a3 @58fd9+8 6741 @58fe1+1
 T entities 2a5 @58fe7+3
 T entities 2a6 @58fea+5
 T entities 2a7 @58fef+5
@@ -1060,13 +1060,13 @@ T entities 2fc @59178+1
 T entities 2fd @59179+7
 T entities 2fe @59180+3
 T entities 301 @59667+3
-T entities 312 13f616f7ff
+T entities 312 13 @596e9+1 16 @596eb+2
 T rooms_overworld_top 3 @24316+75
 T rooms_overworld_top 4 @2438b+4d
 T rooms_overworld_top 7 @2450b+5d
 T rooms_overworld_top a @2460c+51
 T rooms_overworld_top d @24720+6b
-T rooms_overworld_top e @2478b+4 @247a2+49 25e1354afe
+T rooms_overworld_top e @2478b+4 @247a2+49 @2478d+2 35 @247b8+1 @247eb+1
 T rooms_overworld_top f @24850+4c
 T rooms_overworld_top 10 @2489c+4f
 T rooms_overworld_top 11 @248eb+57
@@ -1082,7 +1082,7 @@ T rooms_overworld_top 20 @24de8+37
 T rooms_overworld_top 21 @24e1f+3f
 T rooms_overworld_top 24 @24ebc+4f
 T rooms_overworld_top 2a @2501f+3d
-T rooms_overworld_top 2b @2505c+1b @2507a+b 8a702c @250d8+5 @250d8+5 @250d8+5 @250d8+5 fe
+T rooms_overworld_top 2b @2505c+1b @2507a+b @25077+2 @25073+1 @250d8+5 @250d8+5 @250d8+5 @250d8+5 @25099+1
 T rooms_overworld_top 2e @25172+36
 T rooms_overworld_top 2f @251a8+3c
 T rooms_overworld_top 30 @251e4+3c
@@ -1121,7 +1121,7 @@ T rooms_overworld_bottom 12 @684db+3b
 T rooms_overworld_bottom 13 @68516+33
 T rooms_overworld_bottom 1c @6872a+42
 T rooms_overworld_bottom 1d @6876c+3b
-T rooms_overworld_bottom 21 @68866+25 @6888e+14 7ff526e22644 @6886f+5 fe
+T rooms_overworld_bottom 21 @68866+25 @6888e+14 @688a8+2 @68899+1 @6886e+1 @688a2+2 @6886f+5 @688aa+1
 T rooms_overworld_bottom 22 @688ab+33
 T rooms_overworld_bottom 24 @688f6+43
 T rooms_overworld_bottom 2a @68a46+1f
@@ -1182,7 +1182,7 @@ T rooms_indoor_a f3 @2b781+50
 T rooms_indoor_a f4 @2b7d1+4a
 T rooms_indoor_a f5 @2b81b+3a
 T rooms_indoor_a f6 @2b897+77
-T rooms_indoor_a f7 @2b90e+1c 1b @2b92b+11 1b @2b93d+e 1b @2b94c+10 1b @2b95d+10 1b @2b96e+1a
+T rooms_indoor_a f7 @2b90e+1c @2b915+1 @2b92b+11 @2b915+1 @2b93d+e @2b915+1 @2b94c+10 @2b915+1 @2b95d+10 @2b915+1 @2b96e+1a
 T rooms_indoor_a f9 @2b9c6+3d
 T rooms_indoor_a fa @2ba03+20
 T rooms_indoor_a fb @2ba23+50
@@ -1475,7 +1475,7 @@ T texts 1ca 4d554e4348204d554e434821212020202e2e2e202e2e2e202e2e2e202e2e2e205468
 T texts 1cf 486920686f212048657920796f7521204973207468617420706f737369626c796120e520796f7520686176653f2049206a7573742072616e206f75742120202057696c6c20796f752073776170206974666f72206120536563726574202020205365617368656c6c3f202020202020202020202059657320204e6ffe
 T texts 221 4920666f756e64206120676f6f6420206974656d2077617368656420757020206f6e207468652062656163682e2e2e2057616e7420746f20686176652069743f202020204f6b6179204e6ffe
 T texts 225 49745e7320612073656372657420746f6576657279626f64792eff
-T entities f2 32c55535 @59636+1
+T entities f2 @59634+2 @59632+1 35 @59636+1
 T rooms_overworld_bottom 72 @69b17+41
 G bosses
 B 9fc8 fe06
@@ -1495,13 +1495,13 @@ B d94f7 1805
 B d953b 00
 B d9c14 00
 T entities 111 @58691+7
-T entities 128 34612589 @5872e+1
-T entities 145 3461 @587ed+4 @587f3+1
-T entities 164 1461118e @588e4+1
-T entities 193 3461 @58a2d+4 @58a33+1
-T entities 1c5 34612592 @58b99+1
-T entities 228 346104bc @58d8c+1
-T entities 23f 346135be @58df9+1
+T entities 128 @5872c+2 @5872a+2 @5872e+1
+T entities 145 @587f1+2 @587ed+4 @587f3+1
+T entities 164 @588e2+2 @588e0+2 @588e4+1
+T entities 193 @58a31+2 @58a2d+4 @58a33+1
+T entities 1c5 @58b97+2 25 @58b96+1 @58b99+1
+T entities 228 @58d8a+2 @58d88+2 @58d8c+1
+T entities 23f @58df7+2 @58df5+2 @58df9+1
 T entities 27f @58f0f+3
 T entities 2e1 @5910d+3
 T entities 303 @5966b+3
@@ -1536,13 +1536,13 @@ B 40b7 fa3fc1c3207e00
 B 412a 213fc1cda86bf0cce604280135f0cce6082801347efeff20023e02fe032001af77c3027e0000
 B 7e02 cb37c6482118c0223e24223ebe223600c9 @504e0+d fe01caf940a7cabe40fa09c5a7c2be403e0bea95dbcd7d0c3e00ea01d43e00ea02d43ea2ea03d43e58ea04d43e52ea05d4f098cb37e60f5ff099d608e6f0b3ea16d43e07ea96db2180c2afea8ec10e10220d20fcc9c3be40 @504e0+8
 B 3c8e0 @832b1+4 454545457d7d4545454544440000e4e416161515 @70743+6 e4e4
-T background_tiles d @22a6d+1 @22a86+14 0f9596977f7f7f7f7f7f7f7f7f7f7f7f9d98c20f9e7f7f7f7f7f7f7f7f7f7f7f7f7f7f9f98e20f9c7f7f @22ad8+a 7f7f9d99020f9e7f7f7f7f7f7f7f7f7f7f7f7f7f7f9f99220f9c7f7f @22ae5+8 7f7f7f7f9d99420f9e7f7f7f7f7f7f7f7f7f7f7f7f7f7f @22aae+4 9c7f7f @22ad8+5 cecfc47f7f7f7f9d99820f9e7f7f7f7f7f7f7f7f7f7f7f7f7f7f9f99a2 @22ab1+12 c2 @22ac4+11 @22aed+1
+T background_tiles d @22a6d+1 @22a86+14 @22a87+1 @22a9b+3 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aa9+1 @22a9e+2 @22a87+1 @22aa1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aaa+1 @22a6d+1 e2 @22a87+1 @22aa2+1 @22a70+1 @22a70+1 @22ad8+a @22a70+1 @22a70+1 @22aa9+1 @22a79+1 @22a9a+1 @22a87+1 @22aa1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aae+2 22 @22a87+1 @22aa2+1 @22a70+1 @22a70+1 @22ae5+8 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aa9+1 @22a79+1 42 @22a87+1 @22aa1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aae+4 @22aa2+1 @22a70+1 @22a70+1 @22ad8+5 cecf @22ae1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aa9+1 @22ac2+3 @22aa1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aae+2 @22a99+1 @22ab1+12 @22a9f+1 @22ac4+11 @22aed+1
 G title
 B 7 52
-T background_tiles 3 @22336+2 138f9f8f9f8f9f8f9f8f9fd0d2d4d6c4c6ccceb4b6982013 @22351+9 7fd1d3d5d7c5c7cdcfb5b7984013 @2235d+9 a1a0a1a0a1a0a1a0a1a0a1986013 @22369+9 a2a2a2a2a2a2a2a2a2a2a29880138f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f98a0009f98b3008f @223a2+4 @22434+4 @223ea+4 98e0009f98f3 @223a4+7 @223ef+4 20009f @22438+5 33 @223a8+7 @223f3+4 60009f9973 @223ac+7 @2243d+4 @223f7+4 a0009f99b3 @223b0+6 @22440+4 @223fa+4 99e0009f99f3 @223b4+4 108f76797470020204727000727800750304 @223fe+5 20139f797701747205717470747072720001028f9f @2244b+2
-T background_tiles 4 9800138f9f8f9f8f9f8f9f8f9fd0d2d4d6c4c6ccceb4b6982013 @22351+9 7fd1d3d5d7c5c7cdcfb5b7984013 @2235d+9 a1a0a1a0a1a0a1a0a1a0a1986013 @22369+9 a2a2a2a2a2a2a2a2a2a2a29880138f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f98a0009f98b3008f @223a2+4 @22434+4 @223ea+4 98e0009f98f3 @223a4+7 @223ef+4 20009f @22438+5 33 @223a8+7 @223f3+4 60009f9973 @223ac+7 @2243d+4 @223f7+4 a0009f99b3 @223b0+6 @22440+4 @223fa+4 99e0009f @22328+e 99f3 @223b4+4 108f76797470020204727000727800750304 @223fe+5 20139f797701747205717470747072720001028f9f @2244b+2
-T background_attributes 3 @91f80+2 13 @91f83+a 080808080a0a0a0a0f0f982013 @91f90+9 07080808080a0a0a0a0f0f984013 @91f9c+9 @831a3+4 @831a3+4 070707986013 @91fa8+9 @831a3+4 @831a3+4 070707 @91fb1+19 000498b3000498c00004 @9200d+4 @9202c+5 d3000498e00003 @92030+4 98f30003990000049913000399200003 @92011+5 @92035+4 33000499400003 @92038+5 530003996000049973000399800004 @92015+5 @9203d+4 93000399a00003 @92040+4 99b3000499c00004 @92019+13 99d3000499e0000399f300039a0010 @91f90+7 @91f91+6 @91f91+4 9a1300049a2013 @91f90+7 @91f91+6 @91f93+6 04 @92044+1
-T background_attributes 4 980013 @91f83+a 080808080a0a0a0a0f0f982013 @91f90+9 07080808080a0a0a0a0f0f984013 @91f9c+9 @831a3+4 @831a3+4 070707986013 @91fa8+9 @831a3+4 @831a3+4 070707 @91fb1+19 000498b3000498c00004 @9200d+4 @9202c+5 d3000498e00003 @92030+4 98f30003990000049913000399200003 @92011+5 @92035+4 33000499400003 @92038+5 530003996000049973000399800004 @92015+5 @9203d+4 93000399a00003 @92040+4 99b3000499c00004 @92019+13 99d3000499e00003 @91f74+6 0100 @91f7b+5 99f300039a0010 @91f90+7 @91f91+6 @91f91+4 9a1300049a2013 @91f90+7 @91f91+6 @91f93+6 04 @92044+1
+T background_tiles 3 @22336+2 @223ef+1 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 d0d2d4d6 @22435+1 c6ccceb4b6 @2234e+2 @223ef+1 @22351+9 @22409+1 d1 @223eb+1 d5d7c5c7cdcfb5b7 @2235a+2 @223ef+1 @2235d+9 @22415+3 @22416+2 @22416+2 @22416+2 @2241e+3 @22367+1 @223ef+1 @22369+9 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+2 @22352+1 @223ef+1 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+3 @2239f+1 @2233c+3 @223e7+1 @223a4+2 @223a2+4 @22434+4 @223ea+4 @22336+1 e0 @2233c+3 f3 @223a4+7 @223ef+4 @223bb+3 @22438+5 @22403+1 @223a8+7 @223f3+4 @22367+1 @223ec+3 73 @223ac+7 @2243d+4 @223f7+4 @2239f+1 @223ec+3 @223e7+1 @223b0+6 @22440+4 @223fa+4 @223a6+1 e0 @223ec+3 f3 @223b4+4 10 @22339+1 767974 @22430+1 02020472 @22430+1 @22337+1 7278 @22337+1 75 @2233f+1 04 @223fe+5 @2234f+1 @223ef+1 @2233d+1 7977 @2233b+1 7472 @22343+1 7174 @22430+1 74 @22430+1 7272 @22337+1 @2233b+1 02 @22358+2 @2244b+2
+T background_tiles 4 @22336+2 @223ef+1 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 d0d2d4d6 @22435+1 c6ccceb4b6 @2234e+2 @223ef+1 @22351+9 @22409+1 d1 @223eb+1 d5d7c5c7cdcfb5b7 @2235a+2 @223ef+1 @2235d+9 @22415+3 @22416+2 @22416+2 @22416+2 @2241e+3 @22367+1 @223ef+1 @22369+9 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+2 @22352+1 @223ef+1 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+3 @2239f+1 @2233c+3 @223e7+1 @223a4+2 @223a2+4 @22434+4 @223ea+4 @22336+1 e0 @2233c+3 f3 @223a4+7 @223ef+4 @223bb+3 @22438+5 @22403+1 @223a8+7 @223f3+4 @22367+1 @223ec+3 73 @223ac+7 @2243d+4 @223f7+4 @2239f+1 @223ec+3 @223e7+1 @223b0+6 @22440+4 @223fa+4 @22328+1 e0 @2233c+2 @22328+e @22328+1 f3 @223b4+4 10 @22339+1 767974 @22430+1 @22332+1 @22332+1 @2232b+1 72 @22430+1 @2232d+1 7278 @2232d+1 75 @2233f+1 @2232b+1 @223fe+5 @2234f+1 @223ef+1 @2233d+1 7977 @2233b+1 7472 @22343+1 7174 @22430+1 74 @22430+1 7272 @2232d+1 @2233b+1 @22332+1 @22358+2 @2244b+2
+T background_attributes 3 @91f80+2 @91fb3+1 @91f83+a @91f8f+1 @91f8f+1 @91f8f+1 @91f8f+1 @91ffe+1 @91ffe+1 @91ffe+1 @91ffe+1 @9201b+1 @9201b+1 @91f8d+2 @91fb3+1 @91f90+9 @92000+1 @91f8f+1 @91f8f+1 @91f8f+1 @91f8f+1 @91ffe+1 @91ffe+1 @91ffe+1 @91ffe+1 @9201b+1 @9201b+1 @91f99+2 @91fb3+1 @91f9c+9 @831a3+4 @831a3+4 @92000+1 @92000+1 @92000+2 @91fa6+1 @91fb3+1 @91fa8+9 @831a3+4 @831a3+4 @92000+1 @92000+1 @92000+1 @91fb1+19 @91f86+2 @91fee+2 @91f86+2 @91f80+1 c0 @91f86+2 @9200d+4 @9202c+5 d3 @91f86+2 @91f80+1 e0 @9201c+2 @92030+4 @91f80+1 f3 @9201c+2 @92011+1 @91f85+3 @92011+1 @91fb3+1 @9201c+2 @92011+1 @91f8e+1 @9201c+2 @92011+5 @92035+4 33 @91f86+2 @92011+1 @91f9a+1 @9201c+2 @92038+5 53 @9201c+2 @92011+1 @91fa6+1 @91f86+2 @92011+1 73 @9201c+2 @92011+1 @91fb2+1 @91f86+2 @92015+5 @9203d+4 93 @9201c+2 @92011+1 @91fc9+1 @9201c+2 @92040+4 @92011+1 @91fef+1 @91f86+2 @92011+1 c0 @91f86+2 @92019+13 @92011+1 d3 @91f86+2 @92011+1 e0 @9201c+2 @92011+1 f3 @9201c+2 @91fd8+1 @91f81+1 10 @91f90+7 @91f91+6 @91f91+4 @91fd8+1 @91fb3+1 @91f86+2 @91fd8+1 @91f8e+1 @91fb3+1 @91f90+7 @91f91+6 @91f93+6 @91f83+1 @92044+1
+T background_attributes 4 @91f80+2 @91fb3+1 @91f83+a @91f8f+1 @91f8f+1 @91f8f+1 @91f8f+1 @91ffe+1 @91ffe+1 @91ffe+1 @91ffe+1 @9201b+1 @9201b+1 @91f8d+2 @91fb3+1 @91f90+9 @92000+1 @91f8f+1 @91f8f+1 @91f8f+1 @91f8f+1 @91ffe+1 @91ffe+1 @91ffe+1 @91ffe+1 @9201b+1 @9201b+1 @91f99+2 @91fb3+1 @91f9c+9 @831a3+4 @831a3+4 @92000+1 @92000+1 @92000+2 @91fa6+1 @91fb3+1 @91fa8+9 @831a3+4 @831a3+4 @92000+1 @92000+1 @92000+1 @91fb1+19 @91f86+2 @91fee+2 @91f86+2 @91f80+1 c0 @91f86+2 @9200d+4 @9202c+5 d3 @91f86+2 @91f80+1 e0 @9201c+2 @92030+4 @91f80+1 f3 @9201c+2 @91f74+1 @91f85+3 @91f74+1 @91fb3+1 @9201c+2 @91f74+1 @91f8e+1 @9201c+2 @92011+5 @92035+4 33 @91f86+2 @91f74+1 @91f9a+1 @9201c+2 @92038+5 53 @9201c+2 @91f74+1 @91fa6+1 @91f86+2 @91f74+1 73 @9201c+2 @91f74+1 @91fb2+1 @91f86+2 @92015+5 @9203d+4 93 @9201c+2 @91f74+1 @91fc9+1 @9201c+2 @92040+4 @91f74+1 @91fef+1 @91f86+2 @91f74+1 c0 @91f86+2 @92019+13 @91f74+1 d3 @91f86+2 @91f74+1 e0 @9201c+2 @91f74+6 @91fa9+1 @91f77+1 @91f7b+5 @91f74+1 f3 @9201c+2 @91fd8+1 @91f77+1 10 @91f90+7 @91f91+6 @91f91+4 @91fd8+1 @91fb3+1 @91f86+2 @91fd8+1 @91f8e+1 @91fb3+1 @91f90+7 @91f91+6 @91f93+6 @91f83+1 @92044+1
 G endscreen
 B 391d 3e3fea0021c30042
 B 5c5cd 182a
@@ -1554,96 +1554,96 @@ B fc200 afe0402100801100441a1322cb6428f93e01e04f2100801100541a1322cb6428f9210098
 B fc400 ff00ff00ea00e142f108ed00ef10f502be00ff00ff01ff00ef007984bd00a611ae40dd00ff00f822fe70ff04ff08ff00cf000a202d802788f7007f10ff04ff449e63b24cdf007d039403fd02ad42ff00a840d8e038c06c9016e02c701ee0fdc0ffffff7f9777900a832f831f8717e737b2b2e9e955d5a8e8aaaa5050aeaf5053383f000f141f151e889f131f101f383f02fd11fe34ffa4ff8afb40bf02ff10fb819fe10fb886a807d48378038c83f48b0808a1a1c949828249c946c6529215d5090922222a2a95955555acafb6b5d6d640404141a8a85353d5d52defebefaabeacac525279799595d5d56aea2a2addddbfbf5f5f6f7d5779f5cadfe0ff80ff809f8007008f8047500780072001000800fefe7c7c7e7eb8b8ffffeaeafefe6efe131341410909424220208888848420204a4a15154141b2b21a1aa5a51d1d2a2add00ca085110bb88bf30f710ff00f708f6019f60fe04ff04ff00ff00ef10f806ff00ff02ff01ff009b4072083e81ff02fe01f708f807bd42ff005f00f300ec106e91fe01ff00bf403fc0ff00ff00ff0053b8df300ff0dd6029dc23dcef30e33c3f9a238001e017631fd51f4f1f4b0f0ff4f6ec2cf416fc1cfc04ecb8f85ce8b41b1e001f181f3837303f001f363f303f10ef0cfd867f12f7788de8150ef06788a40bb807ab04fc83ef907a05bf80f50a24e42bcb21c11afa1afa05f585750ffffafa56565a5aeaeabdbdf6f6fffffafaadbdaaaaadad55555a5af5f55d5df5f52f2fdada7f7f7d7dffeffbe7fbd7fdc3b8806004b088b084808086ac83a8e7f47aff7cff7fff7ffffdfdfefe @58ae8+4 0fff06fee7dbe3ff776e7f7ffbfdfbfd9595eaea7b7b9d7d8dfd9f6fff3f7bfa0a0a51510a0a53535959f5f5fafa19f9 @8327f+4 51400a0a80002000140085857f82f704fb08ff00fd225fa0ff40ff08fa05d728738cac53ed12bb445ca3f708fe20fde0ff40ff90ffc0ff30fb64f10a000a0020001400030001a40024001c1c956ed16eff18e01fee33817efc0fc33d1f2daf070f0627170610674805109388b85850b87898c838e010f010b05050b0393e353e7f78273867781b346778eaf5808001090300030100000700 @2e1e0+4 40bf857f24df05ff41bf17ff817f5fbfc93106fe827a25d9867a03ff837d03fdfafaeeee6a6adfffa3f7ffb84ffaff629b9babababab7777f7f7df3feb9ffbaff1f1a0a0faf96261f1f06064f0f2e1e00bf73fdf7efe75f5fcfcefefd7d7efeff900f202ef0fe60ef206f800f800f000f900f008420279017e007e011f002f00ee10ee107e009d809e801f001a042f003f007f00ff00ff00e710480815550f0ff0e014148080000031300101a080a0a0f308f40ade00ff82ff29ff79ff3fff57ff00e700fb04e91631ce847bc33c41be0004001900000002040003026800020200 @2e1e0+4 21020020400800c0006042f41be41ffe07ee19ec1fe917f60bf50e83821204c8c0dad08580a9a0e5e0ede840a0c121c020e121e323428307c7c647c9f4c3f88ff08fa00fe03fc00fe01fe0ff00dc43ff03ef1def4adf4bfe45fd47c37faf7faaffdffffefff5ffbeff7dff7d03fd03bc03ef037e03fc013e01fe007afd4b5fbabed7df3535ddffe65dbf40eebe6affbdbeabfc587faaffb5c9fe05e5e095c08f004f000780a3f0d1d00320dfdf @58ae8+4 f3ff6b7fffffefffffdf7a77f8fffcfbf7fffbfffffff3ffc7ff1fffbffff0f0e8e84444a0a0aaaa5555de2ff4fbfeff9f9f8f8f5757aeaf5e5fff1ffd2dfd7dff3ffe39fa0ff469f58fe7183ec19e61fe01f8077cc107f801fe15151414c1c160600404c2c2e5c5bcbc6f90f708fc03fe019f60d12e16e906f98880c180b8b0d6d27470d8d86e6c53531800c08423233a12ee6ea8a894948484d62ff50bb8475ba740bf05ff1fff7efe21de89f611ff3fffb8f8c0c0808000000485808106 @831a3+4 07 @831e0+4 00001fc0bfc05fc09fe0cbe0e4f1f1fff5ffff00f200e014883815fd2beb5ffff7ff1c00eb0028000a008180c5c0f0f0d1d0fbfa7ffffafafefe7ffffefeeeeeeeee7fc05fe06ff077f05fdc55df56dda43b88000500250013001000008090c202cff8063d823fc13f913fa97f90ff0adf804e4034309ca0be803f007e007d027886c7ff0fff3cdcfa7a7afaddddf7f7dc5cfafa0909454515150f0f7b78353bb6a903fc0fe027c02f882b00c7607322df8220252000110022200040286850f050fd00ff8d72f30c0700a8c077f81dfe8f7f68979867857af00fa50aa05f8f7f87ff01fe20df20ff807f04ff01ffafffffffc53ad32c11ee07f807f850f8c8f090e1fc03f70bfb0fd13fff3f3afa78f8f0f078f8e8e880808080c0c0a0a0 @504e0+1a @504e0+a 041b000704060006 @9201c+5 000000037e4ffc079f0f2f050d183800b01050fff0ffe8fff83f3c3f3e0f0f03030101f3f37dfd35f539f915f53bfb33f339d97fd17fa07fb03ff821e120e029c93ede5fe02bd46ff077f8989f0e0f01018181fe11da01402bba01efa5f4f4ede8ffff07f707f71fe07f08fa50aa015004ca806faf06fe8efe9dfd5fffff5fefbaf48b14e213f33fd93fdf3fd4ff0abf40ea95ac51208c08e700ff12fb0075002b10393beecbb4689fa4ff2afe92fddea9b56b877ff907fc03fe01ff00ff00788744bb777f3f3f45c573f339f91afa3cfc1afaabab838301010303020305060b0c171881e16181038101878303030703070b07f8f8a8a89090c0c06262d3d3e1e1ebeb @504e0+1a 000040404040 @504e0+1a @504e0+6 4040 @504e0+4 4040 @504e0+8 01010303 @831e0+4 @504e0+7 1007f846f9c3fca7b84a4d434425260303302f1c272e3f170b0f1d1f04ff1b3dc2ffff3fffcf2f871fc40f40134019803f0203 @91f93+5 86a2f2e81eb54fd22f3fc0090f @504e0+6 a0a020a055f5fd0300c0 @504e0+6 0a0a02032e2b7f803f00372814174242105008480202fd16f70df51da058bcd4547c11118a8a5fa0ff502bbc @2c6b0+4 00004040a9a912ed01ff85ff2fff07ffabff3ede96fe79f9ededcfcfa5a73c3f9e9d858e0106e8f0d8e0d0e080e040a06080 @8327f+4 0b070d0703070b070701000704030302f1f1f1f170f0a4f4a0f0e8f808d87cfc0000929292928a8acbcb4c4c6c6c6868000040408080808000000202 @8326a+4 0000020246464949 @91fad+4 @504e0+6 25255f5ff6ff787fbabfefff1b1f8080b0b0f3f3f0f050d0c0c0c0c0c0c0404080 @8327f+4 @504e0+5 10100000 @831e0+4 @504e0+8 5050c8c86e71727d3e391a1d0a0d15160c0f070600c5021f501e0d1d17972a2a2a2a0a8a20f505b7abffff6bff5cffd6ffaaffb72a2b55eaff7fff95ffd5ffb5ffdbff56f0f200c05050aaaa555555555555a8a82727020000009494525248482a2a45455e5e2e00808054540303909044442121fffffc00060000005050808012124040d7ff5afe4efecefe3efe3efe97ff7ffffbfcfefcfcfef0feeef8e0fcfaf4f4f8 @8327f+4 @504e0+d 0302 @831e0+4 @504e0+9 b27219f99878d838eb1bf50df50dfe06f8f87070fcfcffffbefe7c7cf8f8fdfd @504e0+5 8000840003021d00fd01c10000010115153f3fffffe1e100008af61e1e6060c0c0e0e0e0e0f0f0307088f880 @8327f+4 @504e0+b 1f1f07070f0f @8333d+5 011f1f1f1fbcfcdcfc5fffa7ffcfffbeffeefef0ff0e0febebabab23235151e2e3a2a37dfe05ff8f7fef1f671fb70f930f830f0907ffffff7fffff55554949 @504e0+6 fffefffffffb5d5f2a2a @831e0+4 0000ffd7fffd @58ae8+4 afaf2a2a @504e0+4 ff50ff @591ea+5 ffffbfbf95950000ff28ff91fffd @58f02+6 ffff2f2f000050505454d5d5fffffbfb @58ae8+4 0fff8fffebffffffaefef7ff9cfc54fc737cf7f8f3fcf6f9fbfcfcff7c7f2427000080000080408080c020c040e0c0e0 @504e0+10 05030e010200030002 @504e0+7 78f8bcfc9e7ee818e919e919f909eb1b03860b3c61727148f1e8f884fc40fe103d437d03fd03730f7b07130f6787070f107088f8f0f0e0e08080c0c090909191 @504e0+4 27271f1f1b1f1c1f7a7fedeefffff8ffc0ff19e024c00080c000000071fe84fb10ea7d @504e0+9 18fe02fc0ef0281044 @504e0+7 03030503010100 @831e0+4 @504e0+7 80800000808070f039f9e01ffc03 @504e0+c ff0a748b @504e0+c efffba45 @504e0+c aaaaff07 @504e0+6 1212 @504e0+6 d0d05f5f @831e0+4 101085851010 @504e0+4 d7ff7fff3efecfffb7ff94fc52fe6dff01fe0007000100 @2e1e0+4 00010301017fe0eff07ff07778f7f89b9c8b8c8784 @504e0+1a @504e0+6 6f1f271f6f1fef1f731f751b761f6c1340e010d8b2d2e7e7f3f3fcfd0378a7400f0f2f2f1f1fe1ff93ef710fff00ff00 @58ae8+4 fcfff8ffe0ff9ae5508c6000e3fc04f8c8f050a020c00000 @8327f+4 @504e0+1a @504e0+1a @504e0+c 4e3f350a300f3728312e180719160907ff40bb00fa257a01ee41fe207f04ff02bf004ab1a75817e82fd47f80ff00fd00807f81ffc8ff05ff00ff57ff21ff34ff2f3f8000d500ca006f004e0023009000d0d0ff53a35d629dfa05718e2bd402fd47ffc9fff9ff17ffa5ff74ff0eff89ff010180808080c0c08686fcfff8ff87f8034c83c8797a09ca090a0382eb1cff @504e0+9 8000 @8327f+4 40 @504e0+11 6f107e007d00300014 @504e0+7 fd04f8007a02 @504e0+a @8327f+4 @504e0+1a @504e0+e @91fb4+4 @504e0+4 20200a0a0000888801012a2a @504e0+6 10108080202010104040 @504e0+1a @504e0+6 1817000f08070c030c0b0c0b0a050f0fff40ff00ea15e51af601fb00df007b20f708aa54e31ceb10fe01fd02fe81ffe03cff14ff02ffa8ff45ffc2fff8ff01ff6b94bb44df20bf44ff0227d0837cab50c53aab54946bad52fe016897dd22fe81d9ff26ff23fff7fcdcff9fffdaff7eff07f815e0dce09ae08af0a4f026f801fcfb04ff007f00ac00960054000a0054 @504e0+1a @504e0+1a @504e0+1a @504e0+13 08084242 @83259+4 01019090 @504e0+6 aaaa000025250000404012120000101000005050 @504e0+4 404000008989 @504e0+e 2020 @504e0+10 0d0305060601020301000100 @831e0+4 7701ff00bf08fd00fb50ff013f085f80ff74ff60fe80bc0bfe40f601fe81ef00ec03f902fd027c7bfc33bc03740b788753ac7d80e21da419679a77881dc210ef04ffafff7dfff5ff74ff96ffe7dfdfff27ffeffdfcff9bffdbff7effbe7f68fff1fef9fe9cfff4fffeff49fffffff9f94000d400c80090000880c0006880d0 @8327f+4 @504e0+1a 0008 @504e0+1a @504e0+1a 000000 @831e0+4 @91fad+4 020200009090 @8326a+4 21210404414116129494 @91fad+4 b2b215014a08aa02fb40404010100404a1a11414a5a59212414100009090000050500808404020201010 @504e0+1a @504e0+6 2f4069011b814f283b9939161db517a3f788fd02fe01ff00df88ef10a558827c6bbfa7df00ff66df3aff4eff05ff0fff7e817780b7625a254bb41de28e7507f8efffbf7f07ffdf7f7bbbb7f7fafafdfdffff1fff96fe7efe7cfcf5f5e8e8ebebe8e8c1c1dbdbafaf89892a2a515140409ac095c0ffc0afc0f7c8dde2dee1eaf50800f6007703ff14fc23fe012fd00ff000f7000f000f600fc08f809f003f80bf @504e0+1a @504e0+4 05 @504e0+b 0101080855041010 @91fb4+4 20202a08090045442e2097802d205f045f40ea027f08ff01b500df107604fb80be22ea085f42e4047a227c1c8282f4249292a929a4849212a88884842020808010104040141480804040 @504e0+1a @504e0+6 17135fde3fbf3f8b1f87178028c01680c03ee19ee843f8c7f867f0aff8472491f04fe03f601f22d83fc0259a22dd2bd402fd04fb04fb35cadd82e09ff20d807ffffff1efebf7dfffffffbddfcfffdfffa8a89191d2d204048080a8a8808020204040 @504e0+e 3639151a818e0d0e060f1b1b71712020e9fe58bff20f5c837e8116e1c7f8e6f9002f80bb801500058080a0a0e4e47f7f0200ad005500ad00ee007f00f70801feb000d7005500ff00b700fd00fc02fa80500055515404a200d2500f0ae780bf0027005b083e00fb00bf00ff04ff00fa12f701fa90fd045610f6825a08d440b2129705e8a056529111a4a4aa2292920000222290900202505088884040080880801414 @504e0+1a @504e0+14 2fc717c70f871fc70fcb0fc71fe015c120cc0cdf8ede259f03c887e007600f00b50ecd3287faeb44f12f7b8417a88679f508ff50fb24fd20fe81fae5f847f847efff7fff29ff7dff7efd77f7ebebfbfb8080000080 @8327f+4 @504e0+17 404001018181 @504e0+a f8ff8e8f4f4f49490c0c04041010050502ffe0fff8ffbcbf3f3f6f6f8f8f1f1f01fe27d81be46f900af502fdc4fbc0fefd00f600ff00ff00ff00ab54af503788bf00ff00fb00fb04dd20ea84f600ff00ff01f4007f11d2807f12a200b524ad00a800c8482202c8482505a0a0444401019090 @831e0+4 2020 @504e0+8 42421010 @504e0+4 1010 @504e0+1a @504e0+1a 00003cc01ee03ec008f078f070f05ef0dbf93f003f0078002209018e201990089b9b3800ac01a6003a001f803f400b80cfcf03a003c08fe023600b00fb00cf00ff7cfe01f904f50ae100fe006f00fb00ff7880804040 @504e0+4 8080000080 @8327f+4 @504e0+1a @91f92+7 @504e0+e @7098f+4 @83348+6 060602020d0de0ffc1fef9fe383fbabd787f7a7fdcdf4444a2a2525648485450a4a6d1d18485f501fe00eb00fe027f80fd01ff00bf41b424aa006525e5015210d504a900ea20c888a22200004848848441410808a2a2 @504e0+1a @504e0+1a @504e0+d ff00ff01ff01ff01ff00ff00ff00ffddd9fff98ded8fad9eec1be00fe00df0df9f9b9f9bbb9b9bfbfb6000ff00ff00191b1f9f18181b580f0f8000b500bd00efe6ffe67766ff66ffe63f00f50a7d02fdcefffcffc0fac57e7df90655aa55aa @504e0+4 01010203040405060303030602 @831a3+4 000001010105030401050603030602 @831a3+4 0507010005010506040507060303020702020202050001050501050601070702060602 @831a3+4 060105010505040404010202070602050207070502 @91fb6+a @83201+4 050507050206010404 @91fb9+5 @91fcb+4 0702 @91f9e+7 04 @91fb8+6 @8326e+5 02060602020202 @91fa8+4 @91fcb+4 @8326e+4 0601060306060602 @91fb4+5 040301 @91fb4+7 060606 @91ff3+4 @91fa8+4 02 @83348+7 07050507020601040301010107010107070701010705050705 @831de+4 @83348+6 @831a3+4 0107050d0d0d0f090c @7098f+6 0f0f0f0f0f09090d0d0f0d0f0c0c090f0d09090f0f0f0f0f0f09090d0d0d0d0f0c0c0c090d09080f0f0f0f0f0f09090d090d0d0f0c0c0c0c0c0909080f0f0f0f0909090a0a0a0a0a0c0c0c0c0c0c0d0f0f0f @7098f+4 0a0a0a0a0a0a7c5fda4e1b4b333e7c5fda4e333e4b2956361b4b333e4e15a710333e4b294e15a710da4e333e4b29da4e56361b4b333ea7105636333e4e157c5fda4e56361b4b
 G sprites
 B dad 7aa72026f0f6fec9200dfac9d8e6202819213778c3fe0df0f6fed8200dfafdd8e6202806213b78c3fe0d @504e0+4
-B 83837 =1 61ff72 =1 c5 =1 70
-T room_sprite_data_overworld 0 ffc6ff @8358a+1
-T room_sprite_data_overworld 1 ffc6ff @8358e+1
-T room_sprite_data_overworld 2 ffff9cff
-T room_sprite_data_overworld 3 ff @83594+3
-T room_sprite_data_overworld 4 ffffff @8359a+1
+B 83837 =1 61 @83838+1 72 =1 c5 =1 70
+T room_sprite_data_overworld 0 ff @83588+1 ff @8358a+1
+T room_sprite_data_overworld 1 @8358e+1 @8358c+1 @8358e+1 @8358e+1
+T room_sprite_data_overworld 2 @83590+1 @83590+2 @83590+1
+T room_sprite_data_overworld 3 @83595+1 @83594+3
+T room_sprite_data_overworld 4 @83598+1 @83598+1 @83598+1 @8359a+1
 T room_sprite_data_overworld 5 ffffff @835aa+1
 T room_sprite_data_overworld 6 @58ae8+4
 T room_sprite_data_overworld 7 @58ae8+4
-T room_sprite_data_overworld 8 ff6c8fff
-T room_sprite_data_overworld 9 ff @833f4+3
-T room_sprite_data_overworld a ff87ffff
-T room_sprite_data_overworld b ff87ffff
+T room_sprite_data_overworld 8 ff @8350c+2 ff
+T room_sprite_data_overworld 9 @833f4+1 @833f4+3
+T room_sprite_data_overworld a ff @8352c+1 ffff
+T room_sprite_data_overworld b ff @8352c+1 ffff
 T room_sprite_data_overworld c ffffff @8352e+1
 T room_sprite_data_overworld d ffffff @8352e+1
 T room_sprite_data_overworld e ffff @83505+2
-T room_sprite_data_overworld f ff @83534+3
-T room_sprite_data_overworld 10 ffc6ff @83476+1
-T room_sprite_data_overworld 11 ff @835c4+3
-T room_sprite_data_overworld 12 ff @835a0+3
+T room_sprite_data_overworld f @83535+1 @83534+3
+T room_sprite_data_overworld 10 ff @83474+1 ff @83476+1
+T room_sprite_data_overworld 11 @835c4+1 @835c4+3
+T room_sprite_data_overworld 12 @835a1+1 @835a0+3
 T room_sprite_data_overworld 13 ffff @835a5+2
-T room_sprite_data_overworld 14 ff44ff @835aa+1
-T room_sprite_data_overworld 15 ff44ffff
+T room_sprite_data_overworld 14 ff @835a8+1 ff @835aa+1
+T room_sprite_data_overworld 15 ff @835a8+1 ffff
 T room_sprite_data_overworld 16 @58ae8+4
 T room_sprite_data_overworld 17 @58ae8+4
-T room_sprite_data_overworld 18 ffffff @83532+1
+T room_sprite_data_overworld 18 @83530+1 @83530+1 @83530+1 @83532+1
 T room_sprite_data_overworld 19 ffffff @83466+1
-T room_sprite_data_overworld 1a ffffff @83532+1
+T room_sprite_data_overworld 1a @83530+1 @83530+1 @83530+1 @83532+1
 T room_sprite_data_overworld 1b @58ae8+4
 T room_sprite_data_overworld 1c @58ae8+4
-T room_sprite_data_overworld 1d ff87ffff
-T room_sprite_data_overworld 1e ff @83534+3
-T room_sprite_data_overworld 1f ff87ffff
+T room_sprite_data_overworld 1d ff @8352c+1 ffff
+T room_sprite_data_overworld 1e @83535+1 @83534+3
+T room_sprite_data_overworld 1f ff @8352c+1 ffff
 T room_sprite_data_overworld 20 ffff @833fd+2
 T room_sprite_data_overworld 21 ffff @835e9+2
-T room_sprite_data_overworld 22 ff4a @833f5+2
-T room_sprite_data_overworld 23 ff4aff @8342e+1
-T room_sprite_data_overworld 24 ff4aff @83516+1
-T room_sprite_data_overworld 25 ffff83ff
+T room_sprite_data_overworld 22 @833f4+1 4a @833f5+2
+T room_sprite_data_overworld 23 ff @8342c+1 ff @8342e+1
+T room_sprite_data_overworld 24 @83516+1 @83514+1 @83516+1 @83516+1
+T room_sprite_data_overworld 25 ffff @83511+1 ff
 T room_sprite_data_overworld 26 @58ae8+4
 T room_sprite_data_overworld 27 @58ae8+4
-T room_sprite_data_overworld 28 ffff83ff
-T room_sprite_data_overworld 29 ffff83 @833f6+1
-T room_sprite_data_overworld 2a ff87ffff
-T room_sprite_data_overworld 2b ffff @83535+2
-T room_sprite_data_overworld 2c ff @83534+3
+T room_sprite_data_overworld 28 ffff @8340d+1 ff
+T room_sprite_data_overworld 29 @833f4+2 83 @833f6+1
+T room_sprite_data_overworld 2a ff @83538+1 ffff
+T room_sprite_data_overworld 2b @83535+2 @83535+2
+T room_sprite_data_overworld 2c @83535+1 @83534+3
 T room_sprite_data_overworld 2d ffffff @8357e+1
 T room_sprite_data_overworld 2e ffffff @8357e+1
-T room_sprite_data_overworld 2f ffffe3ff
-T room_sprite_data_overworld 30 ffff7cff
+T room_sprite_data_overworld 2f ffff @8357d+1 ff
+T room_sprite_data_overworld 30 ffff @833fd+1 ff
 T room_sprite_data_overworld 31 ffff @835e9+2
-T room_sprite_data_overworld 32 ff4a @833f5+2
-T room_sprite_data_overworld 33 ff4aff @8342e+1
-T room_sprite_data_overworld 34 ff4aff @83516+1
+T room_sprite_data_overworld 32 @833f4+1 4a @833f5+2
+T room_sprite_data_overworld 33 ff @8342c+1 ff @8342e+1
+T room_sprite_data_overworld 34 @83516+1 @83514+1 @83516+1 @83516+1
 T room_sprite_data_overworld 35 @58ae8+4
 T room_sprite_data_overworld 36 @58ae8+4
 T room_sprite_data_overworld 37 @58ae8+4
-T room_sprite_data_overworld 38 ffff83ff
-T room_sprite_data_overworld 39 ffff83 @833f6+1
-T room_sprite_data_overworld 3a ff8783ff
+T room_sprite_data_overworld 38 ffff @8340d+1 ff
+T room_sprite_data_overworld 39 @833f4+2 83 @833f6+1
+T room_sprite_data_overworld 3a ff @83538+2 ff
 T room_sprite_data_overworld 3b ffffff @8353a+1
-T room_sprite_data_overworld 3c ff87 @833f5+2
-T room_sprite_data_overworld 3d ff87ffff
+T room_sprite_data_overworld 3c @833f4+1 87 @833f5+2
+T room_sprite_data_overworld 3d ff @8357c+1 ffff
 T room_sprite_data_overworld 3e ffffff @8357e+1
-T room_sprite_data_overworld 3f ff87ffff
-T room_sprite_data_overworld 40 ffff7c @833f6+1
+T room_sprite_data_overworld 3f ff @8357c+1 ffff
+T room_sprite_data_overworld 40 @833f4+2 7c @833f6+1
 T room_sprite_data_overworld 41 @58ae8+4
-T room_sprite_data_overworld 42 ffff7cff
-T room_sprite_data_overworld 43 ffff7cff
+T room_sprite_data_overworld 42 ffff @835ed+1 ff
+T room_sprite_data_overworld 43 ffff @835ed+1 ff
 T room_sprite_data_overworld 44 @58ae8+4
 T room_sprite_data_overworld 45 @58ae8+4
-T room_sprite_data_overworld 46 ff42ffff
-T room_sprite_data_overworld 47 ff42ffff
-T room_sprite_data_overworld 48 ffff92ff
+T room_sprite_data_overworld 46 ff @83494+1 ffff
+T room_sprite_data_overworld 47 ff @83494+1 ffff
+T room_sprite_data_overworld 48 ffff @83439+1 ff
 T room_sprite_data_overworld 49 @58ae8+4
-T room_sprite_data_overworld 4a ffff92ff
-T room_sprite_data_overworld 4b ffff @83581+2
+T room_sprite_data_overworld 4a ffff @83585+1 ff
+T room_sprite_data_overworld 4b @83581+2 @83581+2
 T room_sprite_data_overworld 4c @58ae8+4
 T room_sprite_data_overworld 4d @58ae8+4
 T room_sprite_data_overworld 4e @58ae8+4
 T room_sprite_data_overworld 4f @58ae8+4
-T room_sprite_data_overworld 50 ff8effff
-T room_sprite_data_overworld 51 ff6cff @834ae+1
-T room_sprite_data_overworld 52 ff @835c4+3
-T room_sprite_data_overworld 53 ff4dff @835f2+1
-T room_sprite_data_overworld 54 ff6179ff
+T room_sprite_data_overworld 50 ff @833f8+1 ffff
+T room_sprite_data_overworld 51 ff @834ac+1 ff @834ae+1
+T room_sprite_data_overworld 52 @835c4+1 @835c4+3
+T room_sprite_data_overworld 53 @835f2+1 @835f0+1 @835f2+1 @835f2+1
+T room_sprite_data_overworld 54 ff @834d4+2 ff
 T room_sprite_data_overworld 55 @58ae8+4
-T room_sprite_data_overworld 56 ff42ffff
-T room_sprite_data_overworld 57 ff42ffff
-T room_sprite_data_overworld 58 ff4292ff
+T room_sprite_data_overworld 56 ff @83494+1 ffff
+T room_sprite_data_overworld 57 @83499+1 @83498+2 @83499+1
+T room_sprite_data_overworld 58 ff @83438+2 ff
 T room_sprite_data_overworld 59 @58ae8+4
 T room_sprite_data_overworld 5a ffffff @8343a+1
 T room_sprite_data_overworld 5b @58ae8+4
@@ -1651,184 +1651,184 @@ T room_sprite_data_overworld 5c @58ae8+4
 T room_sprite_data_overworld 5d @58ae8+4
 T room_sprite_data_overworld 5e @58ae8+4
 T room_sprite_data_overworld 5f @58ae8+4
-T room_sprite_data_overworld 60 ffff7c @833f6+1
-T room_sprite_data_overworld 61 ffff7c @833f6+1
-T room_sprite_data_overworld 62 ffff7cff
-T room_sprite_data_overworld 63 ffff7c @833f6+1
-T room_sprite_data_overworld 64 ff @833f4+3
+T room_sprite_data_overworld 60 @833f4+2 7c @833f6+1
+T room_sprite_data_overworld 61 @833f4+2 7c @833f6+1
+T room_sprite_data_overworld 62 ffff @835ed+1 ff
+T room_sprite_data_overworld 63 @833f4+2 7c @833f6+1
+T room_sprite_data_overworld 64 @833f4+1 @833f4+3
 T room_sprite_data_overworld 65 @58ae8+4
-T room_sprite_data_overworld 66 ff42ffff
-T room_sprite_data_overworld 67 ff @83408+3
-T room_sprite_data_overworld 68 ffff92ff
+T room_sprite_data_overworld 66 @83499+1 @83498+2 @83499+1
+T room_sprite_data_overworld 67 @8340a+1 @83408+3
+T room_sprite_data_overworld 68 @83554+1 @83554+2 @83554+1
 T room_sprite_data_overworld 69 @58ae8+4
-T room_sprite_data_overworld 6a ffff @8355d+2
-T room_sprite_data_overworld 6b ff @833f4+3
+T room_sprite_data_overworld 6a @8355e+1 @8355e+1 @8355d+2
+T room_sprite_data_overworld 6b @833f4+1 @833f4+3
 T room_sprite_data_overworld 6c @58ae8+4
 T room_sprite_data_overworld 6d @58ae8+4
 T room_sprite_data_overworld 6e @58ae8+4
 T room_sprite_data_overworld 6f @58ae8+4
-T room_sprite_data_overworld 70 ffff7cff
-T room_sprite_data_overworld 71 ffff7cff
-T room_sprite_data_overworld 72 ffff7cff
-T room_sprite_data_overworld 73 ffff7cff
-T room_sprite_data_overworld 74 ffff82ff
-T room_sprite_data_overworld 75 ffff82ff
-T room_sprite_data_overworld 76 ff428282
-T room_sprite_data_overworld 77 ff @83498+3
-T room_sprite_data_overworld 78 ffff @83561+2
+T room_sprite_data_overworld 70 ffff @835ed+1 ff
+T room_sprite_data_overworld 71 ffff @835ed+1 ff
+T room_sprite_data_overworld 72 ffff @835ed+1 ff
+T room_sprite_data_overworld 73 ffff @835ed+1 ff
+T room_sprite_data_overworld 74 ffff @834dd+1 ff
+T room_sprite_data_overworld 75 ffff @834dd+1 ff
+T room_sprite_data_overworld 76 ff @83494+2 @83495+1
+T room_sprite_data_overworld 77 @83499+1 @83498+3
+T room_sprite_data_overworld 78 @83561+2 @83561+2
 T room_sprite_data_overworld 79 @58ae8+4
-T room_sprite_data_overworld 7a ff @833f4+3
+T room_sprite_data_overworld 7a @833f4+1 @833f4+3
 T room_sprite_data_overworld 7b ffffff @8343e+1
 T room_sprite_data_overworld 7c @58ae8+4
 T room_sprite_data_overworld 7d @58ae8+4
 T room_sprite_data_overworld 7e @58ae8+4
 T room_sprite_data_overworld 7f @58ae8+4
 T room_sprite_data_overworld 80 @58ae8+4
-T room_sprite_data_overworld 81 ffff @83401+2
-T room_sprite_data_overworld 82 ffe5ff @8341e+1
-T room_sprite_data_overworld 83 ffe5ff @83422+1
-T room_sprite_data_overworld 84 ff @834d8+3
+T room_sprite_data_overworld 81 @83401+1 @83401+1 @83401+2
+T room_sprite_data_overworld 82 @8341e+1 @8341c+1 @8341e+1 @8341e+1
+T room_sprite_data_overworld 83 ff @83420+1 ff @83422+1
+T room_sprite_data_overworld 84 @834d9+1 @834d8+3
 T room_sprite_data_overworld 85 @58ae8+4
-T room_sprite_data_overworld 86 ffff8bff
-T room_sprite_data_overworld 87 ff6cff @83456+1
-T room_sprite_data_overworld 88 ffe3ff @8351e+1
+T room_sprite_data_overworld 86 ffff @83455+1 ff
+T room_sprite_data_overworld 87 ff @83454+1 ff @83456+1
+T room_sprite_data_overworld 88 @8351e+1 @8351c+1 @8351e+1 @8351e+1
 T room_sprite_data_overworld 89 ffff @834a5+2
-T room_sprite_data_overworld 8a ffff @835bd+2
-T room_sprite_data_overworld 8b ff61 @833f5+2
+T room_sprite_data_overworld 8a @835be+1 @835be+1 @835bd+2
+T room_sprite_data_overworld 8b @833f4+1 61 @833f5+2
 T room_sprite_data_overworld 8c @58ae8+4
 T room_sprite_data_overworld 8d @58ae8+4
 T room_sprite_data_overworld 8e ffffff76
 T room_sprite_data_overworld 8f @58ae8+4
-T room_sprite_data_overworld 90 ff @833f4+3
-T room_sprite_data_overworld 91 ffe5 @833f5+2
+T room_sprite_data_overworld 90 @833f4+1 @833f4+3
+T room_sprite_data_overworld 91 @833f4+1 e5 @833f5+2
 T room_sprite_data_overworld 92 ff @83500+3
-T room_sprite_data_overworld 93 ffe5ff @8341e+1
+T room_sprite_data_overworld 93 @8341e+1 @8341c+1 @8341e+1 @8341e+1
 T room_sprite_data_overworld 94 @58ae8+4
-T room_sprite_data_overworld 95 ffe3ffff
-T room_sprite_data_overworld 96 ffff8b @833f6+1
-T room_sprite_data_overworld 97 ffff8b @833f6+1
-T room_sprite_data_overworld 98 ffe3ff76
-T room_sprite_data_overworld 99 ff @83570+3
-T room_sprite_data_overworld 9a ffff83ff
-T room_sprite_data_overworld 9b ff61ff76
+T room_sprite_data_overworld 95 ff @834ec+1 ffff
+T room_sprite_data_overworld 96 @833f4+2 8b @833f6+1
+T room_sprite_data_overworld 97 @833f4+2 8b @833f6+1
+T room_sprite_data_overworld 98 ff @835c8+1 ff76
+T room_sprite_data_overworld 99 @83571+1 @83570+3
+T room_sprite_data_overworld 9a @835c0+1 @835c0+2 @835c0+1
+T room_sprite_data_overworld 9b @835b5+1 @835b4+2 76
 T room_sprite_data_overworld 9c @58ae8+4
-T room_sprite_data_overworld 9d ffff7876
-T room_sprite_data_overworld 9e ff87ffff
-T room_sprite_data_overworld 9f ff87ff76
-T room_sprite_data_overworld a0 ff @83440+3
-T room_sprite_data_overworld a1 ffe5ff @83426+1
-T room_sprite_data_overworld a2 ffffff @8341e+1
-T room_sprite_data_overworld a3 ffe5 @833f5+2
-T room_sprite_data_overworld a4 ffe3ffff
-T room_sprite_data_overworld a5 ffe3 @833f5+2
+T room_sprite_data_overworld 9d @835b0+1 @835b0+2 76
+T room_sprite_data_overworld 9e ff @834a8+1 ffff
+T room_sprite_data_overworld 9f ff @834a8+1 ff76
+T room_sprite_data_overworld a0 @83441+1 @83440+3
+T room_sprite_data_overworld a1 ff @83424+1 ff @83426+1
+T room_sprite_data_overworld a2 @8341e+1 @8341e+1 @8341e+1 @8341e+1
+T room_sprite_data_overworld a3 @833f4+1 e5 @833f5+2
+T room_sprite_data_overworld a4 ff @834e0+1 ffff
+T room_sprite_data_overworld a5 @833f4+1 e3 @833f5+2
 T room_sprite_data_overworld a6 @58ae8+4
 T room_sprite_data_overworld a7 @58ae8+4
-T room_sprite_data_overworld a8 ff @83570+3
-T room_sprite_data_overworld a9 ffff83ff
+T room_sprite_data_overworld a8 @83571+1 @83570+3
+T room_sprite_data_overworld a9 ffff @83545+1 ff
 T room_sprite_data_overworld aa @58ae8+4
-T room_sprite_data_overworld ab ffff7976
-T room_sprite_data_overworld ac ffff78ff
-T room_sprite_data_overworld ad ffff78ff
-T room_sprite_data_overworld ae ffff78ff
-T room_sprite_data_overworld af ff @833f4+3
-T room_sprite_data_overworld b0 ffe5ff @83432+1
-T room_sprite_data_overworld b1 ffff43ff
-T room_sprite_data_overworld b2 ffe5ffff
-T room_sprite_data_overworld b3 ffe5ffdc
-T room_sprite_data_overworld b4 ffff83 @833f6+1
+T room_sprite_data_overworld ab @835b8+1 @835b8+2 76
+T room_sprite_data_overworld ac ffff @835ad+1 ff
+T room_sprite_data_overworld ad ffff @835ad+1 ff
+T room_sprite_data_overworld ae ffff @835ad+1 ff
+T room_sprite_data_overworld af @833f4+1 @833f4+3
+T room_sprite_data_overworld b0 ff @83430+1 ff @83432+1
+T room_sprite_data_overworld b1 ffff @83425+1 ff
+T room_sprite_data_overworld b2 ff @83418+1 ffff
+T room_sprite_data_overworld b3 ff @83418+1 ffdc
+T room_sprite_data_overworld b4 @833f4+2 83 @833f6+1
 T room_sprite_data_overworld b5 @58ae8+4
 T room_sprite_data_overworld b6 @58ae8+4
 T room_sprite_data_overworld b7 @58ae8+4
-T room_sprite_data_overworld b8 ffffff @835d2+1
-T room_sprite_data_overworld b9 ffff @835bd+2
-T room_sprite_data_overworld ba ff61ff76
-T room_sprite_data_overworld bb ff @83520+3
-T room_sprite_data_overworld bc ffff78ff
-T room_sprite_data_overworld bd ffff78ff
-T room_sprite_data_overworld be ffff78ff
-T room_sprite_data_overworld bf ffff78ff
-T room_sprite_data_overworld c0 ffffff @83416+1
-T room_sprite_data_overworld c1 ffff @83415+2
-T room_sprite_data_overworld c2 ffffe3ff
-T room_sprite_data_overworld c3 ffffe3ff
+T room_sprite_data_overworld b8 @835d0+1 @835d0+1 @835d0+1 @835d2+1
+T room_sprite_data_overworld b9 @835be+1 @835be+1 @835bd+2
+T room_sprite_data_overworld ba @835b5+1 @835b4+2 76
+T room_sprite_data_overworld bb @83520+1 @83520+3
+T room_sprite_data_overworld bc ffff @835ad+1 ff
+T room_sprite_data_overworld bd ffff @835ad+1 ff
+T room_sprite_data_overworld be ffff @835ad+1 ff
+T room_sprite_data_overworld bf ffff @835ad+1 ff
+T room_sprite_data_overworld c0 @83416+1 @83416+1 @83416+1 @83416+1
+T room_sprite_data_overworld c1 @83416+1 @83416+1 @83415+2
+T room_sprite_data_overworld c2 ffff @83411+1 ff
+T room_sprite_data_overworld c3 ffff @83411+1 ff
 T room_sprite_data_overworld c4 @58ae8+4
 T room_sprite_data_overworld c5 @58ae8+4
 T room_sprite_data_overworld c6 @58ae8+4
-T room_sprite_data_overworld c7 ff @833f4+3
-T room_sprite_data_overworld c8 ffff @835d5+2
-T room_sprite_data_overworld c9 ffff @83481+2
-T room_sprite_data_overworld ca ff61ff @8348e+1
-T room_sprite_data_overworld cb ffc4ff @83552+1
-T room_sprite_data_overworld cc ff @834c4+3
-T room_sprite_data_overworld cd ffc443ff
+T room_sprite_data_overworld c7 @833f4+1 @833f4+3
+T room_sprite_data_overworld c8 @835d6+1 @835d6+1 @835d5+2
+T room_sprite_data_overworld c9 @83481+1 @83481+1 @83481+2
+T room_sprite_data_overworld ca @8348e+1 @8348c+1 @8348e+1 @8348e+1
+T room_sprite_data_overworld cb @83552+1 @83550+1 @83552+1 @83552+1
+T room_sprite_data_overworld cc @834c5+1 @834c4+3
+T room_sprite_data_overworld cd ff @834c8+2 ff
 T room_sprite_data_overworld ce ffffff @8346a+1
-T room_sprite_data_overworld cf ff81ff @835e2+1
-T room_sprite_data_overworld d0 ffffe3ff
-T room_sprite_data_overworld d1 ffffe3ff
+T room_sprite_data_overworld cf @835e2+1 @835e0+1 @835e2+1 @835e2+1
+T room_sprite_data_overworld d0 ffff @83411+1 ff
+T room_sprite_data_overworld d1 ffff @83411+1 ff
 T room_sprite_data_overworld d2 @58ae8+4
 T room_sprite_data_overworld d3 @58ae8+4
 T room_sprite_data_overworld d4 ffffff @834e6+1
 T room_sprite_data_overworld d5 ffffff @834e6+1
 T room_sprite_data_overworld d6 @58ae8+4
 T room_sprite_data_overworld d7 @58ae8+4
-T room_sprite_data_overworld d8 ff @835d8+3
-T room_sprite_data_overworld d9 ffffff @8348e+1
+T room_sprite_data_overworld d8 @835d9+1 @835d8+3
+T room_sprite_data_overworld d9 @8348e+1 @8348e+1 @8348e+1 @8348e+1
 T room_sprite_data_overworld da @8382f+4
-T room_sprite_data_overworld db ffffff @83542+1
+T room_sprite_data_overworld db @83540+1 @83540+1 @83540+1 @83542+1
 T room_sprite_data_overworld dc ff @834b0+3
-T room_sprite_data_overworld dd ff @834c4+3
-T room_sprite_data_overworld de ff81 @833f5+2
-T room_sprite_data_overworld df ff81ff @8352a+1
-T room_sprite_data_overworld e0 ffffe3ff
-T room_sprite_data_overworld e1 ff81ffff
-T room_sprite_data_overworld e2 ff81e3 @833f6+1
+T room_sprite_data_overworld dd @834c5+1 @834c4+3
+T room_sprite_data_overworld de @833f4+1 81 @833f5+2
+T room_sprite_data_overworld df ff @83528+1 ff @8352a+1
+T room_sprite_data_overworld e0 ffff @83411+1 ff
+T room_sprite_data_overworld e1 ff @83410+1 ffff
+T room_sprite_data_overworld e2 @833f4+1 81e3 @833f6+1
 T room_sprite_data_overworld e3 ffffff @834fe+1
-T room_sprite_data_overworld e4 ffffffd4
+T room_sprite_data_overworld e4 @833f4+3 d4
 T room_sprite_data_overworld e5 @58ae8+4
-T room_sprite_data_overworld e6 ffffff @8363a+1
-T room_sprite_data_overworld e7 ffff @8348d+2
-T room_sprite_data_overworld e8 ffff @8348d+2
+T room_sprite_data_overworld e6 @8363a+1 @8363a+1 @8363a+1 @8363a+1
+T room_sprite_data_overworld e7 @8348e+1 @8348e+1 @8348d+2
+T room_sprite_data_overworld e8 @8348e+1 @8348e+1 @8348d+2
 T room_sprite_data_overworld e9 ffffff @8348a+1
-T room_sprite_data_overworld ea ff @834cc+3
+T room_sprite_data_overworld ea @834cc+1 @834cc+3
 T room_sprite_data_overworld eb ffff @834c1+2
 T room_sprite_data_overworld ec @58ae8+4
 T room_sprite_data_overworld ed @58ae8+4
 T room_sprite_data_overworld ee @58ae8+4
 T room_sprite_data_overworld ef ffffff @8352a+1
-T room_sprite_data_overworld f0 ff81e3ff
-T room_sprite_data_overworld f1 ff81e3ff
-T room_sprite_data_overworld f2 ff81ffff
-T room_sprite_data_overworld f3 ff81 @833f5+2
-T room_sprite_data_overworld f4 ff81ffff
-T room_sprite_data_overworld f5 ffff8fff
-T room_sprite_data_overworld f6 ffffff @8363a+1
-T room_sprite_data_overworld f7 ff @833f4+3
+T room_sprite_data_overworld f0 ff @83410+2 ff
+T room_sprite_data_overworld f1 ff @83410+2 ff
+T room_sprite_data_overworld f2 ff @83410+1 ffff
+T room_sprite_data_overworld f3 @833f4+1 81 @833f5+2
+T room_sprite_data_overworld f4 ff @83634+1 ffff
+T room_sprite_data_overworld f5 ffff @83635+1 ff
+T room_sprite_data_overworld f6 @8363a+1 @8363a+1 @8363a+1 @8363a+1
+T room_sprite_data_overworld f7 @833f4+1 @833f4+3
 T room_sprite_data_overworld f8 @8382f+4
-T room_sprite_data_overworld f9 ffffff @8348e+1
-T room_sprite_data_overworld fa ff6179ff
-T room_sprite_data_overworld fb ffff7976
+T room_sprite_data_overworld f9 @8348e+1 @8348e+1 @8348e+1 @8348e+1
+T room_sprite_data_overworld fa ff @83470+2 ff
+T room_sprite_data_overworld fb @833f4+2 7976
 T room_sprite_data_overworld fc @58ae8+4
 T room_sprite_data_overworld fd ffff @83479+2
-T room_sprite_data_overworld fe ffffff @83526+1
-T room_sprite_data_overworld ff ff81ffff
+T room_sprite_data_overworld fe @83526+1 @83526+1 @83526+1 @83526+1
+T room_sprite_data_overworld ff @835e5+1 @835e4+2 @835e5+1
 T room_sprite_data_indoor 0 @58ae8+4
 T room_sprite_data_indoor 1 @58ae8+4
-T room_sprite_data_indoor 2 @83673+3 ff
-T room_sprite_data_indoor 3 ff91ff @8365a+1
-T room_sprite_data_indoor 4 ff91ffff
+T room_sprite_data_indoor 2 @83673+3 @83673+1
+T room_sprite_data_indoor 3 ff @83658+1 ff @8365a+1
+T room_sprite_data_indoor 4 ff @83658+1 ffff
 T room_sprite_data_indoor 5 @8363b+1 91 @8363d+2
 T room_sprite_data_indoor 6 ffff @83651+2
 T room_sprite_data_indoor 7 @8363f+2 ffff
 T room_sprite_data_indoor 8 @8363b+4
 T room_sprite_data_indoor 9 @83647+1 ffffff
-T room_sprite_data_indoor a ff91ff @836ae+1
-T room_sprite_data_indoor b ff91ffff
+T room_sprite_data_indoor a ff @836ac+1 ff @836ae+1
+T room_sprite_data_indoor b ff @83650+1 ffff
 T room_sprite_data_indoor c @58ae8+4
 T room_sprite_data_indoor d ffffff @83642+1
-T room_sprite_data_indoor e ff91ff @83642+1
+T room_sprite_data_indoor e ff @83640+1 ff @83642+1
 T room_sprite_data_indoor f 90 @8363c+3
 T room_sprite_data_indoor 10 9091 @8363d+2
-T room_sprite_data_indoor 11 ffff @83645+2
+T room_sprite_data_indoor 11 @83646+1 @83646+1 @83645+2
 T room_sprite_data_indoor 12 90 @8363c+3
 T room_sprite_data_indoor 13 @83647+2 ffff
 T room_sprite_data_indoor 14 @83647+1 ffffff
@@ -1843,76 +1843,76 @@ T room_sprite_data_indoor 1c @8363b+4
 T room_sprite_data_indoor 1d @8363b+1 91 @8363d+2
 T room_sprite_data_indoor 1e ffff @837c9+2
 T room_sprite_data_indoor 1f ffff @837c9+2
-T room_sprite_data_indoor 20 ffff97ff
+T room_sprite_data_indoor 20 ffff @8368d+1 ff
 T room_sprite_data_indoor 21 90 @8363c+3
-T room_sprite_data_indoor 22 ff91ffff
+T room_sprite_data_indoor 22 ff @8368c+1 ffff
 T room_sprite_data_indoor 23 @8368b+2 ffff
 T room_sprite_data_indoor 24 9091 @8363d+2
 T room_sprite_data_indoor 25 ffffff @83656+1
 T room_sprite_data_indoor 26 @83687+1 ffff7b
 T room_sprite_data_indoor 27 @83653+1 ff @83655+2
-T room_sprite_data_indoor 28 ffff54ff
+T room_sprite_data_indoor 28 ffff @83689+1 ff
 T room_sprite_data_indoor 29 @83687+2 ffff
-T room_sprite_data_indoor 2a @83673+3 ff
+T room_sprite_data_indoor 2a @83673+3 @83673+1
 T room_sprite_data_indoor 2b @8365b+4
 T room_sprite_data_indoor 2c @83687+2 ffff
-T room_sprite_data_indoor 2d @8365b+2 ffff
+T room_sprite_data_indoor 2d @8365b+2 @8365b+2
 T room_sprite_data_indoor 2e @83653+1 ffffff
 T room_sprite_data_indoor 2f @83657+2 ffff
 T room_sprite_data_indoor 30 @83653+2 ffff
-T room_sprite_data_indoor 31 ff91ffff
+T room_sprite_data_indoor 31 ff @83654+1 ffff
 T room_sprite_data_indoor 32 90 @8363c+3
 T room_sprite_data_indoor 33 @8363b+1 91 @8363d+2
-T room_sprite_data_indoor 34 ffff58ff
+T room_sprite_data_indoor 34 ffff @836a9+1 ff
 T room_sprite_data_indoor 35 ffffff @836aa+1
 T room_sprite_data_indoor 36 @58ae8+4
-T room_sprite_data_indoor 37 ffff58ff
-T room_sprite_data_indoor 38 ff919cff
+T room_sprite_data_indoor 37 ffff @836a9+1 ff
+T room_sprite_data_indoor 38 ff @83654+2 ff
 T room_sprite_data_indoor 39 @8363b+1 91 @8363d+2
-T room_sprite_data_indoor 3a ff65ffff
-T room_sprite_data_indoor 3b ff65ffff
+T room_sprite_data_indoor 3a ff @83708+1 ffff
+T room_sprite_data_indoor 3b ff @83708+1 ffff
 T room_sprite_data_indoor 3c @83707+1 ffff @8370a+1
 T room_sprite_data_indoor 3d @83707+1 ffff @8370a+1
-T room_sprite_data_indoor 3e ff65ffff
-T room_sprite_data_indoor 3f ff65ffff
+T room_sprite_data_indoor 3e ff @83708+1 ffff
+T room_sprite_data_indoor 3f ff @83708+1 ffff
 T room_sprite_data_indoor 40 ff @8369c+3
 T room_sprite_data_indoor 41 ffffff @8369e+1
-T room_sprite_data_indoor 42 ffff9cff
+T room_sprite_data_indoor 42 ffff @8369d+1 ff
 T room_sprite_data_indoor 43 ffffff @8369e+1
 T room_sprite_data_indoor 44 90 @8363c+3
-T room_sprite_data_indoor 45 ffff @83691+2
+T room_sprite_data_indoor 45 @83692+1 @83692+1 @83691+2
 T room_sprite_data_indoor 46 @8363b+4
 T room_sprite_data_indoor 47 9091 @8363d+2
 T room_sprite_data_indoor 48 ffffff @8369a+1
 T room_sprite_data_indoor 49 @8363b+1 91 @8363d+2
-T room_sprite_data_indoor 4a ffff9cff
-T room_sprite_data_indoor 4b ffff9cff
+T room_sprite_data_indoor 4a ffff @83699+1 ff
+T room_sprite_data_indoor 4b ffff @83699+1 ff
 T room_sprite_data_indoor 4c @58ae8+4
 T room_sprite_data_indoor 4d @58ae8+4
 T room_sprite_data_indoor 4e @83653+2 ffff
 T room_sprite_data_indoor 4f @8363b+4
-T room_sprite_data_indoor 50 @8369b+1 ff9cff
+T room_sprite_data_indoor 50 @8369b+1 ff @8369d+1 ff
 T room_sprite_data_indoor 51 ff @8372c+3
 T room_sprite_data_indoor 52 @58ae8+4
 T room_sprite_data_indoor 53 7bffffff
 T room_sprite_data_indoor 54 @83697+3 ff
 T room_sprite_data_indoor 55 ffffff @8369a+1
-T room_sprite_data_indoor 56 ff91ffff
+T room_sprite_data_indoor 56 ff @83698+1 ffff
 T room_sprite_data_indoor 57 @83697+1 ffff @8369a+1
 T room_sprite_data_indoor 58 ffff @83699+2
-T room_sprite_data_indoor 59 @83673+3 ff
+T room_sprite_data_indoor 59 @83673+3 @83673+1
 T room_sprite_data_indoor 5a ffff @83695+2
 T room_sprite_data_indoor 5b 90 @8363c+3
 T room_sprite_data_indoor 5c ffffff @8369a+1
 T room_sprite_data_indoor 5d @58ae8+4
-T room_sprite_data_indoor 5e ffff5dff
-T room_sprite_data_indoor 5f ffff5dff
+T room_sprite_data_indoor 5e ffff @83709+1 ff
+T room_sprite_data_indoor 5f ffff @83709+1 ff
 T room_sprite_data_indoor 60 @8363b+4
 T room_sprite_data_indoor 61 6691 @8363d+2
-T room_sprite_data_indoor 62 @83673+3 ff
+T room_sprite_data_indoor 62 @83673+3 @83673+1
 T room_sprite_data_indoor 63 ffff @83701+2
-T room_sprite_data_indoor 64 ffff56ff
-T room_sprite_data_indoor 65 ff91ff @836fe+1
+T room_sprite_data_indoor 64 ffff @836a1+1 ff
+T room_sprite_data_indoor 65 ff @836fc+1 ff @836fe+1
 T room_sprite_data_indoor 66 @58ae8+4
 T room_sprite_data_indoor 67 ffffff @83706+1
 T room_sprite_data_indoor 68 @8363b+1 91 @8363d+2
@@ -1920,9 +1920,9 @@ T room_sprite_data_indoor 69 @8363b+4
 T room_sprite_data_indoor 6a ffff @83705+2
 T room_sprite_data_indoor 6b @83703+1 ffff @83706+1
 T room_sprite_data_indoor 6c @8363b+4
-T room_sprite_data_indoor 6d ffff9cff
+T room_sprite_data_indoor 6d ffff @83705+1 ff
 T room_sprite_data_indoor 6e ffffff @836fe+1
-T room_sprite_data_indoor 6f ff919bff
+T room_sprite_data_indoor 6f ff @836fc+2 ff
 T room_sprite_data_indoor 70 @8363b+4
 T room_sprite_data_indoor 71 @836fb+2 ff @836fe+1
 T room_sprite_data_indoor 72 @83703+1 ffffff
@@ -1930,40 +1930,40 @@ T room_sprite_data_indoor 73 @8363b+3 60
 T room_sprite_data_indoor 74 @836fb+1 ffff @836fe+1
 T room_sprite_data_indoor 75 @836fb+1 ffff @836fe+1
 T room_sprite_data_indoor 76 @8363b+3 60
-T room_sprite_data_indoor 77 ffff9bff
-T room_sprite_data_indoor 78 ff919bff
+T room_sprite_data_indoor 77 ffff @836fd+1 ff
+T room_sprite_data_indoor 78 ff @836fc+2 ff
 T room_sprite_data_indoor 79 ffffff @836fe+1
 T room_sprite_data_indoor 7a @58ae8+4
 T room_sprite_data_indoor 7b ffffff @836fe+1
 T room_sprite_data_indoor 7c @58ae8+4
-T room_sprite_data_indoor 7d ff65ffff
+T room_sprite_data_indoor 7d ff @83708+1 ffff
 T room_sprite_data_indoor 7e @8363b+4
 T room_sprite_data_indoor 7f @58ae8+4
 T room_sprite_data_indoor 80 ffff @836b5+2
 T room_sprite_data_indoor 81 @836b3+1 ffffff
-T room_sprite_data_indoor 82 @83677+3 ff
+T room_sprite_data_indoor 82 @83677+3 @83677+1
 T room_sprite_data_indoor 83 @836b3+1 ffffff
 T room_sprite_data_indoor 84 ffff @836b5+2
 T room_sprite_data_indoor 85 @836af+4
 T room_sprite_data_indoor 86 @8363b+4
 T room_sprite_data_indoor 87 @8363b+1 91 @8363d+2
 T room_sprite_data_indoor 88 ffff @836cd+2
-T room_sprite_data_indoor 89 ffff9cff
-T room_sprite_data_indoor 8a ff91ff @836ce+1
+T room_sprite_data_indoor 89 ffff @836cd+1 ff
+T room_sprite_data_indoor 8a ff @836cc+1 ff @836ce+1
 T room_sprite_data_indoor 8b @8363b+1 91 @8363d+2
 T room_sprite_data_indoor 8c @58ae8+4
 T room_sprite_data_indoor 8d ffffff @836ce+1
 T room_sprite_data_indoor 8e ffff @836cd+2
-T room_sprite_data_indoor 8f ff919cff
+T room_sprite_data_indoor 8f ff @836cc+2 ff
 T room_sprite_data_indoor 90 ff @836cc+3
 T room_sprite_data_indoor 91 @8363b+1 91 @8363d+2
 T room_sprite_data_indoor 92 ffff @836b5+2
-T room_sprite_data_indoor 93 ffffa8ff
-T room_sprite_data_indoor 94 ff91ffff
+T room_sprite_data_indoor 93 ffff @836b9+1 ff
+T room_sprite_data_indoor 94 ff @836b8+1 ffff
 T room_sprite_data_indoor 95 ffff @836b5+2
 T room_sprite_data_indoor 96 @58ae8+4
 T room_sprite_data_indoor 97 ffff @8364d+2
-T room_sprite_data_indoor 98 ff91ffff
+T room_sprite_data_indoor 98 ff @8364c+1 ffff
 T room_sprite_data_indoor 99 @8363b+4
 T room_sprite_data_indoor 9a 9091 @8363d+2
 T room_sprite_data_indoor 9b ff @8364c+3
@@ -1973,117 +1973,117 @@ T room_sprite_data_indoor 9e ff @8364c+3
 T room_sprite_data_indoor 9f @8364b+1 ff @8364d+2
 T room_sprite_data_indoor a0 ff @8364c+3
 T room_sprite_data_indoor a1 @58ae8+4
-T room_sprite_data_indoor a2 @83707+1 ff5dff
-T room_sprite_data_indoor a3 ffff5dff
+T room_sprite_data_indoor a2 @83707+1 ff @83709+1 ff
+T room_sprite_data_indoor a3 ffff @83709+1 ff
 T room_sprite_data_indoor a4 @83707+1 ffffff
 T room_sprite_data_indoor a5 @83707+1 ffffff
-T room_sprite_data_indoor a6 ffff5dff
-T room_sprite_data_indoor a7 ffff5dff
-T room_sprite_data_indoor a8 ff65ffff
-T room_sprite_data_indoor a9 ff65ffff
-T room_sprite_data_indoor aa ffd9ffff
+T room_sprite_data_indoor a6 ffff @83709+1 ff
+T room_sprite_data_indoor a7 ffff @83709+1 ff
+T room_sprite_data_indoor a8 ff @83708+1 ffff
+T room_sprite_data_indoor a9 ff @83708+1 ffff
+T room_sprite_data_indoor aa ff @837cc+1 ffff
 T room_sprite_data_indoor ab ffffff @837ce+1
-T room_sprite_data_indoor ac ff @8383c+3
+T room_sprite_data_indoor ac @8383d+1 @8383c+3
 T room_sprite_data_indoor ad @8363b+4
 T room_sprite_data_indoor ae @8363b+4
 T room_sprite_data_indoor af @8363b+4
 T room_sprite_data_indoor b0 ff @836dc+3
 T room_sprite_data_indoor b1 ff @836dc+3
 T room_sprite_data_indoor b2 @836db+2 ffff
-T room_sprite_data_indoor b3 ff91ff @836de+1
-T room_sprite_data_indoor b4 ff9195ff
-T room_sprite_data_indoor b5 @83677+3 ff
-T room_sprite_data_indoor b6 ff91ffff
+T room_sprite_data_indoor b3 ff @836dc+1 ff @836de+1
+T room_sprite_data_indoor b4 ff @837c0+2 ff
+T room_sprite_data_indoor b5 @83677+3 @83677+1
+T room_sprite_data_indoor b6 ff @837c0+1 ffff
 T room_sprite_data_indoor b7 @8363b+1 91 @8363d+2
 T room_sprite_data_indoor b8 @8363b+4
 T room_sprite_data_indoor b9 @58ae8+4
-T room_sprite_data_indoor ba ffff5eff
+T room_sprite_data_indoor ba ffff @836dd+1 ff
 T room_sprite_data_indoor bb a691 @8363d+2
 T room_sprite_data_indoor bc 66 @836d0+3
-T room_sprite_data_indoor bd @836d3+1 ffff @836d6+1
+T room_sprite_data_indoor bd @836d3+1 @836d6+1 @836d6+1 @836d6+1
 T room_sprite_data_indoor be ffffff @837c2+1
 T room_sprite_data_indoor bf ffffff @836e2+1
-T room_sprite_data_indoor c0 ff9195ff
+T room_sprite_data_indoor c0 ff @836d8+2 ff
 T room_sprite_data_indoor c1 @8363b+4
 T room_sprite_data_indoor c2 @836db+1 ffffff
 T room_sprite_data_indoor c3 @837bf+1 ffffff
 T room_sprite_data_indoor c4 @8363b+1 91 @8363d+2
-T room_sprite_data_indoor c5 ffff @836d5+2
+T room_sprite_data_indoor c5 @836d6+1 @836d6+1 @836d5+2
 T room_sprite_data_indoor c6 @8363b+4
-T room_sprite_data_indoor c7 ffffaaff
+T room_sprite_data_indoor c7 ffff @836e1+1 ff
 T room_sprite_data_indoor c8 @836e3+3 ff
 T room_sprite_data_indoor c9 a6 @8363c+3
 T room_sprite_data_indoor ca 7b @8363c+3
 T room_sprite_data_indoor cb ffff @837c5+2
 T room_sprite_data_indoor cc @8363b+4
-T room_sprite_data_indoor cd ff91ff @837c2+1
+T room_sprite_data_indoor cd ff @837c0+1 ff @837c2+1
 T room_sprite_data_indoor ce a6 @8363c+3
 T room_sprite_data_indoor cf @836d7+2 ff @836da+1
 T room_sprite_data_indoor d0 @837bf+1 ffffff
-T room_sprite_data_indoor d1 ffff95ff
+T room_sprite_data_indoor d1 ffff @837c1+1 ff
 T room_sprite_data_indoor d2 ffff @836d9+2
-T room_sprite_data_indoor d3 ffff95ff
+T room_sprite_data_indoor d3 ffff @836d9+1 ff
 T room_sprite_data_indoor d4 @58ae8+4
 T room_sprite_data_indoor d5 @836d7+2 ffff
 T room_sprite_data_indoor d6 a6 @8363c+3
-T room_sprite_data_indoor d7 ff91ff @837c2+1
-T room_sprite_data_indoor d8 @837c7+1 ffdaff
-T room_sprite_data_indoor d9 @837c7+1 ffdaff
+T room_sprite_data_indoor d7 ff @837c0+1 ff @837c2+1
+T room_sprite_data_indoor d8 @837c7+1 ff @837c9+1 ff
+T room_sprite_data_indoor d9 @837c7+1 ff @837c9+1 ff
 T room_sprite_data_indoor da @58ae8+4
 T room_sprite_data_indoor db @83707+1 91ffff
-T room_sprite_data_indoor dc ff65ffff
-T room_sprite_data_indoor dd ff65ffff
+T room_sprite_data_indoor dc ff @83708+1 ffff
+T room_sprite_data_indoor dd ff @83708+1 ffff
 T room_sprite_data_indoor de @8363b+4
 T room_sprite_data_indoor df @8363b+4
-T room_sprite_data_indoor e0 ff @8374c+3
-T room_sprite_data_indoor e1 ff @8374c+3
-T room_sprite_data_indoor e2 ff @8374c+3
+T room_sprite_data_indoor e0 @8374c+1 @8374c+3
+T room_sprite_data_indoor e1 @8374c+1 @8374c+3
+T room_sprite_data_indoor e2 @8374c+1 @8374c+3
 T room_sprite_data_indoor e3 @8363b+4
 T room_sprite_data_indoor e4 @83763+4
-T room_sprite_data_indoor e5 @837d7+2 ffff
-T room_sprite_data_indoor e6 @837d7+2 ffff
+T room_sprite_data_indoor e5 @837d7+2 @837d7+1 @837d7+1
+T room_sprite_data_indoor e6 @837d7+2 @837d7+1 @837d7+1
 T room_sprite_data_indoor e7 @8363b+4
-T room_sprite_data_indoor e8 ffffff @8383a+1
+T room_sprite_data_indoor e8 @83838+1 @83838+1 @83838+1 @8383a+1
 T room_sprite_data_indoor e9 @8363b+4
 T room_sprite_data_indoor ea @8363b+4
 T room_sprite_data_indoor eb @58ae8+4
 T room_sprite_data_indoor ec @83707+1 ffffff
 T room_sprite_data_indoor ed @8363b+4
-T room_sprite_data_indoor ee ff @837f4+3
+T room_sprite_data_indoor ee @837f4+1 @837f4+3
 T room_sprite_data_indoor ef @58ae8+4
-T room_sprite_data_indoor f0 @837d7+1 ffffff
-T room_sprite_data_indoor f1 @837d7+2 ffff
+T room_sprite_data_indoor f0 @837d7+1 @837d7+1 @837d7+1 @837d7+1
+T room_sprite_data_indoor f1 @837d7+2 @837d7+1 @837d7+1
 T room_sprite_data_indoor f2 @8363b+4
-T room_sprite_data_indoor f3 ff @8383c+3
-T room_sprite_data_indoor f4 ffffff @83766+1
-T room_sprite_data_indoor f5 ff @83834+3
-T room_sprite_data_indoor f6 @837d7+2 ffff
+T room_sprite_data_indoor f3 @8383d+1 @8383c+3
+T room_sprite_data_indoor f4 @83764+1 @83764+1 @83764+1 @83766+1
+T room_sprite_data_indoor f5 @83834+1 @83834+3
+T room_sprite_data_indoor f6 @837d7+2 @837d7+1 @837d7+1
 T room_sprite_data_indoor f7 @8363b+4
-T room_sprite_data_indoor f8 ff @83838+3
-T room_sprite_data_indoor f9 ffffff @8383a+1
-T room_sprite_data_indoor fa @8372f+2 ffff
-T room_sprite_data_indoor fb ff @8383c+3
+T room_sprite_data_indoor f8 @83838+1 @83838+3
+T room_sprite_data_indoor f9 @83838+1 @83838+1 @83838+1 @8383a+1
+T room_sprite_data_indoor fa @8372f+2 @8372f+1 @8372f+1
+T room_sprite_data_indoor fb @8383d+1 @8383c+3
 T room_sprite_data_indoor fc @58ae8+4
 T room_sprite_data_indoor fd @8363b+4
 T room_sprite_data_indoor fe @58ae8+4
 T room_sprite_data_indoor ff @836a3+4
 T room_sprite_data_indoor 100 @8363b+4
-T room_sprite_data_indoor 101 5fff55 @8363e+1
+T room_sprite_data_indoor 101 5f @8363b+1 55 @8363e+1
 T room_sprite_data_indoor 102 68ffff @8373a+1
 T room_sprite_data_indoor 103 68ffff @836ee+1
 T room_sprite_data_indoor 104 ff @836ec+3
 T room_sprite_data_indoor 105 @58ae8+4
-T room_sprite_data_indoor 106 @8370b+1 ffff @8370e+1
+T room_sprite_data_indoor 106 @8370b+1 @8370b+1 @8370b+1 @8370e+1
 T room_sprite_data_indoor 107 @8371f+1 ffff @83722+1
 T room_sprite_data_indoor 108 @8363b+1 91 @8363d+2
-T room_sprite_data_indoor 109 @837b7+1 ffffff
+T room_sprite_data_indoor 109 @837b7+1 @837b7+1 @837b7+1 @837b7+1
 T room_sprite_data_indoor 10a @837bb+2 ff @837be+1
-T room_sprite_data_indoor 10b ffff @83735+2
+T room_sprite_data_indoor 10b @83735+2 @83735+2
 T room_sprite_data_indoor 10c @8371f+2 ff @83722+1
-T room_sprite_data_indoor 10d ffff95ff
+T room_sprite_data_indoor 10d ffff @836e9+1 ff
 T room_sprite_data_indoor 10e @58ae8+4
 T room_sprite_data_indoor 10f @8363b+1 91 @8363d+2
-T room_sprite_data_indoor 110 ff91ff @83722+1
+T room_sprite_data_indoor 110 ff @83720+1 ff @83722+1
 T room_sprite_data_indoor 111 @836ef+1 ffff @836f2+1
 T room_sprite_data_indoor 112 @836ef+3 ff
 T room_sprite_data_indoor 113 @836ef+2 ffff
@@ -2094,81 +2094,81 @@ T room_sprite_data_indoor 117 @836f3+2 ffff
 T room_sprite_data_indoor 118 @836ef+1 ffffff
 T room_sprite_data_indoor 119 @836ef+1 ffffff
 T room_sprite_data_indoor 11a @836ef+2 ffff
-T room_sprite_data_indoor 11b @836f3+1 ff54ff
-T room_sprite_data_indoor 11c 6691ff59
+T room_sprite_data_indoor 11b @836f3+1 ff @836f5+1 ff
+T room_sprite_data_indoor 11c 6691 @8363b+1 59
 T room_sprite_data_indoor 11d @836ef+2 ffff
 T room_sprite_data_indoor 11e @836ef+2 ffff
-T room_sprite_data_indoor 11f 6891ff99
+T room_sprite_data_indoor 11f 6891 @8363b+1 99
 T room_sprite_data_indoor 120 ffff @83715+2
-T room_sprite_data_indoor 121 5f91ff99
+T room_sprite_data_indoor 121 5f91 @8363b+1 99
 T room_sprite_data_indoor 122 @58ae8+4
-T room_sprite_data_indoor 123 @83677+2 ffff
-T room_sprite_data_indoor 124 ff91ff @8371a+1
+T room_sprite_data_indoor 123 @83677+2 @83677+2
+T room_sprite_data_indoor 124 @8371a+1 @83718+1 @8371a+1 @8371a+1
 T room_sprite_data_indoor 125 ff @83710+3
 T room_sprite_data_indoor 126 @58ae8+4
 T room_sprite_data_indoor 127 @8363b+4
-T room_sprite_data_indoor 128 ffff @83719+2
+T room_sprite_data_indoor 128 @8371a+1 @8371a+1 @83719+2
 T room_sprite_data_indoor 129 5f91 @8363d+2
 T room_sprite_data_indoor 12a 68ff @8371d+2
 T room_sprite_data_indoor 12b @8370f+1 ffffff
-T room_sprite_data_indoor 12c @83677+3 ff
+T room_sprite_data_indoor 12c @83677+3 @83677+1
 T room_sprite_data_indoor 12d @8370f+1 ffffff
 T room_sprite_data_indoor 12e @58ae8+4
 T room_sprite_data_indoor 12f @58ae8+4
-T room_sprite_data_indoor 130 @83677+3 ff
+T room_sprite_data_indoor 130 @83677+3 @83677+1
 T room_sprite_data_indoor 131 @58ae8+4
-T room_sprite_data_indoor 132 @83793+1 ffff @83796+1
+T room_sprite_data_indoor 132 @83793+1 @83796+1 @83796+1 @83796+1
 T room_sprite_data_indoor 133 @8363b+4
 T room_sprite_data_indoor 134 @8377b+4
 T room_sprite_data_indoor 135 @58ae8+4
 T room_sprite_data_indoor 136 @8363b+4
-T room_sprite_data_indoor 137 ffffff @83782+1
-T room_sprite_data_indoor 138 ffff @83795+2
-T room_sprite_data_indoor 139 ffff @8379d+2
-T room_sprite_data_indoor 13a @837a7+1 ff7aff
+T room_sprite_data_indoor 137 @83782+1 @83782+1 @83782+1 @83782+1
+T room_sprite_data_indoor 138 @83796+1 @83796+1 @83795+2
+T room_sprite_data_indoor 139 @8379d+2 @8379d+2
+T room_sprite_data_indoor 13a @837a7+1 ff @837a9+1 ff
 T room_sprite_data_indoor 13b @58ae8+4
 T room_sprite_data_indoor 13c @8363b+4
 T room_sprite_data_indoor 13d ffffff @8378e+1
 T room_sprite_data_indoor 13e 77 @8363c+3
-T room_sprite_data_indoor 13f ffff @83781+2
+T room_sprite_data_indoor 13f @83782+1 @83782+1 @83781+2
 T room_sprite_data_indoor 140 ffffff @837a6+1
 T room_sprite_data_indoor 141 @8363b+1 91 @8363d+2
 T room_sprite_data_indoor 142 @8379f+1 ffffff
 T room_sprite_data_indoor 143 7bffffff
 T room_sprite_data_indoor 144 @8363b+1 91 @8363d+2
-T room_sprite_data_indoor 145 ff91ffff
+T room_sprite_data_indoor 145 ff @83798+1 ffff
 T room_sprite_data_indoor 146 @837a3+1 ffffff
 T room_sprite_data_indoor 147 @58ae8+4
 T room_sprite_data_indoor 148 68ffffff
 T room_sprite_data_indoor 149 @8363b+4
-T room_sprite_data_indoor 14a ffff7aff
+T room_sprite_data_indoor 14a ffff @837ad+1 ff
 T room_sprite_data_indoor 14b @83733+4
-T room_sprite_data_indoor 14c ff917aff
+T room_sprite_data_indoor 14c ff @83784+2 ff
 T room_sprite_data_indoor 14d 7b @8363c+3
-T room_sprite_data_indoor 14e ffff54ff
+T room_sprite_data_indoor 14e ffff @83791+1 ff
 T room_sprite_data_indoor 14f @8363b+4
 T room_sprite_data_indoor 150 7bffffff
 T room_sprite_data_indoor 151 @58ae8+4
 T room_sprite_data_indoor 152 @8363b+1 91 @8363d+2
-T room_sprite_data_indoor 153 ff91ff @8378a+1
+T room_sprite_data_indoor 153 ff @83788+1 ff @8378a+1
 T room_sprite_data_indoor 154 ffffff @83786+1
-T room_sprite_data_indoor 155 ff91ffff
-T room_sprite_data_indoor 156 7bffff99
-T room_sprite_data_indoor 157 ffff7aff
+T room_sprite_data_indoor 155 ff @83784+1 ffff
+T room_sprite_data_indoor 156 7b @8363b+2 99
+T room_sprite_data_indoor 157 ffff @837a9+1 ff
 T room_sprite_data_indoor 158 @8363b+1 91 @8363d+2
 T room_sprite_data_indoor 159 @58ae8+4
 T room_sprite_data_indoor 15a 7b @8363c+3
-T room_sprite_data_indoor 15b ffff57ff
+T room_sprite_data_indoor 15b ffff @83789+1 ff
 T room_sprite_data_indoor 15c @83783+1 ffffff
 T room_sprite_data_indoor 15d @58ae8+4
-T room_sprite_data_indoor 15e ffff96ff
+T room_sprite_data_indoor 15e ffff @837a5+1 ff
 T room_sprite_data_indoor 15f @83787+1 ffffff
 T room_sprite_data_indoor 160 @83707+1 ffffff
 T room_sprite_data_indoor 161 @83707+1 ffffff
 T room_sprite_data_indoor 162 @58ae8+4
 T room_sprite_data_indoor 163 @83707+1 ffffff
-T room_sprite_data_indoor 164 ff65ff @8370a+1
-T room_sprite_data_indoor 165 ff65ff @8370a+1
+T room_sprite_data_indoor 164 ff @83708+1 ff @8370a+1
+T room_sprite_data_indoor 165 ff @83708+1 ff @8370a+1
 T room_sprite_data_indoor 166 @83707+1 ffffff
 T room_sprite_data_indoor 167 ffffff @8370a+1
 T room_sprite_data_indoor 168 @83707+2 ffff
@@ -2178,7 +2178,7 @@ T room_sprite_data_indoor 16b ffffff @8370a+1
 T room_sprite_data_indoor 16c @58ae8+4
 T room_sprite_data_indoor 16d @58ae8+4
 T room_sprite_data_indoor 16e @58ae8+4
-T room_sprite_data_indoor 16f @8372f+2 ffff
+T room_sprite_data_indoor 16f @8372f+2 @8372f+1 @8372f+1
 T room_sprite_data_indoor 170 @58ae8+4
 T room_sprite_data_indoor 171 @58ae8+4
 T room_sprite_data_indoor 172 @58ae8+4
@@ -2194,130 +2194,130 @@ T room_sprite_data_indoor 17b @58ae8+4
 T room_sprite_data_indoor 17c @58ae8+4
 T room_sprite_data_indoor 17d @58ae8+4
 T room_sprite_data_indoor 17e @58ae8+4
-T room_sprite_data_indoor 17f @8372f+1 ffff @83732+1
-T room_sprite_data_indoor 180 @837d3+1 ff90ff
-T room_sprite_data_indoor 181 @837d3+1 ffffff
-T room_sprite_data_indoor 182 @837d3+1 ff90ff
+T room_sprite_data_indoor 17f @8372f+1 @8372f+1 @8372f+1 @83732+1
+T room_sprite_data_indoor 180 @837d3+1 @837d3+1 @837d5+1 @837d3+1
+T room_sprite_data_indoor 181 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 182 @837d3+1 @837d3+1 @837d5+1 @837d3+1
 T room_sprite_data_indoor 183 @58ae8+4
 T room_sprite_data_indoor 184 @58ae8+4
-T room_sprite_data_indoor 185 @837d3+1 ffffff
-T room_sprite_data_indoor 186 @837d3+1 ff90ff
-T room_sprite_data_indoor 187 @837d3+1 ffffff
-T room_sprite_data_indoor 188 @837cf+1 ffffff
-T room_sprite_data_indoor 189 @837cf+1 ff90ff
-T room_sprite_data_indoor 18a @837cf+1 ffffff
-T room_sprite_data_indoor 18b @837cf+1 ff90ff
-T room_sprite_data_indoor 18c @837d3+1 ffffff
-T room_sprite_data_indoor 18d @837d3+1 ffffff
-T room_sprite_data_indoor 18e @837cf+1 ff @837d1+2
-T room_sprite_data_indoor 18f @8372f+1 ffffff
-T room_sprite_data_indoor 190 @837cf+1 ffffff
-T room_sprite_data_indoor 191 @837cf+1 ff @837d1+2
-T room_sprite_data_indoor 192 @837cf+1 ffff @837d2+1
-T room_sprite_data_indoor 193 @837cf+1 ffff @837d2+1
-T room_sprite_data_indoor 194 @837d3+1 ffffff
-T room_sprite_data_indoor 195 @837d3+1 ffffff
-T room_sprite_data_indoor 196 @837d3+1 ffffff
-T room_sprite_data_indoor 197 ffffff @83672+1
-T room_sprite_data_indoor 198 ffff @83671+2
-T room_sprite_data_indoor 199 ff4cffff
-T room_sprite_data_indoor 19a @837cf+1 ff90ff
-T room_sprite_data_indoor 19b ff4cffff
-T room_sprite_data_indoor 19c ff4cffff
-T room_sprite_data_indoor 19d ff4cffff
+T room_sprite_data_indoor 185 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 186 @837d3+1 @837d3+1 @837d5+1 @837d3+1
+T room_sprite_data_indoor 187 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 188 @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 189 @837cf+1 @837cf+1 @837d1+1 @837cf+1
+T room_sprite_data_indoor 18a @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 18b @837cf+1 @837cf+1 @837d1+1 @837cf+1
+T room_sprite_data_indoor 18c @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 18d @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 18e @837cf+1 @837cf+1 @837d1+2
+T room_sprite_data_indoor 18f @8372f+1 @8372f+1 @8372f+1 @8372f+1
+T room_sprite_data_indoor 190 @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 191 @837cf+1 @837cf+1 @837d1+2
+T room_sprite_data_indoor 192 @837cf+1 @837cf+1 @837cf+1 @837d2+1
+T room_sprite_data_indoor 193 @837cf+1 @837cf+1 @837cf+1 @837d2+1
+T room_sprite_data_indoor 194 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 195 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 196 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 197 @83672+1 @83672+1 @83672+1 @83672+1
+T room_sprite_data_indoor 198 @83672+1 @83672+1 @83671+2
+T room_sprite_data_indoor 199 ff @83660+1 ffff
+T room_sprite_data_indoor 19a @837cf+1 @837cf+1 @837d1+1 @837cf+1
+T room_sprite_data_indoor 19b ff @83660+1 ffff
+T room_sprite_data_indoor 19c ff @83660+1 ffff
+T room_sprite_data_indoor 19d ff @83660+1 ffff
 T room_sprite_data_indoor 19e @8363b+4
 T room_sprite_data_indoor 19f ffff @83761+2
 T room_sprite_data_indoor 1a0 ffff @8367d+2
-T room_sprite_data_indoor 1a1 ff @83680+3
-T room_sprite_data_indoor 1a2 ff @836bc+3
+T room_sprite_data_indoor 1a1 @83680+1 @83680+3
+T room_sprite_data_indoor 1a2 @836be+1 @836bc+3
 T room_sprite_data_indoor 1a3 @836f7+4
 T room_sprite_data_indoor 1a4 @58ae8+4
 T room_sprite_data_indoor 1a5 @58ae8+4
-T room_sprite_data_indoor 1a6 ff @83664+3
-T room_sprite_data_indoor 1a7 ff @83668+3
-T room_sprite_data_indoor 1a8 ff @8366c+3
-T room_sprite_data_indoor 1a9 ff4cff @83662+1
-T room_sprite_data_indoor 1aa ff @83768+3
-T room_sprite_data_indoor 1ab @837cf+1 ffffff
-T room_sprite_data_indoor 1ac @837cf+1 ffffff
+T room_sprite_data_indoor 1a6 @83664+1 @83664+3
+T room_sprite_data_indoor 1a7 @83668+1 @83668+3
+T room_sprite_data_indoor 1a8 @8366c+1 @8366c+3
+T room_sprite_data_indoor 1a9 ff @83660+1 ff @83662+1
+T room_sprite_data_indoor 1aa @83769+1 @83768+3
+T room_sprite_data_indoor 1ab @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1ac @837cf+1 @837cf+1 @837cf+1 @837cf+1
 T room_sprite_data_indoor 1ad @8376b+4
-T room_sprite_data_indoor 1ae @837cf+1 ffffff
-T room_sprite_data_indoor 1af @837cf+1 ffffff
-T room_sprite_data_indoor 1b0 ff8784ff
+T room_sprite_data_indoor 1ae @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1af @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1b0 ff @8367c+2 ff
 T room_sprite_data_indoor 1b1 @83683+2 ffff
-T room_sprite_data_indoor 1b2 ffffff @8366a+1
-T room_sprite_data_indoor 1b3 @837cf+1 ffffff
-T room_sprite_data_indoor 1b4 ff4cffff
+T room_sprite_data_indoor 1b2 @83668+1 @83668+1 @83668+1 @8366a+1
+T room_sprite_data_indoor 1b3 @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1b4 ff @83660+1 ffff
 T room_sprite_data_indoor 1b5 @58ae8+4
-T room_sprite_data_indoor 1b6 @837cf+1 ff90ff
-T room_sprite_data_indoor 1b7 @837cf+1 ffffff
-T room_sprite_data_indoor 1b8 @837cf+1 ff90ff
-T room_sprite_data_indoor 1b9 @837cf+1 ff90ff
-T room_sprite_data_indoor 1ba @837cf+1 ffffff
-T room_sprite_data_indoor 1bb @837cf+1 ffffff
-T room_sprite_data_indoor 1bc @837cf+1 ffffff
-T room_sprite_data_indoor 1bd @837cf+1 ff90ff
-T room_sprite_data_indoor 1be ffff @83671+2
-T room_sprite_data_indoor 1bf ffff @83671+2
+T room_sprite_data_indoor 1b6 @837cf+1 @837cf+1 @837d1+1 @837cf+1
+T room_sprite_data_indoor 1b7 @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1b8 @837cf+1 @837cf+1 @837d1+1 @837cf+1
+T room_sprite_data_indoor 1b9 @837cf+1 @837cf+1 @837d1+1 @837cf+1
+T room_sprite_data_indoor 1ba @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1bb @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1bc @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1bd @837cf+1 @837cf+1 @837d1+1 @837cf+1
+T room_sprite_data_indoor 1be @83672+1 @83672+1 @83671+2
+T room_sprite_data_indoor 1bf @83672+1 @83672+1 @83671+2
 T room_sprite_data_indoor 1c0 @8363b+4
 T room_sprite_data_indoor 1c1 @8363b+4
-T room_sprite_data_indoor 1c2 ffff92ff
-T room_sprite_data_indoor 1c3 @836bf+1 ff92ff
+T room_sprite_data_indoor 1c2 ffff @836c1+1 ff
+T room_sprite_data_indoor 1c3 @836bf+1 ff @836c1+1 ff
 T room_sprite_data_indoor 1c4 @58ae8+4
-T room_sprite_data_indoor 1c5 ff9192ff
+T room_sprite_data_indoor 1c5 ff @836c0+2 ff
 T room_sprite_data_indoor 1c6 ffffff @836c2+1
-T room_sprite_data_indoor 1c7 ff @836c4+3
-T room_sprite_data_indoor 1c8 @837d3+1 ffffff
-T room_sprite_data_indoor 1c9 @837cf+1 ffffff
-T room_sprite_data_indoor 1ca @837cf+1 ffff @837d2+1
-T room_sprite_data_indoor 1cb ff4cffff
-T room_sprite_data_indoor 1cc ff4cffff
-T room_sprite_data_indoor 1cd @837d3+1 ffffff
-T room_sprite_data_indoor 1ce ffff @83671+2
-T room_sprite_data_indoor 1cf ffff @83671+2
-T room_sprite_data_indoor 1d0 @837d7+2 ffff
-T room_sprite_data_indoor 1d1 @837d7+2 ffff
-T room_sprite_data_indoor 1d2 ff9192ff
+T room_sprite_data_indoor 1c7 @836c6+1 @836c4+3
+T room_sprite_data_indoor 1c8 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 1c9 @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1ca @837cf+1 @837cf+1 @837cf+1 @837d2+1
+T room_sprite_data_indoor 1cb ff @83660+1 ffff
+T room_sprite_data_indoor 1cc ff @83660+1 ffff
+T room_sprite_data_indoor 1cd @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 1ce @83672+1 @83672+1 @83671+2
+T room_sprite_data_indoor 1cf @83672+1 @83672+1 @83671+2
+T room_sprite_data_indoor 1d0 @837d7+2 @837d7+1 @837d7+1
+T room_sprite_data_indoor 1d1 @837d7+2 @837d7+1 @837d7+1
+T room_sprite_data_indoor 1d2 ff @836c0+2 ff
 T room_sprite_data_indoor 1d3 @58ae8+4
 T room_sprite_data_indoor 1d4 @58ae8+4
 T room_sprite_data_indoor 1d5 @58ae8+4
 T room_sprite_data_indoor 1d6 @58ae8+4
-T room_sprite_data_indoor 1d7 ff @8373c+3
-T room_sprite_data_indoor 1d8 @837d3+1 ffffff
-T room_sprite_data_indoor 1d9 ff @83740+3
+T room_sprite_data_indoor 1d7 @8373c+1 @8373c+3
+T room_sprite_data_indoor 1d8 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 1d9 @83740+1 @83740+3
 T room_sprite_data_indoor 1da @8382f+4
-T room_sprite_data_indoor 1db @8376f+1 ff @83771+2
+T room_sprite_data_indoor 1db @8376f+1 @8376f+1 @83771+2
 T room_sprite_data_indoor 1dc @8376f+4
 T room_sprite_data_indoor 1dd ff @83754+3
-T room_sprite_data_indoor 1de @837d3+1 ff90ff
-T room_sprite_data_indoor 1df @837d3+1 ff90ff
-T room_sprite_data_indoor 1e0 ff @83724+3
-T room_sprite_data_indoor 1e1 ff80ff @83776+1
-T room_sprite_data_indoor 1e2 ffffff @83726+1
-T room_sprite_data_indoor 1e3 ff4cffff
-T room_sprite_data_indoor 1e4 @837d3+2 ffff
-T room_sprite_data_indoor 1e5 @837d3+1 ffffff
-T room_sprite_data_indoor 1e6 @837cf+1 ffffff
-T room_sprite_data_indoor 1e7 @837cf+1 ff90ff
+T room_sprite_data_indoor 1de @837d3+1 @837d3+1 @837d5+1 @837d3+1
+T room_sprite_data_indoor 1df @837d3+1 @837d3+1 @837d5+1 @837d3+1
+T room_sprite_data_indoor 1e0 @83724+1 @83724+3
+T room_sprite_data_indoor 1e1 ff @83774+1 ff @83776+1
+T room_sprite_data_indoor 1e2 @83724+1 @83724+1 @83724+1 @83726+1
+T room_sprite_data_indoor 1e3 ff @83660+1 ffff
+T room_sprite_data_indoor 1e4 @837d3+2 @837d3+1 @837d3+1
+T room_sprite_data_indoor 1e5 @837d3+1 @837d3+1 @837d3+1 @837d3+1
+T room_sprite_data_indoor 1e6 @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1e7 @837cf+1 @837cf+1 @837d1+1 @837cf+1
 T room_sprite_data_indoor 1e8 @83727+4
 T room_sprite_data_indoor 1e9 ff @83758+3
-T room_sprite_data_indoor 1ea @837cf+1 ff90ff
-T room_sprite_data_indoor 1eb @837cf+1 ffffff
-T room_sprite_data_indoor 1ec @837cf+1 ffffff
-T room_sprite_data_indoor 1ed @837cf+1 ffffff
-T room_sprite_data_indoor 1ee @837cf+1 ff @837d1+2
-T room_sprite_data_indoor 1ef @837cf+1 ffff @837d2+1
-T room_sprite_data_indoor 1f0 ff @83724+3
-T room_sprite_data_indoor 1f1 @837d7+2 ffff
-T room_sprite_data_indoor 1f2 @837d7+1 ffffff
-T room_sprite_data_indoor 1f3 @837d7+1 ffffff
-T room_sprite_data_indoor 1f4 @837d3+2 ffff
+T room_sprite_data_indoor 1ea @837cf+1 @837cf+1 @837d1+1 @837cf+1
+T room_sprite_data_indoor 1eb @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1ec @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1ed @837cf+1 @837cf+1 @837cf+1 @837cf+1
+T room_sprite_data_indoor 1ee @837cf+1 @837cf+1 @837d1+2
+T room_sprite_data_indoor 1ef @837cf+1 @837cf+1 @837cf+1 @837d2+1
+T room_sprite_data_indoor 1f0 @83724+1 @83724+3
+T room_sprite_data_indoor 1f1 @837d7+2 @837d7+1 @837d7+1
+T room_sprite_data_indoor 1f2 @837d7+1 @837d7+1 @837d7+1 @837d7+1
+T room_sprite_data_indoor 1f3 @837d7+1 @837d7+1 @837d7+1 @837d7+1
+T room_sprite_data_indoor 1f4 @837d3+2 @837d3+1 @837d3+1
 T room_sprite_data_indoor 1f5 @8382b+4
-T room_sprite_data_indoor 1f6 @837cf+3 ff
-T room_sprite_data_indoor 1f7 @837cf+1 ff90ff
+T room_sprite_data_indoor 1f6 @837cf+3 @837cf+1
+T room_sprite_data_indoor 1f7 @837cf+1 @837cf+1 @837d1+1 @837cf+1
 T room_sprite_data_indoor 1f8 @58ae8+4
-T room_sprite_data_indoor 1f9 @837d7+3 ff
-T room_sprite_data_indoor 1fa @837d7+1 ff @837d9+2
+T room_sprite_data_indoor 1f9 @837d7+3 @837d7+1
+T room_sprite_data_indoor 1fa @837d7+1 @837d7+1 @837d9+2
 T room_sprite_data_indoor 1fb ff @83748+3
 T room_sprite_data_indoor 1fc @58ae8+4
 T room_sprite_data_indoor 1fd @8374f+4
@@ -2326,18 +2326,18 @@ T room_sprite_data_indoor 200 11ff10ff
 T room_sprite_data_indoor 201 ff4dffff
 T room_sprite_data_indoor 202 @58ae8+4
 T room_sprite_data_indoor 203 0b0cff0d
-T room_sprite_data_indoor 204 ff91ffff
+T room_sprite_data_indoor 204 ff @8364c+1 ffff
 T room_sprite_data_indoor 205 @58ae8+4
 T room_sprite_data_indoor 206 @58ae8+4
 T room_sprite_data_indoor 207 0405ffff
-T room_sprite_data_indoor 208 ff91ff07
+T room_sprite_data_indoor 208 ff @8364c+1 ff07
 T room_sprite_data_indoor 209 ffff06ff
-T room_sprite_data_indoor 20a ff91ff07
+T room_sprite_data_indoor 20a ff @8364c+1 ff07
 T room_sprite_data_indoor 20b ffffff07
 T room_sprite_data_indoor 20c 08090aff
 T room_sprite_data_indoor 20d ffffff07
 T room_sprite_data_indoor 20e ffff06ff
-T room_sprite_data_indoor 20f ff91ff07
+T room_sprite_data_indoor 20f ff @8364c+1 ff07
 T room_sprite_data_indoor 210 ffffff07
 T room_sprite_data_indoor 211 0405ffff
 T room_sprite_data_indoor 212 0e1affff
@@ -2353,24 +2353,24 @@ B 31ed 9943
 B 31fd 0042
 B 320d d942
 B 321d 3a43
-B 20dd4 @216cc+c0 @22748+81 @22336+2 138f9f8f9f8f9f8f9f8f9fd0d2d4d6c4c6ccceb4b6982013 @22351+9 7fd1d3d5d7c5c7cdcfb5b7984013 @2235d+9 a1a0a1a0a1a0a1a0a1a0a1986013 @22369+9 a2a2a2a2a2a2a2a2a2a2a29880138f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f98a0009f98b3008f @223a2+4 @22434+4 @223ea+4 98e0009f98f3 @223a4+7 @223ef+4 20009f @22438+5 33 @223a8+7 @223f3+4 60009f9973 @223ac+7 @2243d+4 @223f7+4 a0009f99b3 @223b0+6 @22440+4 @223fa+4 99e0009f99f3 @223b4+4 108f76797470020204727000727800750304 @223fe+5 20139f797701747205717470747072720001028f9f @2244b+2 9800138f9f8f9f8f9f8f9f8f9fd0d2d4d6c4c6ccceb4b6982013 @22351+9 7fd1d3d5d7c5c7cdcfb5b7984013 @2235d+9 a1a0a1a0a1a0a1a0a1a0a1986013 @22369+9 a2a2a2a2a2a2a2a2a2a2a29880138f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f8f9f98a0009f98b3008f @223a2+4 @22434+4 @223ea+4 98e0009f98f3 @223a4+7 @223ef+4 20009f @22438+5 33 @223a8+7 @223f3+4 60009f9973 @223ac+7 @2243d+4 @223f7+4 a0009f99b3 @223b0+6 @22440+4 @223fa+4 99e0009f @22328+e 99f3 @223b4+4 108f76797470020204727000727800750304 @223fe+5 20139f797701747205717470747072720001028f9f @2244b+215 @222e9+3f @227c9+12d @2298f+de @228f6+99 @22660+e8 @22a6d+1 @22a86+14 0f9596977f7f7f7f7f7f7f7f7f7f7f7f9d98c20f9e7f7f7f7f7f7f7f7f7f7f7f7f7f7f9f98e20f9c7f7f @22ad8+a 7f7f9d99020f9e7f7f7f7f7f7f7f7f7f7f7f7f7f7f9f99220f9c7f7f @22ae5+8 7f7f7f7f9d99420f9e7f7f7f7f7f7f7f7f7f7f7f7f7f7f @22aae+4 9c7f7f @22ad8+5 cecfc47f7f7f7f9d99820f9e7f7f7f7f7f7f7f7f7f7f7f7f7f7f9f99a2 @22ab1+12 c2 @22ac4+11 @22aed+14a @22d80+503 @23422+35f @222a8+41 @23283+19f @2178c+b1c @20e9a+832 @23781+19f @20dd4+c6 @22c37+149
-B 24000 df4343449444f5446a45b745fe457546d2461e477647c74711488a48f54847499349e249394a5b4a924ace4a114b5c4bc94b1a4c5f4caa4c064d524dab =1 164e7e4eb5 =1 f4 =1 294f524fa1 =1 d3 =1 05503f507b50b5 =1 f2 =1 30516c =1 a9 =1 df =1 1b5257 =1 90 =1 f3 =1 1a5375 =1 b9 =1 f3 =1 2f5485 =1 b5 =1 f1 =1 4e =1 a5 =1 e2 =1 155658 =1 a3 =1 f5 =1 65 =1 a9 =1 f0 =1 365874 =1 ad =1 fc =1 1d595b =1 81 =1 cf =1 205a45 =1 76 =1 c6 =1 195b6c =1 b9 =1 f5 =1 2c5c68 =1 aa =1 e0 =1 1e5d48 =1 7c =1 c2 =1 0a5e59 =1 9b =1 de =1 2a5fc6 =1 83 =1 bf =1 fd =1 46 =1 91 =1 b8 =1 026136616f =1 be =1 fe =1 3f =1 7a =1 c0 =1 f9 =1 43 =1 96 =1 cd =1 146469 =1 cc =1 fe =1 4a =1 6b =1 af =1 d3 =1 fc6525 =1 6b =1 a3 =1 ec =1 2641614199 =1 ed =1 4c429a =1 c7 =1 fd =1 2a436743 =e6 @24496+75 @247ec+64 @24c0f+61 @2509a+5f @26513+46 @24200+296 @2450b+284 @247a2+49 25e1354afe @24850+3bf @24c70+407 @2507a+b 8a702c @250d8+5 @250d8+5 @250d8+5 @250d8+5 fe @250f9+141a @26559+135
+B 20dd4 @216cc+c0 @22748+81 @22336+2 @223ef+1 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 d0d2d4d6 @22435+1 c6ccceb4b6 @2234e+2 @223ef+1 @22351+9 @22409+1 d1 @223eb+1 d5d7c5c7cdcfb5b7 @2235a+2 @223ef+1 @2235d+9 @22415+3 @22416+2 @22416+2 @22416+2 @2241e+3 @22367+1 @223ef+1 @22369+9 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+2 @22352+1 @223ef+1 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+3 @2239f+1 @2233c+3 @223e7+1 @223a4+2 @223a2+4 @22434+4 @223ea+4 @22336+1 e0 @2233c+3 f3 @223a4+7 @223ef+4 @223bb+3 @22438+5 @22403+1 @223a8+7 @223f3+4 @22367+1 @223ec+3 73 @223ac+7 @2243d+4 @223f7+4 @2239f+1 @223ec+3 @223e7+1 @223b0+6 @22440+4 @223fa+4 @223a6+1 e0 @223ec+3 f3 @223b4+4 10 @22339+1 767974 @22430+1 02020472 @22430+1 @22337+1 7278 @22337+1 75 @2233f+1 04 @223fe+5 @2234f+1 @223ef+1 @2233d+1 7977 @2233b+1 7472 @22343+1 7174 @22430+1 74 @22430+1 7272 @22337+1 @2233b+1 02 @22358+2 @2244b+2 @22336+2 @223ef+1 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 d0d2d4d6 @22435+1 c6ccceb4b6 @2234e+2 @223ef+1 @22351+9 @22409+1 d1 @223eb+1 d5d7c5c7cdcfb5b7 @2235a+2 @223ef+1 @2235d+9 @22415+3 @22416+2 @22416+2 @22416+2 @2241e+3 @22367+1 @223ef+1 @22369+9 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+1 @22411+2 @22352+1 @223ef+1 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+2 @22358+3 @2239f+1 @2233c+3 @223e7+1 @223a4+2 @223a2+4 @22434+4 @223ea+4 @22336+1 e0 @2233c+3 f3 @223a4+7 @223ef+4 @223bb+3 @22438+5 @22403+1 @223a8+7 @223f3+4 @22367+1 @223ec+3 73 @223ac+7 @2243d+4 @223f7+4 @2239f+1 @223ec+3 @223e7+1 @223b0+6 @22440+4 @223fa+4 @22328+1 e0 @2233c+2 @22328+e @22328+1 f3 @223b4+4 10 @22339+1 767974 @22430+1 @22332+1 @22332+1 @2232b+1 72 @22430+1 @2232d+1 7278 @2232d+1 75 @2233f+1 @2232b+1 @223fe+5 @2234f+1 @223ef+1 @2233d+1 7977 @2233b+1 7472 @22343+1 7174 @22430+1 74 @22430+1 7272 @2232d+1 @2233b+1 @22332+1 @22358+2 @2244b+215 @222e9+3f @227c9+12d @2298f+de @228f6+99 @22660+e8 @22a6d+1 @22a86+14 @22a87+1 @22a9b+3 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aa9+1 @22a9e+2 @22a87+1 @22aa1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aaa+1 @22a6d+1 e2 @22a87+1 @22aa2+1 @22a70+1 @22a70+1 @22ad8+a @22a70+1 @22a70+1 @22aa9+1 @22a79+1 @22a9a+1 @22a87+1 @22aa1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aae+2 22 @22a87+1 @22aa2+1 @22a70+1 @22a70+1 @22ae5+8 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aa9+1 @22a79+1 42 @22a87+1 @22aa1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aae+4 @22aa2+1 @22a70+1 @22a70+1 @22ad8+5 cecf @22ae1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aa9+1 @22ac2+3 @22aa1+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22a70+1 @22aae+2 @22a99+1 @22ab1+12 @22a9f+1 @22ac4+11 @22aed+14a @22d80+503 @23422+35f @222a8+41 @23283+19f @2178c+b1c @20e9a+832 @23781+19f @20dd4+c6 @22c37+149
+B 24000 df4343449444f5446a45b745fe457546d2461e477647c74711488a48f54847499349e249394a5b4a924ace4a114b5c4bc94b1a4c5f4caa4c064d524dab =1 164e7e4eb5 =1 f4 =1 294f524fa1 =1 d3 =1 05503f507b50b5 =1 f2 =1 30516c =1 a9 =1 df =1 1b5257 =1 90 =1 f3 =1 1a5375 =1 b9 =1 f3 =1 2f5485 =1 b5 =1 f1 =1 4e =1 a5 =1 e2 =1 155658 =1 a3 =1 f5 =1 65 =1 a9 =1 f0 =1 365874 =1 ad =1 fc =1 1d595b =1 81 =1 cf =1 205a45 =1 76 =1 c6 =1 195b6c =1 b9 =1 f5 =1 2c5c68 =1 aa =1 e0 =1 1e5d48 =1 7c =1 c2 =1 0a5e59 =1 9b =1 de =1 2a5fc6 =1 83 =1 bf =1 fd =1 46 =1 91 =1 b8 =1 026136616f =1 be =1 fe =1 3f =1 7a =1 c0 =1 f9 =1 43 =1 96 =1 cd =1 146469 =1 cc =1 fe =1 4a =1 6b =1 af =1 d3 =1 fc6525 =1 6b =1 a3 =1 ec =1 2641614199 =1 ed =1 4c429a =1 c7 =1 fd =1 2a436743 =e6 @24496+75 @247ec+64 @24c0f+61 @2509a+5f @26513+46 @24200+296 @2450b+284 @247a2+49 @2478d+2 35 @247b8+1 @247eb+1 @24850+3bf @24c70+407 @2507a+b @25077+2 @25073+1 @250d8+5 @250d8+5 @250d8+5 @250d8+5 @25099+1 @250f9+141a @26559+135
 B 2668e =5ce 54686579207361792074686174202020416e676c6572206b6579206973206174556b756b752050726169726965ff @26c92+6f 496620796f752077616e742020202020426f6d627320737461727420202020206c6f6f6b696e6720696e2020202020205261706964732052696465ff @26dee+30 ff @26ebc+43f 5468657920736179207468617420202042616c6c6164206f662074686520202057696e64204669736820697320617420547572746c6520526f636bff42697264206b65792069732061742020436174666973685e73204d6177ff54686579207361792074686174202020466c79696e6720526f6f7374657220206973206174204d61626520202020202056696c6c616765ff496620796f752077616e7420202020204d6167696320506f77646572202020207374617274206c6f6f6b696e6720696e4661636520536872696e65ff556b756b752050726169726965202020686f6c647320536c696d65206b6579ff506f7765722042726163656c65742020697320617420547572746c6520202020526f636bff596f75206d696768742077616e742020746f206c6f6f6b20696e202020202020547572746c6520526f636b20666f72206120736563726574ff596f75206d696768742077616e742020746f206c6f6f6b20696e2020202020204d61727468615e732042617920666f726120736563726574ff596f75206d696768742077616e742020746f206c6f6f6b20696e202020202020416e676c65725e732054756e6e656c20666f72206120736563726574ff53776f7264206973206174204d61626556696c6c616765ff426f77776f77206973206174202020204561676c655e7320546f776572ff496620796f752077616e742020202020426f6d627320737461727420202020206c6f6f6b696e6720696e202020202020416e676c65725e732054756e6e656cff596f75206d696768742077616e742020746f206c6f6f6b20696e202020202020436174666973685e73204d6177202020666f72206120736563726574ff4561676c655e7320546f776572202020686f6c647320426f77ff4d616e626f5e73204d616d626f2069736174204b6f686f6c696e74202020202050726169726965ff54616c2054616c204865696768747320686f6c647320536869656c64ff496620796f752077616e74202020202046726f675e7320536f6e67206f662020536f756c2073746172742020202020206c6f6f6b696e6720696e2054616c202054616c204d6f756e7461696e73ff596f75206d696768742077616e742020746f206c6f6f6b20696e205961726e6144657365727420666f72206120202020736563726574ff4d6167696320526f6420697320617420547572746c6520526f636bff496620796f752077616e742020202020536869656c64207374617274202020206c6f6f6b696e6720696e2020202020204d61727468615e7320426179ff @277bd+528 @27d01+41
-B 28000 42 =1 45 =1 84 =1 c9 =1 f5 =1 2a435c =1 7a =1 cd =1 244461 =1 91 =1 aa =1 e6 =1 194550 =1 70 =1 9b =1 aa =1 f0 =1 1e464e =1 8c =1 ce =1 09473e4777 =1 b4 =1 e0 =1 f0 =1 214857 =1 84 =1 bf =1 14495f =1 a5 =1 d9 =1 024a44 =1 70 =1 9e =1 d4 =1 134b384b83 =1 cd =1 0d4c3a4c45 =1 9c =1 f5 =1 3c4d8b =1 c3 =1 184e4c =1 90 =1 e7 =1 244f59 =1 9d =1 e4 =1 225056 =1 a0 =1 c3 =1 e6 =1 20514e =1 89 =1 da =1 0d5248 =1 96 =1 e6 =1 1c537d =1 be =1 e9 =1 0f543d5477 =1 c7 =1 ea =1 26555f =1 a7 =1 e5 =1 44 =1 89 =1 9c =1 f8 =1 255728575a =1 8d =1 d5 =1 f1 =1 365868 =1 9d =1 c6 =1 195957 =1 9c =1 e6 =1 2a5a65 =1 9c =1 f5 =1 4c =1 95 =1 e2 =1 1f5c8e =1 dd =1 165d61 =1 b5 =1 fe =1 345e7f =1 ba =1 f4 =1 305f64 =1 64 =1 67 =1 85 =1 a9 =1 e2 =1 1d603b604e =1 8b =1 bc =1 f7 =1 1561396164 =1 99 =1 d4 =1 206255 =1 7b =1 d0 =1 ea =1 086345635f =1 b8 =1 dd =1 24645e =1 8f =1 a8 =1 c0 =1 f8 =1 2e655e =1 8f =1 bd =1 046651 =1 8b =1 c5 =1 0967496772 =1 a0 =1 e0 =1 2168645f645f645f71 =1 a6 =1 d6 =1 126956 =1 86 =1 d3 =1 0d6a406a71 =1 c4 =1 f7 =1 3b6b5a =1 7b =1 d7 =1 0d6c2f6c7d =1 9c =1 d6 =1 f1 =1 146d74 =1 9b =1 d5 =1 1c6e54 =1 75 =1 8c =1 c9 =1 0e6f42 =1 65 =1 99 =1 be =1 e9 =1 15707d =1 a5 =1 ee =1 267169 =1 a5 =1 dd =1 15722557255751 =1 aa =1 fd =1 50 =1 82 =1 d2 =1 3d =1 91 =1 f5 =1 277574 =1 be =1 00765e =1 61 =1 ac =1 f1 =1 49 =1 90 =1 be =1 0e7858 =1 92 =1 09 =1 83 =1 c1 =1 fe791e =1 5e766e =1 c3 =1 0d =1 @2b855+42 @28200+f82 @29185+38a cf @29510+7 d0 @29518+130 20 @29649+1 @2964b+205 @29842+ef8 c7 @2a73b+ea @2a82e+162 @2a991+87e @2b215+33e 88401b57a7 @2b55a+ca 0473fe @2b624+231 @2b897+93 1b @2b92b+11 1b @2b93d+e 1b @2b94c+10 1b @2b95d+10 1b @2b96e+105 @2ba98+df
+B 28000 @28001+1 =1 45 =1 84 =1 c9 =1 f5 =1 2a435c =1 7a =1 cd =1 244461 =1 91 =1 aa =1 e6 =1 194550 =1 70 =1 9b =1 aa =1 f0 =1 1e464e =1 8c =1 ce =1 09473e4777 =1 b4 =1 e0 =1 f0 =1 214857 =1 84 =1 bf =1 14495f =1 a5 =1 d9 =1 024a44 =1 70 =1 9e =1 d4 =1 134b384b83 =1 cd =1 0d4c3a4c45 =1 9c =1 f5 =1 3c4d8b =1 c3 =1 184e4c =1 90 =1 e7 =1 244f59 =1 9d =1 e4 =1 225056 =1 a0 =1 c3 =1 e6 =1 20514e =1 89 =1 da =1 0d5248 =1 96 =1 e6 =1 1c537d =1 be =1 e9 =1 0f543d5477 =1 c7 =1 ea =1 26555f =1 a7 =1 e5 =1 44 =1 89 =1 9c =1 f8 =1 255728575a =1 8d =1 d5 =1 f1 =1 365868 =1 9d =1 c6 =1 195957 =1 9c =1 e6 =1 2a5a65 =1 9c =1 f5 =1 4c =1 95 =1 e2 =1 1f5c8e =1 dd =1 165d61 =1 b5 =1 fe =1 345e7f =1 ba =1 f4 =1 305f64 =1 64 =1 67 =1 85 =1 a9 =1 e2 =1 1d603b604e =1 8b =1 bc =1 f7 =1 1561396164 =1 99 =1 d4 =1 206255 =1 7b =1 d0 =1 ea =1 086345635f =1 b8 =1 dd =1 24645e =1 8f =1 a8 =1 c0 =1 f8 =1 2e655e =1 8f =1 bd =1 046651 =1 8b =1 c5 =1 0967496772 =1 a0 =1 e0 =1 2168645f645f645f71 =1 a6 =1 d6 =1 126956 =1 86 =1 d3 =1 0d6a406a71 =1 c4 =1 f7 =1 3b6b5a =1 7b =1 d7 =1 0d6c2f6c7d =1 9c =1 d6 =1 f1 =1 146d74 =1 9b =1 d5 =1 1c6e54 =1 75 =1 8c =1 c9 =1 0e6f42 =1 65 =1 99 =1 be =1 e9 =1 15707d =1 a5 =1 ee =1 267169 =1 a5 =1 dd =1 15722557255751 =1 aa =1 fd =1 50 =1 82 =1 d2 =1 3d =1 91 =1 f5 =1 277574 =1 be =1 00765e =1 61 =1 ac =1 f1 =1 49 =1 90 =1 be =1 0e7858 =1 92 =1 09 =1 83 =1 c1 =1 fe791e =1 5e766e =1 c3 =1 0d =1 @2b855+42 @28200+f82 @29185+38a cf @29510+7 @29523+1 @29518+130 20 @29649+1 @2964b+205 @29842+ef8 c7 @2a73b+ea @2a82e+162 @2a991+87e @2b215+33e @2b54c+1 @2b554+2 @2b59d+1 @2b557+1 @2b55a+ca @2b62a+1 73 @2b66e+1 @2b624+231 @2b897+93 @2b915+1 @2b92b+11 @2b915+1 @2b93d+e @2b915+1 @2b94c+10 @2b915+1 @2b95d+10 @2b915+1 @2b96e+105 @2ba98+df
 B 2bb77 =2c
 B 2bbb7 =38c
-B 2c000 =f4 9f =1 025b5c =1 cf =1 23 =1 79 =1 b5 =1 1a =1 49 =1 b7 =1 1c =1 50 =1 af =1 f9 =1 49 =1 b9 =1 1c =1 7f =1 ba =1 0b =1 6c =1 ab =1 de =1 4a =1 7d =1 c2 =1 fe =1 3f =1 83 =1 cc =1 15 =1 3c =1 69 =1 9d =1 ca =1 f7 =1 24 =1 24 =1 47 =1 83 =1 9c =1 ce =1 fe =1 51 =1 81 =1 ae =1 d4 =1 f3 =1 21 =1 5d =1 b1 =1 ff =1 25 =1 81 =1 da =1 0f =1 58 =1 92 =1 d1 =1 fe =1 2b =1 76 =19 9c5a14 =1 48 =1 76 =1 b06e10 =1 6f =1 bf6fec6f19 =1 5a =1 a970e3702d =1 81 =1 9b =1 9c5ac771f6713f =1 7072bf72f27227 =1 59737f73b273f47354 =1 7474a374ed741a =1 5f75b775f77545 =1 8176b97616 =1 7077d47736 =1 9778e5782e =1 7b79cf792a =1 5b7aa67aea7a42 =1 7c7be17b3f =1 727cde7c20 =1
-B 2c200 =992 30 =f09 0473fe @2da9c+ff6 =37f @2ee6f+3b3 @2f271+304 a0 @2f576+88b
+B 2c000 =f4 9f =1 025b5c =1 cf =1 23 =1 79 =1 b5 =1 1a =1 49 =1 b7 =1 1c =1 50 =1 af =1 f9 =1 49 =1 b9 =1 1c =1 7f =1 ba =1 0b =1 6c =1 ab =1 de =1 4a =1 7d =1 c2 =1 fe =1 3f =1 83 =1 cc =1 15 =1 3c =1 69 =1 9d =1 ca =1 f7 =1 24 =1 24 =1 47 =1 83 =1 9c =1 ce =1 fe =1 51 =1 81 =1 ae =1 d4 =1 f3 =1 21 =1 5d =1 b1 =1 ff =1 25 =1 81 =1 da =1 0f =1 58 =1 92 =1 d1 =1 fe =1 2b =1 76 =19 9c5a14 =1 48 =1 76 =1 b06e10 =1 @2c195+1 =1 bf6fec6f19 =1 5a =1 a970e3702d =1 81 =1 9b =1 9c5ac7 @2c1aa+1 f6713f =1 7072bf72f27227 =1 59737f73b273f47354 =1 7474a374ed741a =1 5f75b775f77545 =1 8176b97616 =1 7077d47736 =1 9778e5782e =1 7b79cf @2c1e6+1 2a =1 5b7aa67aea7a42 =1 @2c1f3+1 7be17b3f =1 727cde7c20 =1
+B 2c200 =992 30 =f0a 73 @2dafe+1 @2da9c+ff6 =37f @2ee6f+3b3 @2f271+304 a0 @2f576+88b
 B 51934 =59 5468617420677265656e206865726f2c6f6620616c6c20706c616365732e2e2eff @51a4e+26c 596f75206e65656420746865202020204e696768746d617265204b657921ff596f7520676f742061205069656365206f6620506f77657221ff416868682e2e2e20497420686173202074686520536c65657079202020202020546f616473746f6f6c2c206974202020646f6573212057655e6c6c206d697820697420757020736f6d657468696e6720696e2061206a696666792c207765202077696c6c21ff546865206c617374207468696e6720496b696e2072656d656d62657220776173626974696e5e20696e746f2061202020626967206a7569637920202020202020546f616473746f6f6c2e2e2e202020205468656e2c20492068616420746865206461726e646573742020202020202020647265616d2e2e2e2049207761732061726163636f6f6e2120596561682c2020736f756e647320737472616e67652c206275742069742073757265207761732066756e21ff @51e4b+16d 596f75207069636b2074686520202020546f616473746f6f6c2e2e2e20417320796f7520686f6c64206974206f766572796f757220686561642c2061202020206d656c6c6f772061726f6d6120202020666c6f777320696e746f20796f7572206e6f737472696c732eff @52022+127 596f755e7665206c6561726e65642020746865205e42616c6c6164206f6620207468652057696e642046697368215e205468697320736f6e672077696c6c2020616c776179732072656d61696e20696e796f757220686561727421ff @521a5+169 57696c6c20796f752067697665206d6532382052757065657320666f72206d797365637265743f202020202020202020202020204769766520446f6e2774fe486f772061626f75742069743f20343252757065657320666f72206d792020206c6974746c65207365637265742e2e2e202020204769766520446f6e2774fe @5238c+164 2e2e2e596f755e726520736f20202020637574652120495e6c6c206769766520796f7520612037205275706565202020646973636f756e7421ff @5252a+2eb @59835+10 @5315d+11 @26981+4 @52722+5 @27608+7 @5219e+7 446f6720466f6f64204f6e6c79202020393830205275706565732120202020202020202042757920204e6f20576179fe3130204172726f77732020202020202031302052757065657321202020202020202020204275792020446f6e2774fe @528bf+6c 44656c75786520323020527570656573323030205275706565732120202020202020202042757920204e6f20576179fe @5296c+2f 536869656c642020202020202020202032302052757065657321202020202020202020204275792020446f6e2774fe54656e20426f6d62732020202020202031302052757065657320202020202020202020204275792020446f6e2774fe @529f9+1d8 49745e73206120536869656c6421202054686572652069732073706163652020666f7220796f7572206e616d6521ff @52c00+1c @52c27+78 49745e73203330205275706565732120596f752063616e20706c61792074686567616d65207468726565206d6f72652074696d65732077697468207468697321ff @52ce0+5f 596f7520676f74206120596f73686920446f6c6c2120526563656e746c792c206865207365656d7320746f206265202073686f77696e6720757020696e2020206d616e792067616d657321ff486f772061626f757420736f6d65202066697368696e672c206c6974746c652062756464793f20495e6c6c206f6e6c7963686172676520796f752031302020205275706565732e2e2e202020202020202020202046697368204e6f74204e6f77fe @52dec+192 @52fca+9d 596f755e72652073686f7274206f66205275706565733f20446f6e5e74202020776f7272792061626f75742069742e20596f75206a75737420636f6d652020206261636b207768656e20796f7520202068617665206d6f7265206d6f6e65792c6c6974746c652062756464792eff596f755e766520676f742061202020205069656365206f66204865617274212050726573732053454c454354206f6e207468652053756273637265656e20746f7365652eff @5311d+109 @778c3+9 @2696f+7 @26fc9+6 @275a5+4 @5ba17+6 @599d4+7 @5339f+b @7310a+7 21ff @532e3+506 466f756e642074686520426f7721ff @537fa+98 596f75206e656564206120536d616c6c4b657921ff @538d3+5e 57656c6c2c2069745e7320616e2020204f636172696e612c2062757420796f75646f6e5e74206b6e6f7720686f772020746f20706c61792069742e2e2eff @5396f+21 596f7520666f756e6420746865202020506f7765722042726163656c657421204174206c6173742c20796f752063616e7069636b20757020706f747320616e6473746f6e657321ff596f7520676f7420796f757220202020536869656c64206261636b212020202050726573732074686520627574746f6e616e6420726570656c20202020202020656e656d696573207769746820697421ff @53a29+c1 596f755e766520676f74207468652020486f6f6b73686f742120497473202020636861696e20737472657463686573206c6f6e67207768656e20796f7520202075736520697421ff596f755e766520676f742074686520204d6167696320526f6421204e6f772020796f752063616e206275726e202020207468696e677321204275726e206974214275726e2c2062616279206275726e21ff596f755e766520676f742074686520205065676173757320426f6f7473212020496620796f7520686f6c6420646f776e74686520427574746f6e2c20796f752063616e206461736821ff596f755e766520676f742074686520204f636172696e612120596f752020202073686f756c64206c6561726e20746f20706c6179206d616e7920736f6e677321ff596f755e766520676f74207468652020526f635e7320466561746865722120204974206665656c73206c696b65202020796f757220626f6479206973206120206c6f74206c69676874657221ff596f755e766520676f7420612020202053686f76656c21204e6f7720796f752063616e206665656c20746865206a6f796f662064696767696e6721ff596f755e766520676f7420736f6d65204d6167696320506f776465722120202054727920737072696e6b6c696e6720206974206f6e20612076617269657479206f66207468696e677321ff @53990+a @52dc6+5 @5b59c+7 ff596f7520666f756e6420796f7572202053776f72642120204974206d75737420626520796f757273206265636175736569742068617320796f7572206e616d65656e677261766564206f6e20697421ff596f755e766520676f74207468652020466c6970706572732120496620796f7570726573732074686520422020202020427574746f6e207768696c6520796f757377696d2c20796f752063616e2020206469766520756e646572776174657221ff596f755e766520676f742074686520204d61676e696679696e67204c656e7321546869732077696c6c2072657665616c6d616e79207468696e677320796f7520636f756c646e5e7420736565202020206265666f726521ff596f755e766520676f742061206e657753776f72642120596f7520202020202073686f756c642070757420796f7572206e616d65206f6e2069742072696768746177617921ff596f7520666f756e64207468652020204d65646963696e652120596f7520202073686f756c64206170706c79202020207468697320616e642073656520202020776861742068617070656e7321ff596f755e766520676f742074686520205461696c206b657921204e6f77202020796f752063616e206f70656e207468655461696c2043617665206761746521ff596f755e766520676f74207468652020536c696d65206b657921204e6f772020796f752063616e206f70656e207468656761746520696e20556b756b752020205072616972696521ff596f755e766520676f74207468652020416e676c6572206b657921ff
-B 58000 404647464c464f465246554658465a465b465d465e46634668466d467146724677467e46814688468d468f46914691469146924694469446944695466546744698469f46a646ad46b246bd46c146c146c246bf46c746cb46cc46d146d446d746dc46df46e646e946f046f246f246f246f346f646fb4600470347054708470d471047144715471c4721472347244729472e47304731473347344737 @58253+5 444749474c4751475447584759475e476347674768476a476b47724777477c47814786478b478e47914794 @58271+5 a947ab47ac47b2473a47b347bc47bf47ca47cf47d647dd47e447e647e947f447fc47fc47fc47fd47024809480e4815481d481e48214828482f48334834483b48404845484a4853485748574858485d485f486048694878487c487d48844889488c48934898489f48a348a448a948ae48b348c048c948ce48d748de48e548e748e848ef48f548f648fd4802490f4917491849214926492b4936493a493a493a493b49404949494e4953495e496b4978498249834988498f4996499f49a649a849a949ae49b149b849bf49c849d149d649db49de49e349e549e649ed49f749f749f849fd49024a094a104a1f4a284a2f4a3a4a3f4a464a4f4a584a5a4a5a4a5b4a5e4a634a684a6d4a744a764a764a774a7c4a834a8a4a8f4a944a9b4a9d4a9d4a9e4aa24aa34aa84aac4aad4aaf4ab04ab64ab64ab74aba4ac14ac64acf4ad24ad64ad74ada4ae3 @5835d+5 ef4af64afd4a044b0b4b144b1b4b244b314b364b394b3c4b404b404b414b444b494b4c4b4f4b544b614b6c4b734b804b8b4b94 @5838d+5 b74aab4bae4bb44bb54bb84bc54bd24bd54bda4be14be8 @583a1+7 044c0d4c124c194c204c254c284c2b4c364c3f4c484c534c5a4c614c644c6d4c764c814c8a4c934c9c4ca74cae4cb74cbe4c364bc74cca4cd54ce04ceb4cf24cb74a014d044d0f4d174d184d1d4d224d2b4db74a384d434d484d504d514d5a4d654d6e4d774d824d8b4d944d9b4da64dab4db64dbd4dc44dcb4dd64ddf4de64def4d364bf64dff4d024e044e044e054e084eb74a114e054e1a4e1c4e1d4e2a4e354e444e4f4e514e524e5b4e644e6d4e7a4e054e7f4e864e054e914e9e4ea94eb64ec14eca4ed34ee04ee74eee4ef94e364b004f074f0c4f0f4f144f194f1e4f274f2c4f2f4f324f344f344f344f354f3e4f494f524f594fb74a604f654f704f7d4f804f894f944f97 @5852f+5 b24fbd4fc84fd34fd64fdb4fdf4fe04fe54fec4ff14ffc4f01500e501b502250295032503d504450364b4b5054505750625069506d506e5075507e508450845085508550855088508b508e50aa46905091509350935093509450985099509b509b509c50a050324fa050a150f046a350a450ac50ad50324fbf50bf50bf50c050c250c350c850cf50d650de50ee4fdf50e650ea50eb @585b5+5 f950364b @252fe+4 0e5115511c51215124512d5136513f5146514d5150515751605167516a5175517e5186518651875190519851985199519e51a751b051b74ab751bf51bf51b74abf51c051c251c351c651ce51ce5145 =1 ce51cf51dc51df51e851ed51f651fb51fe5105520c520f52185225522a523152 =1 52 =1 52 =1 52 =1 52 =1 5254515052555258525b525e5267526c5273527c527f528752885291529452364b9d52a652af52b452b852b952bc52c3 @580ab+7 dd52e252d152e852e852e852624fe852e852e852e852e952eb52eb52eb52eb52eb52ec52ee52ee52ee52ee52ef52f252fb5202530a530a @580c9+7 934c1c53205321532a532e @580d9+5 3c533d @580df+5 545357535b535e536d5378537b537853785378 @580f1+5 87538a538d539e53a953ae53b153b653bb53c053c553c8 @58111+5 d753dc53e353e653e953ed537853ee53f353fc5303540a54c85311 @5812f+5 26542f54395439543a543f54455446544d5450545b540e5460547853785367547553705479547c5481548954895489548a548f54925497549c549e549f54a254a554ac54b154ba54bc547853bd54c054c354cc54d354d654d954dd54dd54dd54de54e554ee54f154f554f554f654f954fe540355055506550b55125518551955205523552655324f285529552c552f553c55495552555d5564 @581a1+5 8155865591559c55a155a655aa55ab55b055bc55bc55bc55bc55bc55bc55bc55bc55bc55bc55 @59186+18 00deff24c2ff @591aa+14 @591bf+20 @591e9+3 @591ef+3 @591f8+2a @59224+5 @5922c+5 @59232+27 @5925e+15 @59276+d @59286+f @59296+d @592a4+3 @592a8+10 323a3235ff @592bb+10 @592cc+f @592dc+3 @592e0+26 5244ff @5930b+18 @59324+7 @5932f+36 @59368+14 @5937f+21 @593a3+16 @593ba+24 @593e0+8 @593e9+1d @59407+27 @59433+44 @59478+e @59487+7 @59490+1b @594ac+23 @594d4+48 @5951d+26 @59544+3a 433dff @59584+12 @59598+63 @595fd+1c @5961d+13 32c55535 @59636+10 @59648+5 @5964e+a 26c4ff @5965d+7 @58642+20 @58663+15 @58679+55 @586d0+5a 34612589 @5872e+c @5873d+a @58748+a5 3461 @587ed+4 @587f3+1 64e5ff @587f7+63 @5885d+3a @5889a+17 @588b2+20 @588d5+b 1461118e @588e4+a @588ef+a5 @58997+f @589a8+c @589b7+9 @589c3+3 @589c7+35 @589fd+2d 3461 @58a2d+4 @58a33+c @58a42+6f @58ab4+35 @58aec+2b @58b1a+7b 34612592 @58b99+1 @58b9b+6b @58c09+23 @58c2d+17 @58c46+c @58c56+3 @58c5c+5 @58c62+3 @58c67+5 @58c71+3 @58c78+9 @58c82+13 @58ca1+3 @58ca5+1c @58cc5+c @58cd2+7 @58cda+e @58ceb+87 @58d74+12 346104bc @58d8c+1a @58da9+9 @58db8+3 @58dbc+c @58dce+27 346135be @58df9+3e @58e38+18 @58e53+38 @58e8c+15 @58ea4+1c @58ec1+30 @58f00+3 @58f08+3 @58f0f+1c @58f2d+11 @58f47+5 @58f4d+e @58f5c+e @58f6b+21 @58f8f+20 @58fb9+28 6741ff @58fe2+45 @5902b+23 @59051+29 @5907c+c @59089+1a @590a6+7 @590b3+9 @590bf+1a @590dc+15 @590f2+1e @59116+21 @5913a+18 @59154+10 @59165+13 @59179+d @59664+3 @5966b+7d 13f616f7ff @596ee+12
+B 58000 404647464c464f465246554658465a465b465d465e46634668466d467146724677467e46814688468d468f46914691469146924694469446944695466546744698469f46a646ad46b246bd46c146c146c246bf46c746cb46cc46d146d446d746dc46df46e646e946f046f246f246f246f346f646fb4600470347054708470d471047144715471c4721472347244729472e47304731473347344737 @58253+5 444749474c4751475447584759475e476347674768476a476b47724777477c47814786478b478e47914794 @58271+5 a947ab47ac47b2473a47b347bc47bf47ca47cf47d647dd47e447e647e947f447fc47fc47fc47fd47024809480e4815481d481e48214828482f48334834483b48404845484a48 @58117+1 485748574858485d485f486048694878487c487d48844889488c48934898489f48a348a448a948ae48b348c048c948ce48d748de48e548e748e848ef48f548f648fd4802490f4917491849214926492b4936493a493a493a493b49404949494e4953495e496b4978498249834988498f4996499f49a649a849a949ae @58192+1 b149b849bf49c849d149d649db49de49e349e549e649ed49f749f749f849fd49024a094a104a1f4a284a2f4a3a4a3f4a464a4f4a584a5a4a5a4a5b4a5e4a634a684a6d4a744a764a764a774a7c4a834a8a4a8f4a944a9b4a9d4a9d4a9e4aa24aa34aa84aac4aad4aaf4ab04ab64ab64ab74aba4ac14ac64acf4ad24ad64ad74ada4ae3 @5835d+5 ef4af64afd4a044b0b4b144b1b4b244b314b364b394b3c4b404b404b414b444b494b4c4b4f4b544b614b6c4b734b804b8b4b94 @5838d+5 b74aab4bae4bb44bb54bb8 @5825e+1 c54bd24bd54bda4be14be8 @583a1+7 044c0d4c124c194c204c254c284c2b4c364c3f4c484c534c5a4c614c644c6d4c764c814c8a4c934c9c4ca74cae4cb74cbe4c364bc74cca4cd54ce04ceb4cf24cb74a014d044d0f4d174d184d1d4d224d2b4db74a384d434d @582cb+1 4d504d514d5a4d654d6e4d774d824d8b4d944d9b4da64dab4db64dbd4dc44dcb4dd64ddf4de64def4d364bf64dff4d024e044e044e054e084eb74a114e054e1a4e1c4e1d4e2a4e354e444e4f4e514e524e5b4e644e6d4e7a4e054e7f4e864e054e914e9e4ea94eb64ec14eca4ed34ee04ee74eee4ef94e364b004f074f0c4f0f4f144f194f1e4f274f2c4f2f4f324f344f344f344f354f3e4f494f524f594fb74a604f654f704f7d4f804f894f944f97 @5852f+5 b24fbd4fc84fd34fd64fdb4fdf4fe04fe54fec4ff14ffc4f01500e501b502250295032503d504450364b4b5054505750625069506d506e5075507e508450845085508550855088508b508e50aa46905091509350935093509450985099509b509b509c50a050324fa050a150f046a350a450ac50ad50324fbf50bf50bf50c050c250c350c850cf50d650de50ee4fdf50e650ea50eb @585b5+5 f950364b @252fe+4 0e5115511c51215124512d5136513f514651 @58435+1 5150515751605167516a5175517e5186518651875190519851985199519e51a751b051b74ab751bf51bf51b74abf51c051c251c351c651ce51ce5145 =1 ce51cf51dc51df51e851ed51f651fb51fe5105520c520f52185225522a523152 =1 52 =1 52 =1 52 =1 52 =1 5254515052555258525b525e5267526c5273527c527f528752885291529452364b9d52a652af52b452b852b952bc52c3 @580ab+7 dd52e252d152e852e852e852624fe852e852e852e852e952eb52eb52eb52eb52eb52ec52ee52ee52ee52ee52ef52f252fb5202530a530a @580c9+7 934c1c53205321532a532e @580d9+5 3c533d @580df+5 545357535b535e536d5378537b537853785378 @580f1+5 87538a538d539e53a953ae53b153b653bb53c053c553c8 @58111+5 d753dc53e353e653e953ed537853ee53f353fc5303540a54c85311 @5812f+5 26542f54395439543a543f54455446544d54 @5858f+1 545b540e5460547853785367547553705479547c5481548954895489548a548f54925497549c549e549f54a254a554ac54b154ba54bc547853bd54c054c354cc54d354d654d954dd54dd54dd54de54e554ee54f154f554f554f6 @585e8+1 f954fe540355055506550b55125518551955205523552655324f285529552c552f553c55495552555d5564 @581a1+5 8155865591559c55a155a655aa55ab55b055bc55bc55bc55bc55bc55bc55bc55bc55bc55bc55 @59186+1a @591a2+1 @591a6+3 @591aa+14 @591bf+20 @591e9+3 @591ef+3 @591f8+2a @59224+5 @5922c+5 @59232+27 @5925e+15 @59276+d @59286+f @59296+d @592a4+3 @592a8+12 @592b8+1 35 @592ba+11 @592cc+f @592dc+3 @592e0+26 @59308+1b @59324+7 @5932f+36 @59368+14 @5937f+21 @593a3+16 @593ba+24 @593e0+8 @593e9+1d @59407+27 @59433+44 @59478+e @59487+7 @59490+1b @594ac+23 @594d4+48 @5951d+26 @59544+3a @59580+3 @59584+12 @59598+63 @595fd+1c @5961d+13 @59634+2 @59632+1 35 @59636+10 @59648+5 @5964e+a 26 @5965a+2 @5965d+7 @58642+20 @58663+15 @58679+55 @586d0+5a @5872c+2 @5872a+2 @5872e+c @5873d+a @58748+a5 @587f1+2 @587ed+4 @587f3+67 @5885d+3a @5889a+17 @588b2+20 @588d5+b @588e2+2 @588e0+2 @588e4+a @588ef+a5 @58997+f @589a8+c @589b7+9 @589c3+3 @589c7+35 @589fd+2d @58a31+2 @58a2d+4 @58a33+c @58a42+6f @58ab4+35 @58aec+2b @58b1a+7b @58b97+2 25 @58b96+1 @58b99+1 @58b9b+6b @58c09+23 @58c2d+17 @58c46+c @58c56+3 @58c5c+5 @58c62+3 @58c67+5 @58c71+3 @58c78+9 @58c82+13 @58ca1+3 @58ca5+1c @58cc5+c @58cd2+7 @58cda+e @58ceb+87 @58d74+12 @58d8a+2 @58d88+2 @58d8c+1a @58da9+9 @58db8+3 @58dbc+c @58dce+27 @58df7+2 @58df5+2 @58df9+3e @58e38+18 @58e53+38 @58e8c+15 @58ea4+1c @58ec1+30 @58f00+3 @58f08+3 @58f0f+1c @58f2d+11 @58f47+5 @58f4d+e @58f5c+e @58f6b+21 @58f8f+20 @58fb9+28 6741 @58fe1+46 @5902b+23 @59051+29 @5907c+c @59089+1a @590a6+7 @590b3+9 @590bf+1a @590dc+15 @590f2+1e @59116+21 @5913a+18 @59154+10 @59165+13 @59179+d @59664+3 @5966b+7d 13 @596e9+1 16 @596eb+2 @596ee+12
 B 59701 596f755e766520676f7420746865202046616365206b657921ff596f755e766520676f7420746865202042697264206b657921ff4174206c6173742c20796f7520676f74612044756e67656f6e204d617021202050726573732074686520535441525420427574746f6e20746f206c6f6f6b2020617420697421ff596f755e766520676f7420746865202044756e67656f6e20436f6d7061737321ff596f7520666f756e642061202020202053746f6e65204265616b2120202020204c65745e732066696e642074686520206f776c2073746174756520746861742062656c6f6e677320746f2069742eff596f755e766520676f742074686520204e696768746d617265204b65792120204e6f7720796f752063616e206f70656e74686520646f6f7220746f20746865204e696768746d6172655e7320202020204c61697221ff596f7520676f74206120536d616c6c204b65792120596f752063616e202020206f70656e2061206c6f636b6564202020646f6f722eff202020596f7520676f74203230202020202052757065657321204a4f5921ff202020596f7520676f742035302020202020527570656573212056657279202020202020204e69636521ff2020596f7520676f7420313030202020205275706565732120596f755e7265202020202020486170707921ff2020596f7520676f7420323030202020205275706565732120596f755e726520202020456373746174696321ff @599cb+2d1 47 @2699f+7 @266a5+8 @266ae+7 21ff @59c9c+1e3 @70d9c+50 @5b2e7+9 20 @76f59+4 @70b31+6 @267e5+5 @742d7+7 @70bbb+5 @52a83+4 @271ae+7 @73638+9 70 @27bb6+7 @72469+6 @5a5d4+6 6f @7704a+4 2e @52ef6+6 @26ee5+10 @26ea6+b @52fc2+8 @52bc6+5 @52bf1+7 2eff466f756e6420426f77776f77212020205768696368206d6f6e737465722020207075742068696d20696e20612020202063686573743f20486520697320612020676f6f6420626f692c20616e64202020776169747320666f7220796f75206174746865205377616d702eff466f756e64203130204172726f777321ff466f756e6420612053696e676c6520204172726f772e2e2e206a6f793fff47 @2699f+7 @26b57+5 @5348a+5 6e @5b283+4 @598f0+9 @74df7+7 54756e6963 @70f58+4 @733f1+9 @2684e+7 62 @5377e+4 732eff47 @2699f+7 @269a7+5 @5348a+5 6e @5b283+4 @598f0+9 @74df7+7 54756e6963 @70f58+4 @733f1+9 @2684e+7 62 @5377e+4 732eff @5ab61+525 466f756e642074686520202020202020426f6f6d6572616e6721ff @5b1e4+ac 52696262697421205269626269742120495e6d204d616d752c206f6e20202020766f63616c7321204275742049202020646f6e5e74206e65656420746f20202074656c6c20796f7520746861742c2020646f20493f204576657279626f6479206b6e6f7773206d65212057616e742020746f2068616e67206f757420616e64206c697374656e20746f207573202020206a616d3f20466f7220333030202020205275706565732c2077655e6c6c2020206c657420796f75206c697374656e2020746f20612070726576696f75736c7920756e72656c65617365642063757421205768617420646f20796f7520646f3f2020202020506179204c65617665fe @5b38f+1a0 @5b91e+c @5b53b+1b ff @5b91e+c @5b53b+f @533c0+7 @5b59f+4 ff @5b91e+c @5b53b+f @53400+6 @5b5ec+6 ff @5b619+1f0 596f755e766520666f756e6420612020476f6c64656e206c6561662120202020507265737320535441525420746f202073656520686f77206d616e7920202020796f755e766520202020202020202020636f6c6c656374656421ff @5b854+5c 596f755e766520676f74206120202020477561726469616e2041636f726e21ff596f755e766520676f742074686520204d6972726f7220536869656c64212020596f752063616e206e6f77207475726e6261636b20746865206265616d732020796f7520636f756c646e5e7420202020626c6f636b206265666f726521ff596f755e766520676f742061202020206d6f726520506f77657266756c202020506f7765722042726163656c657421204e6f7720796f752063616e2020202020616c6d6f7374206c69667420612020207768616c6521ff596f7520666f756e6420612020202020536563726574205365617368656c6c21ff57616e7420746f20676f206f6e20612072616674207269646520666f72 @2a06a+4 756e64726564205275706565733f2020202020596573204e6f20576179fe @5ba52+557
-B 68000 @6834e+6b @68000+34e =4d2 @6888e+14 7ff526e22644 @6886f+5 fe =15cb
-B 70001 =4 ae594d =1 d95a27 =1 6e5b1a =1 39 =1 535cb95c6e5dbb5d03 =1 515edb5e455f955fc65f6c60c8602e616861d46131627062af6258638e63b96313 =1 4d6475647e64bf64d864f1644a65a66502 =1 8066d766386759677067a067cf670e =1 3b686b689a68c968f86847696769a169a169e969396a396a656ad06aff6ac56a1b6b4b6b936bd46b336c7f6ce06c0f6d8f6dd06d116e116e726ea36e0f6f7d6fc26f137049708470cb700671b671d571f6711772387259727a729b72bc72cd72cd72de72fa7208732573347345736673757384739473a573b673d773e873f9730a741b742c743d744d745c746c747c748c749c74ac74bd74d974ea741a753b754c75697585759675b775c875d975ea75fb750c761b766976b376c876267764778577cd771e78df7827797879c279037a507a8c7ad77aee7a3e7b9f7bf77bf77b3d7c8b7ccb7c147d =6 7c =1 9d57ec5742 =1 78589758c258ee581b =1 68598959b959f9595a5a945a12 =1 705bec5b05 =1 845cdb5cdb5c38 =1 e85d37 =1 38 =1 b45e =1 5ec15ec15ec15ec15ec15ec25ea0c02d5f3e5f5c5fa45fec5fec5ffd612b642b646a646a646a647b647b64c76411652c655865d865d66605673b67ac67f86776689e68c568ed685c69bc69dd6a386b946b946b946bb46b126c696c8a6cc96cfa6c156d306d506d8e6eff6e3f6f7d6fee6ff76f007036706d70cc701b713c71587179719471b271d2710272 =5c 86 =1 d4 =1 14 =1 43 =1 72 =1 f2 =1 4c =1 aa =1 22 =1 5f =1 bf =1 3c =1 3c =1 3c613c613c613c613c613c613c613c613c613c613c613c613c613c616d61ad61de610f6240627f62b062e062e062fc621c635b63a763076454647464a364e464256552658f65cc65a8663467a467e16710689e68ce683c6108697369f1690b6a596a9e6ab96ae66a046b836bed6bb46cf36c106dbe6dee6d846eec6e4d6f4c6ffa6f31706170ad70ce70fb704471d17101728e7215734f736f73 =28 a9 =1 ca =1 f3 =1 3c =1 4d =1 7d =1 8b =1 99 =1 a7 =1 b5 =1 d2 =1 01481f =1 3e =1 5d =1 7e =1 9f =1 da =1 fb =1 19 =1 4a =1 78 =1 b1 =1 d6 =1 134a2f =1 6d =1 94 =1 94 =1 f34a40 =1 5a =1 9b =1 9b =1 25 =1 f14c80 =1 a0 =1 ff4d76 =1 b1 =1 d1 =1 42 =1 a2 =5d aa5e26 =1 e25ffe5fe25f3460e25f5e60e25f8b60e25fa960e25fc96000618f61eb61546254628362c462e462146343638363d3634164af641d658b65bc65f6651c667b667b662a687668c768e768256940697b69aa5eaa5eaa5eb769066a5e6a9e6afd6afd6a2c6b5c6b8d6bbc6beb6bfb6b586c836cb46ce36c246d356dcc6d3a6e7a6eaa5eaa5eaa5eaa5eaa5eaa5e9f6eaa5eaa5e7d6fb76f437084709f71 =2c 8a =1 b5 =1 cd =1 f96c35 =1 666da66d0f6e2a6e436e7b6eb66eee6e496f506f686f776f9e6fb56f157063709c70d870f270197122714e717871a571e171ff71377273729372b872f1722a7367737f739d73dd731a7434745c747974c774fe741a7557758375c375d275f97570769776cf7607773f777777af77e7771f7857788f78c778ff784679a279dd79097a187a2a7a337a587a6c6a7f7a
+B 68000 @6834e+6b @68000+34e =4d2 @6888e+14 @688a8+2 @68899+1 @6886e+1 @688a2+2 @6886f+5 =15cc
+B 70001 =4 ae594d =1 d95a27 =1 6e5b1a =1 39 =1 535cb95c6e5dbb5d03 =1 515edb5e455f955fc65f6c60c8602e616861d46131627062af6258638e63b96313 =1 4d6475647e64bf64d864f1644a65a66502 =1 8066d766386759677067a067cf670e =1 3b686b689a68c968f86847696769a169a169e969396a396a656ad06aff6ac56a1b6b4b6b936bd46b336c7f6ce06c0f6d8f6dd06d116e116e726ea36e0f6f7d6fc26f137049708470cb700671b671d571f6711772387259727a729b72bc72cd72cd72de72fa7208732573347345736673 @700d2+1 7384739473a573b673d773e873f9730a741b742c743d744d745c746c747c748c749c74ac74bd74d974ea741a753b754c75697585759675b775c875d975ea75fb750c761b766976b376c876267764778577cd771e78df7827797879c279037a507a8c7ad77aee7a3e7b9f7bf77bf77b3d7c8b7ccb7c147d =6 7c =1 9d57ec5742 =1 78589758c258ee581b =1 68598959b959f9595a5a945a12 =1 705bec5b05 =1 845cdb5cdb5c38 =1 e85d37 =1 38 =1 b45e =1 5ec15ec15ec15ec15ec15ec25ea0c02d5f3e5f5c5fa45fec5fec5ffd612b642b646a646a646a647b647b64c76411652c655865d865d66605673b67ac67f86776689e68c568ed685c69bc69dd6a386b946b946b946bb46b126c696c8a6cc96cfa6c156d306d506d8e6eff6e3f6f @701f4+1 6fee6ff76f007036706d70cc701b713c71587179719471b271d2710272 =5c 86 =1 d4 =1 14 =1 43 =1 72 =1 f2 =1 4c =1 aa =1 22 =1 5f =1 bf =1 3c =1 3c =1 3c613c613c613c613c613c613c613c613c613c613c613c613c613c616d61ad61de610f6240627f62b062e062e062fc621c635b63a763076454647464a3 @702c3+1 e464256552658f65cc65a8663467a467e16710689e68ce683c610869 @702e2+1 69f1690b6a596a9e6ab96ae66a046b836bed6bb46cf36c106dbe6dee6d846eec6e4d6f4c6ffa6f31706170ad70ce70fb704471d17101728e7215734f736f73 =28 a9 =1 ca =1 f3 =1 3c =1 4d =1 7d =1 8b =1 99 =1 a7 =1 b5 =1 d2 =1 01481f =1 3e =1 5d =1 7e =1 9f =1 da =1 fb =1 19 =1 4a =1 78 =1 b1 =1 d6 =1 134a2f =1 6d =1 94 =1 94 =1 f34a40 =1 5a =1 9b =1 9b =1 25 =1 f14c80 =1 a0 =1 ff4d76 =1 b1 =1 d1 =1 42 =1 a2 =5d aa5e26 =1 e25ffe5fe25f3460e25f5e60e25f8b60e25fa960e25fc96000618f61eb61546254628362c462e462146343638363d3634164af641d658b65bc65f6651c667b667b662a687668c768e768256940697b69aa5eaa5eaa5eb769066a5e6a9e6afd6afd6a2c6b5c6b8d6bbc6beb6bfb6b586c836cb46ce36c246d356dcc6d3a6e7a6eaa5eaa5eaa5eaa5eaa5eaa5e9f6eaa5eaa5e @70494+1 6fb76f437084709f71 =2c 8a =1 b5 =1 cd =1 f96c35 =1 666da66d0f6e2a6e436e7b6eb66eee6e496f506f686f776f9e6fb56f157063709c70d870f270197122714e717871a571e171ff713772 @7050a+1 729372b872f1722a7367737f739d73dd731a7434745c747974c774fe741a7557758375c375d275f97570769776cf7607773f777777af77e7771f7857788f78c778ff784679a279dd79097a187a2a7a337a587a6c6a7f7a
 B 70b2a =109d 4d6d6d2e2e2e205368655e7320736f2062656175746966756c2e2e2e204920206d757374206769766520796f75202020736f6d657468696e6720666f72202020796f75722074726f75626c652e2e2e20486d6d2e2e2e202057656c6c2c2069746c6f6f6b73206c696b6520616c6c2049686176652069732074686973202020205069656365206f66202020202020202048656172742e2e2e20686f775e6c6c20746861742062653f20202020202020202020202046696e65204e6f2e2e2efe @71c76+4b6 @72afd+26b 4f6b61792120496e2072657475726e20796f752063616e206861766520202020746869732053656372657420202020205365617368656c6c204920666f756e647768656e2049207377657074206279207468652072697665722062616e6b21ff @72dc8+501 @73391+151 41482120546869732069736e5e7420206d65616e7420746f20626520612020207265776172642e2e2e20486572652c2074616b652074686973204661636520206b657921ff @73533+4af 4d616b652d757021204a6577656c7321447265737365732120492077616e7420697420616c6c2120536967682e2e2e20416e6420736f6d65206e6577202020206163636573736f726965732020202020776f756c64206265206e6963652e2e2e4f6821205468617420526962626f6e2149206e656564206974212057696c6c20796f7520747261646520666f72206d795069656365206f662048656172743f202020202059657320204e6f21fe4c75636b7921205468616e6b7321202057656c6c2c20686572655e7320202020796f7572205069656365206f66202020486561727421ff @73ae6+3cd
 B 74000 =68d 596f75206e6565642038202020202020696e737472756d656e7473ff @7469e+252 4f636172696e61206973206174202020556b756b752050726169726965ff54686579207361792074686174202020526f635e732046656174686572206973617420556b756b752050726169726965ff @74950+2e 596f75206d696768742077616e742020746f206c6f6f6b20696e2020202020204d61727468615e732042617920666f726120736563726574ff5468657920736179207468617420202053776f7264206973206174205461696c43617665ff596f75206d696768742077616e742020746f206c6f6f6b20696e202020202020546f726f6e626f2053686f7265732020666f72206120736563726574ff4d6162652056696c6c61676520202020686f6c6473204d6172696eff496620796f752077616e7420202020205065676173757320426f6f74732020207374617274206c6f6f6b696e6720696e4561676c655e7320546f776572ff5468657920736179207468617420202053686f76656c206973206174204b657943617665726eff @74aab+36b 4d554e4348204d554e434821212020202e2e2e202e2e2e202e2e2e202e2e2e205468617420776173206772656174212049206b6e6f772069745e73206e6f74206120666169722074726164652c20202062757420686572655e7320736f6d6520536563726574205365617368656c6c2159554d2e2e2eff @74e86+12c 486920686f212048657920796f7521204973207468617420706f737369626c796120e520796f7520686176653f2049206a7573742072616e206f75742120202057696c6c20796f752073776170206974666f72206120536563726574202020205365617368656c6c3f202020202020202020202059657320204e6ffe =e8c @75f44+138 52656164207468697320626f6f6b3f202020202059455320204e4ffe54686579207361792074686174202020506f7765722042726163656c65742020697320617420476f706f6e67612020205377616d70ff46616365206b6579206973206174202054616c2054616c2020202020202020204d6f756e7461696e73ff54686579207361792074686174202020466c69707065727320697320617420205961726e6120446573657274ff4d6167696320506f77646572206973206174204b65792043617665726eff4d6162652056696c6c61676520202020686f6c647320426f6f6d6572616e67ff596f75206d696768742077616e742020746f206c6f6f6b20696e20556b756b755072616972696520666f722061202020736563726574ff @7674b+72a 4920666f756e64206120676f6f6420206974656d2077617368656420757020206f6e207468652062656163682e2e2e2057616e7420746f20686176652069743f202020204f6b6179204e6ffe @76ef1+af 49745e7320612073656372657420746f6576657279626f64792eff @77001+77 @77260+a7 496620796f752077616e742020202020476f6c64656e206c65616620202020207374617274206c6f6f6b696e6720696e416e676c65725e732054756e6e656cff @7733d+401 @77b51+de @77d4c+280
 B 8052b =1 40d44d944e154f205039517552 =2 4c538b53b85496552f561757e95732593d5bbc5c355ef65f9461d5617463dd66b067f468436a2f6bec6bec6b906e4670e57184732375c27661782779
-B 830d3 0001020304 @2442c+4 050707080809070a0b0c0d0e0f05050510050505070707111112131214050514140705071515160b1112131205050514141708070715070b050b0b0505181819051905050505051a1b0b1c1d0518181e051f05050505050b0b0b0b0505182019051905050505050b0b0b0b21212223050505240505050505252627260528292a2b142c0505080505262d26052a28282e2a142f05300731263205262a2a05052a14053334343405273526361405050508142f3734343434051616160505050514382c39393a3b0316160505080805052f052c083c39033d16033e3f3f050537374037 =1 050505413e3e0303034205052c051d33054305030000010203030405 =1 06070300080906050a0605060006000b0b0000 =1 030c0c0d060305050e0f10110501120500 =1 0505030603131400131503161617171616 =1 191a19061b =1 051c031a1a000005 =1 1d18001e1f1c0320210122061c002323 =1 2401252627002803 =1 292a =1 1a282b =1 2c2d282a2a282e2b2800280016 =1 002f0601062f30 =1 03291a27030028291531032f32032f002503 =1 053333343334330035230b0b23231616363738 =3 39393a273b010303 =1 003c3a3d3e280e3b =1 3e3e033f =1 1b403e1e41 =1 273e423e434443003a3e27454500461616 =2 474747 =1 484949 =1 00 =2 000b =1 4a000049 =1 38004b49 =1 4c004d3800 =1 004e =1 4f50515200005303005400544300035556572458582424585824595a24245b5c5d0000035e00 =1 5f46600b010b @2e1e0+4 1e =1 6100 =1 0026006200 =1 63646566030b1e03031e002d =1 6705681e11 =1 1e0003696a036b6703001e3f1e006c1e0b0b000b6d6d0b376e6e37370000004d @504e0+4 =1 @504e0+a 707100710000007100007100710000720000727373 @504e0+4 6c7471747474 =1 757677787900007a7b7c7d7e00 @832ba+4 80818200740071007171000000716c6c =2 8384008586870000737474006c6c494985 @504e0+4 8800898a008b8c71718d8e0074030000718f907100000072738d4900000391927100937294009596 =1 97380098030000999a9b9a9c9d9c9b9a9c999e009c9b9f9f9f9f9f9f9f9f9f9fffc6ff @8358a+1 ffc6ff @8358e+1 ffff9cffff @83594+3 ffffff @8359a+1 @58ae8+4 ff6c8fffff87 @58efb+5 @8352e+1 ffff @83505+2 ffc6ff @83476+1 ff @835c4+3 ff @835a0+3 ffff @835a5+2 ff44ff @835aa+1 ff44 @58efb+5 @83466+1 ffff @833fd+2 ff4a @833f5+2 ff4aff @8342e+1 ffff83 @58ae8+4 @8357e+1 ffffe3ffff8783ffff @58efa+5 92ffff8effffff6cff @834ae+1 ff4dff @835f2+1 ff6179ffff4292 @58ae8+4 @8343a+1 ff @83408+3 ffff82ffff428282ff @83498+3 ffffff @8343e+1 ffff @83401+2 ffe5ff @8341e+1 ffe5ff @83422+1 ffff8bffff6cff @83456+1 ffe3ff @8351e+1 ffff @834a5+2 ff61 @833f5+2 ff @83500+3 ffe3ff76ff61ff76ffff7876ff87ff76ffe5ff @83426+1 ffff7976ffff78ffffff43ffffe5ffdcff @83520+3 ffff @83481+2 ffc4ff @83552+1 ffc443 @58ae8+4 @8346a+1 ff @834b0+3 ff81ff @8352a+1 ff81e3 @833f6+1 ffffff @834fe+1 ffffff @8348a+1 ffffff @8352a+1 ffff8fffffff @83479+2 @58ae8+4 @83673+3 ffff91ff @8365a+1 ff91 @58ae8+4 @83651+2 @8363f+2 ffff @83647+1 @58ae8+4 91ff @836ae+1 ffffff @83642+1 ff91ff @83642+1 ffff @83645+2 @83707+1 @58efb+5 @837c9+2 ffff97 @58ae8+4 @83656+1 @83687+1 ffff7b @83653+1 ff @83655+2 ffff54ff @8365b+4 ffff58 @58ae8+4 @836aa+1 ff919cffff65ffff @83707+1 ffff @8370a+1 ff @8369c+3 ffffff @8369e+1 ffff9cffffff @83691+2 ffffff @8369a+2 ff9cff7bffffff @83697+3 ff @83697+1 ffff @8369a+1 ffff @83699+2 ffff @83695+2 ffff5dff6691 @8363d+2 ffff @83701+2 ffff56ffff91ff @836fe+1 ffffff @83706+1 ffff @83705+2 @83703+1 ffff @83706+1 ff919bff @836fb+2 ff @836fe+1 @83703+1 @58efb+5 9bffffff @836b5+2 @836af+4 ff @836cc+3 ffffa8ffff @8364c+3 @8364b+1 ff @8364d+2 @83707+1 ff5dffffd9 @58efb+5 @837ce+1 ff @8383c+3 ff @836dc+3 @836db+2 ffffff9195ffffff5eff66 @836d0+4 ffff @836d6+1 ffff @836d5+2 @836e3+3 ffffff @837c5+2 @836d7+2 ff @836da+1 ffff95ffffff @836d9+2 @837c7+1 ffdaff @83707+1 91ffffff @8374c+3 @83763+4 @837d7+2 ffffff @837f4+3 ff @83834+3 ff @83838+3 @8372f+2 ffff @836a3+4 5fff55 @8363e+1 68ffff @8373a+1 68ffff @836ee+1 ff @836ec+3 @8371f+1 ffff @83722+1 @837bb+2 ff @837be+1 ff91ff @83722+1 @836ef+1 ffff @836f2+1 @836ef+3 ff @836ef+1 ffffff @836f3+1 ff54ff6691ff596891ff99ffff @83715+2 5f91ff99ff @83710+3 ffff @83719+2 68ff @8371d+2 @8377b+4 @837a7+1 ff7a @58ae8+4 @8378e+1 77 @8363c+3 ffff @83781+2 ffffff @837a6+1 ffff7affff917affff91ff @8378a+1 ffffff @83786+1 7bffff99ffff96ffff65ff @8370a+1 @83707+2 ffff @837f7+4 @8372f+1 ffff @83732+1 @837d3+1 ff90ff @837cf+1 ff @837d1+2 @837cf+1 ffff @837d2+1 ff4c @58ae8+4 @83761+2 ffff @8367d+2 ff @83680+3 ff @836bc+3 @836f7+4 ff @83664+3 ff @83668+3 ff @8366c+3 ff4cff @83662+1 ff @83768+7 ff8784ff @83683+2 @58efb+5 @8366a+1 ffff92ff @836bf+1 ff92ffff9192 @58ae8+4 @836c2+1 ff @836c4+3 ff @8373c+3 ff @83740+3 @8382f+4 @8376f+4 ff @83754+3 ff @83724+3 ff80ff @83776+1 @83727+4 ff @83758+3 @8382b+4 @837cf+3 ff @837d7+3 ffff @83748+3 @8374f+4 ff =3 11ff10ff0b0cff0d0405ffffff91ff07ffff06 @58ae8+4 0708090aff0e1affff @8364b+4
-B 91c4b =1 40975ce05cbb5ded5e2c =1 fc6064618d61a6612762a661a4620c634d639e63a965f265d366c16771687268db689d6ae66a3f6be06b2d6c7e6c7e6c476dfd6e9c703b72a77b467d127e4d63 @926fa+49 @92354+db @91f80+2 13 @91f83+a 080808080a0a0a0a0f0f982013 @91f90+9 07080808080a0a0a0a0f0f984013 @91f9c+9 @831a3+4 @831a3+4 070707986013 @91fa8+9 @831a3+4 @831a3+4 070707 @91fb1+19 000498b3000498c00004 @9200d+4 @9202c+5 d3000498e00003 @92030+4 98f30003990000049913000399200003 @92011+5 @92035+4 33000499400003 @92038+5 530003996000049973000399800004 @92015+5 @9203d+4 93000399a00003 @92040+4 99b3000499c00004 @92019+13 99d3000499e0000399f300039a0010 @91f90+7 @91f91+6 @91f91+4 9a1300049a2013 @91f90+7 @91f91+6 @91f93+6 04 @92044+1 980013 @91f83+a 080808080a0a0a0a0f0f982013 @91f90+9 07080808080a0a0a0a0f0f984013 @91f9c+9 @831a3+4 @831a3+4 070707986013 @91fa8+9 @831a3+4 @831a3+4 070707 @91fb1+19 000498b3000498c00004 @9200d+4 @9202c+5 d3000498e00003 @92030+4 98f30003990000049913000399200003 @92011+5 @92035+4 33000499400003 @92038+5 530003996000049973000399800004 @92015+5 @9203d+4 93000399a00003 @92040+4 99b3000499c00004 @92019+13 99d3000499e00003 @91f74+6 0100 @91f7b+5 99f300039a0010 @91f90+7 @91f91+6 @91f91+4 9a1300049a2013 @91f90+7 @91f91+6 @91f93+6 04 @92044+139 @9242f+29 @926e1+19 @91c97+81 @921e5+7d @9217d+68 @92262+41 @91d18+25c @93ba7+12a @92459+ee @922a3+b1 @92547+69 @92743+aff
+B 830d3 0001020304 @2442c+4 050707080809070a0b0c0d0e0f05050510050505070707111112131214050514140705071515160b1112131205050514141708070715070b050b0b0505181819051905050505051a1b0b1c1d0518181e051f05050505050b0b0b0b0505182019051905050505050b0b0b0b21212223050505240505050505252627260528292a2b142c0505080505262d26052a28282e2a142f05300731263205262a2a05052a14053334343405273526361405050508142f3734343434051616160505050514382c39393a3b0316160505080805052f052c083c39033d16033e3f3f050537374037 =1 050505413e3e0303034205052c051d33054305030000010203030405 =1 06070300080906050a0605060006000b0b0000 =1 030c0c0d060305050e0f10110501120500 =1 0505030603131400131503161617171616 =1 191a19061b =1 051c031a1a000005 =1 1d18001e1f1c0320210122061c002323 =1 2401252627002803 =1 292a =1 1a282b =1 2c2d282a2a282e2b2800280016 =1 002f0601062f30 =1 03291a27030028291531032f32032f002503 =1 053333343334330035230b0b23231616363738 =3 39393a273b010303 =1 003c3a3d3e280e3b =1 3e3e033f =1 1b403e1e41 =1 273e423e434443003a3e27454500461616 =2 474747 =1 484949 =1 00 =2 000b =1 4a000049 =1 38004b49 =1 4c004d3800 =1 004e =1 4f50515200005303005400544300035556572458582424585824595a24245b5c5d0000035e00 =1 5f46600b010b @2e1e0+4 1e =1 6100 =1 0026006200 =1 63646566030b1e03031e002d =1 6705681e11 =1 1e0003696a036b6703001e3f1e006c1e0b0b000b6d6d0b376e6e37370000004d @504e0+4 =1 @504e0+a 707100710000007100007100710000720000727373 @504e0+4 6c7471747474 =1 757677787900007a7b7c7d7e00 @832ba+4 80818200740071007171000000716c6c =2 8384008586870000737474006c6c494985 @504e0+4 8800898a008b8c71718d8e0074030000718f907100000072738d4900000391927100937294009596 =1 97380098030000999a9b9a9c9d9c9b9a9c999e009c9b9f9f9f9f9f9f9f9f9f9f @833f4+1 @83588+1 @833f4+1 @8358a+1 @8358e+1 @8358c+1 @8358e+1 @8358e+1 @83590+1 @83590+2 @83590+1 @83595+1 @83594+3 @83598+1 @83598+1 @83598+1 @8359a+1 @58ae8+4 ff @8350c+2 ffff @8352c+1 @58efb+5 @8352e+1 ffff @83505+2 @8341e+1 @83474+1 @8341e+1 @83476+1 @835c4+1 @835c4+3 @835a1+1 @835a0+3 ffff @835a5+2 ff @835a8+1 ff @835aa+1 ff @835a8+1 @58efb+5 @83466+1 ffff @833fd+2 @833f4+1 4a @833f5+2 @83441+1 @8342c+1 =1 @8342e+1 ffff @83511+1 @58ae8+4 @8357e+1 ffff @8357d+1 ffff @83538+2 ffff @83494+1 @58ae8+4 @83439+1 ffff @833f8+1 ffffff @834ac+1 ff @834ae+1 @835f2+1 @835f0+1 @835f2+1 @835f2+1 ff @834d4+2 ffff @83438+2 @58ae8+4 @8343a+1 @8340a+1 @83408+3 ffff @834dd+1 ffff @83494+2 @83495+1 @83499+1 @83498+3 ffffff @8343e+1 @83401+1 @83401+1 @83401+2 @8341e+1 @8341c+1 @8341e+1 @8341e+1 ff @83420+1 ff @83422+1 ffff @83455+1 ff @83499+1 @83454+1 =1 @83456+1 @8351e+1 @8351c+1 @8351e+1 @8351e+1 ffff @834a5+2 @833f4+1 61 @833f5+2 ff @83500+3 ff @835c8+1 ff76 @835b5+1 @835b4+2 76 @835b0+1 @835b0+2 76 @834b8+1 @834a8+1 @834b8+1 76ff @83424+1 ff @83426+1 @835b8+1 @835b8+2 =1 @834c5+2 @835ad+1 @834c5+1 ffff @83425+1 ff @834cc+1 @83418+1 @834cc+1 dc @83520+1 @83520+3 @83481+1 @83481+1 @83481+2 @83552+1 @83550+1 @83552+1 @83552+1 ff @834c8+2 @58ae8+4 @8346a+1 ff @834b0+3 @834e8+1 @83528+1 @834e8+1 @8352a+1 @833f4+1 81 @834ec+1 @833f6+1 ffffff @834fe+1 @834f4+1 =1 @834f4+1 @8348a+1 @834f8+1 =1 @834f8+1 @8352a+1 ffff @83635+1 ffffff @83479+2 @58ae8+4 @83673+3 @83673+1 ff @83658+1 ff @8365a+1 ff @83658+1 @58ae8+4 @83651+2 @8363f+2 ffff @83647+1 @58ae8+4 @836ac+1 @83520+1 @836ae+1 @83526+1 @83526+1 @83526+1 @83642+1 ff @83640+1 ff @83642+1 @83646+1 @83646+1 @83645+2 @83707+1 @58efb+5 @837c9+2 ffff @8368d+1 @58ae8+4 @83656+1 @83687+1 =1 @83540+1 7b @83653+1 ff @83655+2 ffff @83689+1 ff @8365b+4 @83552+1 @83552+1 @836a9+1 @58ae8+4 @836aa+1 ff @83654+2 ff @8355e+1 @83708+1 @8355e+1 =1 @83707+1 @83561+2 @8370a+1 @83565+1 @8369c+3 ffffff @8369e+1 ffff @8369d+1 ff @83692+1 @83692+1 @83691+2 ffffff @8369a+2 =1 @8369d+1 @83578+1 7bffffff @83697+3 @83581+1 @83697+1 ffff @8369a+1 ffff @83699+2 @8358e+1 @8358e+1 @83695+2 @83590+1 =1 @83709+1 @83590+1 6691 @8363d+2 @83598+1 =1 @83701+2 ffff @836a1+1 ff @835a1+1 @836fc+1 =1 @836fe+1 ffffff @83706+1 ffff @83705+2 @83703+1 ffff @83706+1 @835b0+1 @836fc+2 @835b0+1 @836fb+2 =1 @836fe+1 @83703+1 @58efb+5 @836fd+1 =1 @835c0+1 =1 @836b5+2 @836af+4 ff @836cc+3 ffff @836b9+1 ff @835d0+1 @8364c+3 @8364b+1 @835d6+1 @8364d+2 @83707+1 @835d9+1 @83709+1 @835d9+1 @835dd+1 @837cc+1 @58efb+5 @837ce+1 @8383d+1 @8383c+3 ff @836dc+3 @836db+2 ffff @835f2+1 @837c0+2 =1 ffff @836dd+1 ff66 @836d0+4 @836d6+1 @836d6+1 @836d6+1 @836d6+1 @836d6+1 @836d5+2 @836e3+3 ffffff @837c5+2 @836d7+2 ff @836da+1 ffff @837c1+1 ffffff @836d9+2 @837c7+1 ff @837c9+1 ff @83707+1 91ffff @8374c+1 @8374c+3 @83763+4 @837d7+2 @837d7+1 @837d7+1 @837f4+1 @837f4+3 @83834+1 @83834+3 @83838+1 @83838+3 @8372f+2 @8372f+1 @8372f+1 @836a3+4 5f @8363b+1 55 @8363e+1 68 @83646+1 @83646+1 @8373a+1 68ffff @836ee+1 ff @836ec+3 @8371f+1 ffff @83722+1 @837bb+2 ff @837be+1 ff @83720+1 ff @83722+1 @836ef+1 @8365b+2 @836f2+1 @836ef+3 ff @836ef+1 =1 @83664+1 @83664+1 @836f3+1 =1 @836f5+1 @83668+1 6691 @8363b+1 5968 =1 @8363b+1 99 =2 @83715+2 5f91 @8363b+1 99ff @83710+3 @8371a+1 @8371a+1 @83719+2 68ff @8371d+2 @8377b+4 @837a7+1 ff @837a9+1 @58ae8+4 @8378e+1 77 @8363c+3 @83782+1 @83782+1 @83781+2 ffffff @837a6+1 ffff @837ad+1 ffff @83784+2 ffff @83788+1 ff @8378a+1 ffffff @83786+1 7b @8363b+2 99ffff @837a5+1 ffff @83708+1 ff @8370a+1 @83707+2 @836be+1 =1 @837f7+4 @8372f+1 @8372f+1 @8372f+1 @83732+1 @837d3+1 @837d3+1 @837d5+1 @837d3+1 @837cf+1 @837cf+1 @837d1+2 @837cf+1 @837cf+1 @837cf+1 @837d2+1 @836d6+1 @83660+1 @58ae8+4 @83761+2 ffff @8367d+2 @83680+1 @83680+3 @836be+1 @836bc+3 @836f7+4 @83664+1 @83664+3 @83668+1 @83668+3 @8366c+1 @8366c+3 ff @83660+1 ff @83662+1 @83769+1 @83768+7 ff @8367c+2 ff @83683+2 ffff @83668+1 @83668+1 @83668+1 @8366a+1 ffff @836c1+1 ff @836bf+1 ff @836c1+1 ff @8371a+1 @836c0+2 @58ae8+4 @836c2+1 @836c6+1 @836c4+3 @8373c+1 @8373c+3 @83740+1 @83740+3 @8382f+4 @8376f+4 @83735+1 @83754+3 @83724+1 @83724+3 @8373c+1 @83774+1 @8373c+1 @83776+1 @83727+4 ff @83758+3 @8382b+4 @837cf+3 @837cf+1 @837d7+3 @837d7+1 ff @83748+3 @8374f+4 ff =3 11ff10ff0b0c @83764+1 0d0405 =3 @8364c+1 @8376b+1 07 @83771+2 06 @58ae8+4 0708090aff0e1a @8377b+2 @8364b+4
+B 91c4b =1 40975ce05cbb5ded5e2c =1 fc60 @91c5a+1 618d61a6612762a661a4620c634d639e63a965f265d366c16771687268db689d6ae66a3f6be06b2d6c7e6c7e6c476dfd6e9c703b72a77b467d127e4d63 @926fa+49 @92354+db @91f80+2 @91fb3+1 @91f83+a @91f8f+1 @91f8f+1 @91f8f+1 @91f8f+1 @91ffe+1 @91ffe+1 @91ffe+1 @91ffe+1 @9201b+1 @9201b+1 @91f8d+2 @91fb3+1 @91f90+9 @92000+1 @91f8f+1 @91f8f+1 @91f8f+1 @91f8f+1 @91ffe+1 @91ffe+1 @91ffe+1 @91ffe+1 @9201b+1 @9201b+1 @91f99+2 @91fb3+1 @91f9c+9 @831a3+4 @831a3+4 @92000+1 @92000+1 @92000+2 @91fa6+1 @91fb3+1 @91fa8+9 @831a3+4 @831a3+4 @92000+1 @92000+1 @92000+1 @91fb1+19 @91f86+2 @91fee+2 @91f86+2 @91f80+1 c0 @91f86+2 @9200d+4 @9202c+5 d3 @91f86+2 @91f80+1 e0 @9201c+2 @92030+4 @91f80+1 f3 @9201c+2 @92011+1 @91f85+3 @92011+1 @91fb3+1 @9201c+2 @92011+1 @91f8e+1 @9201c+2 @92011+5 @92035+4 33 @91f86+2 @92011+1 @91f9a+1 @9201c+2 @92038+5 53 @9201c+2 @92011+1 @91fa6+1 @91f86+2 @92011+1 73 @9201c+2 @92011+1 @91fb2+1 @91f86+2 @92015+5 @9203d+4 93 @9201c+2 @92011+1 @91fc9+1 @9201c+2 @92040+4 @92011+1 @91fef+1 @91f86+2 @92011+1 c0 @91f86+2 @92019+13 @92011+1 d3 @91f86+2 @92011+1 e0 @9201c+2 @92011+1 f3 @9201c+2 @91fd8+1 @91f81+1 10 @91f90+7 @91f91+6 @91f91+4 @91fd8+1 @91fb3+1 @91f86+2 @91fd8+1 @91f8e+1 @91fb3+1 @91f90+7 @91f91+6 @91f93+6 @91f83+1 @92044+1 @91f80+2 @91fb3+1 @91f83+a @91f8f+1 @91f8f+1 @91f8f+1 @91f8f+1 @91ffe+1 @91ffe+1 @91ffe+1 @91ffe+1 @9201b+1 @9201b+1 @91f8d+2 @91fb3+1 @91f90+9 @92000+1 @91f8f+1 @91f8f+1 @91f8f+1 @91f8f+1 @91ffe+1 @91ffe+1 @91ffe+1 @91ffe+1 @9201b+1 @9201b+1 @91f99+2 @91fb3+1 @91f9c+9 @831a3+4 @831a3+4 @92000+1 @92000+1 @92000+2 @91fa6+1 @91fb3+1 @91fa8+9 @831a3+4 @831a3+4 @92000+1 @92000+1 @92000+1 @91fb1+19 @91f86+2 @91fee+2 @91f86+2 @91f80+1 c0 @91f86+2 @9200d+4 @9202c+5 d3 @91f86+2 @91f80+1 e0 @9201c+2 @92030+4 =1 f3 @9201c+2 @91f74+1 =3 @91f74+1 @91fb3+1 @9201c+2 @91f74+1 @91f8e+1 @9201c+2 @92011+5 @92035+4 33 @91f86+2 @91f74+1 @91f9a+1 @9201c+2 @92038+5 53 @9201c+2 @91f74+1 @91fa6+1 @91f86+2 @91f74+1 73 @9201c+2 @91f74+1 @91fb2+1 @91f86+2 @92015+5 @9203d+4 93 @9201c+2 @91f74+1 @91fc9+1 @9201c+2 @92040+4 @91f74+1 @91fef+1 @91f86+2 @91f74+1 c0 @91f86+2 @92019+13 @91f74+1 d3 @91f86+2 @91f74+1 e0 @9201c+2 @91f74+6 @91fa9+1 @91f77+1 @91f7b+5 @91f74+1 f3 @9201c+2 @91fd8+1 @91f77+1 10 @91f90+7 @91f91+6 @91f91+4 @91fd8+1 @91fb3+1 @91f86+2 @91fd8+1 @91f8e+1 @91fb3+1 @91f90+7 @91f91+6 @91f93+6 @91f83+1 @92044+139 @9242f+29 @926e1+19 @91c97+81 @921e5+7d @9217d+68 @92262+41 @91d18+25c @93ba7+12a @92459+ee @922a3+b1 @92547+69 @92743+aff
 B 93ba7 @93242+19f @925b0+131
 G header
 B 134 4c41445852 @504e0+a
@@ -2492,53 +2492,15 @@ I 5d5 0+13
 I 600 0+26
 I 601 0+11 1e+58
 I 602 4+14
-I 603 15+2a 49+1c 6d+17 90+1d
-I 606 2+18 3a+e 51+2a f4+15
-I 607 0+1a 3a+e 51+2a 102+15
-I 608 d+d 23+e 93+10 d0+7 116+7
-I 609 d+d 23+e 93+10 d0+7 123+7
+I 606 d+4
+I 607 d+4
 I 60b 0+8
 I 611 0+8a
 I 612 0+24c 250+30 284+98 320+e1 405+ad 4b6+bf 57e+11e 6cd+103 7ea+6 820+4 82f+33 8ba+32 8f0+3c 930+8 942+21 96c+4 97c+a4 a40+20 a65+2c aa0+6 aab+3f af0+a b18+e b2c+10 b40+30 b80+9 b90+40 bd4+23 c10+7 c22+e c80+17 c9b+15 cd0+30 d04+18 d60+8f e20+6 e64+c e76+a ea0+8f f98+4 fa2+14 fba+6 fe0+c ff0+7f 10ce+6 10e6+2a 1130+a0 1206+4a 1270+62 12e0+a2 13b0+55 1420+6 1430+72 14ee+56 1548+5 158a+56 1621+5f 1684+d 1695+f 16a8+23 16cf+15 16f2+9 1719+7 172c+8 1756+19 178c+52 17e2+46
 I 614 0+2a
-I 618 0+4
-I 62b 0+4
-I 63b 0+4
-I 63e 0+4
-I 645 0+4
-I 64e 0+4
-I 65e 0+4
-I 660 0+4
-I 67e 0+4
-I 68a 0+4
-I 68b 0+4
-I 6ab 0+4
-I 6b0 0+4
-I 6ba 0+4
-I 6bf 0+4
-I 6c8 0+4
-I 6d8 0+4
-I 6d9 0+4
-I 6e6 0+4
-I 6e7 0+4
-I 6f6 0+4
-I 6f7 0+4
-I 708 0+4
-I 70a 0+4
-I 70b 0+4
-I 715 0+4
-I 758 0+4
-I 760 0+4
-I 761 0+4
 I 769 0+4
-I 783 0+4
-I 79f 0+4
-I 7a9 0+4
-I 7c0 0+4
-I 7dd 0+4
 I 859 0+4
 I 866 0+4
-I 8d8 0+4
 I 91e 0+4
 I 920 0+4
 I 922 0+4

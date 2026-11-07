@@ -117,7 +117,7 @@
     - [x] Plan reworked: ROM-read groups claimed with the ROM
     - [ ] Step 3.6.1 ROM-free proof of save's packing
       - [x] Fragment finder, checks and encoder rule
-      - [ ] Goldens and tables regenerated
+      - [x] Goldens and tables regenerated
     - [ ] Step 3.6.2 C write logger and KS
     - [ ] Step 3.6.3 bank3e
     - [ ] Step 3.6.4 title
