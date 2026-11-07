@@ -6,7 +6,7 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -ffp-contract=off
 LADX := ../../ladx
 BUILD := build
 
-UNIT_TESTS := test_sha512
+UNIT_TESTS := test_sha512 test_pyrandom
 
 LADX_SRC := $(wildcard $(LADX)/src/*.c)
 LADX_HDR := $(wildcard $(LADX)/include/*.h $(LADX)/src/*.h)
