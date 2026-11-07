@@ -403,7 +403,7 @@ group, or a capacity exceeded is an error. An error has a status
 `no-group-file`, `no-unit`, `overflow`, `no-entry`, `buffer`, `range`),
 the caller's file name and the 1-based line; nothing is half-opened.
 Capacities: 16 groups, 512 units, 512 `order.txt` rows, 2048 entries, 12
-components per unit (today 8, 383, 147, 999 and 6, the constants files
+components per unit (today 8, 382, 147, 991 and 6, the constants files
 included; units raised from 256 for `goal.txt`'s 265).
 
 **Key.** From validated, supported settings and the spot count: a
@@ -704,10 +704,10 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   hand-built graph with `KeyLocation` spots and an unreached one. Then
   it opens the real
   `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
-  file): 8 groups (`bank3e.txt`, `endscreen.txt` and `goal.txt` included), 383 units, 999 entries, one unit keyed by `count`; and
+  file): 8 groups (`bank3e.txt`, `endscreen.txt` and `goal.txt` included), 382 units, 991 entries, one unit keyed by `count`; and
   for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
   supported, every unit without `count` selects an entry. It prints
-  `test_tables: data/ladx opened (8 groups, 383 units, 999 entries); <n>
+  `test_tables: data/ladx opened (8 groups, 382 units, 991 entries); <n>
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
@@ -1295,7 +1295,10 @@ row, after `options`' second `fastText`).
 and `setRequiredInstrumentCount`, `ladx_group_goal`), on the world
 setup's goal (step 4's port), with `data/ladx/goal.txt` ("Patch
 tables", 265 units): for `vanilla` and `instruments` (the drawn counts of
-`open-4`, `5-8` and `goalcount=random` included), text 0x1A3
+`open-4`, `5-8` and `goalcount=random` included) and for `open` (the
+count -1: `goal=open`, or `goal=instruments` with `goalcount=random`
+drawing -1, LADXR's `setRequiredInstrumentCount(rom, -1)` row, `C`
+because the world setup's goal is drawn), text 0x1A3
 `formatText("You need %d instruments")` (Python's `%d`, so `-1`), then,
 below 8, unit `goal.<c + 3>` (`c` negative as -1); for `specific`, text
 0x1A3 `formatText("You need:" + "\n{INSTRUMENT<d>}"...)` in the world
@@ -1309,17 +1312,12 @@ removed, stored. LADXR zeroes the sign tables, places the signs, stores
 room 6, then patches; the unit's other writes share no position with the
 signs and rooms, and its zeroes come before the signs in both orders, so
 every event sees the same state before and the segment's net effect is
-the same. `open` and `seashells` write nothing (the `goal-fixed` rows),
-nor does the cut bingo (unsupported settings). Text writes have no origin.
+the same. `seashells` writes nothing (the `goal-fixed` row), nor does
+the cut bingo (unsupported settings). Text writes have no origin.
 It needs the ROM (the file's references, the rooms, the KS copies in
 its goldens: `rom-group goal`), draws nothing (the world setup drew)
 and has no `draw`. It fails on a file without 265 units, a malformed
-room or a goal it cannot write. Not covered by C or the tables: on
-`goal=instruments` with `goalcount=random`, a drawn -1 makes the world
-setup's goal `open`, so LADXR writes `setRequiredInstrumentCount(rom,
--1)` at the `goal-fixed.3` table row, keyed by `goal` alone, whose
-`instruments` entry is `nothing`; no case reaches it (step 3.6.10's
-note).
+room or a goal it cannot write.
 
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank

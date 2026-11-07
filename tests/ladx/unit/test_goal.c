@@ -346,13 +346,39 @@ static void test_count_minus_one(void)
 	compare("the count -1: Python's %d text, unit 1");
 }
 
-static void test_open_and_seashells(void)
+/* world_setup.goal open (goal=open, or goal=instruments drawing -1): setRequiredInstrumentCount(rom, -1), a C row. */
+static void test_open(void)
 {
-	static const char *const open[] = {"goal=open", NULL}, *const shells[] = {"goal=seashells", NULL};
+	static const char *const open[] = {"goal=open", NULL};
+	static const char *const drawn[] = {"goal=instruments", "goalcount=random", NULL};
 	LadxPipelineError err;
+	uint32_t s;
 
 	randomize(open, 1);
-	check(run(&err) == LADX_PIPELINE_OK && !strstr(out, "G goal"), "open: goal writes nothing");
+	check(world()->goal == LADX_GOAL_OPEN, "goal=open: the open goal");
+	check(run(&err) == LADX_PIPELINE_OK, "the pipeline runs goal");
+	model_begin();
+	model_text("You need -1 instruments");
+	model_unit(1);
+	compare("goal=open: the count -1's text, unit 1");
+	for (s = 0; s < 200; s++) {
+		randomize(drawn, s);
+		if (world()->goal == LADX_GOAL_OPEN)
+			break;
+	}
+	check(s < 200 && world()->goal_count == -1, "a seed of instruments, goalcount=random draws -1");
+	check(run(&err) == LADX_PIPELINE_OK, "the pipeline runs goal");
+	model_begin();
+	model_text("You need -1 instruments");
+	model_unit(1);
+	compare("instruments drawing -1: the count -1's text, unit 1");
+}
+
+static void test_seashells(void)
+{
+	static const char *const shells[] = {"goal=seashells", NULL};
+	LadxPipelineError err;
+
 	randomize(shells, 1);
 	check(run(&err) == LADX_PIPELINE_OK && !strstr(out, "G goal"), "seashells: goal writes nothing");
 }
@@ -492,7 +518,8 @@ int main(void)
 	open_tables(UNITS);
 	test_counts();
 	test_count_minus_one();
-	test_open_and_seashells();
+	test_open();
+	test_seashells();
 	test_specific();
 	test_maze();
 	test_refusals();

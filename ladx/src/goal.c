@@ -125,8 +125,9 @@ int ladx_group_goal(LadxEncoder *enc, LadxPipeline *p)
 	case LADX_GOAL_SPECIFIC:
 		return specific_instruments(enc, p, ws->goal_instruments);
 	case LADX_GOAL_OPEN:
+		return instrument_count(enc, p, -1);
 	case LADX_GOAL_SEASHELLS:
-		return 1; /* the goal-fixed table rows */
+		return 1; /* the goal-fixed table row */
 	case LADX_GOAL_VANILLA:
 	case LADX_GOAL_INSTRUMENTS:
 		return instrument_count(enc, p, ws->goal_count);

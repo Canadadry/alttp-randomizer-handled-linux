@@ -158,9 +158,9 @@ int ladx_group_notext(LadxEncoder *enc, LadxPipeline *p);
  * The goal group (patches/maze.py patchMaze, patches/goal.py
  * setSpecificInstruments and setRequiredInstrumentCount) on the world
  * setup's goal: text 0x1A3 and data/ladx/goal.txt's unit for the count or
- * the sorted instruments; for the maze, its unit, each sign's room with the
- * sign entity inserted first and its sign table bytes, then room 6 without
- * its 0xDE entities. Nothing for open and seashells (goal-fixed rows).
+ * the sorted instruments (open: the count -1); for the maze, its unit, each
+ * sign's room with the sign entity inserted first and its sign table bytes,
+ * then room 6 without its 0xDE entities. Nothing for seashells (goal-fixed).
  * Needs p->rom; 0 unless the file has 265 units, on a malformed room or
  * a goal it cannot write.
  */
