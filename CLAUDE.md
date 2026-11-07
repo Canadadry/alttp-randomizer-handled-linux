@@ -25,9 +25,13 @@ in `docs/`, then `README.md`.
   LADXR's item names; `requirements.c`, its requirement nodes and the
   explorer's inventory; the logic graph, its location kinds, dungeons,
   overworld and explorer, `ladx_logic.h`, tested by `test_logic`, contract
-  in `tests/ladx/README.md`, "Unit tests and lint");
+  in `tests/ladx/README.md`, "Unit tests and lint"; `rng.c`, the traced
+  generator `ladx_rng.h`, one record per call to a caller's sink);
   pure C99 like `alttp/`, built with only `ladx/include` on the include path,
-  never including `alttp/` or `app/`.
+  never including `alttp/` or `app/`. `ladx/host/` is host-side code on top
+  of it (C99, stdio allowed, `ladx/include` and itself on the include path):
+  `run_text.c`, `run.txt`'s line renderer with CPython's `float.hex`
+  (contract in `tests/ladx/README.md`, "Unit tests and lint").
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
   like the library, built with only `alttp/include` and itself on the include
   path, no SDL; the app opens on its game-choice screen (`ui_games.c`), A

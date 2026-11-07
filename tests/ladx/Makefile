@@ -6,12 +6,15 @@ CFLAGS := -std=c99 -Wall -Wextra -Werror -ffp-contract=off
 LADX := ../../ladx
 BUILD := build
 
-UNIT_TESTS := test_sha512 test_pyrandom test_settings test_requirements test_logic
+UNIT_TESTS := test_sha512 test_pyrandom test_rng test_run_text test_settings test_requirements test_logic
 # Run again with --fixtures by make logic and unit-arm.
 LOGIC_TESTS := test_logic
 
 LADX_SRC := $(wildcard $(LADX)/src/*.c)
 LADX_HDR := $(wildcard $(LADX)/include/*.h $(LADX)/src/*.h)
+HOST_SRC := $(wildcard $(LADX)/host/*.c)
+HOST_HDR := $(wildcard $(LADX)/host/*.h)
+HOST_OBJ := $(patsubst $(LADX)/host/%.c,$(BUILD)/host/%.o,$(HOST_SRC))
 LADX_OBJ := $(patsubst $(LADX)/src/%.c,$(BUILD)/obj/%.o,$(LADX_SRC))
 LADX_LIB := $(BUILD)/libladx.a
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
@@ -19,7 +22,8 @@ SUPPORT_OBJ := $(BUILD)/support.o
 LOGIC_FIXTURE_OBJ := $(BUILD)/logic_fixture.o
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
 LINT_DIR := $(BUILD)/lint
-LINT_OBJ := $(patsubst $(LADX)/src/%.c,$(LINT_DIR)/%.o,$(LADX_SRC))
+LINT_OBJ := $(patsubst $(LADX)/src/%.c,$(LINT_DIR)/%.o,$(LADX_SRC)) \
+	$(patsubst $(LADX)/host/%.c,$(LINT_DIR)/host/%.o,$(HOST_SRC))
 
 TOOLCHAIN := ../../onion-toolchain.sh
 ONION_CFLAGS := -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve
@@ -33,7 +37,7 @@ CASES ?=
 help:
 	@echo "make test              LADX's unit tests (tests/ladx/unit), built with the ladx/ library, run from tests/ladx"
 	@echo "make logic             LADX's LOGIC_TESTS run with --fixtures from tests/ladx: the oracle's logic fixtures replayed"
-	@echo "make lint              every ladx/ source built as strict ISO C99 (-pedantic-errors)"
+	@echo "make lint              every ladx/ source, ladx/host/ included, built as strict ISO C99 (-pedantic-errors)"
 	@echo "make unit-arm          LADX's unit tests built by Onion's toolchain (-ffp-contract=off kept) and run under qemu-arm from tests/ladx (needs docker, qemu-user)"
 	@echo "make rom-checkthe generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
 	@echo "make rom-check-selftest rom_check.py's self-test alone: a synthetic ROM, a planted case tree and fake generators, no ROM"
@@ -57,16 +61,16 @@ logic: $(LOGIC_BINS)
 	@echo "logic: $(words $(LOGIC_TESTS)) LADX unit tests replayed the oracle fixtures"
 
 lint: $(LINT_OBJ)
-	@echo "lint: $(words $(LADX_SRC)) ladx/ sources build with -pedantic-errors"
+	@echo "lint: $(words $(LADX_SRC)) ladx/ sources and $(words $(HOST_SRC)) ladx/host/ sources build with -pedantic-errors"
 
 # _FILE_OFFSET_BITS=64 as tests/alttp's: under qemu-arm a 32-bit readdir fails with EOVERFLOW on ext4.
 unit-arm:
 	@command -v qemu-arm >/dev/null 2>&1 || { echo "setup: qemu-arm not found on PATH (install qemu-user)" >&2; exit 1; }
 	@rm -rf $(ARM_UNIT_DIR) && mkdir -p $(ARM_UNIT_DIR)/obj
 	@echo "unit-arm: building $(words $(UNIT_TESTS)) LADX unit tests in $(ARM_UNIT_DIR) with Onion's toolchain"
-	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include"; \
-		for s in $(LADX_SRC) unit/support.c unit/logic_fixture.c; do "$$cc" $$f -c -o $(ARM_UNIT_DIR)/obj/$$(basename $$s .c).o $$s; done; \
-		for t in $(UNIT_TESTS); do "$$cc" $$f -Iunit -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o; done'
+	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include -I$(LADX)/host"; \
+		for s in $(LADX_SRC) $(HOST_SRC) unit/support.c unit/logic_fixture.c; do "$$cc" $$f -c -o $(ARM_UNIT_DIR)/obj/$$(basename $$s .c).o $$s; done; \
+		for t in $(UNIT_TESTS); do "$$cc" $$f -Iunit -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o -lm; done'
 	@file $(ARM_UNIT_DIR)/test_pyrandom | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_UNIT_DIR)/test_pyrandom; echo "unit-arm: $(ARM_UNIT_DIR)/test_pyrandom is not a 32-bit ARM EABI executable" >&2; exit 1; }
 	@qemu-arm --version | head -n 1
 	@mkdir -p $(BUILD)/logic
@@ -95,9 +99,21 @@ $(LOGIC_FIXTURE_OBJ): unit/logic_fixture.c unit/logic_fixture.h unit/support.h $
 $(BUILD)/test_logic: unit/test_logic.c unit/support.h unit/logic_fixture.h $(SUPPORT_OBJ) $(LOGIC_FIXTURE_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(LOGIC_FIXTURE_OBJ) $(LADX_LIB)
 
+# The host layer sees ladx/include and itself only.
+$(BUILD)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -I$(LADX)/include -I$(LADX)/host -c -o $@ $<
+
+$(BUILD)/test_run_text: unit/test_run_text.c unit/support.h $(SUPPORT_OBJ) $(HOST_OBJ) $(LADX_LIB) $(LADX_HDR) $(HOST_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -I$(LADX)/host -Iunit -o $@ $< $(SUPPORT_OBJ) $(HOST_OBJ) $(LADX_LIB) -lm
+
 $(BUILD)/test_%: unit/test_%.c unit/support.h $(SUPPORT_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(LADX_LIB)
 
 $(LINT_DIR)/%.o: $(LADX)/src/%.c $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors -I$(LADX)/include -c -o $@ $<
+
+$(LINT_DIR)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors -I$(LADX)/include -I$(LADX)/host -c -o $@ $<

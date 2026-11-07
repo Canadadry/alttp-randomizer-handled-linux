@@ -459,15 +459,18 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `ladx/src/`; pure C99, no allocation, no platform library, nothing of
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
-(`test_sha512`, `test_pyrandom`, `test_settings`, `test_requirements`,
-`test_logic`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`),
+(`test_sha512`, `test_pyrandom`, `test_rng`, `test_run_text`,
+`test_settings`, `test_requirements`, `test_logic`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
 one, while CPython never fuses, so `uniform`'s `a + (b - a) * random()`
 would differ in its last bit. Phase 4, which builds `ladx/` into the app,
-keeps the flag. Library objects see only `-I ladx/include`; the tests add
-`-I tests/ladx/unit`. Build output goes to `tests/ladx/build/`.
+keeps the flag. Library objects see only `-I ladx/include`; the host
+layer `ladx/host/` (C99, stdio allowed, never built into the device's
+library) sees `-I ladx/include -I ladx/host`; the tests add
+`-I tests/ladx/unit`, and those linking the host layer `-I ladx/host` and
+`-lm`. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -484,6 +487,42 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   hand-written `uniform(-7.3, 12.9)` vectors, from CPython, are the FMA
   proof: the fixture's `uniform` lines have `a = 0`, where a fused and an
   unfused result round alike, but 4 of these 8 draws differ when fused.
+  `test_rng` checks `ladx_rng` (the traced generator: `ladx_pyrandom`
+  wrapped with its name, `rnd` or `global`, and a sink receiving one
+  record per call, as `ladx_oracle.TracingRandom` traces the outermost
+  call) through its header: the stage, method and generator names
+  (LADXR's `<module>:<qualname>`, as the goldens print them); `seed`,
+  `random`, `choice`, `choices` (integer weights), `shuffle` and
+  `randint` each leave the state `ladx_pyrandom` leaves and return what
+  it draws, with one record holding the arguments, the result and the MT
+  words drawn (the `words` counter's difference; `seed` 0 and the counter
+  reset); `shuffle` records the permutation `ladx_pyrandom_shuffle` makes
+  of `0..n-1` and applies it as `x[to] = before[perm[to]]` (4-byte and
+  7-byte elements); the golden `baseline`'s `choices 12 ... 1 -> 1 [2]`
+  and `goal-specific`'s `shuffle 8 -> 0,6,5,3,4,1,2,7 [11]` drawn from
+  their seeds; `copy_state` (`random.setstate(rnd.getstate())`) a
+  `getstate` record of `rnd` and a `setstate` record of `global`, both
+  `[0]`, the global continuing `rnd`'s stream; an empty `choice` or
+  `choices` (`IndexError`), an empty `randint` range (`ValueError`) and a
+  list over `LADX_RNG_MAX_LIST` (256, overflow) draw nothing and record
+  nothing. It prints `test_rng: seed, random, choice, choices, shuffle,
+  randint and the state copy traced as ladx_pyrandom draws (<c>
+  checks)`.
+  `test_run_text` checks the host's `ladx_run_text` (`run.txt`'s line
+  renderer, `oracle_run.py`'s format) through its header: `float.hex`
+  equal to CPython's strings (0.5, ±0.0, the smallest subnormal,
+  `1 - 2^-53`, `DBL_MIN`, `DBL_MAX`, 0.1, inf, nan); hand-built records
+  rendered byte-identical to the real goldens' lines, read from the case
+  folders (`baseline`'s `seed`, `settings` and trace lines 0 to 3, 16 and
+  17; `race-1`'s `random - -> 0x1.1d12acb9114b1p-1 [2]`;
+  `goal-specific`'s `shuffle`; a keysanity combo's `shuffle 0 -> - [0]`);
+  `settings ""` for an empty short string, `seed -` for an empty seed,
+  negative `randint` bounds, a `choices` with `k` 3 and 0; a record of
+  256 weights and picks fitting `LADX_RUN_TEXT_MAX_LINE`, a line over its
+  buffer or an unknown method rendering nothing; and the trace sink
+  numbering lines from 0 across both generators. It prints
+  `test_run_text: float.hex as CPython's, <g> golden lines rendered
+  byte-identical, sink numbering ok (<c> checks)`.
   `test_settings` checks `ladx_settings` (LADXR's `settings.py` at the
   pin, less `seed` and `forwardfactor`) through its header only: the
   table equal to `settings.txt` in order, field by field (key, category,
@@ -654,14 +693,15 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   with `--fixtures` from `tests/ladx`, then prints `logic: <n> LADX unit
   tests replayed the oracle fixtures`.
 - `make -C tests/ladx lint` (run by the root `make lint`, after
-  `tests/alttp`'s): every `ladx/src` source compiled with `-pedantic-errors`
-  added, then `lint: <n> ladx/ sources build with -pedantic-errors`.
+  `tests/alttp`'s): every `ladx/src` and `ladx/host` source compiled with
+  `-pedantic-errors` added, then `lint: <n> ladx/ sources and <h>
+  ladx/host/ sources build with -pedantic-errors`.
 - `make -C tests/ladx unit-arm` (run by the root `make unit-arm`, after
   `tests/alttp`'s; outside the net): `setup: qemu-arm not found on PATH
   (install qemu-user)`, exit 1, without `qemu-arm`; `onion-toolchain.sh`'s
   `setup:` line without docker or its daemon. Else it prints `unit-arm:
   building <n> LADX unit tests in build/arm/unit with Onion's toolchain`,
-  compiles `ladx/src`, `unit/support.c`, `unit/logic_fixture.c` and each test with Onion's
+  compiles `ladx/src`, `ladx/host`, `unit/support.c`, `unit/logic_fixture.c` and each test (linked with `-lm`) with Onion's
   toolchain and the flags above plus `-O2 -marm -mtune=cortex-a7
   -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve -static
   -D_FILE_OFFSET_BITS=64` (as `tests/alttp`'s), checks with `file` that
