@@ -77,7 +77,8 @@ in `docs/`, then `README.md`.
   `gen_tables.py`, the tables' planning and build (units fused from the
   coverage runs' encodings, keys, reachable tuples, coverage runs, entries
   cut from each run's encoding), its rules in its docstring; its `build`
-  command, with the ROM, is `gen_tables.sh`'s worker),
+  command, with the ROM, is `gen_tables.sh`'s worker; `table_replay.py`,
+  the tables' host replay against the goldens),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
   hand-written inputs `tier1.txt`,
@@ -281,6 +282,25 @@ in `docs/`, then `README.md`.
   (`tmp/ladx-tables/ladxr-check/`, the network needed) and prints one
   `DIFFERENT`, `MISSING` or `EXTRA` line per file unlike `data/ladx/`
   (exit 1), else `tables: <n> files byte-identical to data/ladx`.
+  `python3 -I tests/ladx/oracle/table_replay.py [--root <dir>] [--mirror
+  <dir>] [--rom <file>] [--tables <dir>] [--ladxr <dir>] [--inventory
+  <file>] [--inputs <dir>] [<case>...]` (with the ROM, the LADXR checkout
+  and the mirror's event streams, else a `setup:` line, exit 2) proves
+  itself on planted tables, goldens and streams (a flipped table byte, a
+  copy token swapped for the same bytes, an entry under another key;
+  `table-replay: self-test, 4 planted replays as expected`), then, per
+  case and combo (default every one), walks `order.txt` for the case's key
+  (`config.txt` validated by LADXR, constants and the spot count through
+  `gen_tables.py`'s model), applying each unit's entry at its first row and,
+  at a `C` row, the golden's `C` segments whose first write that row made
+  (segments matched one to one with `<mirror>/<case>/events.txt`); prints
+  `ok <case>` or one `BAD <case>: sha1|projection <group>|key <unit>|align:
+  <detail>` line per problem (`sha1`: the replayed log's decoded SHA-1 is
+  not `run.txt`'s `rom_sha1`, with the first differing offset and its last
+  writer in the replay and the golden; `projection`: a table group's
+  projection differs from the golden's), then `table-replay: <n> cases, <b>
+  bad`, exit 1 on a bad one; about 1 minute for 116 cases. Never prints a
+  ROM byte.
   `inventory_trace.sh [--out <dir>] [--cases <file>] [--seeds <file>]
   [<case>...]` runs every case that way (default: the case folders, like
   `gen_golden.sh`, then, when no case is named, `determinism_cases.txt`'s
@@ -655,8 +675,8 @@ in `docs/`, then `README.md`.
   `mac-run`, never an agent.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
-  `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh`, `gen_tables.sh` and
-  `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
+  `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh`, `gen_tables.sh`,
+  `table_replay.py` and `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
   `key_trace.py` its settings and constant reads,

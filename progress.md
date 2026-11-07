@@ -71,7 +71,7 @@
     - [x] Chunk 3: tables built with the ROM
       - [x] Table builder and gen_tables.sh
       - [x] Tables generated in data/ladx
-    - [ ] Chunk 4: replay over every case
+    - [x] Chunk 4: replay over every case
     - [ ] Chunk 5: random sample combos
   - [ ] Step 2.7 Extraction fixtures
   - [ ] Step 2.8 Nintendo-bytes check over everything committed
