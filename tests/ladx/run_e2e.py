@@ -48,6 +48,7 @@ OUT_OF_STAGE = ("rom_sha1", "spoiler_sha1", "rom", "spoiler")
 # A claimed C group that draws also claims its trace lines: those of these LADXR frames.
 GROUP_TRACE = {
     "marin": ("patches.aesthetics:getMarinStartingText", "utils:randomNumber"),
+    "hints": ("hints:addHints",),
 }
 
 

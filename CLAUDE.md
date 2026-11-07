@@ -55,7 +55,10 @@ in `docs/`, then `README.md`.
   (Marin's starting text from `marin_lines.c`, LADXR's `marin.txt`
   embedded, and the shortened texts) with `text.c`, `formatText`
   (`ladx_text.h`), tested by `test_marin` and `test_text`, claimed
-  `rom-group` by `e2e-rom` with its trace lines, contract in
+  `rom-group` by `e2e-rom` with its trace lines, its draws run without
+  the ROM too, contract in `tests/ladx/README.md`, "Pipeline";
+  `hints.c`, the `C` group `hints` (`addHints`), tested by `test_hints`,
+  claimed `group` by `e2e` with its trace lines, contract in
   `tests/ladx/README.md`, "Pipeline"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in

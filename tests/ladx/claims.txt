@@ -5,6 +5,7 @@ group frame-counter
 group goal-fixed
 group music-fixed
 group options
+group hints
 rom-group bank3e
 rom-group marin
 rom-group title

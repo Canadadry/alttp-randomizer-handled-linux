@@ -295,8 +295,20 @@ static void test_skips_and_failures(void)
 {
 	LadxPipelineError err;
 
+	static LadxRandomizer copy;
+	uint8_t bytes[OUT_MAX];
+	LadxOutcome raised;
+	size_t n;
+
 	check(run(baseline_seed, 0, 1, &err) == LADX_PIPELINE_OK && !strstr(log_text, "G marin"),
-	      "without the ROM, marin is skipped");
+	      "without the ROM, marin writes nothing");
+	ladx_randomize(&copy, pipeline.settings, baseline_seed, 16, NULL, NULL);
+	ladx_marin_starting_text(&copy.rnd, &copy.global, bytes, sizeof bytes, &n, &raised);
+	check(memcmp(&copy.rnd.py, &randomizer.rnd.py, sizeof copy.rnd.py) == 0 &&
+		      memcmp(&copy.global.py, &randomizer.global.py, sizeof copy.global.py) == 0,
+	      "without the ROM, marin still draws as with it");
+	check(run(baseline_seed, 0, 0, &err) == LADX_PIPELINE_GROUP && strcmp(err.group, "marin") == 0,
+	      "without the ROM or the generators, marin fails");
 	check(run(baseline_seed, 1, 0, &err) == LADX_PIPELINE_GROUP && strcmp(err.group, "marin") == 0,
 	      "without the generators, marin fails");
 }
@@ -313,6 +325,9 @@ static void test_refusal(void)
 		      strcmp(err.outcome->message, "'ascii' codec can't encode characters in position 54-55: "
 						   "ordinal not in range(128)") == 0,
 	      "LADXR's outcome: crash UnicodeEncodeError and its message");
+	check(run(refusal_seed, 0, 1, &err) == LADX_PIPELINE_RAISED && strcmp(err.group, "marin") == 0 &&
+		      strcmp(err.outcome->type, "UnicodeEncodeError") == 0,
+	      "the refusal seed raises in marin without the ROM too");
 }
 
 int main(void)

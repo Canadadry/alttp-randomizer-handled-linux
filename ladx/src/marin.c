@@ -353,3 +353,15 @@ int ladx_group_marin(LadxEncoder *enc, LadxPipeline *p)
 	}
 	return 1;
 }
+
+int ladx_group_marin_draws(LadxEncoder *enc, LadxPipeline *p)
+{
+	LadxOutcome raised;
+	size_t n;
+
+	(void)enc;
+	if (!p->rnd || !p->global)
+		return 0;
+	return formatted(ladx_marin_starting_text(p->rnd, p->global, p->values, LADX_WLOG_ATOM_MAX, &n, &raised), p,
+			 &raised);
+}

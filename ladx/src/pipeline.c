@@ -4,9 +4,10 @@
 #include <string.h>
 
 static const LadxPipelineGroup groups[] = {
-	{"bank3e", 1, ladx_group_bank3e},
-	{"marin", 1, ladx_group_marin},
-	{"title", 1, ladx_group_title},
+	{"bank3e", 1, ladx_group_bank3e, NULL},
+	{"marin", 1, ladx_group_marin, ladx_group_marin_draws},
+	{"hints", 0, ladx_group_hints, NULL},
+	{"title", 1, ladx_group_title, NULL},
 };
 
 const LadxPipelineGroup *ladx_pipeline_groups(int *count)
@@ -58,6 +59,7 @@ LadxPipelineStatus ladx_pipeline_run(LadxPipeline *p, LadxEncoder *enc, LadxPipe
 	LadxTablesStep step;
 	char ran[LADX_PIPELINE_GROUP_MAX];
 	LadxEncStatus st;
+	LadxPipelineRun run;
 	int g;
 
 	memset(err, 0, sizeof *err);
@@ -78,11 +80,14 @@ LadxPipelineStatus ladx_pipeline_run(LadxPipeline *p, LadxEncoder *enc, LadxPipe
 		}
 		for (g = 0; g < p->group_count && !span_is(step.group, p->groups[g].name); g++)
 			;
-		if (g == p->group_count || ran[g] || (p->groups[g].needs_rom && !p->rom))
+		if (g == p->group_count || ran[g])
+			continue;
+		run = p->groups[g].needs_rom && !p->rom ? p->groups[g].draw : p->groups[g].run;
+		if (!run)
 			continue;
 		ran[g] = 1;
 		memset(&p->raised, 0, sizeof p->raised);
-		if (!p->groups[g].run(enc, p)) {
+		if (!run(enc, p)) {
 			err->status = p->raised.kind != LADX_OUTCOME_UNFINISHED ? LADX_PIPELINE_RAISED : LADX_PIPELINE_GROUP;
 			err->outcome = err->status == LADX_PIPELINE_RAISED ? &p->raised : NULL;
 			err->group = p->groups[g].name;

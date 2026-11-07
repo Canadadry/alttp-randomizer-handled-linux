@@ -86,7 +86,7 @@ static void test_names(void)
 		"patches.maze:buildMaze",		   "itempool:ItemPool.__randomizeRupees",
 		"randomizer:RandomItemPlacer.run",	   "randomizer:RandomItemPlacer.placeSpecificItem",
 		"randomizer:RandomItemPlacer.__placeItem", "patches.aesthetics:getMarinStartingText",
-		"utils:randomNumber",
+		"utils:randomNumber",			   "hints:addHints",
 	};
 	static const char *const methods[LADX_RNG_METHOD_COUNT] = {
 		"seed", "random", "choice", "choices", "shuffle", "randint", "getstate", "setstate", "randrange",

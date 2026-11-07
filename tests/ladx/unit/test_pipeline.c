@@ -50,7 +50,7 @@ static LadxSpan span(const char *s)
 	"background_attributes"
 #define HEADER "ladx-rom-writes 1\ntables " TABLES "\n"
 
-/* Two table units around C rows: beta twice, rommy (needs the ROM), gamma unregistered. */
+/* Two table units around C rows: beta twice, rommy (needs the ROM), gamma unregistered, drawy (needs the ROM, draws without). */
 static const char *const order_text = "ladx-tables-order 1\n"
 				      "section generator.py generateRom\n"
 				      "table alpha alpha.1 patches.a.one(rom)\n"
@@ -58,6 +58,7 @@ static const char *const order_text = "ladx-tables-order 1\n"
 				      "C rommy - patches.r.one(rom)\n"
 				      "C beta - patches.b.second(rom)\n"
 				      "C gamma - patches.g.one(rom)\n"
+				      "C drawy - patches.d.one(rom, rnd)\n"
 				      "table alpha alpha.2 patches.a.two(rom)\n";
 
 static const char *const alpha_text = "ladx-tables 1\n"
@@ -127,9 +128,23 @@ static int run_rommy(LadxEncoder *e, LadxPipeline *p)
 	return rom && write_byte(e, "rommy", 0x50, rom) && (!c->rommy_const || ladx_pipeline_const(e, p, "rommy"));
 }
 
+static int run_drawy(LadxEncoder *e, LadxPipeline *p)
+{
+	called(p->ctx, "drawy");
+	return p->rom && write_byte(e, "drawy", 0x58, p->rom);
+}
+
+static int draw_drawy(LadxEncoder *e, LadxPipeline *p)
+{
+	(void)e;
+	called(p->ctx, "drawy-draws");
+	return !p->rom;
+}
+
 static const LadxPipelineGroup planted[] = {
-	{"rommy", 1, run_rommy},
-	{"beta", 0, run_beta},
+	{"rommy", 1, run_rommy, NULL},
+	{"beta", 0, run_beta, NULL},
+	{"drawy", 1, run_drawy, draw_drawy},
 };
 
 static int rommy_const_mode;
@@ -177,7 +192,7 @@ static LadxPipelineStatus run(const LadxPipelineRom *rom, Calls *calls, LadxPipe
 	p.randomizer = NULL;
 	p.rom = rom;
 	p.groups = planted;
-	p.group_count = 2;
+	p.group_count = 3;
 	p.ctx = calls;
 	return ladx_pipeline_run(&p, &enc, err);
 }
@@ -189,7 +204,8 @@ static void test_without_rom(void)
 
 	open_tables(alpha_text);
 	check(run(NULL, &calls, &err) == LADX_PIPELINE_OK, "without a ROM, the walk succeeds");
-	check(strcmp(calls.text, "beta") == 0, "without a ROM, only the ROM-free group runs, once");
+	check(strcmp(calls.text, "beta drawy-draws") == 0,
+	      "without a ROM, the ROM-free group runs, once, and a ROM group's draws alone, never its run");
 	check(strcmp(out, HEADER "G alpha\nB 10 0102\nG beta\nB 40 aa\nG alpha\nB 20 03\n") == 0,
 	      "without a ROM, table entries and the group's write in order.txt's order");
 }
@@ -211,10 +227,11 @@ static void test_with_rom(void)
 	rom.ks = &ks;
 	open_tables(alpha_text);
 	check(run(&rom, &calls, &err) == LADX_PIPELINE_OK, "with a ROM, the walk succeeds");
-	check(strcmp(calls.text, "beta rommy") == 0, "with a ROM, both groups run once, at their first C row");
+	check(strcmp(calls.text, "beta rommy drawy") == 0,
+	      "with a ROM, every group runs once, at its first C row, never a draws-only run");
 	check(calls.rommy_saw_tables, "the ROM group receives the parsed ROM");
-	snprintf(want, sizeof want, HEADER "G alpha\nB 10 0102\nG beta\nB 40 %02x\nG rommy\nB 50 %02x\nG alpha\nB 20 03\n",
-		 synth.rom[0x40] ^ 0xffu, synth.rom[0x50] ^ 0xffu);
+	snprintf(want, sizeof want, HEADER "G alpha\nB 10 0102\nG beta\nB 40 %02x\nG rommy\nB 50 %02x\nG drawy\nB 58 %02x\nG alpha\nB 20 03\n",
+		 synth.rom[0x40] ^ 0xffu, synth.rom[0x50] ^ 0xffu, synth.rom[0x58] ^ 0xffu);
 	check(strcmp(out, want) == 0, "with a ROM, the ROM group's segment between beta's and alpha's");
 }
 
@@ -257,9 +274,9 @@ static void test_const(void)
 	check(run(&rom, &calls, &err) == LADX_PIPELINE_OK, "a group writes its constants file");
 	snprintf(want, sizeof want,
 		 HEADER "G alpha\nB 10 0102\nG beta\nB 40 %02x\nG rommy\nB 50 %02x\nB 60 %02x%02x%02x7f\n"
-			"T texts 3 41%02x%02x\nT texts 4 p1234\nG alpha\nB 20 03\n",
+			"T texts 3 41%02x%02x\nT texts 4 p1234\nG drawy\nB 58 %02x\nG alpha\nB 20 03\n",
 		 synth.rom[0x40] ^ 0xffu, synth.rom[0x50] ^ 0xffu, synth.rom[0x60], synth.rom[0x100], synth.rom[0x101],
-		 synth.rom[0x200], synth.rom[0x201]);
+		 synth.rom[0x200], synth.rom[0x201], synth.rom[0x58] ^ 0xffu);
 	check(strcmp(out, want) == 0, "constants: values, the keyed unit's entry for the key, computed literals");
 
 	open_with(alpha_text, "ladx-tables 1\ngroup rommy\ntables " TABLES "\nunit rommy.1\nE\nB 60 @fffff+2\n");
@@ -300,7 +317,7 @@ static void test_errors(void)
 		p.randomizer = NULL;
 		p.rom = NULL;
 		p.groups = planted;
-		p.group_count = 2;
+		p.group_count = 3;
 		p.ctx = &calls;
 		check(ladx_pipeline_run(&p, &enc, &err) == LADX_PIPELINE_GROUP && strcmp(err.group, "beta") == 0 &&
 			      !err.outcome,
@@ -322,10 +339,12 @@ static void test_errors(void)
 	{
 		const LadxPipelineGroup *g = ladx_pipeline_groups(&count);
 
-		check(count == 3 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom &&
-			      strcmp(g[1].name, "marin") == 0 && g[1].needs_rom && strcmp(g[2].name, "title") == 0 &&
-			      g[2].needs_rom,
-		      "the library registers bank3e, marin then title, in LADXR's order, all needing the ROM");
+		check(count == 4 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
+			      strcmp(g[1].name, "marin") == 0 && g[1].needs_rom && g[1].draw &&
+			      strcmp(g[2].name, "hints") == 0 && !g[2].needs_rom && !g[2].draw &&
+			      strcmp(g[3].name, "title") == 0 && g[3].needs_rom && !g[3].draw,
+		      "the library registers bank3e, marin, hints then title, in LADXR's order, hints alone "
+		      "ROM-free, marin drawing without the ROM");
 	}
 }
 

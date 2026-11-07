@@ -17,7 +17,7 @@
  * each table unit's entry through the encoder's fixed calls at its first
  * row; at a C row, the registered group of that row's group, once, at its
  * group's first C row, skipped when none is registered or when it needs
- * the ROM and none is given. Then the encoder's log is ended.
+ * the ROM, none is given and it has no draw. Then the encoder's log is ended.
  */
 
 /* The parsed source ROM, every pointer outliving the run. */
@@ -37,6 +37,7 @@ typedef struct LadxPipelineGroup {
 	const char *name; /* the inventory's group, as order.txt's C rows name it */
 	int needs_rom;	  /* 1 exactly for a rom-group of tests/ladx/claims.txt */
 	LadxPipelineRun run;
+	LadxPipelineRun draw; /* run instead of run when needs_rom and no ROM: its draws alone; NULL: skipped */
 } LadxPipelineGroup;
 
 #define LADX_PIPELINE_GROUP_MAX 32

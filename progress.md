@@ -131,7 +131,7 @@
     - [x] Step 3.6.3 bank3e
     - [x] Step 3.6.4 title
     - [x] Step 3.6.5 marin
-    - [ ] Step 3.6.6 hints
+    - [x] Step 3.6.6 hints
     - [ ] Step 3.6.7 music
     - [ ] Step 3.6.8 endscreen
     - [ ] Step 3.6.9 notext

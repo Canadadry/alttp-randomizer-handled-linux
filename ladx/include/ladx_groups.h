@@ -27,6 +27,9 @@ int ladx_group_bank3e(LadxEncoder *enc, LadxPipeline *p);
  */
 int ladx_group_marin(LadxEncoder *enc, LadxPipeline *p);
 
+/* marin's draws without the ROM: the starting text drawn and formatted (its raise included), nothing written. */
+int ladx_group_marin_draws(LadxEncoder *enc, LadxPipeline *p);
+
 /* LADXR's patches/marin.txt at the pin, its trailing blank lines dropped. */
 #define LADX_MARIN_LINE_COUNT 480
 
@@ -50,6 +53,35 @@ LadxTextStatus ladx_marin_line_text(size_t index, LadxRng *global, uint8_t *out,
 /* getMarinStartingText(rnd): rnd.choice of a line, then ladx_marin_line_text. */
 LadxTextStatus ladx_marin_starting_text(LadxRng *rnd, LadxRng *global, uint8_t *out, size_t cap, size_t *n,
 					LadxOutcome *raised);
+
+/*
+ * hints.py addHints: the 37 hint texts in rnd.shuffle's order, then the
+ * books 0x200 to 0x20A. Needs the placement and p->rnd, not the ROM.
+ */
+int ladx_group_hints(LadxEncoder *enc, LadxPipeline *p);
+
+/* A spot as addHints reads it; area NUL-terminated. */
+typedef struct LadxHintSpot {
+	const char *name_id;
+	int item;
+	const char *area;
+} LadxHintSpot;
+
+#define LADX_HINT_TEXT_COUNT 37
+#define LADX_HINT_WRITE_COUNT (LADX_HINT_TEXT_COUNT + 6)
+
+typedef enum LadxHintsStatus {
+	LADX_HINTS_OK = 0,
+	LADX_HINTS_RAISED, /* formatText raised: *raised filled */
+	LADX_HINTS_FAILED  /* over LADX_LOGIC_SPOT_CAP spots, a draw or text C cannot do, or write returned 0 */
+} LadxHintsStatus;
+
+/* Called once per text in LADXR's write order; 0 stops the run as FAILED. */
+typedef int (*LadxHintWrite)(void *ctx, unsigned text_id, const uint8_t *bytes, size_t n);
+
+/* addHints(rom, rnd, spots) with spots in iteminfo_list order. */
+LadxHintsStatus ladx_hints_add(LadxRng *rnd, const LadxHintSpot *spots, size_t count, LadxHintWrite write,
+			       void *ctx, LadxOutcome *raised);
 
 /*
  * patches/titleScreen.py setRomInfo: bank 0 offset 7 (0x01 on race, else
