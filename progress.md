@@ -118,7 +118,7 @@
     - [x] Step 3.6.1 ROM-free proof of save's packing
       - [x] Fragment finder, checks and encoder rule
       - [x] Goldens and tables regenerated
-    - [ ] Step 3.6.2 C write logger and KS
+    - [x] Step 3.6.2 C write logger and KS
       - [x] Chunk 1: SHA-1 and the base check
       - [x] Chunk 2: ROM reader on a synthetic ROM
       - [x] Chunk 3: KS in C and the span list
