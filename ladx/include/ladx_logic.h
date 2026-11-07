@@ -107,6 +107,7 @@ typedef struct LadxLogic {
 	unsigned char option[LADX_LOGIC_OPTION_CAP];
 	int location_count, edge_count, spot_count, option_count;
 	int start;
+	int windfish, egg, nightmare; /* creation ids until finished, then location indexes; -1 for none */
 	bool finished;
 	bool configured;
 	bool broken;
@@ -126,6 +127,11 @@ bool ladx_logic_broken(const LadxLogic *logic);
  * iteminfo_list order. Out of range gives NULL, or -1 for start. */
 const LadxReqArena *ladx_logic_arena(const LadxLogic *logic);
 int ladx_logic_start(const LadxLogic *logic);
+/* World's windfish, egg and nightmare (ladx_logic_build only); -1 when
+ * not reached or not built. */
+int ladx_logic_windfish(const LadxLogic *logic);
+int ladx_logic_egg(const LadxLogic *logic);
+int ladx_logic_nightmare(const LadxLogic *logic);
 int ladx_logic_location_count(const LadxLogic *logic);
 const LadxLocation *ladx_logic_location(const LadxLogic *logic, int i);
 /* The location's connections in order: edge_first + 0 .. edge_count - 1. */
@@ -195,6 +201,14 @@ typedef enum LadxLogicStatus {
 	LADX_LOGIC_UNSUPPORTED, /* a value unsupported alone, or a pair other than LADXR_REFUSES; nothing built */
 	LADX_LOGIC_BROKEN	/* a capacity overflow or LADXR assertion; the logic is unusable */
 } LadxLogicStatus;
+
+/*
+ * main.py Logic(options, world_setup=ws) for overworld=normal and the
+ * identity entrance mapping: World, the nine dungeons, the entrance loop,
+ * the egg requirement, the removed dungeon items, discovery and configure.
+ * Draws no random number.
+ */
+LadxLogicStatus ladx_logic_build(LadxLogic *out, const LadxSettings *validated, const LadxWorldSetup *ws);
 
 /*
  * Dungeon n alone (0 the colour dungeon, 1 to 8; any other n BROKEN):

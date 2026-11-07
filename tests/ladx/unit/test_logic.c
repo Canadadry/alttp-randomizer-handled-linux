@@ -11,7 +11,7 @@
 
 static int checks;
 static LadxLogic logic;
-static char text[256 * 1024];
+static char text[LF_GRAPH_TEXT_MAX];
 
 static void expect(int ok, const char *what)
 {
@@ -591,6 +591,100 @@ static void settings_from(const char *text, LadxSettings *settings)
 	}
 }
 
+#define MISMATCH_DIR "build/logic"
+
+/* C's canonical text of a graph that differs, for a diff against LADXR's. */
+static void write_mismatch(const char *name, const char *got, size_t len, char *path, size_t cap)
+{
+	FILE *f;
+	char *p;
+
+	snprintf(path, cap, MISMATCH_DIR "/%s.txt", name);
+	for (p = path + strlen(MISMATCH_DIR) + 1; *p; p++)
+		if (*p == '/')
+			*p = '+';
+	f = fopen(path, "w");
+	if (!f || fwrite(got, 1, len, f) != len || fclose(f) != 0)
+		test_fail(TEST, "cannot write %s", path);
+}
+
+/*
+ * ladx_logic_build (main.py Logic.__init__: World, the nine dungeons, the
+ * entrance loop on the identity mapping, the egg, the removed dungeon
+ * items, discovery, configure) under each baseline's settings and
+ * WorldSetup()'s defaults: its canonical text equal to the fixture's, line
+ * for line.
+ */
+static void test_baselines(void)
+{
+	FILE *f = lf_graphs_open(TEST, GRAPHS);
+	char path[LF_NAME_MAX + 32];
+	LadxWorldSetup ws;
+	int graphs = 0, lines = 0, line;
+	size_t len, i;
+
+	ladx_world_setup_defaults(&ws);
+	while (lf_graphs_next(TEST, f, &graph)) {
+		graphs++;
+		checks++;
+		if (ladx_logic_build(&logic, &graph.settings, &ws) != LADX_LOGIC_OK)
+			test_fail(TEST, "graph %s: the build fails", graph.name);
+		len = lf_graph_text(TEST, &logic, text, sizeof text);
+		if (len != graph.len || memcmp(text, graph.text, len) != 0) {
+			for (i = 0, line = 1; i < len && i < graph.len && text[i] == graph.text[i]; i++)
+				line += text[i] == '\n';
+			write_mismatch(graph.name, text, len, path, sizeof path);
+			test_fail(TEST,
+				  "graph %s: differs from line %d of its text; C's text in %s, LADXR's from python3 "
+				  "tests/ladx/oracle/extract_logic.py --graph '%s' --out tmp/ladx-logic "
+				  "tests/ladx/oracle/ladxr",
+				  graph.name, line, path, graph.name);
+		}
+		for (i = 0; i < len; i++)
+			lines += text[i] == '\n';
+	}
+	fclose(f);
+	expect(graphs == 5, "5 graphs in " GRAPHS);
+	printf("%s: the %d graphs of %s built whole (ladx_logic_build) line-identical (%d lines)\n", TEST, graphs,
+	       GRAPHS, lines);
+}
+
+/* The world's named locations and the build's refusals. */
+static void test_build(void)
+{
+	LadxSettings settings;
+	LadxWorldSetup ws;
+	const LadxLocation *loc;
+
+	ladx_world_setup_defaults(&ws);
+	settings_from("", &settings);
+	ladx_settings_validate(&settings);
+	expect(ladx_logic_build(&logic, &settings, &ws) == LADX_LOGIC_OK, "the defaults build");
+	loc = ladx_logic_location(&logic, ladx_logic_start(&logic));
+	expect(loc && loc->name && strcmp(loc->name, "Start House") == 0, "the start is the Start House");
+	loc = ladx_logic_location(&logic, ladx_logic_windfish(&logic));
+	expect(loc && loc->name && strcmp(loc->name, "Windfish") == 0, "Logic.windfish");
+	loc = ladx_logic_location(&logic, ladx_logic_egg(&logic));
+	expect(loc && loc->name && strcmp(loc->name, "Outside the Egg") == 0, "World.egg");
+	loc = ladx_logic_location(&logic, ladx_logic_nightmare(&logic));
+	expect(loc && loc->name && strcmp(loc->name, "Nightmare") == 0, "World.nightmare");
+
+	settings_from("overworld=random", &settings);
+	ladx_settings_validate(&settings);
+	expect(ladx_logic_build(&logic, &settings, &ws) == LADX_LOGIC_UNSUPPORTED, "an unsupported value refused");
+	expect(ladx_logic_broken(&logic) && ladx_logic_location_count(&logic) == 0 &&
+		       ladx_logic_windfish(&logic) == -1,
+	       "nothing built when refused");
+	settings_from("boomerang=default,accessibility=all", &settings);
+	ladx_settings_validate(&settings);
+	expect(ladx_logic_build(&logic, &settings, &ws) == LADX_LOGIC_OK,
+	       "the pair LADXR's fill refuses still builds its logic");
+	settings_from("", &settings);
+	ladx_settings_validate(&settings);
+	ws.boss_mapping[4] = 9;
+	expect(ladx_logic_build(&logic, &settings, &ws) == LADX_LOGIC_BROKEN, "a boss mapping out of range");
+}
+
 /*
  * One spot of the class, in a location of the dungeon, configured under the
  * settings: its options' text equals want, where a leading "*" stands for
@@ -1088,9 +1182,11 @@ int main(int argc, char **argv)
 	test_item_info();
 	test_configure();
 	test_dungeon_build();
+	test_build();
 	printf("%s: synthetic graphs, renderer, explorer, constructors and configure ok (%d checks)\n", TEST, checks);
 	test_graph_spots();
 	test_dungeons();
+	test_baselines();
 	if (fixtures)
 		replay_vectors();
 	return 0;

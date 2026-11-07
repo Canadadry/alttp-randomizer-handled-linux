@@ -175,4 +175,31 @@ int ladx_dungeon8(const LadxDungeonContext *c);
 /* DungeonColor(...).entrance. */
 int ladx_dungeon_color(const LadxDungeonContext *c);
 
+/* entranceInfo.py ENTRANCE_INFO's keys, in its order. */
+#define LADX_ENTRANCE_COUNT 104
+
+/* overworld.py EntranceExterior; Python's None is location -1 and a NONE
+ * requirement, "UNSET" a false *_set flag. */
+typedef struct LadxEntranceExterior {
+	bool added;
+	int location;
+	LadxReq requirement;
+	bool enter_set, exit_set;
+	LadxReq one_way_enter, one_way_exit;
+} LadxEntranceExterior;
+
+/* overworld.py World: entrances[2 k] is ENTRANCE_INFO key k, [2 k + 1]
+ * its "<key>:inside"; locations are creation ids. */
+typedef struct LadxWorld {
+	LadxEntranceExterior entrance[2 * LADX_ENTRANCE_COUNT];
+	int start, egg, nightmare, windfish;
+} LadxWorld;
+
+/* ENTRANCE_INFO's key k; NULL out of range. */
+const char *ladx_entrance_name(int k);
+/* World(options, world_setup, r). */
+void ladx_overworld(const LadxDungeonContext *c, LadxWorld *w);
+/* World.updateIndoorLocation(name, location): "d0" to "d8". */
+void ladx_world_update_indoor(LadxLogic *logic, LadxWorld *w, const char *name, int location);
+
 #endif

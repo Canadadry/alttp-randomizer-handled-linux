@@ -45,11 +45,14 @@ rom-check:
 rom-check-selftest:
 	cd $(TOP) && python3 -I -B tests/ladx/oracle/rom_check.py --self-test
 
+# test_logic writes a differing graph's text into build/logic.
 test: $(UNIT_BINS)
+	@mkdir -p $(BUILD)/logic
 	@set -e; for t in $(UNIT_BINS); do ./$$t; done
 	@echo "test: $(words $(UNIT_BINS)) LADX unit tests ran"
 
 logic: $(LOGIC_BINS)
+	@mkdir -p $(BUILD)/logic
 	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
 	@echo "logic: $(words $(LOGIC_TESTS)) LADX unit tests replayed the oracle fixtures"
 
@@ -66,6 +69,7 @@ unit-arm:
 		for t in $(UNIT_TESTS); do "$$cc" $$f -Iunit -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o; done'
 	@file $(ARM_UNIT_DIR)/test_pyrandom | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_UNIT_DIR)/test_pyrandom; echo "unit-arm: $(ARM_UNIT_DIR)/test_pyrandom is not a 32-bit ARM EABI executable" >&2; exit 1; }
 	@qemu-arm --version | head -n 1
+	@mkdir -p $(BUILD)/logic
 	@set -e; for t in $(UNIT_TESTS); do qemu-arm $(ARM_UNIT_DIR)/$$t; done
 	@set -e; for t in $(LOGIC_TESTS); do qemu-arm $(ARM_UNIT_DIR)/$$t --fixtures; done
 	@echo "unit-arm: $(words $(UNIT_TESTS)) LADX unit tests and $(words $(LOGIC_TESTS)) fixture replays passed under qemu-arm"

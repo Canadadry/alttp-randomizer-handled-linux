@@ -569,7 +569,15 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   its `Chest` `0x06C`, D8's Tal Tal connector and its `HeartPiece`
   `0x000`), the pair LADXR's fill refuses built, an unsupported value
   refused (`LADX_LOGIC_UNSUPPORTED`, nothing built), an out-of-range
-  dungeon and a boss mapping out of range broken. It prints
+  dungeon and a boss mapping out of range broken, and `ladx_logic_build`
+  (`Logic` of `logic/main.py`: `RequirementsSettings`, `World` of
+  `logic/overworld.py` for `overworld=normal`, the nine dungeons through
+  `updateIndoorLocation`, the entrance loop on the identity mapping in
+  `ENTRANCE_INFO`'s order, the egg requirement, the removed dungeon
+  items, discovery and configure): the start, `windfish`, `egg` and
+  `nightmare` locations of the defaults, the pair LADXR's fill refuses
+  built, an unsupported value refused (`LADX_LOGIC_UNSUPPORTED`, nothing
+  built) and a boss mapping out of range broken. It prints
   `test_logic: synthetic graphs, renderer, explorer, constructors and
   configure ok (<c> checks)`. Then, without a flag, it rebuilds every
   `spot` line of `oracle/logic_graphs.txt` (its five graphs' locations
@@ -591,7 +599,16 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   <name>: walk position <p> (<name>): ...` and the first differing name,
   spot or edge; it prints `test_logic: D0 to D8 built alone equal to the
   5 graphs of oracle/logic_graphs.txt (<w> dungeon walks, <l>
-  locations)`. With `--fixtures` it then reads every configuration of
+  locations)`. Then it builds each graph whole (`ladx_logic_build`) under
+  its settings and `WorldSetup()`'s defaults: its canonical text must
+  equal the graph's, line for line. A difference writes C's text to
+  `build/logic/<name>.txt` (`/` in the name as `+`; `make test`, `make
+  logic` and `unit-arm` create the folder) and fails with `graph <name>:
+  differs from line <n> of its text; C's text in <file>, LADXR's from
+  python3 tests/ladx/oracle/extract_logic.py --graph '<name>' --out
+  tmp/ladx-logic tests/ladx/oracle/ladxr`, to diff the two; it prints
+  `test_logic: the 5 graphs of oracle/logic_graphs.txt built whole
+  (ladx_logic_build) line-identical (<n> lines)`. With `--fixtures` it then reads every configuration of
   `oracle/logic_vectors.txt`: its settings set on defaults (`""` the
   empty value) and validated, each assignment kept by validate, every
   value supported alone (`ladx_setting_value_reason`; the pair

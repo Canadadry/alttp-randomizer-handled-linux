@@ -46,6 +46,21 @@ int ladx_logic_start(const LadxLogic *logic)
 	return usable(logic) ? logic->start : -1;
 }
 
+int ladx_logic_windfish(const LadxLogic *logic)
+{
+	return usable(logic) ? logic->windfish : -1;
+}
+
+int ladx_logic_egg(const LadxLogic *logic)
+{
+	return usable(logic) ? logic->egg : -1;
+}
+
+int ladx_logic_nightmare(const LadxLogic *logic)
+{
+	return usable(logic) ? logic->nightmare : -1;
+}
+
 int ladx_logic_location_count(const LadxLogic *logic)
 {
 	return usable(logic) ? logic->location_count : 0;
@@ -114,6 +129,7 @@ void ladx_logic_begin(LadxLogic *logic)
 	logic->spot_count = 0;
 	logic->option_count = 0;
 	logic->start = -1;
+	logic->windfish = logic->egg = logic->nightmare = -1;
 	logic->finished = false;
 	logic->configured = false;
 	logic->broken = false;
@@ -270,6 +286,11 @@ static void discover(LadxLogic *logic, int b)
 	loc->spot_count = logic->spot_count - loc->spot_first;
 }
 
+static int order_of(const LadxLogic *logic, int b)
+{
+	return is_location(logic, b) ? logic->build_location[b].order : -1;
+}
+
 /* Logic.__recursiveFindAll's preorder, on an explicit stack of (location,
  * next edge) frames: the device's stack is never at stake. */
 bool ladx_logic_finish(LadxLogic *logic, int start)
@@ -304,6 +325,9 @@ bool ladx_logic_finish(LadxLogic *logic, int start)
 	for (i = 0; i < logic->edge_count; i++)
 		logic->edge[i].target = logic->build_location[logic->edge[i].target].order;
 	logic->start = 0;
+	logic->windfish = order_of(logic, logic->windfish);
+	logic->egg = order_of(logic, logic->egg);
+	logic->nightmare = order_of(logic, logic->nightmare);
 	logic->finished = true;
 	return true;
 }
