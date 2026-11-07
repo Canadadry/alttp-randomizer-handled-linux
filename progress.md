@@ -74,6 +74,10 @@
     - [x] Chunk 4: replay over every case
     - [x] Chunk 5: random sample combos
   - [ ] Step 2.7 Extraction fixtures
+    - [x] Chunk 1: fixture format and ROM-free check
+    - [ ] Chunk 2: generator, fixtures and verification
+    - [ ] Chunk 3: store model
+    - [ ] Chunk 4: fixture re-run and close
   - [ ] Step 2.8 Nintendo-bytes check over everything committed
   - [ ] Step 2.9 Full-ROM check target
   - [ ] Step 2.10 Split Phase 3 step 6

@@ -278,6 +278,103 @@ goldens by `gen_golden.sh` like any case. A sample mismatch in
 runs under `tmp/ladx-tables/`); `gen_tables.sh --check` rebuilds them with
 another hash seed on a fresh clone and compares every file byte for byte.
 
+## Extraction fixtures
+
+`extract/` holds the source ROM's structure that the inventory's
+Extractions table names (`notes/ladx-inventory.md`), so that C rebuilds
+the known-source map KS (`oracle/known_source.py`) and makes the C groups'
+decisions without the ROM. There is one file per Extractions row, named
+`<name>.txt`, and nothing else. A README there would put English prose
+under the strict scope. The files are ROM-derived: written only by the
+oracle, never edited by hand. The format's module is `oracle/extract.py`
+(`parse`, `render`, `read`, `write`, `ks_spans`, `ks_rebuild`, `check`).
+`extract.py check` (`make ladx-extract`) checks them against the inventory
+without the ROM.
+
+**Characters.** Only `0-9`, `=`, `r` and the newline. Every line starts
+with `=`. Tokens are separated by `=` and the numbers inside a token by
+`r`. Each number is 0..255 in decimal without a leading zero. A larger
+quantity (an offset in a bank, a length, a room id, a pointer) is split
+into two numbers, high first. Line 1 is the version line `=1`. A file is
+canonical: no empty line or token, a newline at the end, and parse then
+render is the identity. This rendering was chosen by measurement. With a
+space between tokens, about 271 raw 4-byte runs of the ROM were left
+whatever the inner separator. `=` between tokens, `r` inside them and a
+leading `=` left none under the strict scope, with nothing cleared.
+
+**Common tokens.** A *table* is numbered in `ROMWithTables`' order
+(`known_source.LAYOUT`): 0 texts, 1 entities, 2 to 6 the five room tables
+(overworld top, overworld bottom, indoor A, indoor B, color dungeon), 7 and
+8 the overworld and indoor room sprite data, 9 the background tiles, 10
+the background attributes. A *key* is `0 r hi r lo` for an index or
+`1 r k` for the k-th alt pointer of the table, in `LAYOUT`'s order (table
+2: Alt06, Alt0E, Alt1B, Alt2B, Alt79; table 3: Alt8C; table 4: Alt1F5). A
+*span* is `known r bank r start-hi r start-lo r length-hi r length-lo`,
+the start an offset in the bank; `known` is 1 when the entry's fields
+rebuild its bytes exactly (`known_source.fields` and `rebuild`), then they
+follow, and 0 when they do not, then nothing follows.
+
+**`room-entities.txt`, `room-objects.txt`, `backgrounds.txt`.** One line
+per entry: `=<table> r <key>`, then the span, then the fields when known.
+An entry whose pointer is an integer, not a span, has the key token alone.
+The entries are those KS rebuilds, in store order (alt keys first, then
+indices): every entity entry 0x000..0x315 of table 1; every key of tables 2
+to 6 (789 rooms and the seven alt rooms); entries 3, 4 and 0x0D of table 9
+and 3, 4 of table 10. Fields, one token each:
+- an entity: `x r y r type`;
+- a room: `animation r floor` first, then per object `0 r x r y r type`
+  (single), `1 r` or `2 r` then the four numbers `known_source.fields`
+  gives for a horizontal or vertical strip, or `3 r` then the five numbers
+  of a warp;
+- a background: per run `address-hi r address-lo r vertical r repeat r
+  amount r value...` (one value when `repeat`, else `amount + 1`).
+
+**`boss-sources.txt`.** Line 2: `=bank r start-hi r start-lo r count`
+(bank 0x14, 0x04E0, 64), then each offset of that range holding 0x00 as
+`hi r lo`, increasing. Line 3: `=bank r base-hi r base-lo` (bank 0x3E,
+0x3300), then per boss room, in `known_source.BOSSES` order, `room-hi r
+room-lo r item`, the item id at the base plus the room.
+
+**`source-flags.txt`.** Line 2: three tokens, each 0 or 1: the keyhole
+hook not installed (bank 0x02 0x2FA9 is 0xF0), the witch off (bank 0x05
+0x08EF is not 0x00), the boomerang trade not patched (bank 0x19 0x06C5 is
+0x00).
+
+**`save-layout.txt`.** One section per table, in order. A section opens
+with its marker line `=<table>`, then its storage regions after parsing,
+one token each `bank r start-hi r start-lo r end-hi r end-lo` (end at most
+0x4000), then one line per key in store order. An entry line is the key,
+then its pointer: `1 r flags r bank r start-hi r start-lo r length-hi r
+length-lo` for a span or `0 r flags r bank r raw-hi r raw-lo` for an
+integer pointer. `flags` bit 0: the pointer bytes are KS; bit 1 (table 0
+only): the bank byte is KS. An alt entry ends there. An index entry with a
+span then has its de-duplication, `0`, or `1 r index-hi r index-lo r
+offset-hi r offset-lo` when its bytes equal the suffix at that offset of
+the earlier index entry in the same bank (a whole entry, offset 0, for the
+sprite data), in store order on the unchanged state. Then, by table kind:
+the sprite data's four values as one token; for texts and backgrounds one
+fingerprint per suffix, the suffix at offset `i` the `i`-th token, each the
+first 8 bytes of SHA-512 of the suffix's bytes as eight numbers.
+
+**KS rebuild.** `extract.py`'s `ks_spans` gives KS from the six files
+alone, in `known_source.build`'s order and with its labels: the pointer
+bytes (and the text bank bytes) whose flags say so, recomputed from the
+spans or integer pointers; each known entry's bytes from its fields (the
+sprite data from its values); the boss zeros and items. `ks_rebuild` gives
+`{offset: byte}`.
+
+**Check.** `python3 -I oracle/extract.py check [--root <dir>]
+[--inventory <file>]`, stdlib only, proves itself first on planted trees
+(`extract: self-test, <n> planted trees as expected`, else `extract:
+self-test failed: <case>`, exit 1), then prints one `MISSING <name>` (an
+Extractions name with no file), `EXTRA <file>` (a file no name gives) or
+`BADFILE <name>: <reason>` line (not canonical, a structural rule broken
+against `LAYOUT` and `BOSSES`: every expected key in order, fields that
+rebuild their span, sprite slots, one fingerprint per suffix, a
+de-duplication naming an earlier span; or a room file's span unlike
+save-layout's) per finding, exit 1; else `extract: <n> fixtures, <b>
+bytes, every inventory extraction present`. A malformed inventory exits 2.
+
 ## Nintendo-bytes policy
 
 `oracle/nintendo_bytes.py` checks a case folder's `rom_writes.txt` in

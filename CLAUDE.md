@@ -79,7 +79,11 @@ in `docs/`, then `README.md`.
   coverage runs' encodings, keys, reachable tuples, coverage runs, entries
   cut from each run's encoding), its rules in its docstring; its `build`
   command, with the ROM, is `gen_tables.sh`'s worker; `table_replay.py`,
-  the tables' host replay against the goldens),
+  the tables' host replay against the goldens; `extract.py`, the format of
+  the extraction fixtures `tests/ladx/extract/` (Phase 2 step 7,
+  documented in `tests/ladx/README.md`, "Extraction fixtures"; `parse`,
+  `render`, `read`, `write`, the ROM-free KS rebuild `ks_spans` and
+  `ks_rebuild`, and `check`),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
   hand-written inputs `tier1.txt`,
@@ -193,6 +197,18 @@ in `docs/`, then `README.md`.
   0/1, `count` decimal); one `MISSING`, `EXTRA`, `BADFILE`, `BADROW`, `DUP`
   or `BADKEY` line per mismatch (exit 1), else `ladx-tables: <u> units in
   <g> groups, <e> entries, <s> bytes`; a malformed input exits 2.
+- `make ladx-extract` (`python3 -I tests/ladx/oracle/extract.py check
+  [--root <dir>] [--inventory <file>]`, no ROM, no LADXR, no network; not
+  yet run by `make test`: no fixture exists until Phase 2 step 7 commits
+  them) proves itself on planted trees (`extract: self-test, <n> planted
+  trees as expected`, else `extract: self-test failed: <case>`, exit 1),
+  then checks `<root>` (default `tests/ladx/extract/`) against the
+  inventory's Extractions names: one `MISSING <name>`, `EXTRA <file>` or
+  `BADFILE <name>: <reason>` line per finding (not canonical, a structural
+  count or rule broken against `known_source.LAYOUT` and `BOSSES`, a room
+  file's span unlike `save-layout`'s), exit 1, else `extract: <n>
+  fixtures, <b> bytes, every inventory extraction present`; a malformed
+  inventory exits 2.
 - The LADX oracle, outside the net (it needs git, the network for GitHub and
   python3 >= 3.11, else a `setup:` line; no ROM): `tests/ladx/oracle/setup.sh
   [--fresh]` clones LADXR at its pin into `LADXR_DIR` (default
