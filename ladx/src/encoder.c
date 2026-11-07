@@ -327,6 +327,18 @@ int ladx_enc_entry_value(const LadxEncoder *enc, int table, LadxWlogKey key, uin
 	return 1;
 }
 
+int ladx_enc_entry_pointer(const LadxEncoder *enc, int table, LadxWlogKey key, uint32_t *value)
+{
+	const LadxEncEntry *e = find_entry(enc, table, key);
+
+	if (!e)
+		return -1;
+	if (!e->pointer)
+		return 0;
+	*value = e->value;
+	return 1;
+}
+
 /* Segment state -------------------------------------------------------------------------------- */
 
 static void touch(LadxEncoder *enc, uint32_t p)

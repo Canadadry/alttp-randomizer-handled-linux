@@ -67,7 +67,9 @@ in `docs/`, then `README.md`.
   `data/ladx/endscreen.txt`), tested by `test_endscreen`, claimed
   `rom-group` by `e2e-rom` with its trace line, its draw run without the
   ROM too, contract in `tests/ladx/README.md`, "Pipeline" and "Patch
-  tables"; `tables.c`, the patch tables' reader, key, walk, records
+  tables"; `notext.c`, the `C` group `notext` (`noText`, every text cut
+  to its terminator), tested by `test_notext`, claimed `rom-group` by
+  `e2e-rom`, contract in `tests/ladx/README.md`, "Pipeline"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");

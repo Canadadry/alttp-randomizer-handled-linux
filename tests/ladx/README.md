@@ -488,7 +488,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -500,7 +500,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -747,8 +747,8 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   no file; `ladx_pipeline_const_units` writes the keyed unit alone and
   fails on units past the file's end; `ladx_pipeline_const_unit_count`
   counts a file's units, -1 without one; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `title` then `endscreen`, `hints`
-  alone needing no ROM and `marin`, `music` and `endscreen` alone with a
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `title` then `endscreen`,
+  `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
   `test_bank3e` runs the library's registry on a synthetic ROM and a
@@ -848,6 +848,14 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   (with or without the ROM) failing the group. It prints
   `test_endscreen: the drawn cat's constants on a synthetic ROM, the
   draw without it (<c> checks)`.
+  `test_notext` runs the library's registry on a synthetic ROM after a
+  planted table group writing text 0x10 a literal and text 0x11 an
+  integer pointer: with `textmode=none`, every texts index key but
+  0x217..0x21A and the integer pointers (the source's and 0x11) written
+  as its last byte, a copy of its source terminator, 0x10's the planted
+  literal's last byte; with any other `textmode`, or without the ROM,
+  nothing written. It prints `test_notext: texts cut to their
+  terminator on a synthetic ROM (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1096,7 +1104,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `title` and `endscreen`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `title` and `endscreen`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1119,7 +1127,9 @@ the ROM (or there is none), or the encoder refuses.
 units `first` to `first + count - 1` (0-based, file order) the same way,
 0 when they pass the file's end; `ladx_pipeline_const_unit_count` gives
 a file's unit count, -1 without one.
-`ladx_enc_entry_value` gives an entry's current bytes and origins, and
+`ladx_enc_entry_value` gives an entry's current bytes and origins,
+`ladx_enc_entry_pointer` whether it is an integer pointer (1), bytes (0)
+or unknown (-1), and
 `ladx_randomizer_seed` the seed's first 32 bytes.
 
 **`title`** (`setRomInfo`): bank 0 offset 7 written `0x01` on `race`,
@@ -1219,6 +1229,21 @@ and its goldens' KS copies) and fails unless the file has 25 units; its
 `draw` makes the one draw without the ROM, so a ROM-free `run.txt`
 keeps the line.
 
+**`notext`** (`patches.aesthetics.noText`), only when `textmode` is
+`none` (else nothing written): for each texts index key from 0 to the
+table's count less one, 0x217 to 0x21A skipped, an entry whose current
+value is an integer pointer skipped (LADXR's `isinstance(..., int)` on
+the current table, so a table group's pointer counts), every other
+written by `ladx_enc_table` as its current value's last byte with that
+byte's origin (`[-1:]`; an empty value stays empty), even when already
+one byte long. The origin makes the encoding: a source terminator stays
+a copy, an earlier group's computed terminator inherits its encoding. It
+needs the ROM (a source terminator's value), draws nothing and has no
+`draw`, so a ROM-free run skips it; it fails on an unknown entry. It
+reads and overwrites the texts of `bank3e`, `marin`, `hints` and the
+`fixed` table group, so it runs after them (`order.txt`'s `C notext`
+row, after `options`' second `fastText`).
+
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
 0x3E 0x2F00, then, unless `race`, the short settings string's length
@@ -1265,7 +1290,7 @@ e2e` and `e2e-combos`.
   spot count, the library's pipeline ("Pipeline") walks `order.txt`:
   each selected entry's records through the encoder's `fixed` calls
   under its unit's group, and at `C` rows the library's ported groups
-  (without `--rom` `hints` and `marin`'s, `music`'s and `endscreen`'s draws, since `bank3e`, `marin`, `music`, `title` and `endscreen` need the ROM, so consecutive
+  (without `--rom` `hints` and `marin`'s, `music`'s and `endscreen`'s draws, since `bank3e`, `marin`, `music`, `notext`, `title` and `endscreen` need the ROM, so consecutive
   entries of one group merge into one segment across the `C` rows). The file is a valid version-1 write log, no `I`
   line; the version and `tables` lines are written even when nothing
   else is. Without `--rom` the encoder has no ROM, KS or parsed tables
@@ -1359,7 +1384,7 @@ repeated or `spoiler` group, a group both `group` and `rom-group`, a
 Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
 `goal-fixed`, `music-fixed` and `options` (the five table groups) and
 `hints`; `rom-group bank3e`, `rom-group endscreen`, `rom-group marin`,
-`rom-group music` and `rom-group title`.
+`rom-group music`, `rom-group notext` and `rom-group title`.
 
 A claimed `C` group that draws also claims its `trace` lines: those of
 `run.txt` whose stage (the 4th field) is one of its LADXR frames

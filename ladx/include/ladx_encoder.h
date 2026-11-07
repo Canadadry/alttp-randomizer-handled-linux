@@ -129,6 +129,9 @@ int ladx_enc_entry_origins(const LadxEncoder *enc, int table, LadxWlogKey key, i
 int ladx_enc_entry_value(const LadxEncoder *enc, int table, LadxWlogKey key, uint8_t *values, int32_t *origins,
 			 size_t cap, size_t *n);
 
+/* 1 for an integer-pointer entry (*value set), 0 for a bytes entry, -1 for an unknown one. */
+int ladx_enc_entry_pointer(const LadxEncoder *enc, int table, LadxWlogKey key, uint32_t *value);
+
 /* n new write identities, the first one's origin returned; LADX_ENC_KNOWN on overflow. */
 int32_t ladx_enc_fresh(LadxEncoder *enc, uint32_t n);
 

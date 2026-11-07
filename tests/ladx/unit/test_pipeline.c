@@ -363,14 +363,15 @@ static void test_errors(void)
 	{
 		const LadxPipelineGroup *g = ladx_pipeline_groups(&count);
 
-		check(count == 6 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
+		check(count == 7 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
 			      strcmp(g[1].name, "marin") == 0 && g[1].needs_rom && g[1].draw &&
 			      strcmp(g[2].name, "hints") == 0 && !g[2].needs_rom && !g[2].draw &&
 			      strcmp(g[3].name, "music") == 0 && g[3].needs_rom && g[3].draw &&
-			      strcmp(g[4].name, "title") == 0 && g[4].needs_rom && !g[4].draw &&
-			      strcmp(g[5].name, "endscreen") == 0 && g[5].needs_rom && g[5].draw,
-		      "the library registers bank3e, marin, hints, music, title then endscreen, in LADXR's order, "
-		      "hints alone ROM-free, marin, music and endscreen drawing without the ROM");
+			      strcmp(g[4].name, "notext") == 0 && g[4].needs_rom && !g[4].draw &&
+			      strcmp(g[5].name, "title") == 0 && g[5].needs_rom && !g[5].draw &&
+			      strcmp(g[6].name, "endscreen") == 0 && g[6].needs_rom && g[6].draw,
+		      "the library registers bank3e, marin, hints, music, notext, title then endscreen, in LADXR's "
+		      "order, hints alone ROM-free, marin, music and endscreen drawing without the ROM");
 	}
 }
 

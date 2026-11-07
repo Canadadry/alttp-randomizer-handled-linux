@@ -10,4 +10,5 @@ rom-group bank3e
 rom-group endscreen
 rom-group marin
 rom-group music
+rom-group notext
 rom-group title

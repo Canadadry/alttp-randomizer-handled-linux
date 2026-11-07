@@ -372,9 +372,19 @@ static void test_queries(void)
 			      !ladx_enc_entry_value(&enc, ENTITIES, key(8), val, org, 4, &n),
 		      "no value over cap bytes or for an unknown entry");
 	}
+	{
+		uint32_t pv = 0;
+
+		check(ladx_enc_fixed_pointer(&enc, span("tg"), ENTITIES, key(9), 0x1234) == LADX_ENC_OK &&
+			      ladx_enc_entry_pointer(&enc, ENTITIES, key(9), &pv) == 1 && pv == 0x1234,
+		      "an integer-pointer entry is one, its value given");
+		check(ladx_enc_entry_pointer(&enc, ENTITIES, key(7), &pv) == 0 &&
+			      ladx_enc_entry_pointer(&enc, ENTITIES, key(8), &pv) == -1,
+		      "a bytes entry is no pointer, an unknown entry unknown");
+	}
 	check(ladx_enc_fresh(&enc, 2) < got[1] && ladx_enc_fresh(&enc, 1) < got[1], "fresh identities are new ones");
 	expect("carried copies of a table group's fresh identities",
-	       HEADER "G tg\nB 120 01 @343+1\nT entities 1 01 @343+1\nG ca\nB 140 @343+1 01 @30+1\n");
+	       HEADER "G tg\nB 120 01 @343+1\nT entities 1 01 @343+1\nG ca\nB 140 @343+1 01 @30+1\nG tg\nT entities 9 p1234\n");
 }
 
 static void k8(int32_t *o)

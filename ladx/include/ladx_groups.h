@@ -146,4 +146,12 @@ int ladx_group_endscreen_draws(LadxEncoder *enc, LadxPipeline *p);
 /* updateEndScreen's random.choice(cats) on global: the index into the sorted cats. */
 LadxRngStatus ladx_endscreen_draw(LadxRng *global, size_t *cat);
 
+/*
+ * patches/aesthetics.py noText, when textmode is none: every texts index
+ * key but 0x217..0x21A whose current value is not an integer pointer,
+ * ascending, written as its last byte with that byte's origin (empty
+ * stays empty). Needs p->rom; 0 on an unknown entry.
+ */
+int ladx_group_notext(LadxEncoder *enc, LadxPipeline *p);
+
 #endif

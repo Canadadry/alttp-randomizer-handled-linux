@@ -8,6 +8,7 @@ static const LadxPipelineGroup groups[] = {
 	{"marin", 1, ladx_group_marin, ladx_group_marin_draws},
 	{"hints", 0, ladx_group_hints, NULL},
 	{"music", 1, ladx_group_music, ladx_group_music_draws},
+	{"notext", 1, ladx_group_notext, NULL},
 	{"title", 1, ladx_group_title, NULL},
 	{"endscreen", 1, ladx_group_endscreen, ladx_group_endscreen_draws},
 };
