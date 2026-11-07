@@ -1,0 +1,7 @@
+# Widenings of the LADX patch tables' keys, hand-written; read by gen_tables.py (read_widenings),
+# which fails on a line it cannot place. One line each, tab-separated:
+#   <call>	<component>	<reason>
+# <call> is a `table` row's Call key in notes/ladx-inventory.md (` #<k>` included); <component> a
+# setting key, asm:<NAME> of a constant whose assembler.const row names a setting, or count. A
+# widening adds the component to the key of the row's unit: it is how a random-sample mismatch
+# (a key missing a dependency) is fixed, at the oracle, never in data/ladx/.

@@ -69,11 +69,18 @@ in `docs/`, then `README.md`.
   on real data; `read_check.py`, the check of real read traces against it;
   `tables.py`, the format of the patch tables `data/ladx/` (Phase 2 step
   6: `order.txt` and one `<group>.txt` per `table` group, documented in its
-  docstring; `parse`, `render`, `select` and `check`)),
+  docstring; `parse`, `render`, `select` and `check`); `key_trace.py`, the
+  trace of the settings and assembler constants each row reads;
+  `gen_tables.py`, the tables' ROM-free planning (units fused from the
+  coverage runs' encodings, keys, reachable tuples, coverage runs), a
+  module, its rules in its docstring),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
   hand-written inputs `tier1.txt`,
-  `determinism_cases.txt`, `side_seeds.txt` and `order_audit.txt`; and the six fixtures they
+  `determinism_cases.txt`, `side_seeds.txt`, `order_audit.txt`,
+  `table_keys.txt` (key widenings, `<call>\t<component>\t<reason>`) and
+  `table_units.txt` (forced fusions, `<call>\t<call>\t<reason>`), both
+  empty so far; and the six fixtures they
   write for the C port (`pyrandom_vectors.txt`, `settings.txt`,
   `settings_validate.txt`, `logic_graphs.txt`, `logic_vectors.txt`,
   `item_pools.txt`), each describing its format in its `#` header.
@@ -420,6 +427,18 @@ in `docs/`, then `README.md`.
   <case>` line each, exit 1); `--blind-spots`
   lists the buffer-protocol lines a Python trace cannot see (`BLIND
   <file>\t<line>`, then `read-trace: <n> buffer-protocol sites to review`).
+- The key trace, outside the net (python3 and the LADXR checkout, else
+  `setup: key-trace: no LADXR checkout in <dir>, run
+  tests/ladx/oracle/setup.sh`, exit 2; no ROM): `key_trace.py`'s
+  `install(settings_class, assembler, sections, roots)` records, at the
+  innermost section frame's site (as `read_trace.py`), every attribute read
+  of LADXR's `Settings` and every lookup in the assembler's `CONST_MAP`
+  (`ladx-key-reads 1`, then sorted `setting|const\t<site>\t<name>` lines;
+  `parse`). `python3 -I tests/ladx/oracle/key_trace.py --self-test [--ladxr
+  <dir>]` runs a planted section on the real `Settings` and assembler
+  (`key-trace: self-test, 3 setting reads and 1 constant lookup traced, the
+  read outside the sections left out`, else one `self-test failed: <case>`
+  line each, exit 1).
 - The inventory check, outside the net (python3 and the LADXR checkout, else
   `setup: inventory: no LADXR checkout in <dir>, run
   tests/ladx/oracle/setup.sh`, exit 2; no ROM): `python3 -I
@@ -607,7 +626,8 @@ in `docs/`, then `README.md`.
   `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh` and `audit_order.py`
   run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
-  guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads,
+  guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
+  `key_trace.py` its settings and constant reads,
   `inventory_check.py` diffs the inventory against LADXR, and
   `inventory_trace.sh` and `read_check.py` check it on real reads (their
   tests run in `make test`). The SDL build (`make sdl`,

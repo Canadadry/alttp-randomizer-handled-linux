@@ -130,6 +130,7 @@ class Driver:
         self.identity = worldSetup.WorldSetup().entrance_mapping
         self.bingo_goals = bingo.BINGO_GOALS
         self.case = None
+        self.logic = None
         self._hook(worldSetup.WorldSetup, "randomize", self._after_randomize)
         self._hook_pool(itempool.ItemPool)
         self._hook(randomizer.Randomizer, "readItemPool", self._after_read_pool)
@@ -166,6 +167,7 @@ class Driver:
         self.case["ws"] = list(ladx_oracle.ws_lines(ws, self.identity, self.bingo_goals))
 
     def _after_read_pool(self, randomizer, args, pool):
+        self.logic = randomizer._Randomizer__logic
         self.case["placer_pool"] = [ladx_oracle.pool_line("placer_pool", pool)]
         if self.case["pool_only"]:
             raise _PoolDone()

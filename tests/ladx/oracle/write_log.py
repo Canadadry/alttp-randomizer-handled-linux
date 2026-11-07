@@ -226,9 +226,10 @@ def _longest_match(rom, data, start, stop):
     return rom.find(data[start:start + low]), low
 
 
-def _table_atoms(rom, values, origins, offset=None):
+def _table_atoms(rom, values, origins, offset=None, matches=None):
     """A table group's atoms for a run of net bytes (at offset when they are bank bytes);
-    origins: per byte a source offset, an atom from a write identity, or None."""
+    origins: per byte a source offset, an atom from a write identity, or None; matches, when
+    given, gets the (index, n) of every run the longest-match rule chose."""
     atoms = [None] * len(values)
     for i, v in enumerate(values):
         if offset is not None and offset + i < len(rom) and rom[offset + i] == v:
@@ -251,6 +252,8 @@ def _table_atoms(rom, values, origins, offset=None):
             else:
                 at, length = match
                 atoms[i:i + length] = range(at, at + length)
+                if matches is not None:
+                    matches.append((i, length))
                 i += length
     return atoms
 
@@ -333,6 +336,7 @@ class _Encoder:
         self._windows = None
         self.fixed = None if fixed is None else list(fixed)
         self.table_segments = []
+        self.table_details = []
         self.tables = list(events.tables)
         self.state = {}
         self.written = {}
@@ -531,6 +535,7 @@ class _Encoder:
             else:
                 self._check_table(event[3])
                 entries[(event[3], event[4])] = (event[5], event[6])
+        matches = []
         if self.fixed is not None:
             banks, tables = self.fixed.pop(0)
         else:
@@ -538,12 +543,15 @@ class _Encoder:
             for start, stop in _spans(sorted(net)):
                 values = bytes(net[p][0] for p in range(start, stop))
                 origins = [self.carried(net[p][1]) for p in range(start, stop)]
-                for i, atom in enumerate(_table_atoms(self.rom, values, origins, start)):
+                found = []
+                for i, atom in enumerate(_table_atoms(self.rom, values, origins, start, found)):
                     banks[start + i] = atom
+                matches += [(start + i, n) for i, n in found]
             tables = {k: v if isinstance(v, int) else
                       _table_atoms(self.rom, v, [self.carried(q) for q in o])
                       for k, (v, o) in entries.items()}
         self.table_segments.append((banks, tables))
+        self.table_details.append((group, list(events), banks, tables, matches))
         for p, (v, origin) in sorted(net.items()):
             self.name([origin], [banks[p]])
         for k, (v, o) in entries.items():
@@ -620,8 +628,15 @@ def encode(events, rom, sides, known, invariant=None):
     return _encode(events, rom, sides, known, invariant=invariant)[0]
 
 
+def table_segments(events, rom, sides, known):
+    """The table groups' segments of encode's run, in order: (group, the segment's events, net
+    bank atoms {offset: atom}, net entries {(table, key): atoms or int}, [(offset, n)] of the bank
+    runs the longest-match rule chose)."""
+    return _encode(events, rom, sides, known)[2]
+
+
 def _encode(events, rom, sides, known, fixed=None, invariant=None):
-    """(text, the table groups' encodings segment by segment)."""
+    """(text, the table groups' encodings segment by segment, table_segments' details)."""
     encoder = _Encoder(events, rom, sides, known, fixed)
     lines = _header(events.tables)
     marks = []
@@ -637,7 +652,7 @@ def _encode(events, rom, sides, known, fixed=None, invariant=None):
             run.append(event)
             flags.append(None if invariant is None else invariant.get(n))
     lines += [_mark_line(line, ranges) for line, ranges in marks]
-    return "".join(line + "\n" for line in lines), encoder.table_segments
+    return "".join(line + "\n" for line in lines), encoder.table_segments, encoder.table_details
 
 
 def _mark_line(line, ranges):
@@ -855,7 +870,7 @@ def compare_scrambled(events, rom, sides, known, scramble_known=None):
 
 def encode_scrambled(events, rom, sides, known, scramble_known=None, invariant=None):
     """(encode's text, compare_scrambled's lines) from one encoding on the real rom."""
-    real, fixed = _encode(events, rom, sides, known, invariant=invariant)
+    real, fixed, _ = _encode(events, rom, sides, known, invariant=invariant)
     other = _encode(events, scramble(rom, known if scramble_known is None else scramble_known),
                     sides, known, fixed)[0]
     lines = []
