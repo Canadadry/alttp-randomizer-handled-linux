@@ -577,12 +577,30 @@ static void test_state_copy(void)
 	expect_words("an untouched generator seeded alike", &twin, 0);
 }
 
+/* The fixture's uniform lines have a = 0, where an FMA rounds alike; 4 of these 8 differ when fused. */
+static void test_uniform_unfused(void)
+{
+	/* python3 -c "import random; r = random.Random(bytes.fromhex('4c414458'));
+	   print([r.uniform(-7.3, 12.9).hex() for _ in range(8)])" */
+	static const double want[] = {-0x1.c9dfa21f5af24p+2, -0x1.68e47c092d00cp+0, 0x1.88a0790c13ddfp+2,
+				      0x1.883657b9e3f6dp+2,  -0x1.d2065738fe869p+1, 0x1.5bc130697e556p+3,
+				      0x1.a04c3ff05bc67p+2,  0x1.4f7e378803cb1p+2};
+	LadxPyRandom rng;
+	int i;
+
+	seeded(&rng);
+	for (i = 0; i < 8; i++)
+		if (!same_bits(ladx_pyrandom_uniform(&rng, -7.3, 12.9), want[i]))
+			test_fail(TEST, "uniform(-7.3, 12.9) draw %d differs from CPython (fused?)", i);
+}
+
 int main(void)
 {
 	line_now = "(no fixture line)";
 	test_refused_calls();
 	test_word_counts();
 	test_state_copy();
+	test_uniform_unfused();
 	replay_fixture();
 	return 0;
 }

@@ -18,6 +18,10 @@ in `docs/`, then `README.md`.
 - `alttp/host/` is host-side code on top of the library: the case reader, the
   spoiler JSON, the playthrough, the output, and the generator's `main`
   (`host/main/rando_gen.c`).
+- `ladx/` is LADX's C library (Phase 3): `include/` its public headers,
+  `src/` its sources (`sha512.c`, `pyrandom.c`, CPython's `random.Random`);
+  pure C99 like `alttp/`, built with only `ladx/include` on the include path,
+  never including `alttp/` or `app/`.
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
   like the library, built with only `alttp/include` and itself on the include
   path, no SDL; the app opens on its game-choice screen (`ui_games.c`), A
@@ -58,6 +62,9 @@ in `docs/`, then `README.md`.
 - `tests/alttp/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/alttp/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
+- `tests/ladx/unit/` holds LADX's unit tests, `test_<module>.c`, registered
+  in `tests/ladx/Makefile`'s `UNIT_TESTS`, failing through its own
+  `unit/support.h` (no `alttp/` header).
 - `tests/alttp/cases/` holds the e2e cases, one directory each with its VT
   golden; `tests/alttp/oracle/` the PHP VT oracle (`gen_golden.sh`, `vt.patch`)
   and the fixtures it writes.
@@ -129,9 +136,10 @@ in `docs/`, then `README.md`.
   `room-objects`, `boss-sources`, `backgrounds`, `save-layout`,
   `source-flags`, each `<name>.txt`, numeric only, about 2.6 MB), under the
   Nintendo-bytes check's strict scope, written only by `gen_extract.sh`.
-  `tests/ladx/Makefile` holds LADX's own targets, outside the net (`help`,
-  the default; `rom-check`, `rom-check-selftest`); Phase 3 adds its
-  targets there.
+  `tests/ladx/Makefile` holds LADX's own targets (`help`, the default;
+  `test` and `lint`, run by the root `make test` and `make lint`;
+  `unit-arm`, `rom-check`, `rom-check-selftest`, outside the net); Phase 3
+  adds its targets there.
 
 ## Checks
 
@@ -158,8 +166,8 @@ in `docs/`, then `README.md`.
   any string literal with a letter under `app/core/` outside the English
   table `ui_strings_en.c`, or under `app/sdl/`, after proving itself on
   planted sources; and `ui_cli`, built from `make test`'s
-  own objects, with its smoke test `unit/smoke_ui_cli.c`) plus
-  `test-template` (the tooling under `.claude/`) plus `rom-guard`
+  own objects, with its smoke test `unit/smoke_ui_cli.c`) plus `test-ladx`
+  plus `test-template` (the tooling under `.claude/`) plus `rom-guard`
   (`tests/rom_guard.py`, git and python3 only): it fails, one
   `rom_guard: <path>: <reason>` line per hit, when git's index (the staged
   blob, not the working tree) holds a `.gb`, `.gbc`, `.sfc` or `.smc` path in
@@ -167,13 +175,17 @@ in `docs/`, then `README.md`.
   JP 1.0 ROM (MD5, with or without a copier header), whatever its name; it
   proves itself first on planted files in throwaway repositories; no git or
   no work tree gives a `setup:` line; else `rom_guard: <n> tracked files, no
-  ROM`; plus `test-ladx-oracle` (`unittest discover` of
+  ROM`; plus `ladx-tables`; plus `ladx-extract`.
+- `make test-ladx` (`make -C tests/ladx test`, run by `make test`): LADX's
+  unit tests on the host; contract in `tests/ladx/README.md`, "Unit tests
+  and lint".
+- `make test-ladx-oracle` (`unittest discover` of
   `tests/ladx/oracle/test_*.py` under `python3 -I`: the LADX oracle's helpers
   and Phase 2's tools, `rom_check.py`'s self-test included, no LADXR, no
-  ROM, no network); plus `ladx-cases`; plus `ladx-tables`;
-  plus `ladx-extract`.
+  ROM, no network; run by `make check`, kept out of `make test`).
 - `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check`,
-  no ROM, no LADXR, no network; run by `make test`): it
+  no ROM, no LADXR, no network; run by `make check`, kept out
+  of `make test`): it
   proves itself on planted trees (a missing and an extra case, a sample
   combo's folder under its settings' name, a config order swap and a wrong value, a seed not from the derivation, an
   uppercase seed, an extra file, a name in both directories, a missing
@@ -645,9 +657,11 @@ in `docs/`, then `README.md`.
   `zrando` takes the same keys and flags (one shared module,
   `app/sd/rando_fixed_run.c`), plus `--shot-text <file>`; with keys, its run
   ends after the last one.
-- `make check` = `test` plus `lint` (`alttp/` and `app/` built with
+- `make check` = `test` plus `test-ladx-oracle`, `ladx-cases`, `lint`
+  (`alttp/`, `ladx/` and `app/` built with
   `-std=c99 -pedantic-errors`, except `app/sdl/` and `sdl_main.c`, which
-  `make sdl` builds that way), `logic` (unit tests replaying the oracle fixtures),
+  `make sdl` builds that way; `ladx/`'s half is `make -C tests/ladx lint`,
+  contract in `tests/ladx/README.md`, "Unit tests and lint"), `logic` (unit tests replaying the oracle fixtures),
   `selftest` (the e2e driver's own self-test), `e2e` (every case diffed
   against its golden, one `DIVERGENT <case>` line per failure) and
   `e2e-combos` (every combination case diffed against its golden, kept out
@@ -666,7 +680,9 @@ in `docs/`, then `README.md`.
   toolchain (`onion-toolchain.sh`, `docs/toolchain.md`) and runs the e2e
   cases on it under `qemu-arm`. `make unit-arm`, outside the net too, builds
   every unit test the same way and runs it under `qemu-arm` from
-  `tests/alttp`, `--fixtures` included for `LOGIC_TESTS`. Both need docker
+  `tests/alttp`, `--fixtures` included for `LOGIC_TESTS`, then LADX's
+  (`make -C tests/ladx unit-arm`, contract in `tests/ladx/README.md`, "Unit
+  tests and lint"). Both need docker
   and qemu-user; a missing one fails with a `setup:` line, a setup problem,
   not a bug.
 - `make sdl` = `sdl-pc` + `sdl-arm`, outside the net. `make sdl-pc` needs
@@ -792,7 +808,7 @@ in `docs/`, then `README.md`.
   `inventory_check.py` diffs the inventory against LADXR, and
   `inventory_trace.sh` and `read_check.py` check it on real reads, and
   `make -C tests/ladx rom-check` needs the ROM and Phase 3's generator
-  (their tests run in `make test`). The SDL build (`make sdl`,
+  (their tests run in `make test-ladx-oracle`, part of `make check`). The SDL build (`make sdl`,
   `libsdl1.2-dev` and `libsdl-ttf2.0-dev`) and the qemu-arm run of the cross
   build are not `check`, nor are `make package`, `make sdl-goldens`, `make sdl-goldens-add`,
   `make screenshots`, `make mockups`, `make theme-compare`, `make theme-art` and

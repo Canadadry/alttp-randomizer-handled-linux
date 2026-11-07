@@ -2,7 +2,7 @@
 comparator and the order audit.
 
 Imports only the standard library and stays importable on Python older than 3.11, so that
-make test runs everywhere; the oracle scripts themselves need 3.11 (co_qualname).
+make check runs everywhere; the oracle scripts themselves need 3.11 (co_qualname).
 """
 
 import contextlib

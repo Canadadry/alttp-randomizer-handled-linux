@@ -6,8 +6,8 @@ help:
 	@echo "make test-rando     the randomizer's unit tests (tests/alttp)"
 	@echo "make test-ladx      LADX's unit tests (tests/ladx/unit), run by make test"
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
-	@echo "make test-ladx-oracle the LADX oracle's helper unit tests (tests/ladx/oracle), no LADXR, no network, run by make test"
-	@echo "make ladx-cases     tests/ladx/cases/ and combos/ checked against tier1.txt and combos.txt, their goldens and size budget, no ROM, no LADXR, run by make test"
+	@echo "make test-ladx-oracle the LADX oracle's helper unit tests (tests/ladx/oracle), no LADXR, no network, run by make check"
+	@echo "make ladx-cases     tests/ladx/cases/ and combos/ checked against tier1.txt and combos.txt, their goldens and size budget, no ROM, no LADXR, run by make check"
 	@echo "make ladx-tables    data/ladx/ (LADX patch tables) parsed and checked against the inventory, no ROM, no LADXR, run by make test"
 	@echo "make ladx-extract   tests/ladx/extract/ (extraction fixtures) parsed and checked against the inventory's Extractions names, no ROM, no LADXR, run by make test"
 	@echo "make rom-guard      fails if git's index holds a .gb/.gbc/.sfc/.smc file or a LADX/ALttP ROM by digest, run by make test"
@@ -18,7 +18,7 @@ help:
 	@echo "make e2e            every case of tests/alttp/cases diffed against its golden"
 	@echo "make e2e-combos     every case of tests/alttp/combos diffed against its golden, kept out of e2e"
 	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
-	@echo "make unit-arm       every unit test on the Onion cross build under qemu-arm (needs docker, qemu-user)"
+	@echo "make unit-arm       every unit test of both games (tests/alttp, tests/ladx) on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
 	@echo "make sdl-pc         the SDL PC build, its SDL tests, headless smoke test and golden comparison (needs libsdl1.2-dev, libsdl-ttf2.0-dev, libsdl-image1.2-dev)"
 	@echo "make sdl-goldens    writes the SDL goldens once into tests/alttp/sdl/goldens/, refused if any exist, kept out of check"
@@ -42,7 +42,7 @@ install:
 	@echo "install: no dependency to install (host gcc, make, python3)"
 
 # The fast loop. Keep it a few seconds, with no network and no external service.
-test: test-rando test-ladx test-template rom-guard test-ladx-oracle ladx-cases ladx-tables ladx-extract
+test: test-rando test-ladx test-template rom-guard ladx-tables ladx-extract
 
 test-rando:
 	$(MAKE) -C tests/alttp test
@@ -97,6 +97,7 @@ e2e-arm:
 # Outside the net: needs docker and qemu-user.
 unit-arm:
 	$(MAKE) -C tests/alttp unit-arm
+	$(MAKE) -C tests/ladx unit-arm
 
 # Outside the net: sdl-pc needs the SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2 packages, sdl-arm docker.
 sdl:
@@ -162,4 +163,4 @@ measure-compare:
 	$(MAKE) -C tests/alttp measure-compare
 
 # The net. A change that keeps it green is correct; one that breaks it is a bug.
-check: test lint logic selftest e2e e2e-combos
+check: test test-ladx-oracle ladx-cases lint logic selftest e2e e2e-combos

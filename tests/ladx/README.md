@@ -11,8 +11,8 @@ exact text for every group it ports.
 `combos/` the crosses, hand-picked combinations and random sample of
 `oracle/combos.txt`. One folder per case, named from its settings
 (`<key>-<value>`, joined with `+` in LADXR's order; `baseline`), except a
-sample combo, `sample-<nn>` (below, "Random sample"). `oracle/ladx_cases.py check` (in
-`make test`) proves the list and the files below.
+sample combo, `sample-<nn>` (below, "Random sample"). `oracle/ladx_cases.py check` (`make
+ladx-cases`, run by `make check`) proves the list and the files below.
 
 | File | Written by | Holds |
 |---|---|---|
@@ -453,6 +453,51 @@ the text at the general thresholds.
 case, 22 MiB in all; all golden files (`run.txt`, `spoiler.json`,
 `rom_writes.txt`) 34 MiB in all.
 
+## Unit tests and lint
+
+The C library `ladx/` (public headers `ladx/include/`, sources
+`ladx/src/`; pure C99, no allocation, no platform library, nothing of
+`alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
+binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
+(`test_sha512`, `test_pyrandom`), failing through `unit/support.h`'s
+`test_fail` (`<test>: FAIL <message>`, exit 1). Every LADX build, host,
+lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
+GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
+one, while CPython never fuses, so `uniform`'s `a + (b - a) * random()`
+would differ in its last bit. Phase 4, which builds `ladx/` into the app,
+keeps the flag. Library objects see only `-I ladx/include`; the tests add
+`-I tests/ladx/unit`. Build output goes to `tests/ladx/build/`.
+
+- `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
+  builds `build/libladx.a` and the unit tests with host `cc`, runs each
+  from `tests/ladx` (fixture paths are relative: `test_pyrandom` reads
+  `oracle/pyrandom_vectors.txt`, always, with no flag), then prints
+  `test: <n> LADX unit tests ran`. `test_sha512` prints `test_sha512:
+  FIPS 180-4 vectors, padding boundaries and streaming splits ok`;
+  `test_pyrandom` replays every fixture line and fails on an unknown kind
+  or op, a malformed line, or a missing kind or op, then prints
+  `test_pyrandom: <n> fixture lines ok (<kind> <count>, ...)`. Its
+  hand-written `uniform(-7.3, 12.9)` vectors, from CPython, are the FMA
+  proof: the fixture's `uniform` lines have `a = 0`, where a fused and an
+  unfused result round alike, but 4 of these 8 draws differ when fused.
+- `make -C tests/ladx lint` (run by the root `make lint`, after
+  `tests/alttp`'s): every `ladx/src` source compiled with `-pedantic-errors`
+  added, then `lint: <n> ladx/ sources build with -pedantic-errors`.
+- `make -C tests/ladx unit-arm` (run by the root `make unit-arm`, after
+  `tests/alttp`'s; outside the net): `setup: qemu-arm not found on PATH
+  (install qemu-user)`, exit 1, without `qemu-arm`; `onion-toolchain.sh`'s
+  `setup:` line without docker or its daemon. Else it prints `unit-arm:
+  building <n> LADX unit tests in build/arm/unit with Onion's toolchain`,
+  compiles `ladx/src`, `unit/support.c` and each test with Onion's
+  toolchain and the flags above plus `-O2 -marm -mtune=cortex-a7
+  -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve -static
+  -D_FILE_OFFSET_BITS=64` (as `tests/alttp`'s), checks with `file` that
+  `test_pyrandom` is a 32-bit ARM EABI5 executable, prints `qemu-arm
+  --version`'s first line, runs every test under `qemu-arm` from
+  `tests/ladx` (the same fixture, the same output lines) and ends with
+  `unit-arm: <n> LADX unit tests passed under qemu-arm`; any failure exits
+  non-zero.
+
 ## Full-ROM check
 
 `make -C tests/ladx rom-check [LADX_ROM=<file>] [LADX_GEN=<binary>]
@@ -462,7 +507,7 @@ and compares the SHA-1 of each output with the `rom_sha1` line of the
 case's `run.txt`. It is the whole-output proof the write-log claims do not
 give. Every run first proves the driver on a synthetic 64 KiB ROM, a
 planted case tree and a fake generator (`make -C tests/ladx
-rom-check-selftest` runs only that; `make test` runs it too).
+rom-check-selftest` runs only that; `make check` runs it too, through `make test-ladx-oracle`).
 
 Defaults: `LADX_ROM` `tmp/ladx/base.gbc`, `LADX_GEN`
 `tests/ladx/build/ladx_patch`, both repository-relative. The work
