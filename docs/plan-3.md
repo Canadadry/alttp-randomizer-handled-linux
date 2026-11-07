@@ -351,3 +351,15 @@ Over 50 planted mutations each failed a test, with one exception: KeyLocation's 
 - The builder is public (`ladx_logic_builder.h`), so tests use public headers only.
 
 Maxima over the 425 graphs: 689 locations, 1400 edges, 348 spots, 1154 requirement nodes and 2395 terms, under capacities 1024, 2048, 512, 4096 and 16384. Fixing a quadratic `strlen` in the test renderer took the replay from 4 min 27 s to 23.6 s under qemu-arm (2.9 s on the host). `make test` stays about 6.5 s, and `make logic` is about 12.5 s. The PRD's "445 configurations" was a typo for the fixture's 425.
+
+### Step 3.4
+
+`ladx_randomize` ports `Randomizer.__init__` through the fill for tier 1, each part line for line in LADXR's order. It covers a traced generator (`ladx_rng`: `rnd` and `global`, one record per call with LADXR's `<module>:<qualname>` stage and the MT words drawn), the world setup with `buildMaze`, the dict-ordered item pool with `__randomizeRupees`, `readItemPool`, and `RandomItemPlacer`, with LADXR's Error, AssertionError, IndexError and KeyError outcomes. The library reproduces the boomerang pair's AssertionError, and `ladx_gen` refuses the pair as unsupported. `ladx/host/` renders `run.txt` in the oracle's format (CPython's `float.hex` ported), and `ladx_gen <case_dir> <out_dir>` writes it.
+
+The LADX e2e driver `tests/ladx/run_e2e.py` (Python, so steps 5–6 reuse `write_log.py`) projects both `run.txt` at the stage in `tests/ladx/claims.txt` (one stage for every case). It proves itself on 18 planted runs and runs from the root `selftest`, `e2e` and `e2e-combos`. The claim moved init → ws → pool → fill, chunk by chunk: 88 cases and 40 combos pass at `fill` (placement and RNG trace equal to LADXR's).
+
+Every case seed was picked ok, so the new ROM-free `fill_outcomes.txt` (`gen_fill_outcomes.py`, LADXR at the pin; `--check` byte-identical with `PYTHONHASHSEED=1`) records 169 refused or other runs (24 ok, 136 error, 9 crash), and `test_fill --fixtures` replays them all with the same outcome and projection. `make logic` also replays all 267 runs of `item_pools.txt`.
+
+Gaps the cases left were checked directly against LADXR at the pin and kept as `make test` vectors: the maze's crash and retries, `goal=specific` with `goalcount=0`, a rupee re-draw (seed `000000a2`, `itempool=pain`), and the placer's tie-breaks, undo and bail counter on hand-built graphs.
+
+`make -C tests/ladx measure`: median 10 ms per case, max 16 ms on the host, projected 0.3 to 0.8 s on the Cortex-A7 (ALttP's ×20–50), well under the 10 s line. `sizeof(LadxRandomizer)` is 549,192 bytes. `make unit-arm`: 10 LADX unit tests and 3 fixture replays pass under qemu-arm.

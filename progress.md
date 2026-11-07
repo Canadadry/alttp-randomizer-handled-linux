@@ -99,7 +99,7 @@
     - [x] Chunk 5: dungeons 5 to 8 and the colour dungeon
     - [x] Chunk 6: overworld and the full logic
     - [x] Chunk 7: every configuration and explorer vector
-  - [ ] Step 3.4 Item pool and fill
+  - [x] Step 3.4 Item pool and fill
     - [x] Chunk 1: traced generator and run.txt renderer
     - [x] Chunk 2: ladx_gen, e2e driver and the init claim
     - [x] Chunk 3: world setup and maze: the ws claim
