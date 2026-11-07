@@ -99,7 +99,7 @@ C goal - patches.bingo.setBingoGoal(rom, world_setup.bingo_goals, world_setup.go
 C goal - patches.maze.patchMaze(rom, world_setup.sign_maze[0], world_setup.sign_maze[1])
 table goal-fixed goal-fixed.2 patches.goal.setSeashellGoal(rom, 20)
 C goal - patches.goal.setSpecificInstruments(rom, [int(c) for c in world_setup.goal[1:]])
-table goal-fixed goal-fixed.3 patches.goal.setRequiredInstrumentCount(rom, -1)
+C goal - patches.goal.setRequiredInstrumentCount(rom, -1)
 C goal - patches.goal.setRequiredInstrumentCount(rom, world_setup.goal_count)
 C items - patches.chest.setMultiChest(rom, world_setup.multichest)
 C entrances - patches.entrances.changeEntrances(rom, world_setup.entrance_mapping)

@@ -247,27 +247,3 @@ E 1 vanilla enabled normal 0
 nothing
 E 1 vanilla enabled swordless 0
 nothing
-unit goal-fixed.3 goal
-E 5-8
-nothing
-E instruments
-nothing
-E maze
-nothing
-E open
-B 31f5 @3+7
-B 64b79 0000
-B 64bf4 =1 e07f
-B 64bfe c32b @2391e+b
-B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe =1 da1a4cc30b4c
-B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
-B 82dea @3+7
-T texts 1a3 @26981+4 @272de+5 2d31 @74f6d+7 @59db4+9 ff
-E open-4
-nothing
-E seashells
-nothing
-E specific
-nothing
-E vanilla
-nothing
