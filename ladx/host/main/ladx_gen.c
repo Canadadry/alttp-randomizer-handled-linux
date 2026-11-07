@@ -3,16 +3,24 @@
 #include "ladx_randomizer.h"
 #include "ladx_run_text.h"
 #include "ladx_settings.h"
+#include "ladx_tables.h"
+#include "ladx_wlog.h"
 
+#include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #define SEED_BYTES 16
 #define MAX_PATH 4096
 #define MAX_CONFIG_LINE 256
+/* data/ladx/ in all: 534,590 bytes today. */
+#define TABLES_TEXT_MAX (2 * 1024 * 1024)
+#define TABLES_NAME_MAX 64
+#define RECORD_ATOMS_MAX 65536
 
-static const char usage[] = "usage: ladx_gen <case_dir> <out_dir>\n"
+static const char usage[] = "usage: ladx_gen [--tables <dir>] <case_dir> <out_dir>\n"
 			    "       ladx_gen --time <case_dir>\n";
 
 typedef struct Case {
@@ -124,7 +132,181 @@ static int read_case(const char *case_dir, Case *c)
 	return 1;
 }
 
-static int generate(const char *case_dir, const char *out_dir)
+static char tables_text[TABLES_TEXT_MAX];
+static size_t tables_text_len;
+static char tables_names[LADX_TABLES_GROUP_MAX][TABLES_NAME_MAX];
+static LadxTables tables;
+static LadxWlog wlog;
+static LadxAtom record_atoms[RECORD_ATOMS_MAX];
+
+/* The file's text appended to tables_text; 0 when unreadable or too large. */
+static int read_tables_file(const char *dir, const char *name, LadxTablesFile *file)
+{
+	char path[MAX_PATH];
+	size_t n;
+	FILE *f;
+
+	if (!join(path, dir, name))
+		return 0;
+	f = fopen(path, "rb");
+	if (!f) {
+		fprintf(stderr, "ladx_gen: tables: cannot open %s\n", path);
+		return 0;
+	}
+	n = fread(tables_text + tables_text_len, 1, TABLES_TEXT_MAX - tables_text_len, f);
+	if (ferror(f) || n == TABLES_TEXT_MAX - tables_text_len) {
+		fprintf(stderr, "ladx_gen: tables: cannot read %s, or the tables are over %d bytes\n", path,
+			TABLES_TEXT_MAX);
+		fclose(f);
+		return 0;
+	}
+	fclose(f);
+	file->name = name;
+	file->text.at = tables_text + tables_text_len;
+	file->text.len = n;
+	tables_text_len += n;
+	return 1;
+}
+
+static int name_cmp(const void *a, const void *b)
+{
+	return strcmp(a, b);
+}
+
+/* order.txt and every other .txt file of dir, indexed into tables. */
+static int open_tables(const char *dir)
+{
+	LadxTablesFile order, groups[LADX_TABLES_GROUP_MAX];
+	LadxTablesError err;
+	struct dirent *e;
+	int n = 0, i;
+	DIR *d = opendir(dir);
+
+	if (!d) {
+		fprintf(stderr, "ladx_gen: tables: cannot open %s\n", dir);
+		return 0;
+	}
+	while ((e = readdir(d)) != NULL) {
+		size_t len = strlen(e->d_name);
+
+		if (len < 5 || strcmp(e->d_name + len - 4, ".txt") != 0 || strcmp(e->d_name, "order.txt") == 0)
+			continue;
+		if (n == LADX_TABLES_GROUP_MAX || len >= TABLES_NAME_MAX) {
+			fprintf(stderr, "ladx_gen: tables: %s: over %d group files or a long name\n", dir,
+				LADX_TABLES_GROUP_MAX);
+			closedir(d);
+			return 0;
+		}
+		strcpy(tables_names[n++], e->d_name);
+	}
+	closedir(d);
+	qsort(tables_names, (size_t)n, sizeof tables_names[0], name_cmp);
+	tables_text_len = 0;
+	if (!read_tables_file(dir, "order.txt", &order))
+		return 0;
+	for (i = 0; i < n; i++)
+		if (!read_tables_file(dir, tables_names[i], &groups[i]))
+			return 0;
+	if (ladx_tables_open(&tables, &order, groups, n, &err) != LADX_TABLES_OK) {
+		fprintf(stderr, "ladx_gen: tables: %s %s:%d\n", ladx_tables_status_name(err.status),
+			err.file ? err.file : "-", err.line);
+		return 0;
+	}
+	return 1;
+}
+
+typedef struct FileSink {
+	FILE *f;
+	int failed;
+} FileSink;
+
+static void file_sink(void *ctx, const char *text, size_t len)
+{
+	FileSink *sink = ctx;
+
+	if (!sink->failed && fwrite(text, 1, len, sink->f) != len)
+		sink->failed = 1;
+}
+
+static int tables_error(const LadxTablesError *err)
+{
+	if (err->status == LADX_TABLES_NO_ENTRY)
+		fprintf(stderr, "ladx_gen: tables: unit %s: no entry for %s\n", err->unit, err->values);
+	else
+		fprintf(stderr, "ladx_gen: tables: %s %s:%d\n", ladx_tables_status_name(err->status),
+			err->file ? err->file : "-", err->line);
+	return 0;
+}
+
+/* Every table entry the key selects, logged under its unit's group; C rows write nothing yet. */
+static int log_tables(const LadxSettings *settings, int spot_count)
+{
+	LadxTablesWalk w;
+	LadxTablesStep step;
+	LadxTablesError err;
+	LadxWlogStatus st = LADX_WLOG_OK;
+
+	ladx_tables_walk_init(&w, &tables, settings, spot_count);
+	while (st == LADX_WLOG_OK && ladx_tables_walk_next(&w, &step, &err)) {
+		LadxTablesRecords it;
+		LadxTablesRecord rec;
+
+		if (step.c_row)
+			continue;
+		ladx_tables_records_init(&it, &tables, &step);
+		while (st == LADX_WLOG_OK && ladx_tables_records_next(&it, &rec, record_atoms, RECORD_ATOMS_MAX, &err)) {
+			if (!rec.table_record)
+				st = ladx_wlog_bank(&wlog, step.group, rec.offset, rec.atoms, rec.n);
+			else if (rec.pointer)
+				st = ladx_wlog_pointer(&wlog, step.group, rec.table, rec.key, rec.value);
+			else
+				st = ladx_wlog_table(&wlog, step.group, rec.table, rec.key, rec.atoms, rec.n);
+		}
+		if (st == LADX_WLOG_OK && err.status != LADX_TABLES_OK)
+			return tables_error(&err);
+	}
+	if (st == LADX_WLOG_OK && err.status != LADX_TABLES_OK)
+		return tables_error(&err);
+	if (st == LADX_WLOG_OK)
+		st = ladx_wlog_end(&wlog);
+	if (st != LADX_WLOG_OK) {
+		fprintf(stderr, "ladx_gen: tables: write log %s\n", st == LADX_WLOG_OVERFLOW ? "overflow" : "bad input");
+		return 0;
+	}
+	return 1;
+}
+
+/* <out_dir>/rom_writes.txt of the table groups: 0 on an I/O failure (1), -1 on a tables error (2). */
+static int write_rom_writes(const char *out_dir, const LadxSettings *settings, const LadxLogic *placement)
+{
+	char path[MAX_PATH];
+	FileSink sink;
+	int ok;
+
+	if (!join(path, out_dir, "rom_writes.txt"))
+		return -1;
+	sink.f = fopen(path, "w");
+	sink.failed = 0;
+	if (!sink.f) {
+		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
+		return 0;
+	}
+	ok = ladx_wlog_begin(&wlog, ladx_tables_names(&tables), file_sink, &sink) == LADX_WLOG_OK &&
+	     log_tables(settings, ladx_tables_spot_count(placement));
+	if (fclose(sink.f) != 0)
+		sink.failed = 1;
+	if (!ok) {
+		remove(path);
+		return -1;
+	}
+	if (sink.failed) {
+		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
+		return 0;
+	}
+	return 1;
+}
+
+static int generate(const char *case_dir, const char *out_dir, const char *tables_dir)
 {
 	static LadxRandomizer r;
 	LadxRunTextTrace sink;
@@ -134,6 +316,8 @@ static int generate(const char *case_dir, const char *out_dir)
 	int ok;
 
 	if (!read_case(case_dir, &c))
+		return 2;
+	if (tables_dir && !open_tables(tables_dir))
 		return 2;
 	trace = tmpfile();
 	if (!trace) {
@@ -168,6 +352,11 @@ static int generate(const char *case_dir, const char *out_dir)
 		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
 		return 1;
 	}
+	if (tables_dir && ladx_randomizer_placement(&r)) {
+		ok = write_rom_writes(out_dir, &c.settings, ladx_randomizer_placement(&r));
+		if (ok <= 0)
+			return ok < 0 ? 2 : 1;
+	}
 	return 0;
 }
 
@@ -196,7 +385,9 @@ int main(int argc, char **argv)
 	if (argc == 3 && strcmp(argv[1], "--time") == 0)
 		return time_run(argv[2]);
 	if (argc == 3 && argv[1][0] != '-')
-		return generate(argv[1], argv[2]);
+		return generate(argv[1], argv[2], NULL);
+	if (argc == 5 && strcmp(argv[1], "--tables") == 0 && argv[3][0] != '-')
+		return generate(argv[3], argv[4], argv[2]);
 	fputs(usage, stderr);
 	return 2;
 }

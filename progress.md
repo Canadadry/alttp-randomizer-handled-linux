@@ -110,8 +110,8 @@
   - [ ] Step 3.5 Table application
     - [x] Chunk 1: write-log builder
     - [x] Chunk 2: tables reader, walk, applier and spot count
-    - [ ] Chunk 3: driver group claims and self-test
-    - [ ] Chunk 4: ladx_gen writes the table groups
+    - [x] Chunk 3: driver group claims and self-test
+    - [x] Chunk 4: ladx_gen writes the table groups
   - [ ] Step 3.6 Seed-dependent writes
     - [ ] Step 3.6.1 ROM-free proof of save's packing
     - [ ] Step 3.6.2 C write logger and KS

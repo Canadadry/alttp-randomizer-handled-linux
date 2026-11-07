@@ -164,7 +164,9 @@ in `docs/`, then `README.md`.
   and `make logic`;
   `selftest`, `e2e` and `e2e-combos`, run by the root ones after
   `tests/alttp`'s: LADX's e2e driver `run_e2e.py`, its claims
-  `claims.txt`, contract in `tests/ladx/README.md`, "Stage projection" and
+  `claims.txt` (a stage and the write-log groups claimed, each through its
+  `rom_writes.txt` projection; `ladx_gen --tables data/ladx` writes C's),
+  contract in `tests/ladx/README.md`, "Stage projection" and
   "E2E driver and claims";
   `unit-arm`, `measure` (the run stopped after the fill timed on every
   case, projected onto the Cortex-A7; contract in `tests/ladx/README.md`,

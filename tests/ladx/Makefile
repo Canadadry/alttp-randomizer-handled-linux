@@ -39,6 +39,7 @@ ONION_CFLAGS := -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=
 ARM_UNIT_DIR := $(BUILD)/arm/unit
 
 TOP := $(abspath ../..)
+TABLES := $(TOP)/data/ladx
 LADX_ROM ?= tmp/ladx/base.gbc
 LADX_GEN ?= tests/ladx/build/ladx_patch
 CASES ?=
@@ -49,7 +50,7 @@ help:
 	@echo "make lint              every ladx/ source, ladx/host/ included, built as strict ISO C99 (-pedantic-errors)"
 	@echo "make unit-arm          LADX's unit tests built by Onion's toolchain (-ffp-contract=off kept) and run under qemu-arm from tests/ladx (needs docker, qemu-user)"
 	@echo "make selftest          the e2e driver run_e2e.py's self-test on planted runs and fake generators"
-	@echo "make e2e               build/ladx_gen on every case of cases/ (or CASES=\"a b\"), its run.txt's stage projection diffed against the golden's at claims.txt's stage"
+	@echo "make e2e               build/ladx_gen on every case of cases/ (or CASES=\"a b\"), its run.txt's stage projection and claimed groups' rom_writes.txt projections (tables TABLES, default data/ladx) diffed against the golden's per claims.txt"
 	@echo "make e2e-combos        the same on every case of combos/"
 	@echo "make measure           build/ladx_gen --time (the run stopped after the fill) 3 times on every case and combo, the minimum kept, projected onto the Cortex-A7; report in build/measure/report.txt; outside the net"
 	@echo "make rom-check          the generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
@@ -59,11 +60,11 @@ selftest:
 	@python3 -I -B run_e2e.py --self-test
 
 e2e: $(GEN)
-	@python3 -I -B run_e2e.py --cases cases --gen $(GEN) $(CASES)
+	@python3 -I -B run_e2e.py --cases cases --gen $(GEN) --tables $(TABLES) $(CASES)
 
 e2e-combos: $(GEN)
 	@echo "e2e-combos: the combination cases"
-	@python3 -I -B run_e2e.py --cases combos --gen $(GEN) $(CASES)
+	@python3 -I -B run_e2e.py --cases combos --gen $(GEN) --tables $(TABLES) $(CASES)
 
 measure: $(GEN)
 	@CC='$(CC)' ./measure.sh $(GEN) $(BUILD)/measure

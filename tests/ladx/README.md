@@ -918,6 +918,23 @@ e2e` and `e2e-combos`.
   once `run` returned), the trace, then the `outcome` line when no
   `place` line was written (LADXR's error or exception; an ok run's
   `outcome ok` belongs to the whole run).
+- `ladx_gen --tables <dir> <case_dir> <out_dir>` does the same, then,
+  after an ok fill (`ladx_randomizer_placement` not NULL), writes
+  `<out_dir>/rom_writes.txt`: the tables of `<dir>` (`order.txt` and every
+  other `.txt` file, read whole, 2 MiB in all at most; today 534,590
+  bytes) opened, the key of the validated settings and the placed logic's
+  spot count, the walk ("Table application") logging each selected
+  entry's records into `ladx_wlog` under its unit's group, `C` rows
+  skipped (nothing written at them yet), so consecutive entries of one
+  group merge into one segment across them. The file is a valid version-1
+  write log holding only the table groups' segments, no `I` line; the
+  version and `tables` lines are written even when nothing else is. An
+  error outcome of the fill writes no `rom_writes.txt`. A tables open,
+  key or walk error, or a log overflow, exits 2 with `ladx_gen: tables:
+  <status> <file>:<line>` or `ladx_gen: tables: unit <id>: no entry for
+  <values>` (or `write log overflow`), the partial `rom_writes.txt`
+  removed. Opening and walking the tables and writing the log adds about
+  9 ms per run on the host (slowest case, `sample-05`).
 - `ladx_gen --time <case_dir>` runs the same with no sink and prints only
   the run's elapsed microseconds (`CLOCK_MONOTONIC`), no file.
 - Exit 0 with the file written, whatever LADXR's outcome (it is in the
@@ -961,30 +978,50 @@ order: `init`, `ws`, `pool`, `fill`.
 ## E2E driver and claims
 
 `tests/ladx/claims.txt` holds one `stage <name>` line (one of the four
-stages; blank lines and `#` comments skipped) that applies to every case
-of the directory run, cases and combos alike. An unknown stage, a second
-`stage` line, no `stage` line or any other line exits 2. Stage claimed
-now: `fill`.
+stages) and zero or more `group <name>` lines (blank lines and `#`
+comments skipped), all applying to every case of the directory run,
+cases and combos alike. A group must be in the inventory's Groups table
+(`--inventory`, default `notes/ladx-inventory.md`, read through
+`write_log.py`'s `sides_of` only when a group is claimed) with side
+`table` or `C`, and not `spoiler` (its claim is `spoiler.json`). An
+unknown stage, a second `stage` line, no `stage` line, an unknown,
+repeated or `spoiler` group or any other line exits 2. Claimed now:
+stage `fill`, groups `fixed`, `frame-counter`, `goal-fixed`,
+`music-fixed` and `options` (the five table groups).
 
 `python3 -I -B tests/ladx/run_e2e.py [--cases <dir>] [--claims <file>]
-[--gen <binary>] [<case>...]` (defaults `tests/ladx/cases`,
-`tests/ladx/claims.txt`, `tests/ladx/build/ladx_gen`) projects every
-golden first (a missing or malformed golden, an unknown named case: exit
-2), then runs `<gen> <case_dir> <out_dir>` per case (the named ones only
-when given), sorted by name, in parallel, each in a fresh temporary
-directory, 120 s each, and prints per case `PASS <case> (<stage>)` or
-`DIVERGENT <case>` followed by indented detail lines: the first differing
-projection line as `<section>: line <n>:` (`n` counted in the
-projection), `golden: <line>`, `c: <line>` (`<end>` past the end); or
-`c generator exited <code>` and the first lines of its stderr; `c wrote no
-run.txt`; `c run.txt malformed: <reason>`; `c generator timed out after
-<s> s`; `no C generator: <path>` (every case, when the binary is
-missing). Then `e2e: <p> pass, <d> divergent`; exit 0, 1 when a case is
-divergent, 2 on a usage, claims or golden-format error.
+[--gen <binary>] [--tables <dir>] [--inventory <file>] [<case>...]`
+(defaults `tests/ladx/cases`, `tests/ladx/claims.txt`,
+`tests/ladx/build/ladx_gen`, `data/ladx`, `notes/ladx-inventory.md`)
+projects every golden first: its `run.txt` at the stage and, when a
+group is claimed, its `rom_writes.txt` (a missing or malformed golden,
+an unknown named case: exit 2; with no group claimed `rom_writes.txt` is
+neither read nor required). A group's projection is
+`write_log.py`'s (`parse`, then the group's segments replayed and
+rendered as one segment, header lines included: "Projection and
+claims"), so segmentation, other groups and `I` lines never change a
+verdict; a group absent from a log projects to the two header lines. It
+prints `e2e: claims stage <stage>, groups <g> ...` (`groups none` when
+none), then runs `<gen> --tables <dir> <case_dir> <out_dir>` per case
+(the named ones only when given), sorted by name, in parallel, each in a
+fresh temporary directory, 120 s each, and prints per case `PASS <case>
+(<stage> + <n> groups)` (`PASS <case> (<stage>)` with no group) or
+`DIVERGENT <case>` followed by indented detail lines: for the `run.txt`
+claim and then each divergent group in `claims.txt` order, the first
+differing projection line as `<section or group>: line <n>:` (`n`
+counted in the projection), `golden: <line>`, `c: <line>` (`<end>` past
+the end); or `c generator exited <code>` and the first lines of its
+stderr; `c wrote no run.txt`; `c run.txt malformed: <reason>`; `c wrote
+no rom_writes.txt`; `c rom_writes.txt malformed: <reason>`; `c generator
+timed out after <s> s`; `no C generator: <path>` (every case, when the
+binary is missing). A detail line over 200 characters is cut at 200 and
+ends ` ... (<k> chars)`. Then `e2e: <p> pass, <d> divergent`; exit 0, 1
+when a case is divergent, 2 on a usage, claims or golden-format error.
 
 `run_e2e.py --self-test` builds planted case trees from `cases/baseline`'s
-golden and fake generators (Python scripts copying a planted `run.txt`)
-and checks 18 verdicts: identical, a changed `generateRom` trace line, a
+golden and fake generators (Python scripts copying a planted `run.txt`
+and, when planted, `rom_writes.txt`) and checks 33 verdicts. With no
+group claimed (18): identical, a changed `generateRom` trace line, a
 changed `rom_sha1` or `spoiler_sha1`, a claim at `ws` with a changed
 `place` line, and a claim at `init` with C stopping after the seeding
 (no outcome line) each `PASS`; a changed `place` line, a changed
@@ -993,12 +1030,26 @@ trace line, a changed `ws` line, a non-zero exit, no `run.txt`, no
 generator, a claim at `init` with C's `outcome ok` and no `ws` line, and
 a golden `outcome error` with no `place` against C's places each
 `DIVERGENT`; a golden fill-stage line after a `generateRom` line and an
-unknown claimed stage each exit 2. It prints `e2e: self-test, 18 planted
-runs as expected`, else one `e2e: self-test failed: <case> (expected
-<v>, got <w>)` line each, exit 1.
+unknown claimed stage each exit 2. With groups claimed, from the
+baseline's `rom_writes.txt` (15): identical logs; C's log holding only
+the five table groups, merged across the absent `C` segments; a byte
+changed only in an unclaimed group's segment before the claimed group's
+(`frame-counter`) first segment, and one after its last; and golden `I`
+lines against a C log without them, each `PASS`; a byte changed in the
+last `options` segment; a literal for a reference to the same bytes (a
+synthetic pair, golden `B 100 @2000+4` against C's `B 100 0a0b0c0d`,
+stated to be the source bytes: the driver has no ROM); the last `fixed`
+segment's last byte moved into the next segment, of another group; the
+claimed `options` absent from C's log; no `rom_writes.txt` from C; and a
+malformed C log, each `DIVERGENT`; `group nosuch`, a repeated group,
+`group spoiler`, and a golden without `rom_writes.txt` while a group is
+claimed, each exit 2. It prints `e2e: self-test, 33 planted runs as
+expected`, else one `e2e: self-test failed: <case> (expected <v>, got
+<w>)` line each, exit 1.
 
 `make -C tests/ladx selftest` runs the self-test; `make -C tests/ladx e2e
-[CASES="<case> ..."]` builds `ladx_gen` and runs the driver on `cases/`;
+[CASES="<case> ..."]` builds `ladx_gen` and runs the driver on `cases/`
+with `--tables` the repository's `data/ladx`;
 `e2e-combos` prints `e2e-combos: the combination cases`, then runs it on
 `combos/`. The root `make selftest`, `e2e` and `e2e-combos` run
 `tests/alttp`'s target, then LADX's.
