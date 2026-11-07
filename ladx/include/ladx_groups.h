@@ -184,4 +184,48 @@ int ladx_items_inventory_id(int item);
 /* The dungeon-item reduction: KEYn, NIGHTMARE_KEYn, MAPn, COMPASSn, STONE_BEAKn with n == dungeon as its generic item, else item. */
 int ladx_items_dungeon_item(int item, int dungeon);
 
+/*
+ * patches/entrances.py changeEntrances on the identity entrance_mapping of
+ * WorldSetup.__init__ (tests/ladx/README.md, "Pipeline"): every entrance,
+ * alt, target and instrument room loaded from the current state, its warps
+ * to a changed room replaced, stored. Needs p->rom; draws nothing; returns
+ * 0 with p->raised set where LADXR raises, 0 alone on a room it cannot load
+ * or store.
+ */
+int ladx_group_entrances(LadxEncoder *enc, LadxPipeline *p);
+
+/* entranceInfo.py's EntranceInfo, the fields changeEntrances reads. */
+typedef struct LadxEntranceInfo {
+	const char *name;
+	int room;
+	const char *alt_room; /* NULL: None */
+	int index;	      /* LADX_ENTRANCE_INDEX_NONE, _ALL, or the warp's index */
+	int target;
+	int instrument_room;	    /* -1: None or an alt key */
+	const char *instrument_alt; /* the alt key, else NULL */
+} LadxEntranceInfo;
+
+#define LADX_ENTRANCE_INDEX_NONE (-1)
+#define LADX_ENTRANCE_INDEX_ALL (-2)
+#define LADX_ENTRANCE_INFO_COUNT 104
+#define LADX_ENTRANCES_MAX 128
+
+/* ENTRANCE_INFO at the pin, in its order; *count LADX_ENTRANCE_INFO_COUNT. */
+const LadxEntranceInfo *ladx_entrance_info(size_t *count);
+
+typedef enum LadxEntrancesStatus {
+	LADX_ENTRANCES_OK = 0,
+	LADX_ENTRANCES_RAISED, /* LADXR's IndexError or AssertionError: *raised filled */
+	LADX_ENTRANCES_FAILED  /* over LADX_ENTRANCES_MAX, a mapping value out of range, a room that does not load or store */
+} LadxEntrancesStatus;
+
+/*
+ * changeEntrances(rom, mapping) over info[0..count-1]: mapping holds
+ * 2 * count target keys, key k < count the entrance k and count + k its
+ * ":inside", in the dict's order. room is the scratch the rooms are edited in.
+ */
+LadxEntrancesStatus ladx_entrances_change(LadxEncoder *enc, LadxSpan group, LadxRoom *room,
+					  const LadxEntranceInfo *info, size_t count, const int *mapping,
+					  LadxOutcome *raised);
+
 #endif

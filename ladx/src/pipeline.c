@@ -11,6 +11,7 @@ static const LadxPipelineGroup groups[] = {
 	{"notext", 1, ladx_group_notext, NULL},
 	{"goal", 1, ladx_group_goal, NULL},
 	{"items", 1, ladx_group_items, NULL},
+	{"entrances", 1, ladx_group_entrances, NULL},
 	{"title", 1, ladx_group_title, NULL},
 	{"endscreen", 1, ladx_group_endscreen, ladx_group_endscreen_draws},
 };

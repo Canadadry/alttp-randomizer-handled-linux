@@ -1189,7 +1189,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `title` and `endscreen`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `title` and `endscreen`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1420,8 +1420,42 @@ not in the file); none fails after the groups before it on the source
 ROM. It runs once, at `setMultiChest`'s row, before `entrances`' row,
 where LADXR has `changeEntrances` between the multichest and the spots:
 the inventory shows neither group depending on the other, they share
-no position, and claims are projections. It needs the ROM (`rom-group
-items`), draws nothing and has no `draw`.
+no position (0 shared bank offsets or table keys in the 128 goldens),
+`entrances` reads only the rooms it stores and `items` edits only room
+0xF2, which no entrance names, and claims are projections; the
+`entrances` claim, made with `items` claimed, confirms it. It needs the
+ROM (`rom-group items`), draws nothing and has no `draw`.
+
+**`entrances`** (`patches.entrances.changeEntrances(rom,
+world_setup.entrance_mapping)`, `ladx_group_entrances`), on the identity
+mapping of `WorldSetup.__init__` (every key to its `:inside`, then every
+`:inside` to its key, that dict order). `ladx_entrances_change` takes the
+entrance table and the mapping (`2 × count` target keys, key `k` the
+entrance `k`, `count + k` its `:inside`), so its unit tests drive other
+mappings. `ladx_entrance_info` is `entranceInfo.py`'s `ENTRANCE_INFO` at
+the pin, 104 entries in its order, with the fields the call reads (name,
+room, alt room, index, target, instrument room as an index or an alt
+key), checked by the SHA-1 of its rendering against LADXR's. For each
+entrance in order, through the room editor on the current state (the
+maze's edits included): the entrance's alt room, else its room, gives
+warp `index` (`None` and `"all"` read as 0; past the last warp
+`IndexError: list index out of range`), the way in, whose room must be
+the target (`AssertionError: <key> != <room as %03x>`); the target room
+gives the way out, the last of its warps to the entrance's room
+(`AssertionError: Missing warp to outdoor on <key>` when none). The
+entrance's rooms are its room then its alt room; its `:inside`'s rooms
+the target then the instrument room. Then, per key in mapping order, each
+of its rooms gets the change "warps to the key's vanilla room become the
+target key's warp", rooms in first-insertion order, a later change to the
+same room and target replacing the earlier, an index room and an alt key
+never equal. Last, each room in that order is loaded, every warp whose
+room has a change replaced by a copy of that warp (two doors to one house
+both take the later key's warp, so identity still rewrites a second
+door), and stored: objects, entities for an index room, overlay (about
+220 rooms per run). A room that does not load or store fails the group
+(`GROUP`); a raise ends the walk `RAISED`. At most 128 entrances, its
+state on the stack (no allocation). It needs the ROM (`rom-group
+entrances`), draws nothing and has no `draw`.
 
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
@@ -1433,7 +1467,7 @@ not matter, since no two writes of the call share a position.
 ## Room editor
 
 `ladx/include/ladx_room.h`: `roomEditor.py`'s `RoomEditor` at the pin,
-for every `C` group that edits rooms (`goal`, and later `entrances`,
+for every `C` group that edits rooms (`goal`, `items`, `entrances`, and later
 `bosses`, `enemizer`, `warp-home`, `sprites`). Caller-owned (`LadxRoom`,
 about 10 KB; the pipeline holds one as `p->room`), no allocation.
 `ladx_room_load(r, enc, room, alt)` reads, from the encoder's current

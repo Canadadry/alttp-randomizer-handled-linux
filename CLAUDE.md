@@ -79,7 +79,10 @@ in `docs/`, then `README.md`.
   tables"; `item_patch.c`, the `C` group `items` (`setMultiChest` and
   every location's patch, assembled bytes from `data/ladx/items.txt`),
   tested by `test_items`, claimed `rom-group` by `e2e-rom`, contract in
-  `tests/ladx/README.md`, "Pipeline" and "Patch tables"; `tables.c`, the patch tables' reader, key, walk, records
+  `tests/ladx/README.md`, "Pipeline" and "Patch tables"; `entrances.c`,
+  the `C` group `entrances` (`changeEntrances`, every entrance room
+  re-stored), tested by `test_entrances`, claimed `rom-group` by
+  `e2e-rom`, contract in `tests/ladx/README.md`, "Pipeline"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");

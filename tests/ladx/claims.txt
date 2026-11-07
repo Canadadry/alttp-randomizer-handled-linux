@@ -13,4 +13,5 @@ rom-group music
 rom-group notext
 rom-group goal
 rom-group items
+rom-group entrances
 rom-group title
