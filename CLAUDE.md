@@ -51,6 +51,9 @@ in `docs/`, then `README.md`.
   with its licence; the themes ship byte copies, checked by `test_theme`) and
   the base patch `base.bps`. Press Start 2P is `google/fonts`
   `ofl/pressstart2p/` at `24ddc1f324cac5d9f5aedca126d298f56e3f1640`, renamed.
+  `data/ladx/` holds LADX's patch tables (`order.txt` and one `<group>.txt`
+  per `table` group of the inventory), written only by `gen_tables.sh`,
+  never by hand.
 - `tests/alttp/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/alttp/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
@@ -71,16 +74,17 @@ in `docs/`, then `README.md`.
   6: `order.txt` and one `<group>.txt` per `table` group, documented in its
   docstring; `parse`, `render`, `select` and `check`); `key_trace.py`, the
   trace of the settings and assembler constants each row reads;
-  `gen_tables.py`, the tables' ROM-free planning (units fused from the
-  coverage runs' encodings, keys, reachable tuples, coverage runs), a
-  module, its rules in its docstring),
+  `gen_tables.py`, the tables' planning and build (units fused from the
+  coverage runs' encodings, keys, reachable tuples, coverage runs, entries
+  cut from each run's encoding), its rules in its docstring; its `build`
+  command, with the ROM, is `gen_tables.sh`'s worker),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
   hand-written inputs `tier1.txt`,
   `determinism_cases.txt`, `side_seeds.txt`, `order_audit.txt`,
   `table_keys.txt` (key widenings, `<call>\t<component>\t<reason>`) and
-  `table_units.txt` (forced fusions, `<call>\t<call>\t<reason>`), both
-  empty so far; and the six fixtures they
+  `table_units.txt` (forced fusions, `<call>\t<call>\t<reason>`); and the
+  six fixtures they
   write for the C port (`pyrandom_vectors.txt`, `settings.txt`,
   `settings_validate.txt`, `logic_graphs.txt`, `logic_vectors.txt`,
   `item_pools.txt`), each describing its format in its `#` header.
@@ -147,7 +151,7 @@ in `docs/`, then `README.md`.
   no work tree gives a `setup:` line; else `rom_guard: <n> tracked files, no
   ROM`; plus `test-ladx-oracle` (`unittest discover` of
   `tests/ladx/oracle/test_*.py` under `python3 -I`: the LADX oracle's helpers
-  and Phase 2's tools, no LADXR, no ROM, no network); plus `ladx-cases`.
+  and Phase 2's tools, no LADXR, no ROM, no network); plus `ladx-cases`; plus `ladx-tables`.
 - `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check`,
   no ROM, no LADXR, no network; run by `make test`): it
   proves itself on planted trees (a missing and an extra case, a config
@@ -171,10 +175,9 @@ in `docs/`, then `README.md`.
   `ladx_cases.py list [<name>...]`
   prints the case directories as `ladx_oracle.py cases` prints a case list,
   after the same comparison.
-- `python3 -I tests/ladx/oracle/tables.py check [--root <dir>] [--inventory
-  <file>] [--inputs <dir>]` (no ROM, no LADXR, no network; not yet in
-  `make test`, which gains it as `ladx-tables` once `data/ladx/` exists)
-  proves itself on planted trees, then checks the tables under `<root>`
+- `make ladx-tables` (`python3 -I tests/ladx/oracle/tables.py check [--root
+  <dir>] [--inventory <file>] [--inputs <dir>]`, no ROM, no LADXR, no
+  network; run by `make test`) proves itself on planted trees, then checks the tables under `<root>`
   (default `data/ladx/`) against the inventory, `tier1.txt` and
   `settings.txt`: every file parses, `order.txt`'s rows are the inventory's
   `table` and `C` rows in its section order with their sides and groups,
@@ -249,6 +252,35 @@ in `docs/`, then `README.md`.
   kept: never-written C-knowable source bytes and bytes earlier writes
   computed; RNG state put back; `patch`'s old-byte check off on the copy)
   and flags, per event byte, whether the copy holds the same byte.
+  With `--reads`, `--keys` also installs `key_trace.py` over the same
+  sections and writes `keys.txt`, and `--no-invariant` skips the re-run
+  (no `invariant.txt`); the other files are the same with or without
+  either.
+  `gen_tables.sh [--out <dir>] [--ladxr <dir>] [--rom <file>]` (with the
+  ROM and the checkout at the pin, else a `setup:` line, exit 2) builds
+  LADX's patch tables into `data/ladx/` (default; any other `<dir>` must
+  be inside `tmp/`, else exit 2): `gen_tables.py build`,
+  `PYTHONHASHSEED=0`, plans coverage runs on the keys the runs so far give
+  and runs them until a plan asks for no new one, each `oracle_run.py
+  --rom --reads --keys --no-invariant` under `tmp/ladx-tables/runs/<run>/`
+  on the first ok candidate seed `derive("ladx-tables <run>", k)`, `k <
+  64` (`<run>: k=<k> <k=v>...`, or `<run>: no ok seed below 64 ...`, after
+  which its merged witnesses are re-planned alone); it encodes each run
+  with `write_log.py`'s encoder, cuts each unit's entry out of its segment
+  and writes the tables, else prints one `CONFLICT <unit> <tuple>`,
+  `UNREACHED <unit> <tuple>`, `DEPENDS-C <unit> <group>`, `FUSE-ACROSS
+  <unit> <row>` or `SPLIT <unit>` (a unit writing in two segments of one
+  run) line each and exits 1, writing nothing; else `gen_tables: <n>
+  coverage runs in <s> s, <f> files written to <dir>`. Keys come from the
+  inventory, the traced setting and constant reads, `table_keys.txt` and
+  the keys of the earlier units that wrote inside a range the unit read
+  and of the later units of its segment that rewrote its bytes (rows
+  fuse only on a source match spanning them).
+  `gen_tables.sh --check [--rom <file>]` rebuilds them into
+  `tmp/ladx-tables/check/` with `PYTHONHASHSEED=1` on a fresh clone
+  (`tmp/ladx-tables/ladxr-check/`, the network needed) and prints one
+  `DIFFERENT`, `MISSING` or `EXTRA` line per file unlike `data/ladx/`
+  (exit 1), else `tables: <n> files byte-identical to data/ladx`.
   `inventory_trace.sh [--out <dir>] [--cases <file>] [--seeds <file>]
   [<case>...]` runs every case that way (default: the case folders, like
   `gen_golden.sh`, then, when no case is named, `determinism_cases.txt`'s
@@ -623,8 +655,8 @@ in `docs/`, then `README.md`.
   `mac-run`, never an agent.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
-  `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh` and `audit_order.py`
-  run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
+  `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh`, `gen_tables.sh` and
+  `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
   `key_trace.py` its settings and constant reads,

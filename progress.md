@@ -68,9 +68,9 @@
   - [ ] Step 2.6 Patch tables
     - [x] Chunk 1: table format and checks
     - [x] Chunk 2: units, keys and coverage planning
-    - [ ] Chunk 3: tables built with the ROM
+    - [x] Chunk 3: tables built with the ROM
       - [x] Table builder and gen_tables.sh
-      - [ ] Tables generated in data/ladx
+      - [x] Tables generated in data/ladx
     - [ ] Chunk 4: replay over every case
     - [ ] Chunk 5: random sample combos
   - [ ] Step 2.7 Extraction fixtures

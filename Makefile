@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando ui-cli test-template rom-guard test-ladx-oracle ladx-cases lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
+.PHONY: help install test test-rando ui-cli test-template rom-guard test-ladx-oracle ladx-cases ladx-tables lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -7,6 +7,7 @@ help:
 	@echo "make test-template  the template's own tooling tests (.claude/), run by make test"
 	@echo "make test-ladx-oracle the LADX oracle's helper unit tests (tests/ladx/oracle), no LADXR, no network, run by make test"
 	@echo "make ladx-cases     tests/ladx/cases/ and combos/ checked against tier1.txt and combos.txt, their goldens and size budget, no ROM, no LADXR, run by make test"
+	@echo "make ladx-tables    data/ladx/ (LADX patch tables) parsed and checked against the inventory, no ROM, no LADXR, run by make test"
 	@echo "make rom-guard      fails if git's index holds a .gb/.gbc/.sfc/.smc file or a LADX/ALttP ROM by digest, run by make test"
 	@echo "make ui-cli         builds tests/alttp/build/ui_cli, the agent's text view of the app"
 	@echo "make lint           alttp/ and app/ built as strict ISO C99 (-pedantic-errors)"
@@ -39,7 +40,7 @@ install:
 	@echo "install: no dependency to install (host gcc, make, python3)"
 
 # The fast loop. Keep it a few seconds, with no network and no external service.
-test: test-rando test-template rom-guard test-ladx-oracle ladx-cases
+test: test-rando test-template rom-guard test-ladx-oracle ladx-cases ladx-tables
 
 test-rando:
 	$(MAKE) -C tests/alttp test
@@ -58,6 +59,9 @@ test-ladx-oracle:
 
 ladx-cases:
 	python3 -I -B tests/ladx/oracle/ladx_cases.py check
+
+ladx-tables:
+	python3 -I -B tests/ladx/oracle/tables.py check
 
 ui-cli:
 	$(MAKE) -C tests/alttp ui-cli
