@@ -252,7 +252,8 @@ static LadxKs ks;
 static LadxPipelineRom rom;
 
 /* The pipeline's walk into the open log: table entries and the ported C groups (with --rom, every one). */
-static int run_pipeline(const LadxSettings *settings, const LadxRandomizer *r, const LadxPipelineRom *given)
+/* 1 when it ran, 2 when LADXR raised (pipeline.raised), 0 on a failure. */
+static int run_pipeline(const LadxSettings *settings, LadxRandomizer *r, const LadxPipelineRom *given)
 {
 	LadxPipelineError err;
 
@@ -265,6 +266,8 @@ static int run_pipeline(const LadxSettings *settings, const LadxRandomizer *r, c
 	pipeline.settings = settings;
 	pipeline.spot_count = ladx_tables_spot_count(ladx_randomizer_placement(r));
 	pipeline.randomizer = r;
+	pipeline.rnd = &r->rnd;
+	pipeline.global = &r->global;
 	pipeline.rom = given;
 	pipeline.groups = ladx_pipeline_groups(&pipeline.group_count);
 	pipeline.ctx = NULL;
@@ -280,14 +283,19 @@ static int run_pipeline(const LadxSettings *settings, const LadxRandomizer *r, c
 	case LADX_PIPELINE_GROUP:
 		fprintf(stderr, "ladx_gen: group %s failed\n", err.group);
 		return 0;
+	case LADX_PIPELINE_RAISED:
+		return 2;
 	default:
 		fprintf(stderr, "ladx_gen: over %d groups\n", LADX_PIPELINE_GROUP_MAX);
 		return 0;
 	}
 }
 
-/* <out_dir>/rom_writes.txt: 0 on an I/O failure (1), -1 on a tables error (2). */
-static int write_rom_writes(const char *out_dir, const LadxSettings *settings, const LadxRandomizer *r,
+/*
+ * <out_dir>/rom_writes.txt: 0 on an I/O failure (1), -1 on a tables error
+ * (2), 2 when LADXR raised (no file: LADXR writes no ROM).
+ */
+static int write_rom_writes(const char *out_dir, const LadxSettings *settings, LadxRandomizer *r,
 			    const LadxPipelineRom *given)
 {
 	char path[MAX_PATH];
@@ -302,13 +310,14 @@ static int write_rom_writes(const char *out_dir, const LadxSettings *settings, c
 		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
 		return 0;
 	}
-	ok = ladx_wlog_begin(&wlog, ladx_tables_names(&tables), file_sink, &sink) == LADX_WLOG_OK &&
-	     run_pipeline(settings, r, given);
+	ok = ladx_wlog_begin(&wlog, ladx_tables_names(&tables), file_sink, &sink) == LADX_WLOG_OK
+		     ? run_pipeline(settings, r, given)
+		     : 0;
 	if (fclose(sink.f) != 0)
 		sink.failed = 1;
-	if (!ok) {
+	if (ok != 1) {
 		remove(path);
-		return -1;
+		return ok == 2 ? 2 : -1;
 	}
 	if (sink.failed) {
 		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
@@ -392,7 +401,7 @@ static int generate(const char *case_dir, const char *out_dir, const char *table
 	char path[MAX_PATH];
 	FILE *trace, *out;
 	Case c;
-	int ok;
+	int ok, written = 0;
 
 	if (!read_case(case_dir, &c))
 		return 2;
@@ -412,6 +421,13 @@ static int generate(const char *case_dir, const char *out_dir, const char *table
 		fclose(trace);
 		return 2;
 	}
+	if (tables_dir && ladx_randomizer_placement(&r)) {
+		written = write_rom_writes(out_dir, &c.settings, &r, rom_path ? &rom : NULL);
+		if (written <= 0) {
+			fclose(trace);
+			return written < 0 ? 2 : 1;
+		}
+	}
 	if (sink.failed) {
 		fprintf(stderr, "ladx_gen: a trace line did not render or write\n");
 		fclose(trace);
@@ -427,16 +443,12 @@ static int generate(const char *case_dir, const char *out_dir, const char *table
 		fclose(trace);
 		return 1;
 	}
-	ok = ladx_run_text_write_run(out, &c.settings, c.seed, SEED_BYTES, &r, trace);
+	ok = ladx_run_text_write_run(out, &c.settings, c.seed, SEED_BYTES, &r, trace,
+				     written == 2 ? &pipeline.raised : NULL);
 	fclose(trace);
 	if (fclose(out) != 0 || !ok) {
 		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
 		return 1;
-	}
-	if (tables_dir && ladx_randomizer_placement(&r)) {
-		ok = write_rom_writes(out_dir, &c.settings, &r, rom_path ? &rom : NULL);
-		if (ok <= 0)
-			return ok < 0 ? 2 : 1;
 	}
 	return 0;
 }

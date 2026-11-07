@@ -49,6 +49,7 @@ typedef enum LadxPipelineStatus {
 	LADX_PIPELINE_TABLES,  /* a walk or record error: err.tables */
 	LADX_PIPELINE_ENCODER, /* the encoder refused or overflowed: err.encoder */
 	LADX_PIPELINE_GROUP,   /* a group's run returned 0: err.group */
+	LADX_PIPELINE_RAISED,  /* LADXR raises in err.group: its outcome in err.outcome */
 	LADX_PIPELINE_BAD_INPUT /* over LADX_PIPELINE_GROUP_MAX groups */
 } LadxPipelineStatus;
 
@@ -57,6 +58,7 @@ typedef struct LadxPipelineError {
 	LadxTablesError tables;
 	LadxEncStatus encoder;
 	const char *group;
+	const LadxOutcome *outcome; /* RAISED: the pipeline's raised */
 } LadxPipelineError;
 
 struct LadxPipeline {
@@ -64,10 +66,12 @@ struct LadxPipeline {
 	const LadxSettings *settings; /* validated */
 	int spot_count;		      /* ladx_tables_spot_count of the placement */
 	const LadxRandomizer *randomizer;
+	LadxRng *rnd, *global; /* the randomizer's generators, continued by every drawing group; NULL: it fails */
 	const LadxPipelineRom *rom; /* NULL: no ROM */
 	const LadxPipelineGroup *groups;
 	int group_count;
 	void *ctx; /* the caller's, for every run */
+	LadxOutcome raised; /* a run returning 0 with raised.kind set: LADXR raised */
 	LadxAtom scratch[LADX_WLOG_ATOM_MAX]; /* the run's, one record's atoms */
 	uint8_t values[LADX_WLOG_ATOM_MAX];   /* a C group's, one record's bytes */
 	int32_t origins[LADX_WLOG_ATOM_MAX];

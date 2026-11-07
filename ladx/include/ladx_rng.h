@@ -24,6 +24,8 @@ typedef enum LadxRngStage {
 	LADX_STAGE_PLACER_RUN,
 	LADX_STAGE_PLACER_PLACE_SPECIFIC_ITEM,
 	LADX_STAGE_PLACER_PLACE_ITEM,
+	LADX_STAGE_MARIN_STARTING_TEXT,
+	LADX_STAGE_UTILS_RANDOM_NUMBER,
 	LADX_STAGE_COUNT
 } LadxRngStage;
 
@@ -36,6 +38,7 @@ typedef enum LadxRngMethod {
 	LADX_RNG_RANDINT,
 	LADX_RNG_GETSTATE,
 	LADX_RNG_SETSTATE,
+	LADX_RNG_RANDRANGE,
 	LADX_RNG_METHOD_COUNT
 } LadxRngMethod;
 
@@ -61,9 +64,9 @@ typedef struct LadxRngRecord {
 	size_t n;		 /* choice, choices, shuffle: the sequence's length */
 	const int *weights;	 /* choices: n weights */
 	size_t k;		 /* choices */
-	int64_t a, b;		 /* randint */
+	int64_t a, b;		 /* randint; randrange's start and stop */
 	size_t index;		 /* choice's result */
-	int64_t value;		 /* randint's result */
+	int64_t value;		 /* randint's and randrange's result */
 	double real;		 /* random's result */
 	const size_t *list;	 /* choices' k picks, shuffle's n-long permutation */
 	uint64_t words;		 /* MT words the call drew */
@@ -105,6 +108,9 @@ LadxRngStatus ladx_rng_shuffle(LadxRng *rng, LadxRngStage stage, void *base, siz
 
 /* b < a: VALUE_ERROR; b == INT64_MAX: UNSUPPORTED. */
 LadxRngStatus ladx_rng_randint(LadxRng *rng, LadxRngStage stage, int64_t a, int64_t b, int64_t *out);
+
+/* randrange(start, stop), step 1; stop <= start: VALUE_ERROR. */
+LadxRngStatus ladx_rng_randrange(LadxRng *rng, LadxRngStage stage, int64_t start, int64_t stop, int64_t *out);
 
 /* random.setstate(rnd.getstate()): to's MT state becomes from's, one record each. */
 void ladx_rng_copy_state(LadxRng *to, LadxRng *from, LadxRngStage stage);

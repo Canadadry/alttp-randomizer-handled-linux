@@ -205,6 +205,20 @@ static void test_other_lines(void)
 	trace_line(line, 1234, &r);
 	check_text(line, "trace 1234 global patches.maze:buildMaze randint -4 35 -> -2 [3]", "randint");
 
+	/* Golden nightmare_keys-keysanity, trace 476. */
+	r = record(LADX_RNG_GLOBAL, LADX_STAGE_UTILS_RANDOM_NUMBER, LADX_RNG_RANDRANGE, 1);
+	r.a = 3;
+	r.b = 10000;
+	r.value = 9625;
+	trace_line(line, 476, &r);
+	check_text(line, "trace 476 global utils:randomNumber randrange 3 10000 -> 9625 [1]", "randrange");
+
+	r = record(LADX_RNG_RND, LADX_STAGE_MARIN_STARTING_TEXT, LADX_RNG_CHOICE, 1);
+	r.n = 480;
+	r.index = 343;
+	trace_line(line, 475, &r);
+	check_text(line, "trace 475 rnd patches.aesthetics:getMarinStartingText choice 480 -> 343 [1]", "marin choice");
+
 	r = record(LADX_RNG_RND, LADX_STAGE_ITEMPOOL_RANDOMIZE_RUPEES, LADX_RNG_CHOICES, 6);
 	r.n = 2;
 	r.weights = weights;
@@ -396,8 +410,46 @@ static void test_place_lines(void)
 	check(ladx_run_text_place_line(line, 10, &logic, 0) == 0, "a line past cap");
 }
 
+/* A finished fill, then LADXR's raise in generateRom: the outcome line closes run.txt after the trace. */
+static void test_write_run_raised(void)
+{
+	static const uint8_t seed[16] = {0xe8, 0x51, 0x5e, 0x70, 0x64, 0xfb, 0x5f, 0xd6,
+					 0x45, 0x8e, 0x72, 0xd5, 0x61, 0x22, 0x67, 0x3b};
+	static LadxRandomizer r;
+	static char text[1 << 20];
+	LadxSettings settings;
+	LadxOutcome raised;
+	FILE *trace = tmpfile(), *out = tmpfile();
+	size_t got;
+	const char *last;
+
+	check(trace && out, "temporary files");
+	ladx_settings_defaults(&settings);
+	ladx_settings_validate(&settings);
+	check(ladx_randomize(&r, &settings, seed, sizeof seed, NULL, NULL) == LADX_RANDOMIZE_OK &&
+		      ladx_randomizer_placement(&r),
+	      "the baseline fills");
+	fputs("trace 0 rnd x y - -> - [0]\n", trace);
+	memset(&raised, 0, sizeof raised);
+	raised.kind = LADX_OUTCOME_CRASH;
+	raised.type = "UnicodeEncodeError";
+	raised.message = "planted message";
+	check(ladx_run_text_write_run(out, &settings, seed, sizeof seed, &r, trace, &raised), "written");
+	rewind(out);
+	got = fread(text, 1, sizeof text - 1, out);
+	text[got] = '\0';
+	last = strstr(text, "trace 0 rnd x y - -> - [0]\n");
+	check(last && strcmp(last, "trace 0 rnd x y - -> - [0]\noutcome crash UnicodeEncodeError planted message\n") == 0,
+	      "the raised outcome follows the trace");
+	rewind(out);
+	check(ladx_run_text_write_run(out, &settings, seed, sizeof seed, &r, trace, NULL), "written without");
+	fclose(trace);
+	fclose(out);
+}
+
 int main(void)
 {
+	test_write_run_raised();
 	test_float_hex();
 	test_golden_trace();
 	test_other_lines();

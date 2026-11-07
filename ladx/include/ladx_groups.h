@@ -2,6 +2,7 @@
 #define LADX_GROUPS_H
 
 #include "ladx_pipeline.h"
+#include "ladx_text.h"
 
 /*
  * The ported C groups of generateRom (notes/ladx-inventory.md's Groups),
@@ -16,6 +17,39 @@
  * p->rom and the randomizer.
  */
 int ladx_group_bank3e(LadxEncoder *enc, LadxPipeline *p);
+
+/*
+ * patches/aesthetics.py reduceMessageLengths: text 0x01 Marin's starting
+ * text, then the shortened texts in LADXR's order, each with no origin,
+ * 0xEB and 0xEC as 0xEA's current value with its origins. Draws from
+ * p->rnd and p->global; returns 0 with p->raised set when LADXR raises.
+ * Needs p->rom.
+ */
+int ladx_group_marin(LadxEncoder *enc, LadxPipeline *p);
+
+/* LADXR's patches/marin.txt at the pin, its trailing blank lines dropped. */
+#define LADX_MARIN_LINE_COUNT 480
+
+/* Line i's bytes with its newline, *len set; NULL for i out of range. */
+const char *ladx_marin_line(size_t i, size_t *len);
+
+/*
+ * getMarinStartingText's text of one line of len bytes: stripped,
+ * unicode_escape decoded, <marinLinesAmount> made LADX_MARIN_LINE_COUNT,
+ * then every <rnd...>, then every <ord...> drawn from global
+ * (utils.randomNumber), then formatText. UNSUPPORTED for an escape,
+ * number or empty range the pinned file never holds.
+ */
+LadxTextStatus ladx_marin_text(const char *line, size_t len, LadxRng *global, uint8_t *out, size_t cap, size_t *n,
+			       LadxOutcome *raised);
+
+/* ladx_marin_text of line index, rnd.choice's pick; UNSUPPORTED out of range. */
+LadxTextStatus ladx_marin_line_text(size_t index, LadxRng *global, uint8_t *out, size_t cap, size_t *n,
+				    LadxOutcome *raised);
+
+/* getMarinStartingText(rnd): rnd.choice of a line, then ladx_marin_line_text. */
+LadxTextStatus ladx_marin_starting_text(LadxRng *rnd, LadxRng *global, uint8_t *out, size_t cap, size_t *n,
+					LadxOutcome *raised);
 
 /*
  * patches/titleScreen.py setRomInfo: bank 0 offset 7 (0x01 on race, else

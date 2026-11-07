@@ -109,6 +109,11 @@ static int run_beta(LadxEncoder *e, LadxPipeline *p)
 	Calls *c = p->ctx;
 
 	called(c, "beta");
+	if (c->fail_beta == 2) {
+		p->raised.kind = LADX_OUTCOME_CRASH;
+		p->raised.type = "PlantedError";
+		p->raised.message = "planted";
+	}
 	return !c->fail_beta && write_byte(e, "beta", 0x40, p->rom);
 }
 
@@ -297,15 +302,30 @@ static void test_errors(void)
 		p.groups = planted;
 		p.group_count = 2;
 		p.ctx = &calls;
-		check(ladx_pipeline_run(&p, &enc, &err) == LADX_PIPELINE_GROUP && strcmp(err.group, "beta") == 0,
+		check(ladx_pipeline_run(&p, &enc, &err) == LADX_PIPELINE_GROUP && strcmp(err.group, "beta") == 0 &&
+			      !err.outcome,
 		      "a group's failure stops the walk, naming the group");
+		calls.fail_beta = 2;
+		out_len = 0;
+		ladx_wlog_begin(&wlog, span(TABLES), sink, NULL);
+		ladx_enc_init(&enc, NULL, 0, NULL, NULL, &wlog);
+		check(ladx_pipeline_run(&p, &enc, &err) == LADX_PIPELINE_RAISED && strcmp(err.group, "beta") == 0 &&
+			      err.outcome == &p.raised && strcmp(err.outcome->type, "PlantedError") == 0,
+		      "a group that sets raised stops the walk with LADXR's outcome");
+		calls.fail_beta = 1;
+		out_len = 0;
+		ladx_wlog_begin(&wlog, span(TABLES), sink, NULL);
+		ladx_enc_init(&enc, NULL, 0, NULL, NULL, &wlog);
+		check(ladx_pipeline_run(&p, &enc, &err) == LADX_PIPELINE_GROUP && !err.outcome,
+		      "raised is cleared before each run");
 	}
 	{
 		const LadxPipelineGroup *g = ladx_pipeline_groups(&count);
 
-		check(count == 2 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom &&
-			      strcmp(g[1].name, "title") == 0 && g[1].needs_rom,
-		      "the library registers bank3e then title, in LADXR's order, both needing the ROM");
+		check(count == 3 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom &&
+			      strcmp(g[1].name, "marin") == 0 && g[1].needs_rom && strcmp(g[2].name, "title") == 0 &&
+			      g[2].needs_rom,
+		      "the library registers bank3e, marin then title, in LADXR's order, all needing the ROM");
 	}
 }
 

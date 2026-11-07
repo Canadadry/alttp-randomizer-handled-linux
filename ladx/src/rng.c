@@ -12,10 +12,12 @@ static const char *const stage_names[LADX_STAGE_COUNT] = {
 	"randomizer:RandomItemPlacer.run",
 	"randomizer:RandomItemPlacer.placeSpecificItem",
 	"randomizer:RandomItemPlacer.__placeItem",
+	"patches.aesthetics:getMarinStartingText",
+	"utils:randomNumber",
 };
 
 static const char *const method_names[LADX_RNG_METHOD_COUNT] = {
-	"seed", "random", "choice", "choices", "shuffle", "randint", "getstate", "setstate",
+	"seed", "random", "choice", "choices", "shuffle", "randint", "getstate", "setstate", "randrange",
 };
 
 void ladx_rng_init(LadxRng *rng, LadxRngGen gen, LadxRngSink sink, void *ctx)
@@ -186,6 +188,22 @@ LadxRngStatus ladx_rng_randint(LadxRng *rng, LadxRngStage stage, int64_t a, int6
 		return status_of(s);
 	r.a = a;
 	r.b = b;
+	emit(rng, &r);
+	*out = r.value;
+	return LADX_RNG_OK;
+}
+
+LadxRngStatus ladx_rng_randrange(LadxRng *rng, LadxRngStage stage, int64_t lo, int64_t hi, int64_t *out)
+{
+	LadxRngRecord r;
+	LadxPyRandomStatus s;
+
+	start(rng, &r, stage, LADX_RNG_RANDRANGE);
+	s = ladx_pyrandom_randrange(&rng->py, lo, hi, &r.value);
+	if (s != LADX_PYRANDOM_OK)
+		return status_of(s);
+	r.a = lo;
+	r.b = hi;
 	emit(rng, &r);
 	*out = r.value;
 	return LADX_RNG_OK;

@@ -45,6 +45,10 @@ STAGE_SECTIONS = {
 # A stage is complete once its marker's section is present; until then LADXR stopped in it.
 STAGE_MARKER = {"init": "ws", "ws": "words_before", "pool": "placer_pool", "fill": "place"}
 OUT_OF_STAGE = ("rom_sha1", "spoiler_sha1", "rom", "spoiler")
+# A claimed C group that draws also claims its trace lines: those of these LADXR frames.
+GROUP_TRACE = {
+    "marin": ("patches.aesthetics:getMarinStartingText", "utils:randomNumber"),
+}
 
 
 class FormatError(Exception):
@@ -101,6 +105,13 @@ def project(lines, stage):
     if outcome is not None and STAGE_MARKER[stage] not in present:
         out.append(("outcome", outcome))
     return out
+
+
+def group_trace(lines, group):
+    """The trace lines of run.txt's lines drawn in group's frames (GROUP_TRACE), whole, in order."""
+    stages = GROUP_TRACE.get(group, ())
+    return [line for line in lines
+            if line.startswith("trace ") and len(line.split(" ")) >= 5 and line.split(" ")[3] in stages]
 
 
 def read_lines(path):
@@ -239,20 +250,21 @@ def compare_group(group, golden, c, redact=False):
                    record_head if redact else None)
 
 
-def run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom=None, out_root=None):
+def run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom=None, out_root=None, golden_traces=None):
     """The detail lines of a DIVERGENT case, or None when it passes. With rom, the generator gets
     --rom and writes into out_root/<case>/, the detail lines redacted."""
     if not os.path.isfile(gen) or not os.access(gen, os.X_OK):
         return ["no C generator: %s" % gen]
     if rom is None:
         with tempfile.TemporaryDirectory(prefix="ladx-e2e-") as out_dir:
-            return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, None, out_dir)
+            return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, None, out_dir,
+                             golden_traces)
     out_dir = os.path.join(out_root, os.path.basename(case_dir))
     os.makedirs(out_dir)
-    return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir)
+    return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces)
 
 
-def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir):
+def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces=None):
     args = [gen, "--tables", tables] + (["--rom", rom] if rom else []) + [case_dir, out_dir]
     try:
         proc = subprocess.run(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -266,10 +278,16 @@ def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, ou
     if not os.path.isfile(path):
         return ["c wrote no run.txt"]
     try:
-        c = project(read_lines(path), stage)
+        c_lines = read_lines(path)
+        c = project(c_lines, stage)
     except FormatError as e:
         return ["c run.txt malformed: %s" % e]
     detail = compare(golden, c) or []
+    for group in groups:
+        if group in GROUP_TRACE:
+            label = "trace %s" % group
+            detail += compare([(label, line) for line in (golden_traces or {}).get(group, [])],
+                              [(label, line) for line in group_trace(c_lines, group)]) or []
     if groups:
         path = os.path.join(out_dir, "rom_writes.txt")
         if not os.path.isfile(path):
@@ -395,14 +413,17 @@ def _empty(path):
     os.makedirs(path)
 
 
-def load_goldens(cases_dir, cases, stage, with_logs):
+def load_goldens(cases_dir, cases, stage, with_logs, raw=None):
     """({case: run.txt projection}, {case: write_log.parse of rom_writes.txt}) (logs only
-    with_logs); Usage on a missing or malformed golden."""
+    with_logs); raw, a dict, gets {case: run.txt's lines}; Usage on a missing or malformed golden."""
     goldens, logs = {}, {}
     for case in cases:
         path = os.path.join(cases_dir, case, "run.txt")
         try:
-            goldens[case] = project(read_lines(path), stage)
+            lines = read_lines(path)
+            if raw is not None:
+                raw[case] = lines
+            goldens[case] = project(lines, stage)
         except OSError:
             raise Usage("%s: no golden run.txt" % case)
         except FormatError as e:
@@ -442,9 +463,11 @@ def run(cases_dir, claims, gen, names, out, tables, inventory, rom=None):
         stage = claimed.stage
         groups = claimed.groups + (claimed.rom_groups if rom else [])
         cases = list_cases(cases_dir, names)
-        goldens, logs = load_goldens(cases_dir, cases, stage, bool(claimed.groups or claimed.rom_groups))
+        raw = {}
+        goldens, logs = load_goldens(cases_dir, cases, stage, bool(claimed.groups or claimed.rom_groups), raw)
         check_needs_rom(claimed, inventory, cases, logs)
         golden_logs = {case: parsed_projections(logs[case], groups) for case in logs}
+        golden_traces = {case: {g: group_trace(raw[case], g) for g in groups} for case in cases}
         data = read_rom(rom.rom, rom.sha1) if rom else None
     except Usage as e:
         print(str(e) if str(e).startswith("setup:") else "run_e2e: %s" % e, file=out)
@@ -467,7 +490,7 @@ def run(cases_dir, claims, gen, names, out, tables, inventory, rom=None):
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         results = list(pool.map(lambda c: run_case(gen, tables, os.path.join(cases_dir, c), stage, goldens[c],
                                                    groups, golden_logs.get(c), rom and os.path.abspath(rom.rom),
-                                                   out_root), cases))
+                                                   out_root, golden_traces[c]), cases))
     divergent = 0
     label = "%s + %d groups" % (stage, len(groups)) if groups else stage
     for case, detail in zip(cases, results):
@@ -806,10 +829,11 @@ PLANTED_SPANS = "ladx-ks-spans 1\n10 4 texts 1\n12 1 boss item 3\nfailure texts 
 
 
 def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=None, rom=None, rom_log=None,
-                     spans=PLANTED_SPANS):
+                     spans=PLANTED_SPANS, c_run=None):
     """run's (code, text) on one planted case tree whose fake generator writes c_log, or rom_log
-    when it receives --rom, and the planted spans for --ks-spans. rom: "ok", "other" (a ROM of
-    another SHA-1) or "missing" for e2e-rom mode, None for e2e."""
+    when it receives --rom, the planted spans for --ks-spans, and c_run's lines (default the
+    golden's) as run.txt. rom: "ok", "other" (a ROM of another SHA-1) or "missing" for e2e-rom
+    mode, None for e2e."""
     case = os.path.join(root, "cases", "planted")
     os.makedirs(case)
     shutil.copy(config, case)
@@ -817,7 +841,8 @@ def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=No
     _write(run_path, "".join(line + "\n" for line in golden))
     _write(os.path.join(case, "rom_writes.txt"), gold_log)
     paths = {}
-    for name, text in (("log", c_log), ("rom-log", rom_log or c_log), ("spans", spans)):
+    for name, text in (("log", c_log), ("rom-log", rom_log or c_log), ("spans", spans),
+                       ("run", "".join(line + "\n" for line in (c_run if c_run is not None else golden)))):
         paths[name] = os.path.join(root, "c-" + name)
         _write(paths[name], text)
     gen = os.path.join(root, "gen")
@@ -825,7 +850,7 @@ def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=No
                 "if '--ks-spans' in args:\n    shutil.copy(%r, args[args.index('--ks-spans') + 1])\n    sys.exit(0)\n"
                 "shutil.copy(%r, os.path.join(args[-1], 'run.txt'))\n"
                 "shutil.copy(%r if '--rom' in args else %r, os.path.join(args[-1], 'rom_writes.txt'))\n"
-           % (sys.executable, paths["spans"], run_path, paths["rom-log"], paths["log"]))
+           % (sys.executable, paths["spans"], paths["run"], paths["rom-log"], paths["log"]))
     os.chmod(gen, 0o755)
     claims_path = os.path.join(root, "claims.txt")
     _write(claims_path, claims)
@@ -856,6 +881,9 @@ def _rom_checks(tmp, config, golden, golden_log):
     planted_inventory = os.path.join(tmp, "inventory.md")
     _write(planted_inventory, inventory.replace(row, row[:-2] + ", rom |", 1))
     fill = "stage fill\n"
+    marin = [i for i, line in enumerate(golden) if line.split(" ")[3:4] == [GROUP_TRACE["marin"][0]]]
+    redrawn = _replace(golden, marin[0], "-> ", "-> 1") if marin else None
+    undrawn = [line for i, line in enumerate(golden) if i not in marin]
     runs = [
         # (name, kwargs, expected verdict, a line the output must hold)
         ("rom-group divergent in its group, skipped by e2e",
@@ -867,6 +895,14 @@ def _rom_checks(tmp, config, golden, golden_log):
         ("e2e-rom's divergent line shows the record's head only",
          dict(gold_log=golden_log, c_log=golden_log, rom_log=changed, claims=fill + "rom-group bank3e\n",
               rom="ok"), "DIVERGENT", " tokens)"),
+        ("a rom-group's trace line changed, skipped by e2e",
+         dict(gold_log=golden_log, c_log=golden_log, claims=fill + "rom-group marin\n", c_run=redrawn), "PASS",
+         "rom-groups marin skipped"),
+        ("the same claimed by e2e-rom", dict(gold_log=golden_log, c_log=golden_log, claims=fill + "rom-group marin\n",
+                                             rom="ok", c_run=redrawn), "DIVERGENT", "trace marin: line 1:"),
+        ("a rom-group's trace lines missing from C's run.txt under e2e-rom",
+         dict(gold_log=golden_log, c_log=golden_log, claims=fill + "rom-group marin\n", rom="ok", c_run=undrawn),
+         "DIVERGENT", "c: <end>"),
         ("e2e-rom with KS different", dict(gold_log=golden_log, c_log=golden_log, claims=fill, rom="ok",
                                           spans=PLANTED_SPANS.replace("12 1", "12 2")),
          "exit 1", "KS DIFFERENT: line 3: boss item 3"),

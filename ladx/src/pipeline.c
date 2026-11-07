@@ -5,6 +5,7 @@
 
 static const LadxPipelineGroup groups[] = {
 	{"bank3e", 1, ladx_group_bank3e},
+	{"marin", 1, ladx_group_marin},
 	{"title", 1, ladx_group_title},
 };
 
@@ -80,8 +81,10 @@ LadxPipelineStatus ladx_pipeline_run(LadxPipeline *p, LadxEncoder *enc, LadxPipe
 		if (g == p->group_count || ran[g] || (p->groups[g].needs_rom && !p->rom))
 			continue;
 		ran[g] = 1;
+		memset(&p->raised, 0, sizeof p->raised);
 		if (!p->groups[g].run(enc, p)) {
-			err->status = LADX_PIPELINE_GROUP;
+			err->status = p->raised.kind != LADX_OUTCOME_UNFINISHED ? LADX_PIPELINE_RAISED : LADX_PIPELINE_GROUP;
+			err->outcome = err->status == LADX_PIPELINE_RAISED ? &p->raised : NULL;
 			err->group = p->groups[g].name;
 			return err->status;
 		}

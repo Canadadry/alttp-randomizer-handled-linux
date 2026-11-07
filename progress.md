@@ -130,7 +130,7 @@
       - [x] Chunk 9: driver, e2e-rom and the real-ROM run
     - [x] Step 3.6.3 bank3e
     - [x] Step 3.6.4 title
-    - [ ] Step 3.6.5 marin
+    - [x] Step 3.6.5 marin
     - [ ] Step 3.6.6 hints
     - [ ] Step 3.6.7 music
     - [ ] Step 3.6.8 endscreen

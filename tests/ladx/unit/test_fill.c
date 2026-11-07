@@ -331,7 +331,7 @@ static void c_projection(const LadxSettings *s, const uint8_t *seed, size_t seed
 	if (ladx_randomize(&r, s, seed, seed_len, ladx_run_text_trace_sink, &sink) != LADX_RANDOMIZE_OK ||
 	    sink.failed)
 		test_fail(TEST, "%s: broken run", label);
-	if (!ladx_run_text_write_run(out, s, seed, seed_len, &r, trace))
+	if (!ladx_run_text_write_run(out, s, seed, seed_len, &r, trace, NULL))
 		test_fail(TEST, "%s: the run text did not write", label);
 	fclose(trace);
 	rewind(out);

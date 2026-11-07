@@ -85,10 +85,11 @@ static void test_names(void)
 		"randomizer:Randomizer.__init__",	   "worldSetup:WorldSetup.randomize",
 		"patches.maze:buildMaze",		   "itempool:ItemPool.__randomizeRupees",
 		"randomizer:RandomItemPlacer.run",	   "randomizer:RandomItemPlacer.placeSpecificItem",
-		"randomizer:RandomItemPlacer.__placeItem",
+		"randomizer:RandomItemPlacer.__placeItem", "patches.aesthetics:getMarinStartingText",
+		"utils:randomNumber",
 	};
 	static const char *const methods[LADX_RNG_METHOD_COUNT] = {
-		"seed", "random", "choice", "choices", "shuffle", "randint", "getstate", "setstate",
+		"seed", "random", "choice", "choices", "shuffle", "randint", "getstate", "setstate", "randrange",
 	};
 	int i;
 
@@ -292,6 +293,29 @@ static void test_randint(void)
 	check(got == -5 && log.count == 0, "randint: an error records nothing");
 }
 
+static void test_randrange(void)
+{
+	LadxRng rng;
+	LadxPyRandom py;
+	Log log;
+	int64_t got = -5, want;
+
+	pair(&rng, &py, &log);
+	check(ladx_rng_randrange(&rng, LADX_STAGE_UTILS_RANDOM_NUMBER, 3, 10000, &got) == LADX_RNG_OK,
+	      "randrange: ok");
+	ladx_pyrandom_randrange(&py, 3, 10000, &want);
+	check(got == want, "randrange: the value ladx_pyrandom draws");
+	check_same_state(&rng, &py, "randrange: state");
+	check_one_record(&log, LADX_STAGE_UTILS_RANDOM_NUMBER, LADX_RNG_RANDRANGE, 1, "randrange");
+	check(log.kept[0].record.a == 3 && log.kept[0].record.b == 10000 && log.kept[0].record.value == got,
+	      "randrange: bounds and value recorded");
+	log.count = 0;
+	got = -5;
+	check(ladx_rng_randrange(&rng, LADX_STAGE_UTILS_RANDOM_NUMBER, 7, 7, &got) == LADX_RNG_VALUE_ERROR,
+	      "randrange: empty range is ValueError");
+	check(got == -5 && log.count == 0, "randrange: an error records nothing");
+}
+
 /* Golden baseline, traces 2 and 3: rnd getstate, then global setstate, both [0]. */
 static void test_copy_state(void)
 {
@@ -328,8 +352,9 @@ int main(void)
 	test_shuffle_golden();
 	test_shuffle();
 	test_randint();
+	test_randrange();
 	test_copy_state();
-	printf("%s: seed, random, choice, choices, shuffle, randint and the state copy traced as ladx_pyrandom draws (%d checks)\n",
+	printf("%s: seed, random, choice, choices, shuffle, randint, randrange and the state copy traced as ladx_pyrandom draws (%d checks)\n",
 	       TEST, checks);
 	return 0;
 }

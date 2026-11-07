@@ -79,10 +79,11 @@ void ladx_run_text_trace_sink(void *ctx, const LadxRngRecord *record);
  * The fill projection of run.txt (run_e2e.py's, stage fill) of a finished
  * ladx_randomize run with these validated settings and seed: the sections,
  * then the trace lines held in trace (a ladx_run_text_trace_sink's file,
- * rewound here), then the outcome when the fill placed nothing. Returns 1,
- * 0 when a line did not render or a read or write failed.
+ * rewound here), then raised (LADXR's raise in generateRom; NULL for none),
+ * else the outcome when the fill placed nothing. Returns 1, 0 when a line
+ * did not render or a read or write failed.
  */
 int ladx_run_text_write_run(FILE *out, const LadxSettings *settings, const uint8_t *seed, size_t seed_len,
-			    const LadxRandomizer *r, FILE *trace);
+			    const LadxRandomizer *r, FILE *trace, const LadxOutcome *raised);
 
 #endif

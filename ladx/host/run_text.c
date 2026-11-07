@@ -144,6 +144,7 @@ size_t ladx_run_text_trace_line(char *buf, size_t cap, unsigned long n, const La
 		put_list(&t, r->list, r->n);
 		break;
 	case LADX_RNG_RANDINT:
+	case LADX_RNG_RANDRANGE:
 		put(&t, "%lld %lld -> %lld", (long long)r->a, (long long)r->b, (long long)r->value);
 		break;
 	case LADX_RNG_GETSTATE:
@@ -341,7 +342,7 @@ static int put_line(FILE *out, const char *line, size_t len)
 }
 
 int ladx_run_text_write_run(FILE *out, const LadxSettings *settings, const uint8_t *seed, size_t seed_len,
-			    const LadxRandomizer *r, FILE *trace)
+			    const LadxRandomizer *r, FILE *trace, const LadxOutcome *raised)
 {
 	char line[LADX_RUN_TEXT_MAX_LINE];
 	char short_string[LADX_SETTINGS_SHORT_MAX + 1];
@@ -379,6 +380,8 @@ int ladx_run_text_write_run(FILE *out, const LadxSettings *settings, const uint8
 			return 0;
 	if (ferror(trace))
 		return 0;
+	if (raised)
+		return put_line(out, line, ladx_run_text_outcome_line(line, sizeof line, raised));
 	if (!placement && outcome->kind != LADX_OUTCOME_UNFINISHED &&
 	    !put_line(out, line, ladx_run_text_outcome_line(line, sizeof line, outcome)))
 		return 0;
