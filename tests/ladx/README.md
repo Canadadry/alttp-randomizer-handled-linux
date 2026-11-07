@@ -510,8 +510,9 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   cases and <m> combos parse, survive validate and are supported`.
   `test_requirements`, synthetic only (no fixture), checks `ladx_items`
   (LADXR's item names: `locations/items.py`'s 125 in order, then the 37
-  names only `logic/` uses, in first-use order; lookup by name, no
-  `_USED` name) and `ladx_requirements` (LADXR's `logic/requirements.py`)
+  names only `logic/` uses, in first-use order, then the 5 `n = 9` names
+  `ItemInfo.configure`'s `range(10)` appends, `KEY9` to `COMPASS9`;
+  lookup by name, no `_USED` name) and `ladx_requirements` (LADXR's `logic/requirements.py`)
   through their headers: `AND`/`OR` folding as `__new__` (a true or false
   term, all true or all false, no term, `None` terms dropped, `AND(None)`
   an empty node that passes, an `OR` left empty an assertion that breaks
@@ -528,9 +529,11 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   and getItems ok (<c> checks)`.
   `test_logic` (linked with the fixture support `unit/logic_fixture.c`,
   the canonical text of `ladx_oracle.graph_lines`, `requirement_text` and
-  `index_ranges`, and the reader of `logic_vectors.txt`) checks
-  `ladx_logic` (LADXR's `logic/location.py`, `Logic`'s discovery and
-  `explorer.py`) through `ladx_logic.h` and `ladx_logic_builder.h` (the
+  `index_ranges`, and the readers of `logic_vectors.txt` and
+  `logic_graphs.txt`) checks `ladx_logic` (LADXR's `logic/location.py`,
+  `Logic`'s discovery, the `ItemInfo` classes of `locations/`,
+  `checkMetadata.py` and `explorer.py`) through `ladx_logic.h` and
+  `ladx_logic_builder.h` (the
   builder, public so that tests build synthetic graphs): `singleConnect`
   (a second edge to a target is `OR(new, old)`, `None` on either side
   wins, `False` adds nothing, `True` is `None`), `connect` (both ways, the
@@ -542,9 +545,29 @@ keeps the flag. Library objects see only `-I ladx/include`; the tests add
   a fixpoint, `RUPEES_<n>` folding, a zero-count item present, the
   required items of the todo list, a second visit refused), the
   capacities (the first overflow breaks the logic, which then builds and
-  shows nothing) and `LadxWorldSetup`'s defaults (`WorldSetup()`). It
-  prints `test_logic: synthetic graphs, renderer and explorer ok (<c>
-  checks)`. With `--fixtures` it then reads every configuration of
+  shows nothing), `LadxWorldSetup`'s defaults (`WorldSetup()`), the
+  constructors of `locations/` (`ladx_logic_add_item_info`: each class's
+  `nameId`, `KeyLocation`'s key as its name id with the `"None"` metadata
+  its `__init__` reads, the data kept, the arguments a class does not
+  take refused) and `configure` (`ladx_logic_configure`, once, on a
+  finished logic), synthetic and citing LADXR's lines: `ItemInfo`'s
+  `range(10)` appends and dungeon items under default, `keysanity` and
+  `removed` dungeon items, and each override (`HeartPiece`,
+  `FishingMinigame`, `Seashell`, `SeashellMansionBonus`,
+  `HeartContainer`, `Witch`, `Toadstool`, `Instrument`, `KeyHole`,
+  `TradeSequenceItem`, `BoomerangGuy`, `StartItem`, `ShopItem`,
+  `OwlStatue`, `KeyLocation`) under the settings it reads, LADXR's errors
+  and the unported shopsanity branch breaking the logic. It prints
+  `test_logic: synthetic graphs, renderer, explorer, constructors and
+  configure ok (<c> checks)`. Then, without a flag, it rebuilds every
+  `spot` line of `oracle/logic_graphs.txt` (its five graphs' locations
+  chained with their dungeons, each spot from its class and the
+  constructor arguments its name id gives back) and configures them under
+  the graph's settings (the name before its last `/`, set on defaults,
+  then validated): each spot's name id, `checkMetadata` name and area and
+  options equal the line's; it prints `test_logic: <n> spot lines of <g>
+  graphs of oracle/logic_graphs.txt rebuilt from class and name id: name
+  id, metadata and options after configure equal`. With `--fixtures` it then reads every configuration of
   `oracle/logic_vectors.txt`: its settings set on defaults (`""` the
   empty value) and validated, each assignment kept by validate, every
   value supported alone (`ladx_setting_value_reason`; the pair

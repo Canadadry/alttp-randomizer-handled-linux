@@ -114,6 +114,7 @@ void ladx_logic_begin(LadxLogic *logic)
 	logic->option_count = 0;
 	logic->start = -1;
 	logic->finished = false;
+	logic->configured = false;
 	logic->broken = false;
 	logic->build_location_count = 0;
 	logic->build_edge_count = 0;
@@ -226,6 +227,9 @@ int ladx_logic_add_spot(LadxLogic *logic, int location, LadxSpotKind kind, const
 	spot->suffix_first = 0;
 	spot->suffix_count = 0;
 	spot->metadata = ladx_check_metadata_find(name_id);
+	spot->room = -1;
+	spot->index = -1;
+	spot->default_item = LADX_ITEM_NONE;
 	spot->item = LADX_ITEM_NONE;
 	logic->build_spot_next[s] = -1;
 	loc = &logic->build_location[location];

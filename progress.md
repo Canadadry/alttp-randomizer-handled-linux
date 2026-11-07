@@ -94,7 +94,7 @@
   - [ ] Step 3.3 Logic and locations
     - [x] Chunk 1: items and requirements
     - [x] Chunk 2: graph core, explorer and harness
-    - [ ] Chunk 3: location kinds and metadata
+    - [x] Chunk 3: location kinds and metadata
     - [ ] Chunk 4: requirement settings and dungeons 1 to 4
     - [ ] Chunk 5: dungeons 5 to 8 and the colour dungeon
     - [ ] Chunk 6: overworld and the full logic

@@ -1,8 +1,9 @@
 #ifndef LADX_ITEMS_H
 #define LADX_ITEMS_H
 
-/* LADXR's item names at 4325207e: locations/items.py in its order, then the
- * names only logic/ uses, in first-use order. No "<item>_USED" name. */
+/* LADXR's item names at 4325207e: locations/items.py in its order, the
+ * names only logic/ uses, in first-use order, then the n = 9 names
+ * ItemInfo.configure's range(10) appends. No "<item>_USED" name. */
 typedef enum LadxItem {
 	LADX_ITEM_POWER_BRACELET,
 	LADX_ITEM_SHIELD,
@@ -166,6 +167,11 @@ typedef enum LadxItem {
 	LADX_ITEM_SWITCH8,
 	LADX_ITEM_RUPEES,
 	LADX_ITEM_RAFT,
+	LADX_ITEM_KEY9,
+	LADX_ITEM_NIGHTMARE_KEY9,
+	LADX_ITEM_STONE_BEAK9,
+	LADX_ITEM_MAP9,
+	LADX_ITEM_COMPASS9,
 	LADX_ITEM_COUNT
 } LadxItem;
 

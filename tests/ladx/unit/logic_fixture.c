@@ -374,6 +374,7 @@ void lf_ws_render(const LadxWorldSetup *ws, const LfWorldSetupRest *rest, char l
 
 static char vline[LF_EXPLORE_MAX + 64];
 static long vline_no;
+static const char *vfile = "";
 
 /* The next non-comment line, newline stripped; 0 at the end. */
 static int next_line(const char *test, FILE *f)
@@ -386,7 +387,7 @@ static int next_line(const char *test, FILE *f)
 		vline_no++;
 		len = strlen(vline);
 		if (len == 0 || vline[len - 1] != '\n')
-			test_fail(test, "logic_vectors line %ld: too long or unterminated", vline_no);
+			test_fail(test, "%s line %ld: too long or unterminated", vfile, vline_no);
 		vline[len - 1] = '\0';
 	} while (vline[0] == '#');
 	return 1;
@@ -399,17 +400,20 @@ FILE *lf_vectors_open(const char *test, const char *path)
 	if (!f)
 		test_fail(test, "cannot open %s", path);
 	vline_no = 0;
+	vfile = path;
 	return f;
 }
 
-static void parse_settings(const char *test, LfConfig *c)
+static void parse_settings(const char *test, const char *name, const char *text, LadxSettings *settings)
 {
 	char buf[LF_SETTINGS_MAX + 2];
 	char *p, *comma;
 	size_t len;
 
-	ladx_settings_defaults(&c->settings);
-	strcpy(buf, c->settings_text);
+	ladx_settings_defaults(settings);
+	if (strlen(text) >= LF_SETTINGS_MAX)
+		test_fail(test, "config %s: settings too long", name);
+	strcpy(buf, text);
 	p = buf;
 	while (*p) {
 		comma = strchr(p, ',');
@@ -418,13 +422,13 @@ static void parse_settings(const char *test, LfConfig *c)
 		len = strlen(p);
 		if (len >= 3 && strcmp(p + len - 3, "=\"\"") == 0)
 			p[len - 2] = '\0';
-		if (ladx_settings_set(&c->settings, p) != LADX_SETTINGS_OK)
-			test_fail(test, "config %s: setting %s refused", c->name, p);
+		if (ladx_settings_set(settings, p) != LADX_SETTINGS_OK)
+			test_fail(test, "config %s: setting %s refused", name, p);
 		if (!comma)
 			break;
 		p = comma + 1;
 	}
-	ladx_settings_validate(&c->settings);
+	ladx_settings_validate(settings);
 }
 
 int lf_vectors_next(const char *test, FILE *f, LfConfig *c)
@@ -442,7 +446,7 @@ int lf_vectors_next(const char *test, FILE *f, LfConfig *c)
 	*space = '\0';
 	strcpy(c->name, vline + 7);
 	strcpy(c->settings_text, space + 1);
-	parse_settings(test, c);
+	parse_settings(test, c->name, c->settings_text, &c->settings);
 	ladx_world_setup_defaults(&c->ws);
 	memset(&c->ws_rest, 0, sizeof c->ws_rest);
 	for (i = 0; i < 13; i++) {
@@ -472,5 +476,47 @@ int lf_vectors_next(const char *test, FILE *f, LfConfig *c)
 			test_fail(test, "config %s: explore line too long", c->name);
 		strcpy(c->explore[i], vline + 8);
 	}
+	return 1;
+}
+
+FILE *lf_graphs_open(const char *test, const char *path)
+{
+	FILE *f = lf_vectors_open(test, path);
+
+	if (!next_line(test, f) || strncmp(vline, "graph ", 6) != 0)
+		test_fail(test, "%s: want a graph line first", path);
+	return f;
+}
+
+/* The settings are the name's part before its last '/' ("logic=hard"). */
+int lf_graphs_next(const char *test, FILE *f, LfGraph *g)
+{
+	char settings[LF_SETTINGS_MAX];
+	const char *slash;
+	size_t len;
+
+	if (strncmp(vline, "graph ", 6) != 0)
+		return 0;
+	slash = strrchr(vline + 6, '/');
+	if (strlen(vline + 6) >= LF_NAME_MAX || !slash || (size_t)(slash - (vline + 6)) >= LF_SETTINGS_MAX)
+		test_fail(test, "%s line %ld: malformed graph line", vfile, vline_no);
+	strcpy(g->name, vline + 6);
+	memcpy(settings, vline + 6, (size_t)(slash - (vline + 6)));
+	settings[slash - (vline + 6)] = '\0';
+	parse_settings(test, g->name, settings, &g->settings);
+	g->len = 0;
+	vline[0] = '\0';
+	while (next_line(test, f)) {
+		if (strncmp(vline, "graph ", 6) == 0)
+			return 1;
+		len = strlen(vline);
+		if (g->len + len + 2 > sizeof g->text)
+			test_fail(test, "graph %s: text over %lu bytes", g->name, (unsigned long)sizeof g->text);
+		memcpy(g->text + g->len, vline, len);
+		g->len += len;
+		g->text[g->len++] = '\n';
+		g->text[g->len] = '\0';
+	}
+	vline[0] = '\0';
 	return 1;
 }

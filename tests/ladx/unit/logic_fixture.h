@@ -59,4 +59,18 @@ int lf_ws_parse(const char *field, const char *value, LadxWorldSetup *ws, LfWorl
 /* The 13 ws lines, in WorldSetup's order, from ws and rest. */
 void lf_ws_render(const LadxWorldSetup *ws, const LfWorldSetupRest *rest, char lines[13][LF_WS_LINE_MAX]);
 
+#define LF_GRAPH_TEXT_MAX (512 * 1024)
+
+typedef struct LfGraph {
+	char name[LF_NAME_MAX];
+	LadxSettings settings; /* the name's settings on defaults, then validated */
+	char text[LF_GRAPH_TEXT_MAX]; /* its loc, spot and edge lines, each ending in LF */
+	size_t len;
+} LfGraph;
+
+/* Opens oracle/logic_graphs.txt-style text: # header, then graphs. */
+FILE *lf_graphs_open(const char *test, const char *path);
+/* The next graph, 0 at the end. */
+int lf_graphs_next(const char *test, FILE *f, LfGraph *g);
+
 #endif

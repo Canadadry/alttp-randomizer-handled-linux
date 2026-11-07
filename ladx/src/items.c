@@ -165,6 +165,11 @@ static const char *const names[LADX_ITEM_COUNT] = {
 	"SWITCH8",
 	"RUPEES",
 	"RAFT",
+	"KEY9",
+	"NIGHTMARE_KEY9",
+	"STONE_BEAK9",
+	"MAP9",
+	"COMPASS9",
 };
 
 const char *ladx_item_name(int item)

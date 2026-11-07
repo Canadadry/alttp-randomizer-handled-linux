@@ -4,6 +4,7 @@
 #include "support.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define TEST "test_logic"
@@ -148,7 +149,7 @@ static void test_discovery(void)
 	expect_text("loc 0 -\tA\nloc 1 -\tC\nloc 2 -\tD\nloc 3 -\tB\nloc 4 -\tE\n"
 		    "spot 0 Chest 0x0A1 BOMB\tUnset Room\tNone\n"
 		    "spot 0 Chest 0x0A2 BOMB\tUnset Room\tNone\n"
-		    "spot 3 Chest 0x0B0 BOMB\tUnset Room\tNone\n"
+		    "spot 3 Chest 0x0B0 BOMB\tDigging Game\tKakariko Village\n"
 		    "edge 0 1 -\nedge 0 3 -\nedge 1 2 -\nedge 2 3 -\nedge 3 4 -\nedge 3 0 -\n",
 		    "edges renumbered in location_list order");
 }
@@ -173,8 +174,8 @@ static void test_renderer(void)
 	ladx_logic_spot_append_option(&logic, s, LADX_ITEM_KEY0);
 	ladx_logic_spot_append_option(&logic, s, LADX_ITEM_MAP0);
 	expect_text("loc 0 -\tStart\nloc 1 3\t-\nloc 2 0\t\"\"\n"
-		    "spot 0 StartItem 0x2A3 SWORD,SHIELD\tUnset Room\tNone\n"
-		    "spot 1 HeartPiece 0x0B5 -\tUnset Room\tNone\n"
+		    "spot 0 StartItem 0x2A3 SWORD,SHIELD\tTarin's Gift\tMabe Village\n"
+		    "spot 1 HeartPiece 0x0B5 -\tKey Cavern Keyhole\tUkuku Prairie\n"
 		    "spot 2 DungeonChest 0x2FF SWORD,SHIELD,KEY0,MAP0\tUnset Room\tNone\n"
 		    "edge 0 1 or(FEATHER,and(SWORD,count(RUPEES,200)))\n"
 		    "edge 1 0 or(FEATHER,and(SWORD,count(RUPEES,200)))\n"
@@ -380,6 +381,416 @@ static void test_world_setup(void)
 		expect(ladx_miniboss_find(ladx_miniboss_name(i)) == i, "miniboss names round-trip");
 }
 
+
+#define GRAPHS "oracle/logic_graphs.txt"
+
+static LfGraph graph;
+
+/* The options' names joined by commas, "-" when none: graph_lines' form. */
+static void options_text(int spot, char *out, size_t cap)
+{
+	int opts[256], n, i;
+	size_t len = 0;
+
+	n = ladx_logic_spot_options(&logic, spot, opts, 256);
+	if (n > 256)
+		test_fail(TEST, "spot %d: %d options", spot, n);
+	out[0] = '\0';
+	if (n == 0)
+		snprintf(out, cap, "-");
+	for (i = 0; i < n; i++) {
+		len += (size_t)snprintf(out + len, cap - len, "%s%s", i ? "," : "", ladx_item_name(opts[i]));
+		if (len >= cap)
+			test_fail(TEST, "spot %d: options text over %lu bytes", spot, (unsigned long)cap);
+	}
+}
+
+static int kind_find(const char *name)
+{
+	int k;
+
+	for (k = 0; k < LADX_SPOT_KIND_COUNT; k++)
+		if (strcmp(ladx_spot_kind_name(k), name) == 0)
+			return k;
+	return -1;
+}
+
+/*
+ * The constructor arguments a spot line's name id gives back. Classes whose
+ * __init__ passes its own room take none: AnglerKey, BeachSword, BirdKey,
+ * FaceKey, FishingMinigame, SlimeKey, HookshotDrop, Witch, BoomerangGuy,
+ * StartItem, TunicFairy(index), SeashellMansionBonus(index). KeyLocation
+ * takes its key; KeyHole its default reward, its one option when
+ * keyholesanity is off; TradeSequenceItem a default item it reads only when
+ * tradequest is off, so any item when the line has every option.
+ */
+static void constructor_args(int kind, const char *name_id, const char *options, int *room, int *arg)
+{
+	static const int fixed[] = {
+		LADX_SPOT_ANGLER_KEY, LADX_SPOT_BEACH_SWORD, LADX_SPOT_BIRD_KEY, LADX_SPOT_FACE_KEY,
+		LADX_SPOT_FISHING_MINIGAME, LADX_SPOT_SLIME_KEY, LADX_SPOT_HOOKSHOT_DROP, LADX_SPOT_WITCH,
+		LADX_SPOT_BOOMERANG_GUY, LADX_SPOT_START_ITEM, LADX_SPOT_TUNIC_FAIRY,
+		LADX_SPOT_SEASHELL_MANSION_BONUS,
+	};
+	const char *dash = strchr(name_id, '-');
+	unsigned i;
+
+	*room = -1;
+	*arg = -1;
+	if (kind == LADX_SPOT_KEY_LOCATION) {
+		*arg = ladx_item_find(name_id);
+		return;
+	}
+	if (dash && (kind == LADX_SPOT_SHOP_ITEM || kind == LADX_SPOT_TUNIC_FAIRY ||
+		     kind == LADX_SPOT_SEASHELL_MANSION_BONUS))
+		*arg = atoi(dash + 1);
+	if (kind == LADX_SPOT_KEY_HOLE)
+		*arg = ladx_item_find(options);
+	if (kind == LADX_SPOT_TRADE_SEQUENCE_ITEM)
+		*arg = strchr(options, ',') ? LADX_ITEM_TRADING_ITEM_YOSHI_DOLL : ladx_item_find(options);
+	for (i = 0; i < sizeof fixed / sizeof fixed[0]; i++)
+		if (kind == fixed[i])
+			return;
+	*room = (int)strtol(name_id, NULL, 16);
+}
+
+#define GRAPH_SPOT_MAX 512
+#define GRAPH_LOC_MAX 1024
+
+/*
+ * Each spot line of a baseline rebuilt from its class and name id (a chain
+ * of the graph's locations with their dungeons, so discovery keeps the
+ * order), configured under the baseline's settings: its name id, its
+ * checkMetadata entry (KeyLocation's "Unset Room" included) and its options
+ * equal the line's.
+ */
+static int replay_graph_spots(const LfGraph *g)
+{
+	static char want[GRAPH_SPOT_MAX][1280];
+	static int dungeon[GRAPH_LOC_MAX];
+	char kind_name[32], name_id[64], got[2048];
+	char buf[1280];
+	const char *line = g->text, *end;
+	int locs = 0, spots = 0, i, kind, room, arg, loc, off;
+
+	ladx_logic_begin(&logic);
+	for (; *line; line = end + 1) {
+		end = strchr(line, '\n');
+		if ((size_t)(end - line) >= sizeof buf)
+			test_fail(TEST, "graph %s: line too long", g->name);
+		memcpy(buf, line, (size_t)(end - line));
+		buf[end - line] = '\0';
+		if (strncmp(buf, "loc ", 4) == 0) {
+			char d[8];
+
+			if (locs >= GRAPH_LOC_MAX || sscanf(buf, "loc %*d %7[^\t]", d) != 1)
+				test_fail(TEST, "graph %s: malformed %s", g->name, buf);
+			dungeon[locs] = strcmp(d, "-") == 0 ? -1 : atoi(d);
+			ladx_logic_new_location(&logic, dungeon[locs], NULL);
+			if (locs > 0)
+				ladx_logic_single_connect(&logic, locs - 1, locs, ladx_req_none());
+			locs++;
+		} else if (strncmp(buf, "spot ", 5) == 0) {
+			char options[1280];
+
+			if (spots >= GRAPH_SPOT_MAX ||
+			    sscanf(buf, "spot %d %31s %n%63s %1279[^\t]", &loc, kind_name, &off, name_id, options) != 4)
+				test_fail(TEST, "graph %s: malformed %s", g->name, buf);
+			kind = kind_find(kind_name);
+			if (kind < 0 || loc < 0 || loc >= locs)
+				test_fail(TEST, "graph %s: unknown class or location in %s", g->name, buf);
+			constructor_args(kind, name_id, options, &room, &arg);
+			ladx_logic_add_item_info(&logic, loc, (LadxSpotKind)kind, room, arg);
+			memcpy(want[spots++], buf + off, strlen(buf + off) + 1);
+		}
+	}
+	ladx_logic_finish(&logic, 0);
+	ladx_logic_configure(&logic, &g->settings);
+	expect(!ladx_logic_broken(&logic), "the spots of a baseline build and configure");
+	expect(ladx_logic_spot_count(&logic) == spots, "every spot line rebuilt");
+	for (i = 0; i < spots; i++) {
+		const LadxSpot *sp = ladx_logic_spot(&logic, i);
+		char options[1200];
+
+		options_text(i, options, sizeof options);
+		snprintf(got, sizeof got, "%s %s\t%s\t%s", sp->name_id, options, ladx_spot_metadata_name(sp),
+			 ladx_spot_metadata_area(sp));
+		checks++;
+		if (strcmp(got, want[i]) != 0)
+			test_fail(TEST, "graph %s: spot %d of class %s: got\n%s\nwant\n%s", g->name, i,
+				  ladx_spot_kind_name(sp->kind), got, want[i]);
+	}
+	return spots;
+}
+
+static void test_graph_spots(void)
+{
+	FILE *f = lf_graphs_open(TEST, GRAPHS);
+	int graphs = 0, spots = 0;
+
+	while (lf_graphs_next(TEST, f, &graph)) {
+		graphs++;
+		spots += replay_graph_spots(&graph);
+	}
+	fclose(f);
+	expect(graphs == 5 && spots == 1334, "1334 spot lines in the 5 graphs of " GRAPHS);
+	printf("%s: %d spot lines of %d graphs of %s rebuilt from class and name id: name id, metadata and "
+	       "options after configure equal\n",
+	       TEST, spots, graphs, GRAPHS);
+}
+
+/* Settings "k=v,..." on defaults, not validated: configure reads them raw. */
+static void settings_from(const char *text, LadxSettings *settings)
+{
+	char buf[256], *p = buf, *comma;
+
+	ladx_settings_defaults(settings);
+	snprintf(buf, sizeof buf, "%s", text);
+	while (*p) {
+		comma = strchr(p, ',');
+		if (comma)
+			*comma = '\0';
+		if (ladx_settings_set(settings, p) != LADX_SETTINGS_OK)
+			test_fail(TEST, "synthetic setting %s refused", p);
+		if (!comma)
+			break;
+		p = comma + 1;
+	}
+}
+
+/*
+ * One spot of the class, in a location of the dungeon, configured under the
+ * settings: its options' text equals want, where a leading "*" stands for
+ * the class's OPTIONS (the spot's options before configure).
+ */
+static void expect_configure(LadxSpotKind kind, int room, int arg, int dungeon, const char *settings_text,
+			     const char *want, const char *what)
+{
+	char before[4096], after[4096], full[8192];
+	LadxSettings settings;
+
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, dungeon, NULL);
+	ladx_logic_add_item_info(&logic, 0, kind, room, arg);
+	ladx_logic_finish(&logic, 0);
+	expect(!ladx_logic_broken(&logic), what);
+	options_text(0, before, sizeof before);
+	settings_from(settings_text, &settings);
+	ladx_logic_configure(&logic, &settings);
+	expect(!ladx_logic_broken(&logic), what);
+	options_text(0, after, sizeof after);
+	if (want[0] == '*')
+		snprintf(full, sizeof full, "%s%s", before, want + 1);
+	else
+		snprintf(full, sizeof full, "%s", want);
+	checks++;
+	if (strcmp(after, full) != 0)
+		test_fail(TEST, "%s %s: got\n%s\nwant\n%s", ladx_spot_kind_name(kind), what, after, full);
+}
+
+static void expect_configure_breaks(LadxSpotKind kind, int room, int arg, int dungeon, const char *settings_text,
+				    const char *what)
+{
+	LadxSettings settings;
+
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, dungeon, NULL);
+	ladx_logic_add_item_info(&logic, 0, kind, room, arg);
+	ladx_logic_finish(&logic, 0);
+	settings_from(settings_text, &settings);
+	ladx_logic_configure(&logic, &settings);
+	expect(ladx_logic_broken(&logic), what);
+}
+
+#define D3_ITEMS ",KEY3,NIGHTMARE_KEY3,STONE_BEAK3,MAP3,COMPASS3"
+#define ALL_KEYSANITY                                                                                        \
+	",KEY0,NIGHTMARE_KEY0,STONE_BEAK0,MAP0,COMPASS0,KEY1,NIGHTMARE_KEY1,STONE_BEAK1,MAP1,COMPASS1,"      \
+	"KEY2,NIGHTMARE_KEY2,STONE_BEAK2,MAP2,COMPASS2,KEY3,NIGHTMARE_KEY3,STONE_BEAK3,MAP3,COMPASS3,"       \
+	"KEY4,NIGHTMARE_KEY4,STONE_BEAK4,MAP4,COMPASS4,KEY5,NIGHTMARE_KEY5,STONE_BEAK5,MAP5,COMPASS5,"       \
+	"KEY6,NIGHTMARE_KEY6,STONE_BEAK6,MAP6,COMPASS6,KEY7,NIGHTMARE_KEY7,STONE_BEAK7,MAP7,COMPASS7,"       \
+	"KEY8,NIGHTMARE_KEY8,STONE_BEAK8,MAP8,COMPASS8,KEY9,NIGHTMARE_KEY9,STONE_BEAK9,MAP9,COMPASS9"
+#define KEYSANITY_KEYS ",KEY0,KEY1,KEY2,KEY3,KEY4,KEY5,KEY6,KEY7,KEY8,KEY9"
+#define GIFT_OPTIONS                                                                                         \
+	"POWER_BRACELET,SHIELD,BOW,HOOKSHOT,MAGIC_ROD,PEGASUS_BOOTS,OCARINA,FEATHER,SHOVEL,MAGIC_POWDER,BOMB,"   \
+	"SWORD,FLIPPERS,MAGNIFYING_LENS,MEDICINE,TAIL_KEY,ANGLER_KEY,FACE_KEY,BIRD_KEY,GOLD_LEAF,SLIME_KEY,"     \
+	"ROOSTER,HAMMER,RUPEES_50,RUPEES_20,RUPEES_100,RUPEES_200,RUPEES_500,SEASHELL,BOOMERANG,HEART_PIECE,"    \
+	"BOWWOW,ARROWS_10,SINGLE_ARROW,MAX_POWDER_UPGRADE,MAX_BOMBS_UPGRADE,MAX_ARROWS_UPGRADE,RED_TUNIC,"      \
+	"BLUE_TUNIC,HEART_CONTAINER,BAD_HEART_CONTAINER,TOADSTOOL"
+
+/* Each class's configure, as locations/ writes it (file and lines cited). */
+static void test_configure(void)
+{
+	/* itemInfo.py configure, lines 28-48: the range(10) loop, then the
+	 * dungeon's own items for each setting not keysanity. */
+	expect_configure(LADX_SPOT_DUNGEON_CHEST, 0x108, -1, 3, "", "*" D3_ITEMS, "in D3, default dungeon items");
+	expect_configure(LADX_SPOT_DUNGEON_CHEST, 0x108, -1, 3, "dungeon_keys=keysanity",
+			 "*" KEYSANITY_KEYS ",NIGHTMARE_KEY3,STONE_BEAK3,MAP3,COMPASS3", "in D3, keysanity keys");
+	expect_configure(LADX_SPOT_DUNGEON_CHEST, 0x108, -1, 3, "dungeon_keys=removed", "*" D3_ITEMS,
+			 "in D3, removed keys still appended (only keysanity is read)");
+	expect_configure(LADX_SPOT_DUNGEON_CHEST, 0x108, -1, 3,
+			 "dungeon_keys=keysanity,nightmare_keys=keysanity,dungeon_beaks=keysanity,dungeon_maps=keysanity",
+			 "*" ALL_KEYSANITY, "in D3, every family keysanity, interleaved per n");
+	expect_configure(LADX_SPOT_DUNGEON_CHEST, 0x2FF, -1, 0, "",
+			 "*,KEY0,NIGHTMARE_KEY0,STONE_BEAK0,MAP0,COMPASS0", "in the colour dungeon");
+	expect_configure(LADX_SPOT_CHEST, 0x0B0, -1, -1, "", "*", "outside a dungeon, nothing appended");
+	expect_configure(LADX_SPOT_CHEST, 0x0B0, -1, -1, "dungeon_keys=keysanity", "*" KEYSANITY_KEYS,
+			 "outside a dungeon, keysanity keys appended");
+
+	/* heartPiece.py and fishingMinigame.py configure: heartpiece. */
+	expect_configure(LADX_SPOT_HEART_PIECE, 0x044, -1, -1, "heartpiece=1", "*", "heartpiece on");
+	expect_configure(LADX_SPOT_HEART_PIECE, 0x044, -1, -1, "heartpiece=0", "HEART_PIECE", "heartpiece off");
+	expect_configure(LADX_SPOT_FISHING_MINIGAME, -1, -1, -1, "heartpiece=0", "HEART_PIECE", "heartpiece off");
+	/* seashell.py Seashell and SeashellMansionBonus configure: seashells. */
+	expect_configure(LADX_SPOT_SEASHELL, 0x0A3, -1, -1, "seashells=1,dungeon_keys=keysanity", "*" KEYSANITY_KEYS,
+			 "seashells on");
+	expect_configure(LADX_SPOT_SEASHELL, 0x0A3, -1, -1, "seashells=0,dungeon_keys=keysanity", "SEASHELL",
+			 "seashells off, no append");
+	expect_configure(LADX_SPOT_SEASHELL_MANSION_BONUS, -1, 1, -1, "seashells=0", "SEASHELL", "seashells off");
+	/* heartContainer.py configure: heartcontainers, then hpmode. */
+	expect_configure(LADX_SPOT_HEART_CONTAINER, 0x106, -1, 1, "heartcontainers=1",
+			 "*,KEY1,NIGHTMARE_KEY1,STONE_BEAK1,MAP1,COMPASS1", "heartcontainers on");
+	expect_configure(LADX_SPOT_HEART_CONTAINER, 0x106, -1, 1, "heartcontainers=0,hpmode=5hit",
+			 "*,KEY1,NIGHTMARE_KEY1,STONE_BEAK1,MAP1,COMPASS1", "off, hpmode 5hit");
+	expect_configure(LADX_SPOT_HEART_CONTAINER, 0x106, -1, 1, "heartcontainers=0,hpmode=inverted",
+			 "BAD_HEART_CONTAINER", "off, hpmode inverted");
+	expect_configure(LADX_SPOT_HEART_CONTAINER, 0x106, -1, 1, "heartcontainers=0,hpmode=low", "HEART_PIECE",
+			 "off, hpmode low");
+	expect_configure(LADX_SPOT_HEART_CONTAINER, 0x106, -1, 1, "heartcontainers=0,hpmode=1", "HEART_CONTAINER",
+			 "off, hpmode 1");
+	expect_configure(LADX_SPOT_HEART_CONTAINER, 0x106, -1, 1, "heartcontainers=0", "HEART_CONTAINER",
+			 "off, hpmode default");
+	/* witch.py and toadstool.py configure: witch. */
+	expect_configure(LADX_SPOT_WITCH, -1, -1, -1, "witch=1", "*", "witch on");
+	expect_configure(LADX_SPOT_WITCH, -1, -1, -1, "witch=0", "MAGIC_POWDER", "witch off");
+	expect_configure(LADX_SPOT_TOADSTOOL, -1, -1, -1, "witch=1", "*", "witch on");
+	expect_configure(LADX_SPOT_TOADSTOOL, 0x011, -1, -1, "witch=0", "TOADSTOOL", "witch off");
+	/* instrument.py configure: instruments, or the seashells goal. */
+	expect_configure(LADX_SPOT_INSTRUMENT, 0x1B5, -1, 5, "instruments=0", "INSTRUMENT5", "instruments off");
+	expect_configure(LADX_SPOT_INSTRUMENT, 0x1B5, -1, 5, "instruments=1",
+			 "*,KEY5,NIGHTMARE_KEY5,STONE_BEAK5,MAP5,COMPASS5", "instruments on");
+	expect_configure(LADX_SPOT_INSTRUMENT, 0x1B5, -1, 5, "instruments=0,goal=seashells",
+			 "*,KEY5,NIGHTMARE_KEY5,STONE_BEAK5,MAP5,COMPASS5", "off, goal seashells");
+	expect_configure_breaks(LADX_SPOT_INSTRUMENT, 0x1B5, -1, 0, "instruments=0",
+				"an Instrument in D0 breaks the logic (no INSTRUMENT0)");
+	/* keyhole.py configure: keyholesanity, else the default reward. */
+	expect_configure(LADX_SPOT_KEY_HOLE, 0x0D3, LADX_ITEM_TAIL_CAVE_OPENED, -1, "keyholesanity=0",
+			 "TAIL_CAVE_OPENED", "keyholesanity off");
+	expect_configure(LADX_SPOT_KEY_HOLE, 0x0D3, LADX_ITEM_TAIL_CAVE_OPENED, -1, "keyholesanity=1", "*",
+			 "keyholesanity on");
+	/* tradeSequence.py configure: tradequest, else the default item. */
+	expect_configure(LADX_SPOT_TRADE_SEQUENCE_ITEM, 0x2A0, LADX_ITEM_TRADING_ITEM_YOSHI_DOLL, -1, "tradequest=0",
+			 "TRADING_ITEM_YOSHI_DOLL", "tradequest off");
+	expect_configure(LADX_SPOT_TRADE_SEQUENCE_ITEM, 0x2A0, LADX_ITEM_TRADING_ITEM_YOSHI_DOLL, -1, "tradequest=1",
+			 "*", "tradequest on");
+	/* boomerangGuy.py configure: gift replaces the list then appends; the
+	 * other values skip ItemInfo.configure. */
+	expect_configure(LADX_SPOT_BOOMERANG_GUY, -1, -1, -1, "boomerang=gift,dungeon_keys=keysanity",
+			 GIFT_OPTIONS KEYSANITY_KEYS, "boomerang gift");
+	expect_configure(LADX_SPOT_BOOMERANG_GUY, -1, -1, -1, "boomerang=trade,dungeon_keys=keysanity",
+			 "BOOMERANG,HOOKSHOT,MAGIC_ROD,PEGASUS_BOOTS,FEATHER,SHOVEL", "boomerang trade, no append");
+	/* startItem.py configure: bowwow; never ItemInfo.configure. */
+	expect_configure(LADX_SPOT_START_ITEM, -1, -1, -1, "bowwow=normal,dungeon_keys=keysanity",
+			 "SWORD,SHIELD,POWER_BRACELET,OCARINA,FEATHER,BOOMERANG,MAGIC_ROD,TAIL_KEY,SHOVEL,HOOKSHOT,"
+			 "PEGASUS_BOOTS,MAGIC_POWDER,BOMB",
+			 "bowwow normal, no append");
+	expect_configure(LADX_SPOT_START_ITEM, -1, -1, -1, "bowwow=swordless", "SWORD", "bowwow swordless");
+	/* shop.py configure: ItemInfo.configure; its shopsanity branch is not ported. */
+	expect_configure(LADX_SPOT_SHOP_ITEM, -1, 1, -1, "dungeon_maps=keysanity",
+			 "*,MAP0,COMPASS0,MAP1,COMPASS1,MAP2,COMPASS2,MAP3,COMPASS3,MAP4,COMPASS4,MAP5,COMPASS5,"
+			 "MAP6,COMPASS6,MAP7,COMPASS7,MAP8,COMPASS8,MAP9,COMPASS9",
+			 "keysanity maps");
+	expect_configure_breaks(LADX_SPOT_SHOP_ITEM, -1, 0, -1, "shopsanity=important", "shopsanity breaks the logic");
+	/* owlStatue.py configure: ItemInfo.configure, then a RuntimeError when
+	 * the statue's side is not enabled. */
+	expect_configure(LADX_SPOT_OWL_STATUE, 0x103, -1, 1, "owlstatues=dungeon",
+			 "*,KEY1,NIGHTMARE_KEY1,STONE_BEAK1,MAP1,COMPASS1", "a dungeon owl, owlstatues dungeon");
+	expect_configure(LADX_SPOT_OWL_STATUE, 0x035, -1, -1, "owlstatues=overworld", "*",
+			 "an overworld owl, owlstatues overworld");
+	expect_configure(LADX_SPOT_OWL_STATUE, 0x035, -1, -1, "owlstatues=both", "*", "an overworld owl, both");
+	expect_configure_breaks(LADX_SPOT_OWL_STATUE, 0x035, -1, -1, "owlstatues=dungeon",
+				"an overworld owl under owlstatues dungeon breaks the logic");
+	expect_configure_breaks(LADX_SPOT_OWL_STATUE, 0x103, -1, 1, "owlstatues=",
+				"an owl with owlstatues off breaks the logic");
+	/* keyLocation.py configure: pass, under any settings. */
+	expect_configure(LADX_SPOT_KEY_LOCATION, -1, LADX_ITEM_D3_BOMBWALL, 3, "dungeon_keys=keysanity", "D3_BOMBWALL",
+			 "never changed");
+}
+
+/* locations/'s constructors: nameId, metadata, data, and refused arguments. */
+static void test_item_info(void)
+{
+	const LadxSpot *sp;
+	LadxSettings settings;
+
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, 3, NULL);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_KEY_LOCATION, -1, LADX_ITEM_D3_BOMBWALL);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_SHOP_ITEM, 0x2CB, 1);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_TOADSTOOL, -1, -1);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_TUNIC_FAIRY, -1, 1);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_OWL_STATUE, 0x103, -1);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_TRADE_SEQUENCE_ITEM, 0x297,
+				 LADX_ITEM_TRADING_ITEM_MAGNIFYING_GLASS);
+	ladx_logic_finish(&logic, 0);
+	expect(!ladx_logic_broken(&logic), "constructors of six classes");
+	/* keyLocation.py lines 6-8 and 20-22: the key is the name id, read as
+	 * "None" by ItemInfo.__init__'s metadata lookup. */
+	sp = ladx_logic_spot(&logic, 0);
+	expect(strcmp(sp->name_id, "D3_BOMBWALL") == 0 && strcmp(ladx_spot_metadata_name(sp), "Unset Room") == 0 &&
+		       strcmp(ladx_spot_metadata_area(sp), "None") == 0 && sp->room == -1 &&
+		       sp->default_item == LADX_ITEM_D3_BOMBWALL,
+	       "KeyLocation: the key's name id, the None metadata");
+	sp = ladx_logic_spot(&logic, 1);
+	expect(strcmp(sp->name_id, "0x2CB-1") == 0 && strcmp(ladx_spot_metadata_name(sp), "Mabe Extra Shop Item 2") == 0 &&
+		       sp->room == 0x2CB && sp->index == 1,
+	       "ShopItem(1, room=0x2CB): its index in the name id");
+	sp = ladx_logic_spot(&logic, 2);
+	expect(strcmp(sp->name_id, "0x050") == 0 && sp->room == 0x050, "Toadstool(): room 0x050 by default");
+	sp = ladx_logic_spot(&logic, 3);
+	expect(strcmp(sp->name_id, "0x301-1") == 0 && strcmp(ladx_spot_metadata_name(sp), "Tunic Fairy Item 2") == 0,
+	       "TunicFairy(1): index set before ItemInfo.__init__");
+	sp = ladx_logic_spot(&logic, 4);
+	expect(strcmp(sp->name_id, "0x103-Owl") == 0 && strcmp(ladx_spot_metadata_name(sp), "Spiked Beetle Owl") == 0,
+	       "OwlStatue: 0x%03X-Owl");
+	sp = ladx_logic_spot(&logic, 5);
+	expect(strcmp(sp->name_id, "0x297-Trade") == 0 && strcmp(ladx_spot_metadata_name(sp), "Mermaid Statue") == 0 &&
+		       sp->default_item == LADX_ITEM_TRADING_ITEM_MAGNIFYING_GLASS && sp->item == LADX_ITEM_NONE,
+	       "TradeSequenceItem: 0x%03X-Trade, its default item kept");
+	ladx_settings_defaults(&settings);
+	ladx_logic_configure(&logic, &settings);
+	ladx_logic_configure(&logic, &settings);
+	expect(ladx_logic_broken(&logic), "a second configure breaks the logic");
+
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, -1, NULL);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_WITCH, 0x2A2, -1);
+	expect(ladx_logic_broken(&logic), "Witch() takes no room");
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, -1, NULL);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_CHEST, -1, -1);
+	expect(ladx_logic_broken(&logic), "Chest(room) needs its room");
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, -1, NULL);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_CHEST, 0x004, LADX_ITEM_SWORD);
+	expect(ladx_logic_broken(&logic), "Chest takes no second argument");
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, -1, NULL);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_SHOP_ITEM, -1, 2);
+	expect(ladx_logic_broken(&logic), "ShopItem(2) has no default price");
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, -1, NULL);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_SHOP_ITEM, 0x0A1, 0);
+	expect(ladx_logic_broken(&logic), "a shop outside underworld 2 breaks the logic");
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, -1, NULL);
+	ladx_logic_add_item_info(&logic, 0, LADX_SPOT_KEY_HOLE, 0x0D3, LADX_ITEM_NONE);
+	expect(ladx_logic_broken(&logic), "KeyHole needs its default reward");
+	ladx_logic_begin(&logic);
+	ladx_logic_new_location(&logic, -1, NULL);
+	ladx_logic_configure(&logic, &settings);
+	expect(ladx_logic_broken(&logic), "configure before finish breaks the logic");
+}
+
 #define VECTORS "oracle/logic_vectors.txt"
 
 static LfConfig config;
@@ -463,7 +874,10 @@ int main(int argc, char **argv)
 	test_explorer();
 	test_capacity();
 	test_world_setup();
-	printf("%s: synthetic graphs, renderer and explorer ok (%d checks)\n", TEST, checks);
+	test_item_info();
+	test_configure();
+	printf("%s: synthetic graphs, renderer, explorer, constructors and configure ok (%d checks)\n", TEST, checks);
+	test_graph_spots();
 	if (fixtures)
 		replay_vectors();
 	return 0;

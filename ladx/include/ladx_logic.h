@@ -75,7 +75,10 @@ typedef struct LadxSpot {
 	int base_option_count;
 	int suffix_first, suffix_count;
 	int metadata;
-	int item; /* LADX_ITEM_NONE until placed */
+	int room;	  /* the constructor's room; -1 for None (KeyLocation) */
+	int index;	  /* ShopItem's, TunicFairy's, SeashellMansionBonus's; else -1 */
+	int default_item; /* KeyHole's reward, TradeSequenceItem's item, KeyLocation's key; else none */
+	int item;	  /* LADX_ITEM_NONE until placed */
 } LadxSpot;
 
 typedef struct LadxBuildLocation {
@@ -103,6 +106,7 @@ typedef struct LadxLogic {
 	int location_count, edge_count, spot_count, option_count;
 	int start;
 	bool finished;
+	bool configured;
 	bool broken;
 	LadxBuildLocation build_location[LADX_LOGIC_LOCATION_CAP];
 	LadxBuildEdge build_edge[LADX_LOGIC_EDGE_CAP];

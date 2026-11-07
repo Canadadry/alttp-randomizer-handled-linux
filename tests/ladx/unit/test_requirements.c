@@ -16,18 +16,23 @@ static void expect(int ok, const char *what)
 		test_fail(TEST, "%s", what);
 }
 
-/* locations/items.py's order first (125 names), then logic's own names. */
+/* locations/items.py's order first (125 names), then logic's own names, then
+ * the n = 9 names of itemInfo.py configure's range(10) (lines 31-39). */
 static void test_items(void)
 {
 	int i;
 
-	expect(LADX_ITEM_COUNT == 162, "162 item names");
+	expect(LADX_ITEM_COUNT == 167, "167 item names");
 	expect(LADX_ITEM_POWER_BRACELET == 0, "items.py's first name first");
 	expect(strcmp(ladx_item_name(LADX_ITEM_EAGLE_TOWER_OPENED), "EAGLE_TOWER_OPENED") == 0,
 	       "items.py's last name");
 	expect(LADX_ITEM_EAGLE_TOWER_OPENED == 124, "items.py's 125 names first");
 	expect(ladx_item_find("RUPEES") == LADX_ITEM_RUPEES, "RUPEES found");
 	expect(ladx_item_find("D3_BOMBWALL") == LADX_ITEM_D3_BOMBWALL, "a logic-only flag found");
+	expect(ladx_item_find("KEY9") == LADX_ITEM_RAFT + 1 && ladx_item_find("NIGHTMARE_KEY9") == LADX_ITEM_RAFT + 2 &&
+		       ladx_item_find("STONE_BEAK9") == LADX_ITEM_RAFT + 3 && ladx_item_find("MAP9") == LADX_ITEM_RAFT + 4 &&
+		       ladx_item_find("COMPASS9") == LADX_ITEM_RAFT + 5,
+	       "configure's n = 9 names last, in its append order");
 	expect(ladx_item_find("SWORD_USED") == LADX_ITEM_NONE, "no _USED name");
 	expect(ladx_item_find("sword") == LADX_ITEM_NONE, "names are case-sensitive");
 	expect(ladx_item_find("") == LADX_ITEM_NONE, "empty name unknown");
