@@ -124,8 +124,8 @@
       - [x] Chunk 3: KS in C and the span list
       - [x] Chunk 4: write-log parsing and projection in C
       - [x] Chunk 5: encoder fixture
-      - [ ] Chunk 6: encoder core rules
-      - [ ] Chunk 7: KS-match and fragment rule
+      - [x] Chunk 6: encoder core rules
+      - [x] Chunk 7: KS-match and fragment rule
       - [ ] Chunk 8: pipeline and ladx_gen --rom
       - [ ] Chunk 9: driver, e2e-rom and the real-ROM run
     - [ ] Step 3.6.3 bank3e

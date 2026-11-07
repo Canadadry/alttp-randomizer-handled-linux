@@ -38,7 +38,10 @@ in `docs/`, then `README.md`.
   `RandomItemPlacer`, `ladx_placer_*` in `ladx_randomizer.h`, tested by
   `test_fill`; `wlog.c`, the write-log builder, parser and projection
   `ladx_wlog.h` (tokens decoded by `wlog_token.c`, shared with
-  `tables.c`), tested by `test_wlog`; `tables.c`, the patch tables' reader, key, walk, records
+  `tables.c`), tested by `test_wlog`; `encoder.c`, the write-log
+  encoder `ladx_encoder.h` (the C-group rule, KS-match, the fragment rule,
+  table groups' atoms passed through), tested by `test_encoder`, which
+  replays `encoder_vectors.txt` with `--fixtures`; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
@@ -175,8 +178,9 @@ in `docs/`, then `README.md`.
   "Fill-outcome fixture". `tests/ladx/oracle/encoder_vectors.txt`,
   `write_log.py`'s encoder on synthetic event streams over a synthetic ROM
   and KS (no ROM), is written only by `gen_encoder_vectors.py` (`--check`
-  re-renders it; tested by `test_gen_encoder_vectors.py`); contract in
-  `tests/ladx/README.md`, "Encoder fixture".
+  re-renders it; tested by `test_gen_encoder_vectors.py`), replayed by
+  `test_encoder --fixtures`; contract in `tests/ladx/README.md`,
+  "Encoder fixture".
 
 ## Checks
 

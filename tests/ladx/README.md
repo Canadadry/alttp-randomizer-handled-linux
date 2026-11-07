@@ -438,7 +438,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -646,6 +646,39 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
+  `test_encoder` checks the encoder (`ladx_encoder.h`, "Encoding rule"
+  above) on a 4 KiB ROM from a fixed PRNG with planted regions (two
+  copies for KS-match ties, a repeated run, runs of distinct values, one
+  with a repeat), KS built by `ladx_ks_add`, each expected text written
+  from the rule: a carried source copy; an identity inheriting a keep,
+  carried by a later group; inherit-on-equal on bank bytes (a KS
+  reference at its own offset and away from it, a literal, a source byte
+  outside KS left a literal); an entry's prefix, middle run (at the lowest
+  index of two equal runs) and suffix, and their stop at a byte outside
+  KS; a segment's net effect; integer pointers; a position written back
+  to its source byte as a keep; a table group's atoms passed through, its
+  identities named by offset (the first naming wins) and carried, fresh
+  identities for atoms given without origins; the queries (a byte's
+  origin, an entry's origins, fresh identities); refused writes (past the
+  ROM, a bad group or table, one segment of both sides); KS-match (the
+  lowest offset of equal matches, a longer match at a higher offset, no
+  match across a KS run's end); the fragment rule on an entry (its KS
+  entry's bytes, the longest prefix at its lowest offset) and on bank
+  bytes (pieces cut where `span_at`'s lowest-start span changes); and
+  identities renamed by KS-match and by the fragment rule, carried by a
+  later segment. It prints `test_encoder: the C-group encoding rule,
+  KS-match and the fragment rule on hand-written streams (<c> checks)`.
+  With `--fixtures` it replays `oracle/encoder_vectors.txt` ("Encoder
+  fixture"): per vector, its KS from the `K` lines (`ks none`: no KS),
+  its initial entries, a `C` group's events through `ladx_enc_bank`,
+  `_table` and `_pointer`, a `table` group's segment through the `fixed`
+  calls (its atoms decoded from the expected log's segment, its origins
+  the segment's net ones from the events, entries in first-write order);
+  the log must equal the expected one byte for byte (else `test_encoder:
+  FAIL oracle/encoder_vectors.txt: vector <name>: got ... want ...`); it
+  prints `test_encoder: 216 vectors of oracle/encoder_vectors.txt
+  replayed byte for byte (16 hand-written, 200 random, 68 with ks
+  none)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1171,8 +1204,8 @@ entry with one byte changed, pointers). 216 vectors, about 195 KB;
   equal to `write_log.encode` on its parsed stream and KS, names unique,
   the 16 hand-written vectors first, 200 random ones with `ks none` and
   KS entries among them, and each hand-written vector's pinned record.
-- C side: replayed by the C encoder's unit test with `--fixtures` once
-  that encoder exists (plan 3, step 6.2's encoder chunks).
+- C side: `test_encoder --fixtures` ("Unit tests and lint", `make logic`
+  and `make unit-arm`) replays every vector byte for byte.
 
 ## Measure
 
