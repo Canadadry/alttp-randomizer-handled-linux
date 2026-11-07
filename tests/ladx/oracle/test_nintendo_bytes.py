@@ -37,7 +37,7 @@ ROM = bytes(ROM)
 
 INDEX = nintendo_bytes.RomIndex(ROM)
 NO_CORPUS = nintendo_bytes.Corpus([])
-STRICT = "data/ladx/x.bin"
+STRICT = "tests/ladx/extract/x.bin"
 GENERAL = "notes/x.md"
 
 
@@ -81,7 +81,7 @@ class Thresholds(unittest.TestCase):
                          [("bytelist", 10, 8, "general")])
 
     def test_every_strict_prefix_is_strict_and_other_paths_general(self):
-        for path in ("data/ladx/a.bin", "tests/ladx/cases/c/g.txt", "tests/ladx/combos/k.txt",
+        for path in ("tests/ladx/cases/c/g.txt", "tests/ladx/combos/k.txt",
                      "tests/ladx/extract/rooms.txt"):
             self.assertEqual(nintendo_bytes.scope_of(path), "strict", path)
         for path in ("data/base.bps", "tests/ladx/oracle/x.txt", "data/ladxr.txt", "README.md"):
@@ -288,8 +288,7 @@ class CaseFolders(unittest.TestCase):
             for other in ("seed", "config.txt", "meta.txt", "out.gbc"):
                 self.assertEqual(nintendo_bytes.scope_of(folder + other), "strict", other)
         for path in ("tests/ladx/cases/run.txt", "tests/ladx/cases/c/d/run.txt",
-                     "tests/ladx/cases/c/d/rom_writes.txt", "data/ladx/rom_writes.txt",
-                     "tests/ladx/extract/run.txt"):
+                     "tests/ladx/cases/c/d/rom_writes.txt", "tests/ladx/extract/run.txt"):
             self.assertEqual(nintendo_bytes.scope_of(path), "strict", path)
 
     def test_run_txt_and_spoiler_json_are_held_to_the_general_thresholds(self):
@@ -303,6 +302,72 @@ class CaseFolders(unittest.TestCase):
         self.assertEqual(check(CASE + "seed", ROM[200:204].hex().encode() + b"\n")[0],
                          [("hex", 0, 4, "strict")])
 
+
+
+def table_file(*records):
+    """A patch-table group file of one unit with one entry holding records."""
+    return ("ladx-tables 1\ngroup g\ntables texts\nunit g.1 race\nE 0\n"
+            + "".join(r + "\n" for r in records)).encode()
+
+
+class TablesView(unittest.TestCase):
+    PATH = "data/ladx/g.txt"
+
+    def test_every_file_under_data_ladx_has_the_tables_scope(self):
+        for path in ("data/ladx/g.txt", "data/ladx/order.txt", "data/ladx/d/rom_writes.txt",
+                     "data/ladx/x.bin"):
+            self.assertEqual(nintendo_bytes.scope_of(path), "tables", path)
+        for path in ("data/ladxr/g.txt", "data/base.bps"):
+            self.assertEqual(nintendo_bytes.scope_of(path), "general", path)
+
+    def test_a_literal_token_is_checked_at_4_bytes_at_its_own_offset(self):
+        self.assertEqual(check(self.PATH, table_file("B 10 " + ROM[100:103].hex())), ([], []))
+        for record in ("B 10 =2 %s", "T texts 2 @200+3 %s"):
+            data = table_file(record % ROM[100:104].hex())
+            at = data.index(ROM[100:104].hex().encode())
+            self.assertEqual(check(self.PATH, data), ([("tables", at, 4, "strict")], []))
+
+    def test_a_misaligned_nibble_is_not_flagged(self):
+        token = "0" + ROM[400:420].hex() + "0"
+        self.assertEqual(check(self.PATH, table_file("B 10 " + token)), ([], []))
+
+    def test_the_rest_of_the_text_is_held_to_the_general_thresholds(self):
+        name = NAME_BYTES[:15].decode()
+        self.assertEqual(check(self.PATH, table_file("B 10 00").replace(b"race\nE 0",
+                         b"race\nE " + name.encode())), ([], []))
+        data = table_file("B 10 00").replace(b"race\nE 0", b"race\nE " + NAME_BYTES[:16])
+        self.assertEqual(check(self.PATH, data)[0], [("raw", data.index(b"Koholint"), 16,
+                                                       "general")])
+        order = ("ladx-tables-order 1\nsection a.py f\nC g - say(%r)\n"
+                 % TEXT_BYTES[:15].decode()).encode()
+        self.assertEqual(check("data/ladx/order.txt", order), ([], []))
+        copy = table_file("B 10 @%s+4" % ROM[200:208].hex())
+        self.assertEqual(check(self.PATH, copy)[0], [("hex", copy.index(b"@") + 1, 8,
+                                                       "general")])
+
+    def test_no_computed_or_invariant_clearance(self):
+        data = table_file("B 10 " + ROM[100:108].hex())
+        sets = NeverRead(nintendo_bytes.planted_inventory([("g(rom)", "-", "g")]), ROM,
+                         lambda rom: {}, lambda rom: set())
+        self.assertEqual(check(self.PATH, data, reads=sets)[0],
+                         [("tables", data.index(ROM[100:108].hex().encode()), 8, "strict")])
+
+    def test_a_file_the_tables_parser_refuses_is_one_literal(self):
+        for data in (b"", table_file("B 10 0"), table_file(), b"\xff\n",
+                     log("G g", "B 10 00"), b"ladx-tables-order 1\nC g - f()\n"):
+            self.assertEqual(check(self.PATH, data), ([("tables", 0, len(data), "unparsed")],
+                                                      []), data)
+
+    def test_trivial_and_public_runs_of_a_token_are_cleared(self):
+        corpus = nintendo_bytes.Corpus([("names.py", b"'" + TEXT_BYTES[10:40] + b"'")])
+        data = table_file("B 10 " + ROM[ZEROS:ZEROS + 8].hex(), "B 20 " + TEXT_BYTES[10:40].hex())
+        self.assertEqual(check(self.PATH, data, corpus),
+                         ([], [("tables", 8, "trivial"), ("tables", 30, "ladxr-public")]))
+
+    def test_an_explicit_scope_selects_the_view(self):
+        data = table_file("B 10 " + ROM[100:104].hex())
+        self.assertEqual(check(GENERAL, data, scope="tables")[0][0][0], "tables")
+        self.assertEqual(check(self.PATH, data, scope="strict")[0][0][0], "hex")
 
 class WritesView(unittest.TestCase):
     PATH = CASE + "rom_writes.txt"
@@ -542,10 +607,16 @@ class SelfProof(unittest.TestCase):
             ("ReadSets", NeverRead, "writes-literal"),
             ("ReadSets", KnowsNothing, "writes-invariant-known"),
             ("_token_length", lambda field: 0, "writes-invariant"),
-            ("_check_writes", lambda data, index, corpus, min_len, reads:
-             real_writes(data, index, corpus, min_len, None), "writes-computed"),
+            ("_check_tokens", lambda view, data, index, corpus, min_len, reads:
+             real_tokens(view, data, index, corpus, min_len, None), "writes-computed"),
+            ("TABLES_PREFIX", "nowhere/", "tables-literal"),
+            ("_table_tokens", lambda data: None, "tables-below"),
+            ("_check_tokens", lambda view, data, index, corpus, min_len, reads:
+             real_tokens(view, data, index, corpus, min_len, reads or planted_reads()),
+             "tables-literal"),
         ]
-        real_writes = nintendo_bytes._check_writes
+        real_tokens = nintendo_bytes._check_tokens
+        planted_reads = lambda: nintendo_bytes.planted_reads(nintendo_bytes.planted_rom())
         for name, value, case in broken:
             with patched(name, value):
                 self.assertEqual(nintendo_bytes.self_test(), case, name)
@@ -607,7 +678,7 @@ class CommandLine(unittest.TestCase):
         real = nintendo_bytes.TOP
         nintendo_bytes.TOP = self.dir
         try:
-            strict = self.write("data/ladx/t.bin", ROM[100:104])
+            strict = self.write("tests/ladx/extract/t.bin", ROM[100:104])
             general = self.write("data/t.bin", ROM[100:104])
             code, lines = self.run_main(strict, general)
         finally:

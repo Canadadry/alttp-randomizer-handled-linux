@@ -80,11 +80,11 @@ class Pushes(unittest.TestCase):
                                  r"[0-9a-f]{12}\): setup: no inventory at ")
 
     def test_the_scope_follows_the_pushed_path(self):
-        status, output = self.push(lambda r: r.commit("c", [("data/ladx/a.bin", ROM[300:305]),
-                                                            ("data/a.bin", ROM[300:315])]))
+        status, output = self.push(lambda r: r.commit("c", [
+            ("tests/ladx/extract/a.bin", ROM[300:305]), ("data/a.bin", ROM[300:315])]))
         self.assertEqual(status, 1)
-        self.assertRegex(output, r"push-gate: refused: data/ladx/a.bin \(blob [0-9a-f]{12}\): "
-                                 r"literal run of 5 bytes at @0 \(raw, strict\)")
+        self.assertRegex(output, r"push-gate: refused: tests/ladx/extract/a.bin \(blob "
+                                 r"[0-9a-f]{12}\): literal run of 5 bytes at @0 \(raw, strict\)")
         self.assertNotIn("data/a.bin", output)
 
     def test_a_link_in_a_binary_file_is_refused(self):
@@ -94,11 +94,28 @@ class Pushes(unittest.TestCase):
         self.assertIn("push-gate: refused: the link is in commit ", output)
 
     def test_a_literal_only_in_an_intermediate_commit_is_refused(self):
-        status, output = self.push(lambda r: (r.commit("add", [("data/ladx/s.bin", ROM[100:106])]),
-                                              r.commit("drop", removed=["data/ladx/s.bin"])))
+        path = "tests/ladx/extract/s.bin"
+        status, output = self.push(lambda r: (r.commit("add", [(path, ROM[100:106])]),
+                                              r.commit("drop", removed=[path])))
         self.assertEqual(status, 1)
-        self.assertRegex(output, r"push-gate: refused: data/ladx/s.bin \(blob [0-9a-f]{12}\): "
-                                 r"literal run of 6 bytes at @0 \(raw, strict\)")
+        self.assertRegex(output, r"push-gate: refused: tests/ladx/extract/s.bin \(blob "
+                                 r"[0-9a-f]{12}\): literal run of 6 bytes at @0 \(raw, strict\)")
+
+    def test_a_patch_table_is_checked_in_the_tables_scope(self):
+        text = push_gate.planted_text(ROM)
+        table = push_gate._planted_table(ROM[0x1080:0x1084].hex())
+        status, output = self.push(lambda r: r.commit("t", [("data/ladx/maker.txt", table)]))
+        self.assertEqual(status, 1)
+        self.assertRegex(output, r"push-gate: refused: data/ladx/maker.txt \(blob "
+                                 r"[0-9a-f]{12}\): literal run of 4 bytes at @%d \(tables, strict\)"
+                                 % table.index(ROM[0x1080:0x1084].hex().encode()))
+        syntax = push_gate._planted_table("00").replace(b"E 0", b"E " + text[51:59])
+        status, output = self.push(lambda r: r.commit("t", [("data/ladx/maker.txt", syntax)]))
+        self.assertEqual(status, 0, output)
+        status, output = self.push(lambda r: r.commit("t", [("data/ladx/maker.txt", b"x\n")]))
+        self.assertEqual(status, 1)
+        self.assertIn("data/ladx/maker.txt", output)
+        self.assertIn("(tables, unparsed)", output)
 
     def test_a_literal_written_as_hex_is_refused(self):
         status, output = self.push(

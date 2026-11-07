@@ -1,5 +1,5 @@
 """Usage: python3 -I tests/ladx/oracle/nintendo_bytes.py [--rom <file>] [--ladxr <dir>]
-       [--inventory <file>] [--scope strict|general|writes] [--min <n>] [--verbose] <file-or-dir>...
+       [--inventory <file>] [--scope strict|general|writes|tables] [--min <n>] [--verbose] <file-or-dir>...
 
 The Nintendo-bytes check: prints one `LITERAL <path> <view> @<offset> <length> bytes <scope>` line
 per run of a file that also occurs in the ROM (--rom, default tmp/ladx/base.gbc) and is not
@@ -8,8 +8,9 @@ trivial, <l> low-info, <p> ladxr-public, <c> computed, <i> invariant`; exit 1 wh
 Never prints the bytes themselves. --verbose adds `CLEARED <path> <view> @<offset> <length> bytes
 <category>`.
 
-Policy. Inside a case folder (`tests/ladx/cases|combos/<case>/`), `run.txt` and `spoiler.json`
-are `general` and `rom_writes.txt` is `writes`; any other path under STRICT_PREFIXES (ROM-derived
+Policy. Every file under `data/ladx/` (the patch tables) is `tables`. Inside a case folder
+(`tests/ladx/cases|combos/<case>/`), `run.txt` and `spoiler.json` are `general` and
+`rom_writes.txt` is `writes`; any other path under STRICT_PREFIXES (ROM-derived
 artifacts) is `strict`, any other path `general` (--scope overrides). Views: `raw`; `hex`, maximal
 hex-digit runs decoded at both nibble alignments; `bytelist`, lists of 0xNN or $NN tokens
 separated by commas and whitespace. Minimum contiguous match (THRESHOLDS): strict 4 in every
@@ -17,7 +18,9 @@ view; general raw 16, hex and bytelist 8; --min replaces them all and the summar
 (override)`. Scope `writes`: the file must parse as a write log (write_log.py), else it is one
 `writes ... unparsed` literal; its literal tokens are decoded at their byte alignment (view
 `writes`, WRITES_MIN bytes), the rest of its text (offsets, tags, references) is checked at the
-general thresholds. Clearances, counted: `trivial` (an arithmetic progression mod 256),
+general thresholds. Scope `tables` likewise: the file must parse with tables.py, else one `tables
+... unparsed` literal; the literal tokens of its B and T records at WRITES_MIN (view `tables`),
+with neither the `computed` nor the `invariant` clearance; the rest at the general thresholds. Clearances, counted: `trivial` (an arithmetic progression mod 256),
 `low-info` (at most 3 distinct values, general only), `ladxr-public` (the whole run occurs in the
 text files of the LADXR checkout --ladxr, default LADXR_DIR or tests/ladx/oracle/ladxr, at
 LADXR_PIN, or in their decoded hex-digit runs; else a `setup:` line), `computed` (view `writes`
@@ -47,8 +50,8 @@ DEFAULT_INVENTORY = os.path.join(TOP, "notes", "ladx-inventory.md")
 LADXR_PIN = "4325207e4e55076e05f209fbdf16b860a90e42ef"
 
 
-STRICT_PREFIXES = ("data/ladx/", "tests/ladx/cases/", "tests/ladx/combos/",
-                   "tests/ladx/extract/")
+STRICT_PREFIXES = ("tests/ladx/cases/", "tests/ladx/combos/", "tests/ladx/extract/")
+TABLES_PREFIX = "data/ladx/"
 THRESHOLDS = {
     ("strict", "raw"): 4, ("strict", "hex"): 4, ("strict", "bytelist"): 4,
     ("general", "raw"): 16, ("general", "hex"): 8, ("general", "bytelist"): 8,
@@ -75,9 +78,12 @@ CASE_FILE_SCOPES = {"run.txt": "general", "spoiler.json": "general", "rom_writes
 
 
 def scope_of(path):
-    """The policy of a repository-relative path: 'writes' or 'general' for a case folder's
-    golden files (CASE_FILE_SCOPES), else 'strict' under STRICT_PREFIXES, else 'general'."""
+    """The policy of a repository-relative path: 'tables' under TABLES_PREFIX, 'writes' or
+    'general' for a case folder's golden files (CASE_FILE_SCOPES), else 'strict' under
+    STRICT_PREFIXES, else 'general'."""
     path = path.replace(os.sep, "/")
+    if path.startswith(TABLES_PREFIX):
+        return "tables"
     m = CASE_FOLDER.fullmatch(path)
     if m and m.group(1) in CASE_FILE_SCOPES:
         return CASE_FILE_SCOPES[m.group(1)]
@@ -348,13 +354,45 @@ def _token_length(field):
     return len(field) // 2
 
 
-def _check_writes(data, index, corpus, min_len, reads):
-    """(literals, cleared) of a write log: its literal tokens at their byte alignment at
-    WRITES_MIN, the text around them at the general thresholds; one `unparsed` literal for the
-    whole file when it does not parse."""
-    parsed = _write_tokens(data)
+_TABLE_RECORDS = {b"B": 2, b"T": 3}
+
+
+def _table_tokens(data):
+    """_write_tokens' shape for a patch-table file (tables.py), with no group and no invariant
+    flag; None when tables.py's parser refuses data."""
+    tables = _sibling("tables")
+    try:
+        tables.parse(data.decode("ascii"))
+    except (UnicodeDecodeError, tables.TablesError):
+        return None
+    literals, rest = [], []
+    kept, pos = 0, 0
+    for line in data.split(b"\n"):
+        fields = line.split(b" ")
+        first = _TABLE_RECORDS.get(fields[0])
+        at = pos
+        for i, field in enumerate(fields):
+            if first is not None and i >= first and _LITERAL_TOKEN.fullmatch(field):
+                if at > kept:
+                    rest.append((kept, data[kept:at]))
+                decoded = bytes.fromhex(field.decode())
+                literals.append((at, None, decoded, bytes(len(decoded))))
+                kept = at + len(field)
+            at += len(field) + 1
+        pos += len(line) + 1
+    if kept < len(data):
+        rest.append((kept, data[kept:]))
+    return literals, rest
+
+
+def _check_tokens(view, data, index, corpus, min_len, reads):
+    """(literals, cleared) of a write log (view `writes`) or a patch-table file (view `tables`):
+    its literal tokens at their byte alignment at WRITES_MIN, the text around them at the general
+    thresholds; one `unparsed` literal for the whole file when it does not parse. reads (writes
+    only) enables the `computed` and `invariant` clearances."""
+    parsed = (_write_tokens if view == "writes" else _table_tokens)(data)
     if parsed is None:
-        return [("writes", 0, len(data), "unparsed")], []
+        return [(view, 0, len(data), "unparsed")], []
     tokens, rest = parsed
     literals, cleared = [], []
     n = min_len or WRITES_MIN
@@ -367,9 +405,9 @@ def _check_writes(data, index, corpus, min_len, reads):
                  and not reads.knows(run) else None)
             where = start + 2 * off
             if category:
-                cleared.append(("writes", where, length, category))
+                cleared.append((view, where, length, category))
             else:
-                literals.append(("writes", where, length, "strict"))
+                literals.append((view, where, length, "strict"))
     starts = [start for start, _ in rest]
     joined = b"\n".join(piece for _, piece in rest)
     bases, at = [], 0
@@ -381,14 +419,14 @@ def _check_writes(data, index, corpus, min_len, reads):
         i = bisect.bisect_right(bases, off) - 1
         return starts[i] + off - bases[i]
 
-    for view, runs in VIEWS:
-        m = min_len or THRESHOLDS[("general", view)]
+    for general_view, runs in VIEWS:
+        m = min_len or THRESHOLDS[("general", general_view)]
         for off, run in runs(joined, index, m):
             category = _clearance(run, "general", corpus)
             if category:
-                cleared.append((view, where(off), len(run), category))
+                cleared.append((general_view, where(off), len(run), category))
             else:
-                literals.append((view, where(off), len(run), "general"))
+                literals.append((general_view, where(off), len(run), "general"))
     return literals, cleared
 
 
@@ -396,12 +434,14 @@ def check_blob(path, data, index, corpus, scope=None, min_len=None, reads=None):
     """(literals, cleared) for the blob data at the repository-relative path: literals as
     [(view, offset, length, scope)], cleared as [(view, offset, length, category)], both sorted by
     offset. scope ('strict', 'general' or 'writes') overrides the path's; min_len overrides every
-    threshold; reads, a ReadSets, enables the `computed` clearance of the writes view."""
+    threshold; reads, a ReadSets, enables the `computed` and `invariant` clearances of the writes
+    view (never of the tables view)."""
     scope = scope or scope_of(path)
-    assert scope in ("strict", "general", "writes"), scope
+    assert scope in ("strict", "general", "writes", "tables"), scope
     key = lambda run: (run[1], run[0], run[2])
-    if scope == "writes":
-        literals, cleared = _check_writes(data, index, corpus, min_len, reads)
+    if scope in ("writes", "tables"):
+        literals, cleared = _check_tokens(scope, data, index, corpus, min_len,
+                                          reads if scope == "writes" else None)
         return sorted(literals, key=key), sorted(cleared, key=key)
     literals, cleared = [], []
     for view, runs in VIEWS:
@@ -555,7 +595,7 @@ def _planted_cases(rom):
         "hex": lambda run: b"x = 7" + run.hex().upper().encode() + b";\n",
         "bytelist": lambda run: b"db " + ", ".join("$%02X" % b for b in run).encode() + b"\n",
     }
-    paths = {"strict": "data/ladx/planted.bin", "general": "notes/planted.c"}
+    paths = {"strict": "tests/ladx/extract/planted.bin", "general": "notes/planted.c"}
     # The policy table restated, not read from THRESHOLDS, so that an edit there fails the proof.
     expected = {"strict": {"raw": 4, "hex": 4, "bytelist": 4},
                 "general": {"raw": 16, "hex": 8, "bytelist": 8}}
@@ -584,7 +624,36 @@ def _planted_cases(rom):
         ("general-binary-corpus", general, rom[4000:4040], [("raw", 40)], []),
     ]
     cases += _planted_case_folder(rom)
+    cases += _planted_tables(rom)
     return cases
+
+
+def _planted_tables(rom):
+    """The planted files of the patch tables' policy: literal tokens at 4 bytes at their byte
+    alignment with no `computed` clearance, record syntax and other text at the general
+    thresholds, a file tables.py refuses one literal."""
+    path = "data/ladx/maker.txt"
+
+    def table(*records):
+        return ("ladx-tables 1\ngroup maker\ntables texts\nunit maker.1 race\nE 0\n"
+                + "".join(r + "\n" for r in records)).encode()
+
+    text = rom[0x2300:0x2300 + len(PLANTED_TEXT)]
+    unparsed = table("B 10 0")
+    return [
+        ("tables-below", path, table("B 10 " + rom[0x900:0x903].hex()), [], []),
+        ("tables-literal", path, table("B 10 =1 " + rom[0x900:0x904].hex()), [("tables", 4)],
+         []),
+        ("tables-not-computed", path, table("T texts 2 " + rom[0x900:0x908].hex()),
+         [("tables", 8)], []),
+        ("tables-misaligned", path, table("B 10 0" + rom[0x900:0x908].hex() + "0"), [], []),
+        ("tables-syntax", path, table("B 10 00").replace(b"race\nE 0", b"race\nE "
+                                                         + text[51:59]),
+         [], []),
+        ("tables-order-general", "data/ladx/order.txt",
+         b"ladx-tables-order 1\nsection a.py f\nC maker - say('" + text[0:12] + b"')\n", [], []),
+        ("tables-unparsed", path, unparsed, [("tables", len(unparsed))], []),
+    ]
 
 
 def planted_inventory(rows, coverage=()):
@@ -702,7 +771,7 @@ def main(argv):
     parser.add_argument("--rom", default=DEFAULT_ROM)
     parser.add_argument("--ladxr", default=os.environ.get("LADXR_DIR") or DEFAULT_LADXR)
     parser.add_argument("--inventory", default=DEFAULT_INVENTORY)
-    parser.add_argument("--scope", choices=("strict", "general", "writes"))
+    parser.add_argument("--scope", choices=("strict", "general", "writes", "tables"))
     parser.add_argument("--min", type=int)
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("paths", nargs="+")

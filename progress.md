@@ -66,6 +66,11 @@
       - [x] KS-match, invariant clearance and budget
       - [x] Goldens committed, README and docs
   - [ ] Step 2.6 Patch tables
+    - [x] Chunk 1: table format and checks
+    - [ ] Chunk 2: units, keys and coverage planning
+    - [ ] Chunk 3: tables built with the ROM
+    - [ ] Chunk 4: replay over every case
+    - [ ] Chunk 5: random sample combos
   - [ ] Step 2.7 Extraction fixtures
   - [ ] Step 2.8 Nintendo-bytes check over everything committed
   - [ ] Step 2.9 Full-ROM check target

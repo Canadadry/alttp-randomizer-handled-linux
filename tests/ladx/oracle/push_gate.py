@@ -35,7 +35,7 @@ BYTES_PATH = "tests/ladx/oracle/nintendo_bytes.py"
 BRANCH_HOOK_PATH = ".claude/hooks/no_claude_branch.sh"
 LADXR_PATH = "tests/ladx/oracle/ladxr"
 INVENTORY_PATH = "notes/ladx-inventory.md"
-CHECK_MODULES = ("write_log.py", "inventory_check.py", "known_source.py")
+CHECK_MODULES = ("write_log.py", "inventory_check.py", "known_source.py", "tables.py")
 ALLOWED_UNTRACKED = "docs/prd/"
 MIN_LINK = 8
 
@@ -346,6 +346,13 @@ def _planted_log(group, data):
     return ("ladx-rom-writes 1\ntables texts\nG %s\nB 10 %s\n" % (group, data.hex())).encode()
 
 
+def _planted_table(data_hex):
+    """A patch table of group maker: one unit keyed by race whose entry writes data_hex as one
+    literal token at offset 0x10."""
+    return ("ladx-tables 1\ngroup maker\ntables texts\nunit maker.1 race\nE 0\nB 10 %s\n"
+            % data_hex).encode()
+
+
 def _cases(rom):
     """[(name, setup, unset_link, expected substring or None for a pass)]."""
     link = PLANTED_LINK.encode()
@@ -362,7 +369,7 @@ def _cases(rom):
         ("link-in-parent", lambda r: (r.commit("add", [("old.txt", PLANTED_LINK + "\n")]),
                                       r.commit("drop", removed=["old.txt"])),
          False, "the link is in commit"),
-        ("strict-rom-4", lambda r: r.commit("slice", [("data/ladx/s.bin",
+        ("strict-rom-4", lambda r: r.commit("slice", [("tests/ladx/extract/s.bin",
                                                         b"<" + rom[2000:2004] + b">")]),
          False, "literal run of 4 bytes at @1 (raw, strict)"),
         ("general-english-12", lambda r: r.commit("say", [("notes/n.md", b"<" + text[:12] + b">")]),
@@ -386,6 +393,9 @@ def _cases(rom):
         ("case-writes-unparsed", lambda r: r.commit("log", [("tests/ladx/cases/c/rom_writes.txt",
                                                              b"ladx-rom-writes 2\n")]),
          False, "(writes, unparsed)"),
+        ("table-literal", lambda r: r.commit("table", [(
+            "data/ladx/maker.txt", _planted_table(rom[0x1080:0x1084].hex()))]),
+         False, "literal run of 4 bytes at @66 (tables, strict)"),
         ("rom-slice-removed", lambda r: (r.commit("add", [("s.bin", rom[3000:3020])]),
                                          r.commit("drop", removed=["s.bin"])),
          False, "literal run of 20 bytes"),

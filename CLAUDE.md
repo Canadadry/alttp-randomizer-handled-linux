@@ -66,7 +66,10 @@ in `docs/`, then `README.md`.
   `push_gate.py`, Phase 2's push gate; `read_trace.py`, the ROM read
   and write trace; `inventory_check.py`, the grep-diff and table check of
   `notes/ladx-inventory.md`, Phase 2's inventory of `generateRom` settled
-  on real data; `read_check.py`, the check of real read traces against it),
+  on real data; `read_check.py`, the check of real read traces against it;
+  `tables.py`, the format of the patch tables `data/ladx/` (Phase 2 step
+  6: `order.txt` and one `<group>.txt` per `table` group, documented in its
+  docstring; `parse`, `render`, `select` and `check`)),
   `fetch_rom.sh`, the ROM fetcher, proved by its own run, and
   `inventory_trace.sh`, the inventory's real-data driver; the
   hand-written inputs `tier1.txt`,
@@ -161,6 +164,20 @@ in `docs/`, then `README.md`.
   `ladx_cases.py list [<name>...]`
   prints the case directories as `ladx_oracle.py cases` prints a case list,
   after the same comparison.
+- `python3 -I tests/ladx/oracle/tables.py check [--root <dir>] [--inventory
+  <file>] [--inputs <dir>]` (no ROM, no LADXR, no network; not yet in
+  `make test`, which gains it as `ladx-tables` once `data/ladx/` exists)
+  proves itself on planted trees, then checks the tables under `<root>`
+  (default `data/ladx/`) against the inventory, `tier1.txt` and
+  `settings.txt`: every file parses, `order.txt`'s rows are the inventory's
+  `table` and `C` rows in its section order with their sides and groups,
+  one file per `table` group and no other, every `table` row in one unit
+  (numbered in first-row order, a unit's rows consecutive among the table
+  rows), no duplicate tuple, every value in its component's domain
+  (tier-1 values, a setting outside tier 1 its default, `asm:` constants
+  0/1, `count` decimal); one `MISSING`, `EXTRA`, `BADFILE`, `BADROW`, `DUP`
+  or `BADKEY` line per mismatch (exit 1), else `ladx-tables: <u> units in
+  <g> groups, <e> entries, <s> bytes`; a malformed input exits 2.
 - The LADX oracle, outside the net (it needs git, the network for GitHub and
   python3 >= 3.11, else a `setup:` line; no ROM): `tests/ladx/oracle/setup.sh
   [--fresh]` clones LADXR at its pin into `LADXR_DIR` (default
@@ -275,10 +292,10 @@ in `docs/`, then `README.md`.
   or `-E` (both drop `PYTHONHASHSEED`).
 - The Nintendo-bytes check, outside the net (python3 and git):
   `python3 -I tests/ladx/oracle/nintendo_bytes.py [--rom <file>] [--ladxr
-  <dir>] [--inventory <file>] [--scope strict|general|writes] [--min <n>]
+  <dir>] [--inventory <file>] [--scope strict|general|writes|tables] [--min <n>]
   [--verbose] <file-or-dir>...` proves itself first on planted files against
   a planted synthetic ROM, corpus and inventory, one per scope, view and
-  clearance (`nintendo-bytes: self-test, 51 planted files as expected`, else
+  clearance (`nintendo-bytes: self-test, 58 planted files as expected`, else
   `self-test failed: <case>`, exit 1). Then
   it prints one `LITERAL <path> <view> @<offset> <length> bytes <scope>`
   line per uncleared run of a file that also occurs in the ROM (`--rom`,
@@ -286,16 +303,26 @@ in `docs/`, then `README.md`.
   files, rom <sha1>, ladxr <short>, <k> literal runs, cleared <t> trivial,
   <l> low-info, <p> ladxr-public, <c> computed, <i> invariant`; exit 1
   when `k > 0`. Scope
-  by repository-relative path: in a case folder
+  by repository-relative path: every file under `data/ladx/` (the patch
+  tables) is `tables`; in a case folder
   (`tests/ladx/cases|combos/<case>/`) `run.txt` and `spoiler.json` are
   `general` and `rom_writes.txt` is `writes`; else `strict` under
-  `data/ladx/`, `tests/ladx/cases/`, `tests/ladx/combos/`,
+  `tests/ladx/cases/`, `tests/ladx/combos/`,
   `tests/ladx/extract/` (the ROM-derived artifacts), `general` for any
   other path or a file outside the repository (`--scope` overrides). Scope
   `writes`: the file must parse as a write log (else one `writes ...
   unparsed` literal), its literal tokens are checked at 4 bytes at their
   byte alignment (view `writes`), the rest of its text at the general
-  thresholds. Views:
+  thresholds. Scope `tables`: the file must parse with `tables.py`'s
+  parser (else one `tables ... unparsed` literal), the literal tokens of
+  its `B` and `T` records are checked at 4 bytes at their byte alignment
+  (view `tables`) with neither the `computed` nor the `invariant`
+  clearance, the rest of its text at the general thresholds. This is a
+  deliberate change of step 2.1's strict rule for `data/ladx/` (Phase 2
+  step 6): measured on table-group records (~100 KB, 4 goldens' worth),
+  the strict scope gave 107 literal runs, all record syntax coinciding
+  with ROM bytes (104 raw-view, like `T texts 7d` against ROM text, 3
+  hex-view at the other nibble alignment), none ROM content. Views:
   `raw`; `hex` (maximal hex-digit runs, both nibble alignments); `bytelist`
   (lists of `0xNN`/`$NN` tokens separated by commas and whitespace).
   Minimum contiguous match: strict 4 bytes in every view; general raw 16,
@@ -356,15 +383,16 @@ in `docs/`, then `README.md`.
   it is armed,
   every push needs `LADX_ROM_URL` exported in the same shell command as
   `git push`, the ROM and the pinned LADXR checkout; a refusal for one of
-  them is a setup problem, not a bug. `--self-test` makes 20 planted pushes
+  them is a setup problem, not a bug. `--self-test` makes 21 planted pushes
   through the installed chain in a planted clone with a planted ROM, link
   and LADXR checkout (among them a 4-byte ROM run under a strict path, a
   16-byte one and an 8-byte `bytelist` under general paths, refused; a
   12-byte English coincidence and a run of the planted corpus, passing;
   a case folder's `run.txt` under the general scope and a `computed` run of
   its `rom_writes.txt`, passing, a literal token in the group's read set and
-  an unparseable log, refused;
-  `push-gate: self-test, 20 planted pushes as expected`, else one
+  an unparseable log, refused; a 4-byte literal token of a patch table
+  under `data/ladx/`, refused in the `tables` scope;
+  `push-gate: self-test, 21 planted pushes as expected`, else one
   `self-test failed: <case>` line each); `--install` runs it, then writes
   the chain into the common hooks directory only over no hook,
   `no_claude_branch.sh`'s own or the chain (else `the gate is NOT armed`,

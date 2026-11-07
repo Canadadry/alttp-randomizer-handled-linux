@@ -206,6 +206,12 @@ bytes its group reads, from the inventory's `Reads (trace)` ranges) and
 `invariant` (every byte of the run in its record's `I` ranges, and not KS
 bytes). Every golden must give `0 literal runs`.
 
+The patch tables under `data/ladx/` (format in `oracle/tables.py`) are in
+scope `tables`: every file must parse with `tables.py`, the literal tokens
+of their `B` and `T` records are checked at 4 bytes at their byte alignment
+with neither the `computed` nor the `invariant` clearance, and the rest of
+the text at the general thresholds.
+
 ## Budget
 
 `ladx_cases.py check` fails (`BUDGET`) over: `rom_writes.txt` 224 KiB per
