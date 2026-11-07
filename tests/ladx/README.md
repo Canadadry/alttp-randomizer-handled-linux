@@ -250,7 +250,7 @@ follow the table groups' encoding rule, the fragment rule included
   `tables <table>...` (ROMWithTables' tables in their order, as in a write
   log), then its units.
 - `<group>.txt` for a `C` group, its **constants file** (today
-  `bank3e.txt`, `bosses.txt`, `endscreen.txt`, `goal.txt` and `items.txt`): the settings-only writes of the
+  `bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt` and `items.txt`): the settings-only writes of the
   group's call that C cannot compute (LADXR's assembler, LADXR's binary
   files), in the same format; below.
 
@@ -394,7 +394,10 @@ genie's `ld [hl], $91` (bank 4 0x0521) and the eagle check `cp $06`
 (bank 2 0x1FC8); `bosses.3` is `changeBosses(rom, [3, 6, 5, 0, 4, 2, 1,
 7, 8])` kept at the fish's and the eagle's `ld hl` (bank 3 0x1A0F and
 0x1A04, their operands placeholders) and the facade's three `cp $00`
-(bank 4 0x121D, 0x1226, 0x127F). `tables.py check`
+(bank 4 0x121D, 0x1226, 0x127F). `enemizer` (1 unit, 19 bytes):
+`enemizer.1` is `randomizeEnemies(rom, bytes(16))` kept at the colour
+ghouls' two patches (`call $7F00` at bank 0x36 0x23DD, the 16-byte check
+at 0x3F00), its rooms dropped. `tables.py check`
 accepts at most one such file per `C` group of the inventory (any other
 name is `EXTRA`), checks its domains and duplicates, and matches its
 units to no row.
@@ -730,10 +733,10 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   hand-built graph with `KeyLocation` spots and an unreached one. Then
   it opens the real
   `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
-  file): 10 groups (`bank3e.txt`, `bosses.txt`, `endscreen.txt`, `goal.txt` and `items.txt` included), 397 units, 1006 entries, one unit keyed by `count`; and
+  file): 11 groups (`bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt` and `items.txt` included), 398 units, 1007 entries, one unit keyed by `count`; and
   for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
   supported, every unit without `count` selects an entry. It prints
-  `test_tables: data/ladx opened (10 groups, 397 units, 1006 entries); <n>
+  `test_tables: data/ladx opened (11 groups, 398 units, 1007 entries); <n>
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
@@ -979,6 +982,33 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   registry (right after `entrances`, ROM, no draw). It prints
   `test_bosses: changeBosses and changeMiniBosses on planted rooms of a
   synthetic ROM (<c> checks)`.
+  `test_sprite_data` renders `ladx_sprite_data` over rooms 0 to 0x315
+  and entities 0 to 255 (`%03x %02x none`, or `%03x %02x` then ` <slot>:<values>`
+  per pair, values sorted, `%02x`, comma-separated; absent keys skipped),
+  without and with the evil shop, and compares each text's SHA-1 and
+  size with LADXR's `SPRITE_DATA` at the pin rendered the same way
+  (unmutated, then with `SPRITE_DATA[0x77] = SPRITE_DATA[0x4D]`), after
+  spot checks (an absent key, `None`, a lambda's `None`, the moblin
+  lambda's branches, the evil shop, a two-value set). It prints
+  `test_sprite_data: SPRITE_DATA equal to LADXR's over every room and
+  entity, with and without the evil shop`.
+  `test_enemizer` checks `ladx_enemizer_pick` on eleven planted rooms in
+  one generator seeded `enemizer-test`, without and with the evil shop,
+  against LADXR's own `randomizeEnemies` at the pin run with a stub
+  `RoomEditor` on the same rooms (each room's new types and draw count):
+  the moblin lambda, other entities' slots, a gravestone with a warp and
+  under six enemy types, every slot taken (redraws until a `None` pick),
+  the evil shop's 0x77, two-value sets, empty intersections in slots 0
+  and 1, a room with no enemy; then `ladx_enemizer_rooms` on a synthetic
+  ROM whose 256 overworld rooms are planted (rooms 0x10 and 0x20 stored
+  with LADXR's picks, logic-important 0x24 and enemy-free 0x30 untouched,
+  four draws; a malformed room failing); then the group in the pipeline
+  with a planted `enemizer.txt` (the seed record and draws through
+  `rnd`'s sink, one segment with the rooms and the unit; nothing drawn or
+  written on `enemies=default`; a file without 1 unit or no `rnd`
+  failing) and the registry (right after `bosses`, ROM, no draw). It
+  prints `test_enemizer: randomizeEnemies' picks against LADXR on planted
+  rooms, the room loop and the group on a synthetic ROM (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1227,7 +1257,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `title` and `endscreen`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `title` and `endscreen`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1548,6 +1578,37 @@ load or store, or a mapping out of range, fails the group; a raise ends
 the walk `RAISED`. It needs the ROM (`rom-group bosses`), draws nothing
 and has no `draw`.
 
+**`enemizer`** (`patches.enemies.randomizeEnemies(rom, seed)`,
+`ladx_group_enemizer`), only when `enemies` is `overworld` (else nothing
+drawn or written), with `data/ladx/enemizer.txt` ("Patch tables", 1
+unit). Its generator is its own `Random(seed)`, the run's seed bytes
+(`ladx_randomizer_seed`), labelled `rnd` like every generator but the
+global one (the oracle's tracer), traced through `rnd`'s sink with stage
+`patches.enemies:randomizeEnemies`: its `seed` record, then its draws,
+between `bosses`' row and `endscreen`'s. The sprite slots come from
+`ladx_sprite_data.h`, `entityData.SPRITE_DATA` at the pin (lambdas
+resolved on the room number; with `evilshop` set, entity 0x77 answers as
+0x4D, `addEvilShop`'s mutation, which runs earlier in `generateRom`),
+checked by `test_sprite_data` against LADXR's own table. For rooms 0 to
+0xFF but 0x24, 0xE2, 0xF2, 0x5A and 0x58, in order, the room is loaded
+from the encoder's state ("Room editor"); `ladx_enemizer_pick` scans its
+entities (an `ENEMY_TYPES` member is an enemy, any other entity with
+sprite data intersects each of its slots' value sets, a slot starting
+unset; an empty set stays empty), returns when there is no enemy (the
+room is not stored), sets slot 3 to {0x82} when a non-warp object is a
+pushable gravestone 0xC5, then for each enemy type in ascending order
+draws `rnd.choice` over the 43 sorted `ENEMY_TYPES` until the pick's
+data is `None` or none of its set slots is disjoint from its values,
+meets the pick's slots, and rewrites every entity of that type; the room
+is stored (objects, entities, overlay). Then the file's unit. LADXR's
+`while True` ends: `0x1B` and `0x9B` have `None` data. Entities have no
+origin. It needs the ROM (the rooms; `rom-group enemizer`) and has no
+`draw`: how many draws it makes depends on every overworld room's
+entities, read from the ROM, so a ROM-free run of an `enemies` case lacks
+its trace lines and numbers `endscreen`'s draw lower, which only
+`e2e-rom` claims. It fails on a room that does not load or store, a file
+without 1 unit, or no `rnd`.
+
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
 0x3E 0x2F00, then, unless `race`, the short settings string's length
@@ -1559,7 +1620,7 @@ not matter, since no two writes of the call share a position.
 
 `ladx/include/ladx_room.h`: `roomEditor.py`'s `RoomEditor` at the pin,
 for every `C` group that edits rooms (`goal`, `items`, `entrances`,
-`bosses`, and later `enemizer`, `warp-home`, `sprites`). Caller-owned (`LadxRoom`,
+`bosses`, `enemizer`, and later `warp-home`, `sprites`). Caller-owned (`LadxRoom`,
 about 10 KB; the pipeline holds one as `p->room`), no allocation.
 `ladx_room_load(r, enc, room, alt)` reads, from the encoder's current
 state, an index room (0..0x31F: objects from `rooms_overworld_top`
@@ -1739,13 +1800,14 @@ A claimed `C` group that draws also claims its `trace` lines: those of
 (`run_e2e.py`'s `GROUP_TRACE`; today `marin`:
 `patches.aesthetics:getMarinStartingText` and `utils:randomNumber`;
 `hints`: `hints:addHints`; `music`: `patches.music:randomizeMusic`;
+`enemizer`: `patches.enemies:randomizeEnemies`;
 `endscreen`: `patches.endscreen:updateEndScreen`),
 whole (number, generator, arguments, result, words) and in order,
 golden against C, wherever they fall in the trace. The golden's number
 is first lowered by the count of its trace lines before it drawn in a
-frame C does not port (in neither the fill stages nor `GROUP_TRACE`, such
-as `patches.enemies:randomizeEnemies`, whose own generator C does not run
-yet): the trace projected onto the ported frames, as C numbers it. A
+frame C does not port (in neither the fill stages nor `GROUP_TRACE`;
+none at the pin since `enemizer` is ported, the rule kept for any later
+one): the trace projected onto the ported frames, as C numbers it. A
 draw of a ported frame is never skipped, so an extra or missing draw of
 C still shifts the number. They are claimed with
 the group: by `e2e` for a `group` line, by `e2e-rom` for a `rom-group`
@@ -1849,8 +1911,8 @@ tokens)`; `rom-group marin` with C's first `marin` trace line's result
 changed `PASS`es under `e2e` (skipped) and is `DIVERGENT` under
 `e2e-rom` with `trace marin: line 1:`, and C's `run.txt` without the
 `marin` trace lines is `DIVERGENT` under `e2e-rom` with `c: <end>`;
-`rom-group endscreen` on a golden holding one more trace line of
-`patches.enemies:randomizeEnemies` before its draw, later numbers
+`rom-group endscreen` on a golden holding one more trace line of a
+planted frame no table lists (`patches.planted:unported`) before its draw, later numbers
 shifted, `PASS`es under `e2e-rom`, and the same with a `hints:addHints`
 line instead is `DIVERGENT` with `trace endscreen: line 1:`; a different span list exits 1 with `KS DIFFERENT: line 3:
 boss item 3`; a ROM of another SHA-1 and no ROM exit 2 with a `setup:

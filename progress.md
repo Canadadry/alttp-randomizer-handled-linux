@@ -141,7 +141,7 @@
     - [x] Step 3.6.11 items
     - [x] Step 3.6.12 entrances
     - [x] Step 3.6.13 bosses
-    - [ ] Step 3.6.14 enemizer
+    - [x] Step 3.6.14 enemizer
     - [ ] Step 3.6.15 warp-home
     - [ ] Step 3.6.16 sprites
     - [ ] Step 3.6.17 save

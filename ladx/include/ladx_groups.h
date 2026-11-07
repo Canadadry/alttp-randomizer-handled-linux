@@ -267,4 +267,29 @@ LadxBossesStatus ladx_bosses_change(LadxEncoder *enc, LadxSpan group, LadxRoom *
 LadxBossesStatus ladx_minibosses_change(LadxEncoder *enc, LadxSpan group, LadxRoom *room, const LadxMiniboss *mapping,
 					LadxOutcome *raised);
 
+/*
+ * patches/enemies.py randomizeEnemies, when enemies is overworld: its own
+ * rnd-labelled generator seeded from the run's seed (p->rnd's sink, stage
+ * patches.enemies:randomizeEnemies), every overworld room but the five
+ * logic-important ones picked and, when it holds an enemy, stored; then
+ * data/ladx/enemizer.txt's one unit (the colour ghouls' patches). Needs
+ * p->rom and p->rnd; draws and writes nothing on another enemies value.
+ */
+int ladx_group_enemizer(LadxEncoder *enc, LadxPipeline *p);
+
+#define LADX_ENEMY_TYPE_COUNT 43 /* ENEMY_TYPES */
+
+/*
+ * One room's pick: the sprite slots its entities need (evilshop:
+ * addEvilShop's SPRITE_DATA), a pushable gravestone fixing slot 3, then
+ * each enemy type in ascending order drawn by rng.choice over the sorted
+ * ENEMY_TYPES until its slots fit, every entity of that type rewritten.
+ * *found 1 when the room holds an enemy (LADXR stores it), else 0 and
+ * nothing drawn. Any draw error is returned with r's entities unchanged.
+ */
+LadxRngStatus ladx_enemizer_pick(LadxRoom *r, LadxRng *rng, int evilshop, int *found);
+
+/* randomizeEnemies' room loop: rooms 0..0xFF less 0x24, 0xE2, 0xF2, 0x5A and 0x58, loaded from enc's state; 0 on a room that does not load or store, or a draw error. */
+int ladx_enemizer_rooms(LadxEncoder *enc, LadxSpan group, LadxRoom *room, LadxRng *rng, int evilshop);
+
 #endif

@@ -1,0 +1,296 @@
+#include "ladx_sprite_data.h"
+
+#include <stdarg.h>
+#include <stddef.h>
+
+/* n (slot, value) pairs, in LADXR's order. */
+static LadxSpriteKind set(LadxSpriteData *o, int n, ...)
+{
+	va_list ap;
+	int i;
+
+	va_start(ap, n);
+	o->count = n;
+	for (i = 0; i < n; i++) {
+		o->pair[i].slot = va_arg(ap, int);
+		o->pair[i].count = 1;
+		o->pair[i].values[0] = va_arg(ap, int);
+		o->pair[i].values[1] = 0;
+	}
+	va_end(ap);
+	return LADX_SPRITE_DATA;
+}
+
+/* One slot accepting either of two values. */
+static LadxSpriteKind either(LadxSpriteData *o, int slot, int a, int b)
+{
+	o->count = 1;
+	o->pair[0].slot = slot;
+	o->pair[0].count = 2;
+	o->pair[0].values[0] = a;
+	o->pair[0].values[1] = b;
+	return LADX_SPRITE_DATA;
+}
+
+static const int caves_b_rooms[] = {
+	0x2B6, 0x2B7, 0x2B8, 0x2B9, 0x285, 0x286, 0x2FD, 0x2F3, 0x2ED, 0x2EE, 0x2EA, 0x2EB, 0x2EC, 0x287, 0x2F1,
+	0x2F2, 0x2FE, 0x2EF, 0x2BA, 0x2BB, 0x2BC, 0x28D, 0x2F9, 0x2FA, 0x280, 0x281, 0x282, 0x283, 0x284, 0x28C,
+	0x288, 0x28A, 0x290, 0x291, 0x292, 0x28E, 0x29A, 0x289, 0x28B, 0x297, 0x293, 0x294, 0x295, 0x296, 0x2AB,
+	0x2AC, 0x298, 0x27A, 0x27B, 0x2E6, 0x2E7, 0x2BD, 0x27C, 0x27D, 0x27E, 0x2F6, 0x2F7, 0x2DE, 0x2DF,
+};
+
+static int in_caves_b(int room)
+{
+	size_t i;
+
+	for (i = 0; i < sizeof caves_b_rooms / sizeof caves_b_rooms[0]; i++)
+		if (caves_b_rooms[i] == room)
+			return 1;
+	return 0;
+}
+
+/* _moblinSpriteData. */
+static LadxSpriteKind moblin(LadxSpriteData *o, int room)
+{
+	int x = room & 0x0F, y = (room >> 4) & 0x0F;
+
+	if (room == 0x002 || room == 0x013)
+		return set(o, 1, 2, 0x9C);
+	if (room < 0x100) {
+		if (x < 0x04)
+			return set(o, 1, 2, 0x7C);
+		if (x >= 0x08 && x <= 0x0B && y >= 4 && y <= 0x07)
+			return set(o, 1, 2, 0x92);
+		return set(o, 1, 2, 0x83);
+	}
+	if (room < 0x1DF)
+		return set(o, 1, 2, 0x9C);
+	if (room < 0x200)
+		return set(o, 1, 2, 0x7C);
+	if (room < 0x276)
+		return set(o, 1, 2, 0x9C);
+	if (room < 0x300) {
+		if (x >= 2 && x <= 6 && y >= 0x0C && y <= 0x0D)
+			return set(o, 1, 2, 0x92);
+		return set(o, 1, 2, 0x7C);
+	}
+	return set(o, 1, 2, 0x9C);
+}
+
+static int in_range(int room, int lo, int hi)
+{
+	return room >= lo && room <= hi;
+}
+
+LadxSpriteKind ladx_sprite_data(int entity, int room, int evilshop, LadxSpriteData *o)
+{
+	LadxSpriteData scratch;
+
+	if (!o)
+		o = &scratch;
+	if (evilshop && entity == 0x77)
+		entity = 0x4D;
+	switch (entity) {
+	case 0x09: return set(o, 1, 2, 0xE3);
+	case 0x0B: return moblin(o, room);
+	case 0x0D: return set(o, 1, 1, 0x87);
+	case 0x0E: return set(o, 1, 1, 0x81);
+	case 0x0F: return set(o, 1, 2, 0x78);
+	case 0x10: return set(o, 1, 1, 0x42);
+	case 0x11: return set(o, 1, 2, 0x8A);
+	case 0x12: return set(o, 1, 1, 0x42);
+	case 0x13: return set(o, 4, 0, 0xe8, 1, 0xe9, 2, 0xea, 3, 0xeb);
+	case 0x14: return moblin(o, room);
+	case 0x15: return set(o, 1, 1, 0x91);
+	case 0x16: return either(o, 1, 0x91, 0x65);
+	case 0x17: return either(o, 1, 0x91, 0x65);
+	case 0x18: return set(o, 1, 3, 0x93);
+	case 0x19: return in_caves_b(room) ? set(o, 1, 2, 0x90) : set(o, 1, 0, 0x90);
+	case 0x1A: return either(o, 0, 0x90, 0x77);
+	case 0x1B: return LADX_SPRITE_NONE;
+	case 0x1C: return set(o, 1, 1, 0x91);
+	case 0x1E: return either(o, 0, 0x90, 0x77);
+	case 0x1F: return in_range(room, 0x230, 0x26B) ? set(o, 1, 0, 0x77) : set(o, 2, 0, 0x90, 3, 0x93);
+	case 0x20: return in_caves_b(room) ? set(o, 1, 2, 0x90) : set(o, 1, 0, 0x90);
+	case 0x21: return set(o, 1, 2, 0x95);
+	case 0x23: return set(o, 1, 3, 0x93);
+	case 0x24: return set(o, 2, 2, 0x94, 3, 0x9F);
+	case 0x27: return set(o, 1, 1, 0x91);
+	case 0x28: return set(o, 1, 2, 0x96);
+	case 0x29: return set(o, 1, 3, 0x98);
+	case 0x2A: return set(o, 1, 3, 0x99);
+	case 0x2C: return in_range(room, 0x15E, 0x17F) ? set(o, 1, 2, 0x9B) : set(o, 1, 3, 0x9B);
+	case 0x2D: case 0x2E: case 0x2F: case 0x30: case 0x31: case 0x35: case 0x37: case 0x38:
+		return LADX_SPRITE_NONE;
+	case 0x39: return set(o, 1, 2, 0x4F);
+	case 0x3A: return set(o, 1, 1, 0x8E);
+	case 0x3B: case 0x3C: case 0x3D:
+		return LADX_SPRITE_NONE;
+	case 0x3E: return room == 0x2A3 ? set(o, 2, 0, 0x8D, 2, 0x8F) : set(o, 1, 2, 0xE6);
+	case 0x3F: return room == 0x2A3 ? set(o, 2, 1, 0x8E, 3, 0x6A) : set(o, 2, 1, 0x6C, 3, 0xC8);
+	case 0x40: return set(o, 1, 2, 0xA3);
+	case 0x41: return LADX_SPRITE_NONE;
+	case 0x42: return room == 0x26F ? set(o, 1, 1, 0xD5) : set(o, 1, 1, 0x91);
+	case 0x43: case 0x44:
+		return LADX_SPRITE_NONE;
+	case 0x45: return set(o, 1, 1, 0x44);
+	case 0x46: case 0x47: case 0x48: case 0x49:
+		return LADX_SPRITE_NONE;
+	case 0x4A: return set(o, 1, 1, 0xd5);
+	case 0x4C: return LADX_SPRITE_NONE;
+	case 0x4D: return set(o, 2, 2, 0x88, 3, 0xC7);
+	case 0x4F: return set(o, 2, 2, 0x84, 3, 0x89);
+	case 0x50: return set(o, 1, 2, 0x97);
+	case 0x51: return set(o, 1, 3, 0x9A);
+	case 0x52: case 0x53:
+		return in_range(room, 0x120, 0x13F) ? either(o, 3, 0x7b, 0xa6) : either(o, 0, 0x7b, 0xa6);
+	case 0x54: return room == 0x2B1 ? set(o, 2, 0, 0xA0, 1, 0xA1) : set(o, 1, 3, 0x4e);
+	case 0x55: return set(o, 1, 3, 0x9d);
+	case 0x56: return set(o, 1, 3, 0x9d);
+	case 0x57: return set(o, 1, 3, 0x9e);
+	case 0x59: return set(o, 2, 2, 0xb0, 3, 0xb1);
+	case 0x5A: return set(o, 3, 0, 0x66, 2, 0xb2, 3, 0xb3);
+	case 0x5B: return set(o, 2, 2, 0xb4, 3, 0xb5);
+	case 0x5C: return set(o, 2, 2, 0xb6, 3, 0xb7);
+	case 0x5D: return set(o, 2, 2, 0xb8, 3, 0xb9);
+	case 0x5E: return set(o, 1, 2, 0xa8);
+	case 0x5F: return set(o, 2, 2, 0x62, 3, 0x63);
+	case 0x60: return in_range(room, 0x230, 0x26B) ? set(o, 1, 3, 0xaa) : set(o, 1, 2, 0xaa);
+	case 0x61: return LADX_SPRITE_NONE;
+	case 0x62: return set(o, 2, 2, 0xba, 3, 0xbb);
+	case 0x63: return set(o, 4, 0, 0xbc, 1, 0xbd, 2, 0xbe, 3, 0xbf);
+	case 0x65: return set(o, 4, 0, 0xac, 1, 0xad, 2, 0xae, 3, 0xaf);
+	case 0x66: return set(o, 1, 1, 0x91);
+	case 0x69: return set(o, 1, 0, 0x66);
+	case 0x6A: return room >= 0x100 ? set(o, 2, 1, 0x87, 2, 0x84) : set(o, 1, 1, 0x87);
+	case 0x6C: return LADX_SPRITE_NONE;
+	case 0x6D: return set(o, 1, 3, 0xA4);
+	case 0x6E: return (room & 0x0F) < 8 ? set(o, 1, 1, 0xE5) : set(o, 1, 1, 0xC4);
+	case 0x6F: return set(o, 1, 1, 0xE5);
+	case 0x70: case 0x71: case 0x72:
+		return set(o, 1, 3, 0xE7);
+	case 0x73: return set(o, 1, 3, 0xDC);
+	case 0x74: return set(o, 1, 2, 0x45);
+	case 0x75: return set(o, 1, 2, 0x43);
+	case 0x76: return room == 0x2D9 ? set(o, 1, 3, 0x74) : set(o, 1, 3, 0x4b);
+	case 0x77: return set(o, 1, 3, 0x46);
+	case 0x78: return set(o, 1, 3, 0x48);
+	case 0x79: return set(o, 1, 2, 0x47);
+	case 0x7A: return room < 0x040 ? set(o, 1, 1, 0xC6) : set(o, 1, 1, 0x42);
+	case 0x7B: return set(o, 1, 2, 0x49);
+	case 0x7C: return set(o, 1, 3, 0x40);
+	case 0x7E: return set(o, 1, 1, 0x4A);
+	case 0x7F: return set(o, 1, 3, 0x41);
+	case 0x80: return set(o, 1, 1, 0x4C);
+	case 0x81: case 0x82:
+		return in_range(room, 0x230, 0x26B) ? set(o, 1, 3, 0xAB) : set(o, 1, 2, 0xAB);
+	case 0x83: return set(o, 1, 1, 0x8D);
+	case 0x84: return set(o, 1, 1, 0x4D);
+	case 0x85: return set(o, 1, 2, 0x4C);
+	case 0x86: return LADX_SPRITE_NONE;
+	case 0x87: return set(o, 1, 3, 0x52);
+	case 0x88: return set(o, 1, 3, 0x53);
+	case 0x89: return set(o, 1, 2, 0x54);
+	case 0x8A: case 0x8B:
+		return LADX_SPRITE_NONE;
+	case 0x8E: return set(o, 1, 2, 0x56);
+	case 0x8F: return room == 0x1F5 ? set(o, 1, 2, 0x86) : set(o, 1, 2, 0x58);
+	case 0x90: return set(o, 1, 3, 0x59);
+	case 0x91: return set(o, 1, 2, 0x55);
+	case 0x92: return set(o, 1, 2, 0x57);
+	case 0x93: return set(o, 1, 3, 0x5A);
+	case 0x94: return set(o, 1, 2, 0x92);
+	case 0x95: return set(o, 1, 1, 0x5b);
+	case 0x96: return set(o, 1, 2, 0x5c);
+	case 0x97: return LADX_SPRITE_NONE;
+	case 0x98: return set(o, 1, 2, 0x5e);
+	case 0x99: return set(o, 1, 3, 0x60);
+	case 0x9A: return in_range(room, 0x200, 0x22F) ? set(o, 1, 0, 0x66) : set(o, 1, 0, 0xa6);
+	case 0x9B: return LADX_SPRITE_NONE;
+	case 0x9C: return set(o, 1, 3, 0x60);
+	case 0x9D: return set(o, 1, 0, 0xa6);
+	case 0x9E: return LADX_SPRITE_NONE;
+	case 0x9F: return set(o, 1, 0, 0x5f);
+	case 0xA0: return either(o, 0, 0x5f, 0x68);
+	case 0xA1: return either(o, 0, 0x5f, 0x7b);
+	case 0xA2: return set(o, 1, 3, 0x64);
+	case 0xA3: case 0xA4: case 0xA5: case 0xA6:
+		return set(o, 1, 1, 0x65);
+	case 0xA7: return set(o, 1, 0, 0x66);
+	case 0xA9: case 0xAA: case 0xAB: case 0xAC:
+		return set(o, 1, 2, 0x5d);
+	case 0xAD: return set(o, 1, 3, 0x67);
+	case 0xAE: return set(o, 1, 1, 0xE3);
+	case 0xAF: return LADX_SPRITE_NONE;
+	case 0xB0: return set(o, 1, 2, 0x8B);
+	case 0xB1: return set(o, 1, 0, 0x7b);
+	case 0xB2: return set(o, 1, 3, 0x8C);
+	case 0xB3: return set(o, 1, 3, 0x6B);
+	case 0xB4: return set(o, 1, 1, 0x6C);
+	case 0xB5: return set(o, 1, 3, 0x69);
+	case 0xB6: return set(o, 1, 3, 0x6D);
+	case 0xB7: return set(o, 1, 3, 0x71);
+	case 0xB8: return set(o, 3, 1, 0xa1, 2, 0x75, 3, 0x4e);
+	case 0xB9: return set(o, 1, 2, 0x79);
+	case 0xBA: case 0xBB:
+		return set(o, 1, 3, 0x76);
+	case 0xBC: return set(o, 1, 2, 0xa9);
+	case 0xBD: return set(o, 1, 2, 0x7a);
+	case 0xBE: return set(o, 1, 2, 0xa7);
+	case 0xBF: return set(o, 1, 2, 0x82);
+	case 0xC0: return LADX_SPRITE_NONE;
+	case 0xC1: return set(o, 1, 2, 0x8F);
+	case 0xC2: return set(o, 2, 1, 0x6C, 2, 0x8F);
+	case 0xC3: return set(o, 3, 1, 0x7d, 2, 0x7e, 3, 0x7F);
+	case 0xC4: return set(o, 2, 2, 0x6E, 3, 0x6F);
+	case 0xC5: case 0xC6:
+		return set(o, 1, 1, 0x81);
+	case 0xC7: return set(o, 4, 0, 0xC0, 1, 0xc1, 2, 0xc2, 3, 0xc3);
+	case 0xCA: return set(o, 1, 3, 0xc7);
+	case 0xCB: return set(o, 1, 1, 0x61);
+	case 0xCC: return set(o, 1, 1, 0x4A);
+	case 0xCD:
+		if (room == 0x2DD)
+			return set(o, 3, 1, 0xCC, 2, 0xCD, 3, 0xCE);
+		return room == 0x2FE ? set(o, 3, 1, 0xD1, 2, 0xD2, 3, 0x6A) : set(o, 1, 3, 0xD4);
+	case 0xCE: return set(o, 1, 3, 0x73);
+	case 0xCF: return set(o, 3, 1, 0xC9, 2, 0xCA, 3, 0xCB);
+	case 0xD0: return set(o, 1, 1, 0xC4);
+	case 0xD1: case 0xD2:
+		return set(o, 1, 3, 0xCF);
+	case 0xD3: return set(o, 1, 1, 0xC4);
+	case 0xD6: case 0xD7:
+		return set(o, 1, 1, 0x65);
+	case 0xD8: return set(o, 2, 2, 0xDA, 3, 0xDB);
+	case 0xD9: return set(o, 1, 1, 0xD9);
+	case 0xDA: return set(o, 1, 3, 0x64);
+	case 0xDB: return set(o, 1, 2, 0xDA);
+	case 0xDC:
+		if (room == 0x1E4)
+			return set(o, 2, 0, 0xDD, 2, 0xDE);
+		return room == 0x29F ? set(o, 2, 2, 0xD3, 3, 0xDD) : set(o, 1, 3, 0xDC);
+	case 0xDD: return set(o, 1, 1, 0xD5);
+	case 0xDE: return LADX_SPRITE_NONE;
+	case 0xE0: return set(o, 1, 3, 0xD4);
+	case 0xE1: return set(o, 1, 1, 0xDF);
+	case 0xE2: return set(o, 1, 3, 0xF4);
+	case 0xE3: return set(o, 1, 3, 0x8C);
+	case 0xE4: return set(o, 2, 1, 0x80, 3, 0xA5);
+	case 0xE5: return LADX_SPRITE_NONE;
+	case 0xE6: return set(o, 4, 0, 0xe8, 1, 0xe9, 2, 0xea, 3, 0xeb);
+	case 0xE7: return LADX_SPRITE_NONE;
+	case 0xE9: case 0xEA: case 0xEB:
+		return set(o, 2, 0, 0x04, 1, 0x05);
+	case 0xEC: case 0xED: case 0xEE:
+		return set(o, 1, 2, 0x06);
+	case 0xEF: case 0xF0: case 0xF1: case 0xF2: case 0xF3:
+		return set(o, 1, 3, 0x07);
+	case 0xF4: return set(o, 3, 0, 0x08, 1, 0x09, 2, 0x0A);
+	case 0xF6: case 0xF7:
+		return set(o, 2, 0, 0x0E, 1, 0x1A);
+	case 0xF8: return set(o, 3, 0, 0x0B, 1, 0x0C, 3, 0x0D);
+	case 0xF9: return set(o, 2, 0, 0x11, 2, 0x10);
+	case 0xFA: return room == 0x2F5 ? set(o, 1, 0, 0x44) : LADX_SPRITE_NONE;
+	default: return LADX_SPRITE_ABSENT;
+	}
+}

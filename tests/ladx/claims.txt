@@ -15,4 +15,5 @@ rom-group goal
 rom-group items
 rom-group entrances
 rom-group bosses
+rom-group enemizer
 rom-group title

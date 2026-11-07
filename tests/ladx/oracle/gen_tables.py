@@ -966,6 +966,9 @@ CONST_GROUPS = {
            for lst in _specific_lists()])),
     "items": ConstSpec(None, [], [], calls=_items_calls()),
     "bosses": ConstSpec(None, [], [], calls=_bosses_calls()),
+    "enemizer": ConstSpec(None, [], [], calls=[
+        ("patches.enemies.randomizeEnemies(rom, bytes(16))", [],
+         [(0x36 * 0x4000 + 0x23DD, 3), (0x36 * 0x4000 + 0x3F00, 16)])]),
 }
 ASM_CONSTS_GROUP = "asm-consts"
 BANK_SIZE = 0x4000

@@ -50,6 +50,7 @@ GROUP_TRACE = {
     "marin": ("patches.aesthetics:getMarinStartingText", "utils:randomNumber"),
     "hints": ("hints:addHints",),
     "music": ("patches.music:randomizeMusic",),
+    "enemizer": ("patches.enemies:randomizeEnemies",),
     "endscreen": ("patches.endscreen:updateEndScreen",),
 }
 PORTED_STAGES = set().union(*STAGE_TRACE.values(), *GROUP_TRACE.values())
@@ -915,7 +916,7 @@ def _rom_checks(tmp, config, golden, golden_log):
     redrawn = _replace(golden, marin[0], "-> ", "-> 1") if marin else None
     undrawn = [line for i, line in enumerate(golden) if i not in marin]
     end = [i for i, line in enumerate(golden) if line.split(" ")[3:4] == [GROUP_TRACE["endscreen"][0]]]
-    enemies = _drawn_before(golden, end[0], "patches.enemies:randomizeEnemies") if end else None
+    unported = _drawn_before(golden, end[0], "patches.planted:unported") if end else None
     hinted = _drawn_before(golden, end[0], GROUP_TRACE["hints"][0]) if end else None
     runs = [
         # (name, kwargs, expected verdict, a line the output must hold)
@@ -938,7 +939,7 @@ def _rom_checks(tmp, config, golden, golden_log):
          "DIVERGENT", "c: <end>"),
         ("a golden draw in a frame C does not port, before a claimed one, renumbered away",
          dict(gold_log=golden_log, c_log=golden_log, claims=fill + "rom-group endscreen\n", rom="ok",
-              gold_run=enemies), "PASS", "rom-groups endscreen"),
+              gold_run=unported), "PASS", "rom-groups endscreen"),
         ("a golden draw in a ported frame before a claimed one still shifts its number",
          dict(gold_log=golden_log, c_log=golden_log, claims=fill + "rom-group endscreen\n", rom="ok",
               gold_run=hinted), "DIVERGENT", "trace endscreen: line 1:"),
