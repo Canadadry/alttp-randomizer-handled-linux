@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: determinism.sh [--full [--all]]
+# Usage: determinism.sh [--full [--all [<case>...]]]
 # Runs every case of determinism_cases.txt through oracle_run.py twice (A: the setup checkout,
 # PYTHONHASHSEED=0; B: a fresh clone in another directory, PYTHONHASHSEED=1) and compares the two
 # outputs: one `same <case>` or `DIFFERENT <case>: line <n>: <A> | <B>` line per case, then a
@@ -10,7 +10,8 @@
 # `same <case>` or `DIFFERENT <case>: <file>: ...` / `DIFFERENT <case> (plain): ...` lines. It also
 # fails unless the runs differed in the working directory's `git describe`, and on a new untracked
 # file of the repository (`STRAY <path>`). --full --all does the same on every case directory of
-# tests/ladx/cases/ and tests/ladx/combos/ (ladx_cases.py list) instead of determinism_cases.txt.
+# tests/ladx/cases/ and tests/ladx/combos/ (ladx_cases.py list) instead of determinism_cases.txt,
+# only the named ones when case names follow.
 set -eu
 export LC_ALL=C
 
@@ -26,12 +27,16 @@ all=0
 case "$#:${1-}:${2-}" in
 0::) ;;
 1:--full:) full=1 ;;
-2:--full:--all) full=1 all=1 ;;
+*:--full:--all)
+	full=1 all=1
+	shift 2
+	;;
 *)
-	echo "usage: determinism.sh [--full [--all]]" >&2
+	echo "usage: determinism.sh [--full [--all [<case>...]]]" >&2
 	exit 2
 	;;
 esac
+names_given="$*"
 
 # expect <what> <expected output> <command...>: fails the self-proof unless the command exits
 # non-zero with exactly that output (exit 0 when the expected output is a `same` line).
@@ -124,8 +129,9 @@ if [ "$full" -eq 1 ]; then
 	git -C "$tagged" tag determinism-tag
 
 	if [ "$all" -eq 1 ]; then
-		set --
-		case_lines="$(python3 -I "$oracle_dir/ladx_cases.py" list)"
+		# shellcheck disable=SC2086
+		set -- $names_given
+		case_lines="$(python3 -I "$oracle_dir/ladx_cases.py" list "$@")"
 	else
 		set -- --cases "$oracle_dir/determinism_cases.txt"
 		case_lines="$($compare cases "$oracle_dir/determinism_cases.txt")"

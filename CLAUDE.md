@@ -52,8 +52,9 @@ in `docs/`, then `README.md`.
   the base patch `base.bps`. Press Start 2P is `google/fonts`
   `ofl/pressstart2p/` at `24ddc1f324cac5d9f5aedca126d298f56e3f1640`, renamed.
   `data/ladx/` holds LADX's patch tables (`order.txt` and one `<group>.txt`
-  per `table` group of the inventory), written only by `gen_tables.sh`,
-  never by hand.
+  per `table` group of the inventory; format, units, keys, entries and the
+  order walk in `tests/ladx/README.md`'s "Patch tables"), written only by
+  `gen_tables.sh`, never by hand.
 - `tests/alttp/` holds its tests: `unit/test_<module>.c`, one binary per
   module, registered in `tests/alttp/Makefile`'s `UNIT_TESTS`, failing through
   `unit/support.h`'s `test_fail`.
@@ -94,7 +95,7 @@ in `docs/`, then `README.md`.
   out (`goal=bingo*`, cut `goal-bingo`). `tests/ladx/cases/` and
   `tests/ladx/combos/` hold LADX's cases (Phase 2 step 4), one
   directory each, named from its settings (`<key>-<value>`, joined with `+`
-  in LADXR's order; `baseline`): `config.txt`, one `key=value` line per
+  in LADXR's order; `baseline`; a sample combo `sample-<nn>`): `config.txt`, one `key=value` line per
   non-default setting in LADXR's order (empty for the baseline), and `seed`,
   32 lowercase hex digits, `derive(name, k)` (the first 16 bytes of SHA-256
   of `ladx-case <name> <k>`, `k < 64`). Their expected list is derived by
@@ -104,7 +105,10 @@ in `docs/`, then `README.md`.
   cell that validate rewrites, per `settings_validate.txt`, is skipped and
   named; `refused <k=v>`, a value LADXR refuses on every seed alone, has no
   single case and must be in a combo: `boomerang=default`, covered by
-  `accessibility-goal+boomerang-default`) and the `settings.txt` fixture.
+  `accessibility-goal+boomerang-default`; `sample <nn> <k=v> ...`, the
+  random sample of Phase 2 step 6, folder `combos/sample-<nn>`, 12 lines
+  written once by `gen_tables.sh --sample`, never re-drawn) and the
+  `settings.txt` fixture.
   Each seed is the first candidate `k` that clears the strict
   Nintendo-bytes check and gives `outcome ok` with the ROM (`ladx_cases.py
   pick`, re-proven by `verify`). Each folder also holds its goldens,
@@ -155,8 +159,8 @@ in `docs/`, then `README.md`.
   and Phase 2's tools, no LADXR, no ROM, no network); plus `ladx-cases`; plus `ladx-tables`.
 - `make ladx-cases` (`python3 -I tests/ladx/oracle/ladx_cases.py check`,
   no ROM, no LADXR, no network; run by `make test`): it
-  proves itself on planted trees (a missing and an extra case, a config
-  order swap and a wrong value, a seed not from the derivation, an
+  proves itself on planted trees (a missing and an extra case, a sample
+  combo's folder under its settings' name, a config order swap and a wrong value, a seed not from the derivation, an
   uppercase seed, an extra file, a name in both directories, a missing
   golden, a spoiler on a race case, a malformed write log, a log over
   budget), then compares `tests/ladx/cases/` and `tests/ladx/combos/` with
@@ -282,6 +286,16 @@ in `docs/`, then `README.md`.
   (`tmp/ladx-tables/ladxr-check/`, the network needed) and prints one
   `DIFFERENT`, `MISSING` or `EXTRA` line per file unlike `data/ladx/`
   (exit 1), else `tables: <n> files byte-identical to data/ladx`.
+  `gen_tables.sh --sample [--ladxr <dir>]` (the checkout at the pin, no
+  ROM) appends the 12 `sample <nn> k=v ...` lines to `combos.txt`
+  (`gen_tables.py sample`: line `i` takes each setting's tier-1 value at
+  SHA-256(`ladx-sample <i> <key>`) big-endian mod its value count, through
+  LADXR's live validate, non-default values only; a draw left with
+  `boomerang=default` and `accessibility=all` is redrawn with ` #<j>`
+  appended to every hashed text) and refuses (exit 2) a `combos.txt` that
+  already has them: the sample is drawn once. A sample combo failing
+  `table_replay.py` means a key misses a dependency: widen it in
+  `table_keys.txt` and regenerate the tables.
   `python3 -I tests/ladx/oracle/table_replay.py [--root <dir>] [--mirror
   <dir>] [--rom <file>] [--tables <dir>] [--ladxr <dir>] [--inventory
   <file>] [--inputs <dir>] [<case>...]` (with the ROM, the LADXR checkout
@@ -299,7 +313,7 @@ in `docs/`, then `README.md`.
   not `run.txt`'s `rom_sha1`, with the first differing offset and its last
   writer in the replay and the golden; `projection`: a table group's
   projection differs from the golden's), then `table-replay: <n> cases, <b>
-  bad`, exit 1 on a bad one; about 1 minute for 116 cases. Never prints a
+  bad`, exit 1 on a bad one; about 1 minute for 128 cases. Never prints a
   ROM byte.
   `inventory_trace.sh [--out <dir>] [--cases <file>] [--seeds <file>]
   [<case>...]` runs every case that way (default: the case folders, like
@@ -322,8 +336,9 @@ in `docs/`, then `README.md`.
   in hash seed, checkout and the work root's `git describe`, and on a new
   untracked file (`STRAY <path>`). `determinism.sh --full` runs
   `determinism_cases.txt` (passed to `gen_golden.sh` as `--cases`; about
-  9 minutes); `determinism.sh --full --all` runs every case directory the
-  same way (about 55 minutes for 116 cases), `rom_writes.txt` included.
+  9 minutes); `determinism.sh --full --all [<case>...]` runs every case directory
+  (only the named ones when given) the same way (about 55 minutes for 116
+  cases, 6 minutes for the 12 `sample-<nn>`), `rom_writes.txt` included.
   `ladx_cases.py pick [<name>...]` (with the ROM and the checkout at the
   pin, else a `setup:` line, exit 2) writes each expected case that has no
   directory yet (a named one must not exist: it never touches a case; to

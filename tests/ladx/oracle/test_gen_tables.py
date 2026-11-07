@@ -4,6 +4,7 @@ Unit tests of gen_tables.py's ROM-free planning (units, keys, reachability, cove
 planted event streams, inventories and models.
 """
 
+import hashlib
 import importlib.util
 import os
 import random
@@ -431,6 +432,52 @@ class CoverageRuns(unittest.TestCase):
             {"textmode": "normal", "witch": "1"}, {"race": "1", "textmode": "notextbox"}, {}])
         self.assertEqual(runs[0].covers, [("u.1", ("0",)), ("u.2", ("normal",)),
                                           ("u.3", ("11",))])
+
+
+def drawn(i, key, values, suffix=""):
+    digest = hashlib.sha256(("ladx-sample %d %s%s" % (i, key, suffix)).encode()).digest()
+    return values[int.from_bytes(digest, "big") % len(values)]
+
+
+class Sample(unittest.TestCase):
+
+    def expected_line(self, model, i, suffix=""):
+        values = model.validated({k: v for k, v in (
+            (k, drawn(i, k, model.domains[k], suffix)) for k in model.settings)
+            if v != model.defaults[k]})
+        return " ".join(["sample %02d" % i] + ["%s=%s" % (k, values[k]) for k in model.settings
+                                                if values[k] != model.defaults[k]])
+
+    def test_line_i_takes_each_settings_value_at_its_digest_mod_its_count_after_validate(self):
+        model = planted_model()
+        lines = gen_tables.sample_lines(model, 12)
+        self.assertEqual(len(lines), 12)
+        unrefused = [i for i in range(1, 13)
+                     if "textmode=notextbox" not in self.expected_line(model, i)
+                     or "race=1" in self.expected_line(model, i)]
+        self.assertTrue(unrefused)
+        for i in unrefused:
+            self.assertEqual(lines[i - 1], self.expected_line(model, i))
+        self.assertFalse([line for line in lines if "witch=1" in line and "race=1" in line])
+
+    def test_a_draw_validated_into_a_refused_value_without_its_companion_is_redrawn(self):
+        model = planted_model()
+        lines = gen_tables.sample_lines(model, 40)
+        redrawn = [i for i in range(1, 41) if "textmode=notextbox" in self.expected_line(model, i)
+                   and "race=1" not in self.expected_line(model, i)]
+        self.assertTrue(redrawn)
+        for i in redrawn:
+            j = next(j for j in range(1, 100) if "textmode=notextbox" not in
+                     self.expected_line(model, i, " #%d" % j)
+                     or "race=1" in self.expected_line(model, i, " #%d" % j))
+            self.assertEqual(lines[i - 1], self.expected_line(model, i, " #%d" % j))
+
+    def test_the_lines_are_appended_to_combos_once(self):
+        text = "# combos\ncase a=1 b=1\n"
+        self.assertEqual(gen_tables.with_sample(text, ["sample 01 a=1"]),
+                         text + "sample 01 a=1\n")
+        with self.assertRaises(gen_tables.TablesPlanError):
+            gen_tables.with_sample(text + "sample 01 a=1\n", ["sample 01 a=1"])
 
 
 BUILD_ROWS = [gen_tables.Row(site("a(rom)"), "table", "fixed", []),

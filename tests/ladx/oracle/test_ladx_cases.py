@@ -132,6 +132,28 @@ class ExpansionTest(unittest.TestCase):
             expected(spec=spec)
 
 
+class SampleTest(unittest.TestCase):
+    def test_a_sample_line_is_a_combo_named_by_its_number_in_ladxrs_order(self):
+        e = expected(spec=SPEC + "sample 07 goal=5-8 race=1 logic=hell\nsample 12 music=random\n")
+        self.assertEqual(e.combos[-2:], [("sample-07", ["logic=hell", "race=1", "goal=5-8"]),
+                                         ("sample-12", ["music=random"])])
+
+    def test_bad_sample_lines_are_refused(self):
+        for line in ("sample 7 logic=hell",                 # not two digits
+                     "sample 07",                           # no assignment
+                     "sample 07 logic=hell logic=casual",   # a repeated key
+                     "sample 07 race=0",                    # a default value
+                     "sample 07 logic=hard",                # not a tier-1 value
+                     "sample 07 accessibility=goal goal=maze",  # rewritten by validate
+                     "sample 01 race=1"):                   # a number twice
+            with self.assertRaises(ladx_cases.CasesError, msg=line):
+                expected(spec=SPEC + "sample 01 logic=hell\n" + line + "\n")
+
+    def test_a_sample_covers_a_refused_single(self):
+        e = expected(spec=SPEC + "refused music=random\nsample 01 race=1 music=random\n")
+        self.assertEqual(e.refused, [("music-random", ["music=random"], ["sample-01"])])
+
+
 class RefusedTest(unittest.TestCase):
     SPEC = SPEC + "refused music=random\ncase race=1 music=random\n"
 

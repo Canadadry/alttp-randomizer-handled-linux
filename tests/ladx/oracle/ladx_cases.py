@@ -144,8 +144,8 @@ def expected_list(tier1_text, settings_text, validate_text, spec_text):
 
     combos, skipped, names, crosses, refused = [], [], set(), [], []
 
-    def add(assignments, line):
-        name = case_name(assignments)
+    def add(assignments, line, name=None):
+        name = name or case_name(assignments)
         if name in names:
             raise CasesError("ladx-cases: combos.txt line %r repeats %s" % (line, name))
         names.add(name)
@@ -177,6 +177,15 @@ def expected_list(tier1_text, settings_text, validate_text, spec_text):
                 raise CasesError("ladx-cases: combos.txt line %r: want distinct keys, each with "
                                  "a non-default tier-1 value" % line)
             add(normalised(words), line)
+        elif kind == "sample" and len(words) >= 2 and len(words[0]) == 2 \
+                and words[0].isdigit() and words[0].isascii():
+            keys = [w.partition("=")[0] for w in words[1:]]
+            if len(set(keys)) != len(keys) or any(
+                    "=" not in w or w.partition("=")[2] not in non_default.get(k, [])
+                    for k, w in zip(keys, words[1:])):
+                raise CasesError("ladx-cases: combos.txt line %r: want distinct keys, each with "
+                                 "a non-default tier-1 value" % line)
+            add(normalised(words[1:]), line, "sample-" + words[0])
         elif kind == "refused" and len(words) == 1 and case_name(words) in dict(cases[1:]) \
                 and case_name(words) not in dict(refused):
             refused.append((case_name(words), words))
@@ -468,6 +477,9 @@ def _plant_variants():
     return [
         ("missing", lambda r: shutil.rmtree(at(r, "cases", "race-1")),
          ["MISSING cases/race-1"]),
+        ("sample by name", lambda r: os.rename(at(r, "combos", "sample-01"),
+                                                at(r, "combos", "logic-hell+goal-5-8")),
+         ["MISSING combos/sample-01", "EXTRA combos/logic-hell+goal-5-8"]),
         ("extra", lambda r: write_case(at(r, "combos", "race-1+goal-5-8"), ["race=1", "goal=5-8"],
                                        derive("race-1+goal-5-8", 0)),
          ["EXTRA combos/race-1+goal-5-8"]),
@@ -500,7 +512,7 @@ def _plant_variants():
          ["BUDGET cases/baseline: rom_writes.txt %d bytes, limit %d"
           % (len(_PLANT_BIG_LOG), _PLANT_LIMITS["rom_writes_case"]),
           "BUDGET rom_writes.txt: %d bytes in all, limit %d"
-          % (len(_PLANT_BIG_LOG) + 4 * len(_PLANT_LOG), _PLANT_LIMITS["rom_writes_all"])]),
+          % (len(_PLANT_BIG_LOG) + 5 * len(_PLANT_LOG), _PLANT_LIMITS["rom_writes_all"])]),
     ]
 
 
@@ -525,7 +537,7 @@ def self_test():
     import tempfile
     e = expected_list("logic all\nrace all\ngoal all\n", _PLANT_SETTINGS,
                       "# keys goal\nvalidate goal=vanilla -> =\t\nvalidate goal=5-8 -> =\tG>\n",
-                      "case race=1 logic=hell\n")
+                      "case race=1 logic=hell\nsample 01 goal=5-8 logic=hell\n")
     for name, change, lines in [("correct", lambda r: None, [])] + _plant_variants():
         root = tempfile.mkdtemp()
         try:

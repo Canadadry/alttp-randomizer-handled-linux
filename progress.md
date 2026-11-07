@@ -72,7 +72,7 @@
       - [x] Table builder and gen_tables.sh
       - [x] Tables generated in data/ladx
     - [x] Chunk 4: replay over every case
-    - [ ] Chunk 5: random sample combos
+    - [x] Chunk 5: random sample combos
   - [ ] Step 2.7 Extraction fixtures
   - [ ] Step 2.8 Nintendo-bytes check over everything committed
   - [ ] Step 2.9 Full-ROM check target

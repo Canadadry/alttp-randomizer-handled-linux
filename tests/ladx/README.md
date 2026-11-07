@@ -8,9 +8,10 @@ exact text for every group it ports.
 ## Case folders
 
 `cases/` holds the baseline and every non-default tier-1 value alone;
-`combos/` the crosses and hand-picked combinations of `oracle/combos.txt`.
-One folder per case, named from its settings (`<key>-<value>`, joined with
-`+` in LADXR's order; `baseline`). `oracle/ladx_cases.py check` (in
+`combos/` the crosses, hand-picked combinations and random sample of
+`oracle/combos.txt`. One folder per case, named from its settings
+(`<key>-<value>`, joined with `+` in LADXR's order; `baseline`), except a
+sample combo, `sample-<nn>` (below, "Random sample"). `oracle/ladx_cases.py check` (in
 `make test`) proves the list and the files below.
 
 | File | Written by | Holds |
@@ -194,6 +195,89 @@ the output ROM: its SHA-1 is `run.txt`'s `rom_sha1`
 (`write_log.py decode --rom tmp/ladx/base.gbc <log>`). `T` records are
 evidence only: they reach the ROM through `save`'s `B` records.
 
+## Patch tables
+
+`data/ladx/` holds LADXR's settings-only writes, the inventory's `table`
+groups (`notes/ladx-inventory.md`), as data C applies without the ROM or
+LADXR's assembler. They are ROM-derived like the goldens: written only by
+`oracle/gen_tables.sh` (with the ROM and LADXR at the pin), never edited
+by hand. The format's module is `oracle/tables.py` (`parse`, `render`,
+`select`, `check`); `tables.py check` (`make ladx-tables`, in `make test`)
+checks the files against the inventory without the ROM.
+
+**Files.** Line-based ASCII, single spaces, one version line first.
+
+- `order.txt` (`ladx-tables-order 1`): the inventory's sections
+  (`section <file> <function>`), then every writing row in LADXR's
+  statement order: `table <group> <unit> <call>` or `C <group> - <call>`,
+  `<call>` the row's inventory key (its `Call` text, ` #<k>` included).
+- `<group>.txt` (`ladx-tables 1`), one per `table` group: `group <group>`,
+  `tables <table>...` (ROMWithTables' tables in their order, as in a write
+  log), then its units.
+
+**Units.** `unit <group>.<n> <component>...`, numbered from 1 in their
+first row's order. A unit is one `table` row, fused with the rows it is
+coupled with in some coverage run (a source match of the encoding spanning
+bytes both wrote last), transitively, with the group's rows between them;
+`oracle/table_units.txt` forces a fusion. Fused rows are consecutive among
+the table rows. The units with no component are the fixed layer, applied
+whatever the settings.
+
+**Keys.** A component is a setting key, `asm:<CONSTANT>` (an assembler
+constant, by its value `0` or `1`, computed from the validated settings as
+`generateRom` does, e.g. `asm:ITEM_DIALOGS`) or `count` (`frame-counter`
+only: the number of non-key spots `addFrameCounter` receives, from the
+item list). A unit's components are the union of its rows' inventory
+`Settings` (else its group's `Settings key`), the settings and constants
+its rows read at run time (`oracle/key_trace.py`), the components of the
+units whose writes it reads or carries, and `oracle/table_keys.txt`'s
+widenings. Components are ordered: settings in LADXR's order, constants by
+name, then `count`.
+
+**Entries.** One per reachable key tuple (the tier-1 product through
+LADXR's `Settings.validate`), in increasing order of their values:
+
+```
+E <value>...        one value per component, `""` the empty string
+B ... / T ...       the unit's net writes, write-log records (step 5's
+                    tokens: `=n`, `@q+n`, hex literals, `p<v>`)
+nothing             the entry writes nothing
+```
+
+`nothing` is explicit: a reachable tuple whose condition is false still
+has its entry, so a missing entry is always a bug, never "skip". An
+unreachable tuple has none: C validates the settings first and never looks
+one up. The records are cut out of the coverage runs' encodings by
+`write_log.py`'s own encoder, so a unit's tokens are the golden's.
+
+**Order walk.** Start from the source ROM and walk `order.txt`: at a
+`table` row that starts a unit (its first row), apply the unit's entry for
+the key; at a later row of the same unit, nothing; at a `C` row, apply what
+C writes there. The result is LADXR's output ROM.
+`python3 -I oracle/table_replay.py [<case>...]` proves it on every case
+folder, the `C` writes taken from the golden and placed by the mirror's
+event stream: the SHA-1 equals `run.txt`'s `rom_sha1`, and each table
+group's projection equals the golden's.
+
+**Random sample.** The tables are built from coverage runs only; the case
+goldens and a random sample are independent evidence. The sample is
+`combos.txt`'s 12 `sample <nn> k=v ...` lines, written once by
+`oracle/gen_tables.sh --sample` and never re-drawn: line `i` (1 to 12)
+takes, for every setting in LADXR's order, its tier-1 value at index
+SHA-256(`ladx-sample <i> <key>`), read big-endian, mod its number of
+values (a setting outside `tier1.txt` stays at its default); the draw is
+validated by LADXR and its non-default values written. A draw that leaves
+`boomerang=default` with `accessibility=all` is drawn again with ` #<j>`
+appended to every hashed text, the first `j` that is not. Each line is the
+combo `combos/sample-<nn>`, seeded by `ladx_cases.py pick` and given its
+goldens by `gen_golden.sh` like any case. A sample mismatch in
+`table_replay.py` means a key misses a dependency: widen it in
+`table_keys.txt` and regenerate the tables, never edit them.
+
+**Regenerate.** `oracle/gen_tables.sh` rebuilds `data/ladx/` (coverage
+runs under `tmp/ladx-tables/`); `gen_tables.sh --check` rebuilds them with
+another hash seed on a fresh clone and compares every file byte for byte.
+
 ## Nintendo-bytes policy
 
 `oracle/nintendo_bytes.py` checks a case folder's `rom_writes.txt` in
@@ -231,6 +315,6 @@ oracle, in their own commit stating the reason. With the ROM
   against its mirror: `decode`, `encode`, `tags` (every group a `table` or
   `C` group; the union over all goldens equal to the inventory's writing
   groups less `spoiler`), `scrambled`, `projection` and `nintendo`;
-- `oracle/determinism.sh --full --all` runs every case twice (hash seeds 0
-  and 1, a fresh clone, a tagged work root) and compares every file,
-  `rom_writes.txt` included.
+- `oracle/determinism.sh --full --all [<case>...]` runs every case (or
+  the named ones) twice (hash seeds 0 and 1, a fresh clone, a tagged work
+  root) and compares every file, `rom_writes.txt` included.

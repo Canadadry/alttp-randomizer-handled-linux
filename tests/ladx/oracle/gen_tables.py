@@ -1,5 +1,7 @@
 """Usage: python3 -B tests/ladx/oracle/gen_tables.py build --out <dir> --runs <dir>
        [--ladxr <dir>] [--rom <file>] [--inventory <file>] [--inputs <dir>]
+       python3 -B tests/ladx/oracle/gen_tables.py sample [--ladxr <dir>] [--inventory <file>]
+       [--inputs <dir>]
 
 The planning and building of LADX's patch tables (data/ladx/, tables.py): which `table` rows form
 one unit, what each unit is keyed by, which key tuples LADXR can reach, the fewest coverage runs
@@ -48,6 +50,9 @@ first, then by unit and tuple; each new run starts from the first target left an
 order, by every witness that agrees with it on every setting it sets and keeps every chosen
 target's tuple; a run covers every target its validated settings give. The spot count is taken
 from a pool-only run on COUNT_SEED (it is a function of the settings).
+
+Sample (`sample`, ROM-free, LADXR's validate): the 12 `sample <nn> k=v ...` lines of combos.txt
+(sample_lines), appended once; a combos.txt that has them is refused.
 """
 
 import contextlib
@@ -595,6 +600,50 @@ def plan_runs(keys, model, done=(), avoid=()):
                   if (unit, t) not in covered]
 
 
+# The random sample -------------------------------------------------------------------------------
+
+def _drawn(model, i, suffix):
+    out = {}
+    for key in model.settings:
+        values = model.domains[key]
+        digest = hashlib.sha256(("ladx-sample %d %s%s" % (i, key, suffix)).encode()).digest()
+        value = values[int.from_bytes(digest, "big") % len(values)]
+        if value != model.defaults[key]:
+            out[key] = value
+    return model.validated(out)
+
+
+def _refused(model, settings):
+    return any(settings[k] == v and any(settings[c] != w for c, w in model.refused[r].items())
+               for r in model.refused for k, v in [r.split("=", 1)])
+
+
+def sample_lines(model, n):
+    """combos.txt's `sample <nn> k=v ...` lines 1..n: line i takes, for every setting in LADXR's
+    order, its domain value at SHA-256(`ladx-sample <i> <key>`) mod the domain's size, big-endian;
+    validated, its non-default values. A refused value without its companion is redrawn with
+    ` #<j>` appended to every hashed text, the first j that is not."""
+    lines = []
+    for i in range(1, n + 1):
+        j = 0
+        settings = _drawn(model, i, "")
+        while _refused(model, settings):
+            j += 1
+            settings = _drawn(model, i, " #%d" % j)
+        lines.append(" ".join(["sample %02d" % i] + [
+            "%s=%s" % (k, settings[k]) for k in model.settings
+            if settings[k] != model.defaults[k]]))
+    return lines
+
+
+def with_sample(combos_text, lines):
+    """combos.txt's text with the sample lines appended; refuses a text that has one already
+    (the sample is drawn once)."""
+    if any(line.startswith("sample ") for line in combos_text.splitlines()):
+        raise TablesPlanError("combos.txt already holds the sample, never re-drawn")
+    return combos_text + "".join(line + "\n" for line in lines)
+
+
 # The model from the fixtures and LADXR -----------------------------------------------------------
 
 COUNT_SEED = hashlib.sha256(b"ladx-tables count").digest()[:16]
@@ -830,10 +879,45 @@ def build(args):
     return 0
 
 
+SAMPLE_SIZE = 12
+
+
+def sample(args):
+    """Appends the SAMPLE_SIZE sample lines to <inputs>/combos.txt, validated by LADXR's live
+    Settings.validate; prints them."""
+    path = os.path.join(args.inputs, "combos.txt")
+    combos_text = _text(path)
+    inputs = lambda name: _text(os.path.join(args.inputs, name))
+    cwd = os.getcwd()
+    work = ladx_oracle.enter_checkout(args.ladxr, os.path.join(TOP, "tmp", "ladx-tables"))
+    try:
+        import settings as ladxr_settings
+        model = build_model(read_inventory(_text(args.inventory), [
+            s.key for s in ladx_cases.read_settings(inputs("settings.txt"))]),
+            inputs("tier1.txt"), inputs("settings.txt"), combos_text,
+            inputs("settings_validate.txt"), settings_validate(ladxr_settings.Settings),
+            None, [])
+        lines = sample_lines(model, SAMPLE_SIZE)
+    finally:
+        os.chdir(cwd)
+        import shutil
+        shutil.rmtree(work, ignore_errors=True)
+    text = with_sample(combos_text, lines)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+    print("\n".join(lines))
+    print("gen_tables: %d sample lines written to %s" % (len(lines), path))
+    return 0
+
+
 def main(argv):
     import argparse
     parser = argparse.ArgumentParser(prog="gen_tables.py")
     sub = parser.add_subparsers(dest="mode", required=True)
+    q = sub.add_parser("sample")
+    q.add_argument("--ladxr", default=os.path.join(HERE, "ladxr"))
+    q.add_argument("--inventory", default=os.path.join(TOP, "notes", "ladx-inventory.md"))
+    q.add_argument("--inputs", default=HERE)
     p = sub.add_parser("build")
     p.add_argument("--out", required=True)
     p.add_argument("--runs", required=True)
@@ -846,8 +930,8 @@ def main(argv):
     except SystemExit as e:
         return 2 if e.code else 0
     try:
-        return build(args)
-    except (TablesPlanError, write_log.WriteLogError, OSError) as e:
+        return (sample if args.mode == "sample" else build)(args)
+    except (TablesPlanError, write_log.WriteLogError, ladx_oracle.OracleError, OSError) as e:
         print("gen_tables: %s" % e, file=sys.stderr)
         return 2
 
