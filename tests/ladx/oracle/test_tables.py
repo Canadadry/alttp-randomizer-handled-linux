@@ -339,6 +339,16 @@ class Check(unittest.TestCase):
         self.assertEqual(self.check()[0], [
             "BADKEY fixed.txt: unit fixed.2: fast 2: asm:ITEM_DIALOGS=2 not 0 or 1"])
 
+    def test_a_c_groups_constants_file_is_accepted_and_checked_but_matched_to_no_row(self):
+        self.write("items.txt", "ladx-tables 1\ngroup items\ntables texts\nunit items.1\nE\n"
+                                "B 9 01\nunit items.2 asm:ITEM_DIALOGS\nE 0\nB a 02\nE 0\nB a 03\n")
+        self.assertEqual(self.check()[0], ["DUP items.txt: unit items.2: 0"])
+
+    def test_a_file_for_a_group_of_another_side_is_extra(self):
+        self.write("locals.txt", "ladx-tables 1\ngroup locals\ntables texts\nunit locals.1\nE\n"
+                                 "nothing\n")
+        self.assertEqual(self.check()[0], ["EXTRA locals.txt"])
+
     def test_a_component_that_is_no_setting(self):
         self.write("options.txt", OPTIONS.replace("lowhpbeep race", "beep race").replace(
             "slow", "x"))

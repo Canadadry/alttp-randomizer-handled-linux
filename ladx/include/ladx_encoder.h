@@ -121,6 +121,14 @@ int32_t ladx_enc_bank_origin(const LadxEncoder *enc, uint32_t offset);
 int ladx_enc_entry_origins(const LadxEncoder *enc, int table, LadxWlogKey key, int32_t *out, size_t cap,
 			   size_t *n);
 
+/*
+ * The entry's current bytes into values (a reference's byte read from the
+ * ROM) and their origins into origins: 1 with *n set, 0 when the entry is
+ * unknown, an integer pointer, over cap bytes, or a reference with no ROM.
+ */
+int ladx_enc_entry_value(const LadxEncoder *enc, int table, LadxWlogKey key, uint8_t *values, int32_t *origins,
+			 size_t cap, size_t *n);
+
 /* n new write identities, the first one's origin returned; LADX_ENC_KNOWN on overflow. */
 int32_t ladx_enc_fresh(LadxEncoder *enc, uint32_t n);
 

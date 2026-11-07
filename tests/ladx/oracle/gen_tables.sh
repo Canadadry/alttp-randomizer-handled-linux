@@ -2,6 +2,7 @@
 # Usage: gen_tables.sh [--out <dir>] [--ladxr <dir>] [--rom <file>]
 #        gen_tables.sh --check [--rom <file>]
 #        gen_tables.sh --sample [--ladxr <dir>]
+#        gen_tables.sh --const [--out <dir>] [--ladxr <dir>] [--rom <file>]
 # Builds LADX's patch tables (tables.py) with the ROM (default tmp/ladx/base.gbc) and the LADXR
 # checkout at the pin (default tests/ladx/oracle/ladxr): gen_tables.py build, PYTHONHASHSEED=0,
 # its coverage runs under tmp/ladx-tables/runs/, the tables into <dir> (default data/ladx/; else
@@ -14,6 +15,7 @@
 # --sample appends the 12 `sample <nn> k=v ...` lines to combos.txt (gen_tables.py sample: drawn
 # by SHA-256 of `ladx-sample <i> <key>`, LADXR's live validate, no ROM), once: a combos.txt that
 # has them is refused (exit 2), the sample is never re-drawn.
+# --const rewrites only the C groups' constants files (gen_tables.py const, CONST_GROUPS) in <dir>.
 # A missing or wrong ROM, an unpinned checkout or python3 older than 3.11 is a `setup:` line,
 # exit 2. Never called by make.
 set -eu
@@ -26,7 +28,7 @@ oracle_dir="$(cd "$(dirname "$0")" && pwd)"
 repo_dir="$(cd "$oracle_dir/../../.." && pwd -P)"
 
 usage() {
-	echo "usage: gen_tables.sh [--out <dir>] [--ladxr <dir>] [--rom <file>] | --check [--rom <file>] | --sample [--ladxr <dir>]" >&2
+	echo "usage: gen_tables.sh [--out <dir>] [--ladxr <dir>] [--rom <file>] | --check [--rom <file>] | --sample [--ladxr <dir>] | --const [--out <dir>] [--ladxr <dir>] [--rom <file>]" >&2
 	exit 2
 }
 setup() {
@@ -37,6 +39,7 @@ setup() {
 out=
 check=0
 sample=0
+const=0
 ladxr="$oracle_dir/ladxr"
 ladxr_set=0
 rom="$repo_dir/tmp/ladx/base.gbc"
@@ -44,6 +47,7 @@ while [ "$#" -gt 0 ]; do
 	case "$1" in
 	--check) check=1 ;;
 	--sample) sample=1 ;;
+	--const) const=1 ;;
 	--out | --ladxr | --rom)
 		[ "$#" -ge 2 ] || usage
 		case "$1" in
@@ -61,7 +65,8 @@ while [ "$#" -gt 0 ]; do
 	shift
 done
 [ "$check" -eq 0 ] || { [ -z "$out" ] && [ "$ladxr_set" -eq 0 ]; } || usage
-[ "$sample" -eq 0 ] || { [ "$check" -eq 0 ] && [ -z "$out" ]; } || usage
+[ "$sample" -eq 0 ] || { [ "$check" -eq 0 ] && [ -z "$out" ] && [ "$const" -eq 0 ]; } || usage
+[ "$const" -eq 0 ] || [ "$check" -eq 0 ] || usage
 
 command -v python3 >/dev/null 2>&1 || setup "python3 not found"
 python3 -c 'import sys; sys.exit(sys.version_info < (3, 11))' || setup "python3 is older than 3.11 (run setup.sh)"
@@ -101,6 +106,11 @@ fi
 head="$(git -C "$ladxr" rev-parse HEAD 2>/dev/null || true)"
 [ "$head" = "$LADXR_PIN" ] || setup "LADXR checkout $ladxr is not at the pin $(printf '%.8s' "$LADXR_PIN") (run setup.sh)"
 
+if [ "$const" -eq 1 ]; then
+	# python3 without -I or -E, which would drop PYTHONHASHSEED.
+	PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 exec python3 "$oracle_dir/gen_tables.py" const \
+		--out "$out" --ladxr "$ladxr" --rom "$rom" </dev/null
+fi
 rm -rf "$runs"
 [ "$check" -eq 0 ] || rm -rf "$out"
 mkdir -p "$runs" "$out"

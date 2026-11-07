@@ -665,5 +665,48 @@ class ModelInputs(unittest.TestCase):
         self.assertIsNone(count({"race": "1", "witch": "1"}))
 
 
+class ConstGroups(unittest.TestCase):
+    """const_group: a C group's settings-only writes, one run per key tuple, as a group file."""
+
+    ORDER = ["texts", "entities"]
+
+    def group(self, runs, own=(), components=("asm:A", "asm:B")):
+        return gen_tables.const_group("g", self.ORDER, list(components), runs, list(own),
+                                      bytes(ROM), None)
+
+    def test_writes_equal_in_every_run_form_the_fixed_unit_the_others_the_keyed_one(self):
+        lit = bytes([0xF1, 0xF2, 0xF3])
+        runs = [(("0", "0"), [("B", 0x800, lit), ("B", 0x900, b"\xE1"), ("T", "texts", 3, b"\xC5")]),
+                (("1", "0"), [("B", 0x800, lit), ("B", 0x900, b"\xE2"), ("T", "texts", 3, b"\xC5")])]
+        text = self.group(runs)
+        self.assertEqual(text, "ladx-tables 1\ngroup g\ntables texts entities\n"
+                               "unit g.1\nE\nB 800 f1f2f3\nT texts 3 c5\n"
+                               "unit g.2 asm:A asm:B\nE 0 0\nB 900 e1\nE 1 0\nB 900 e2\n")
+        gen_tables.tables.parse(text)
+
+    def test_rom_bytes_become_references_and_keeps_never_literals(self):
+        values = bytes(ROM[0x123:0x12B])
+        runs = [((), [("B", 0x400, values), ("B", 0x200, bytes(ROM[0x200:0x202]))])]
+        text = self.group(runs, components=())
+        self.assertEqual(text.splitlines()[-2:], ["B 200 =2", "B 400 @123+8"])
+
+    def test_a_write_c_makes_itself_is_left_out_and_must_happen(self):
+        runs = [((), [("T", "texts", 0xBE, b"\x01"), ("B", 0x10, b"\xF0")])]
+        self.assertNotIn("T texts be", self.group(runs, own=[("T", "texts", 0xBE)], components=()))
+        with self.assertRaisesRegex(gen_tables.TablesPlanError, "never writes T texts be"):
+            self.group([((), [("B", 0x10, b"\xF0")])], own=[("T", "texts", 0xBE)], components=())
+
+    def test_a_position_written_by_both_units_is_refused(self):
+        runs = [(("0", "0"), [("B", 0x10, b"\xF0\xF1"), ("B", 0x11, b"\xE0")]),
+                (("1", "0"), [("B", 0x10, b"\xF0\xF1"), ("B", 0x11, b"\xE1")])]
+        with self.assertRaisesRegex(gen_tables.TablesPlanError, "both units"):
+            self.group(runs)
+
+    def test_net_effect_last_write_wins_and_pointers_stay_integers(self):
+        runs = [((), [("B", 0x10, b"\xF0\xF1"), ("B", 0x10, b"\xE0"), ("T", "texts", 0xC9, 0xC0A0)])]
+        self.assertEqual(self.group(runs, components=()).splitlines()[-2:],
+                         ["B 10 e0f1", "T texts c9 pc0a0"])
+
+
 if __name__ == "__main__":
     unittest.main()

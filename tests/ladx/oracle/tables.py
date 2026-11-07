@@ -12,7 +12,8 @@ Files, line-based ASCII, single spaces:
     section <file> <function>         an inventory section, in its order
     table <group> <unit> <call>       a `table` row, its unit's id <group>.<n>
     C <group> - <call>                a `C` row
-  <group>.txt, one per `table` group
+  <group>.txt, one per `table` group, and at most one per `C` group (its constants file: the
+  settings-only writes its call computes, as values; its units match no order.txt row)
     ladx-tables 1
     group <group>
     tables <table>...                 ROMWithTables' tables in their order, as in a write log
@@ -274,7 +275,7 @@ COUNT = re.compile(r"0|[1-9][0-9]*")
 
 def _inventory(inventory_text):
     """(the expected section names, [(section, key, side, group)] of the `table` and `C` rows,
-    the `table` groups) of an inventory; TablesError when it does not parse."""
+    the `table` groups, the `C` groups) of an inventory; TablesError when it does not parse."""
     check = _sibling("inventory_check")
     sections, bad = check.parse_inventory(inventory_text)
     named, named_bad = check.parse_named(inventory_text)
@@ -285,7 +286,8 @@ def _inventory(inventory_text):
     rows = [(n, row["key"], row["Side"], row["Group"]) for n in names for row in sections[n]
             if row["Side"] in ("table", "C")]
     groups = sorted(g["Group"] for g in named["Groups"] if g["Side"] == "table")
-    return names, rows, groups
+    c_groups = sorted(g["Group"] for g in named["Groups"] if g["Side"] == "C")
+    return names, rows, groups, c_groups
 
 
 def _domains(tier1_text, settings_text):
@@ -390,14 +392,15 @@ def _entry_lines(name, group, domains):
 def check(root, inventory_text, tier1_text, settings_text):
     """(problem lines, summary line) of the tables under root against the inventory, tier1.txt
     and settings.txt; TablesError when an input does not parse."""
-    names, rows, table_groups = _inventory(inventory_text)
+    names, rows, table_groups, c_groups = _inventory(inventory_text)
     domains = _domains(tier1_text, settings_text)
     expected = [ORDER_FILE] + ["%s.txt" % g for g in table_groups]
     present = sorted(os.listdir(root)) if os.path.isdir(root) else []
+    allowed = ["%s.txt" % g for g in c_groups if "%s.txt" % g in present]
     lines = ["MISSING %s" % f for f in expected if f not in present]
-    lines += ["EXTRA %s" % f for f in present if f not in expected]
+    lines += ["EXTRA %s" % f for f in present if f not in expected and f not in allowed]
     parsed, size = {}, 0
-    for f in expected:
+    for f in expected + allowed:
         path = os.path.join(root, f)
         if f not in present or not os.path.isfile(path):
             continue
@@ -419,7 +422,7 @@ def check(root, inventory_text, tier1_text, settings_text):
     order = parsed.get(ORDER_FILE)
     if order is not None:
         lines += _row_lines(order, names, rows)
-        lines += _unit_lines(order, groups)
+        lines += _unit_lines(order, {g: groups[g] for g in groups if g in table_groups})
     for name in sorted(groups):
         lines += _entry_lines(name + ".txt", groups[name], domains)
     units = sum(len(g.units) for g in groups.values())
@@ -459,12 +462,15 @@ _PLANT_TREE = {
                  "unit fixed.2 asm:ITEM_DIALOGS\nE 0\nT texts 2 @200+3\nE 1\nnothing\n",
     "opts.txt": "ladx-tables 1\ngroup opts\ntables texts\nunit opts.1 race beep count\n"
                 "E 0 slow 3\nB 40 01\nE 1 slow 12\nnothing\n",
+    "items.txt": "ladx-tables 1\ngroup items\ntables texts\nunit items.1 asm:HARD_MODE\n"
+                 "E 0\nB 80 01\nE 1\nB 80 02\n",
 }
 
 
 def _plant_variants():
     """(name, {file: text or None}, the lines the check must print)."""
-    order, fixed, opts = (_PLANT_TREE[f] for f in ("order.txt", "fixed.txt", "opts.txt"))
+    order, fixed, opts, items = (_PLANT_TREE[f] for f in ("order.txt", "fixed.txt", "opts.txt",
+                                                          "items.txt"))
     return [
         ("missing", {"opts.txt": None}, ["MISSING opts.txt"]),
         ("extra", {"notes.md": "# prose\n"}, ["EXTRA notes.md"]),
@@ -482,6 +488,8 @@ def _plant_variants():
          ["BADROW order.txt: unit fixed.1's rows are not consecutive among the table rows"]),
         ("duplicate", {"fixed.txt": fixed.replace("E 1\n", "E 0\n")},
          ["DUP fixed.txt: unit fixed.2: 0"]),
+        ("c-group duplicate", {"items.txt": items.replace("E 1\n", "E 0\n")},
+         ["DUP items.txt: unit items.1: 0"]),
         ("bad key", {"opts.txt": opts.replace("E 1 slow 12", "E 1 none 012")},
          ["BADKEY opts.txt: unit opts.1: 1 none 012: beep=none not the default of a setting "
           "outside tier 1",

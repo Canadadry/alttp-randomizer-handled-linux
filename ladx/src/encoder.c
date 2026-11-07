@@ -307,6 +307,26 @@ int ladx_enc_entry_origins(const LadxEncoder *enc, int table, LadxWlogKey key, i
 	return 1;
 }
 
+int ladx_enc_entry_value(const LadxEncoder *enc, int table, LadxWlogKey key, uint8_t *values, int32_t *origins,
+			 size_t cap, size_t *n)
+{
+	const LadxEncEntry *e = find_entry(enc, table, key);
+	uint32_t i;
+
+	if (!e || e->pointer || e->count > cap)
+		return 0;
+	for (i = 0; i < e->count; i++) {
+		LadxAtom a = enc->pool_atom[e->first + i];
+
+		if (a >= 0 && (!enc->rom || (size_t)a >= enc->rom_len))
+			return 0;
+		values[i] = (uint8_t)atom_value(enc, a);
+	}
+	memcpy(origins, enc->pool_origin + e->first, e->count * sizeof origins[0]);
+	*n = e->count;
+	return 1;
+}
+
 /* Segment state -------------------------------------------------------------------------------- */
 
 static void touch(LadxEncoder *enc, uint32_t p)

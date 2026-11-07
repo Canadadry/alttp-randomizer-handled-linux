@@ -116,6 +116,10 @@ int ladx_tables_unit_count(const LadxTables *t);
 int ladx_tables_entry_count(const LadxTables *t);
 /* The tables line's names, space-separated, as ladx_wlog_begin takes them. */
 LadxSpan ladx_tables_names(const LadxTables *t);
+/* A group file's index by its group's name, -1 when none. */
+int ladx_tables_find_group(const LadxTables *t, LadxSpan name);
+/* The group's unit count, *first its first unit. */
+int ladx_tables_group_units(const LadxTables *t, int group, int *first);
 /* The unit's id; whether a component is count. */
 LadxSpan ladx_tables_unit_id(const LadxTables *t, int unit);
 bool ladx_tables_unit_uses_count(const LadxTables *t, int unit);

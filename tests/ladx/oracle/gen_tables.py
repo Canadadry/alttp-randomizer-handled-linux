@@ -2,6 +2,8 @@
        [--ladxr <dir>] [--rom <file>] [--inventory <file>] [--inputs <dir>]
        python3 -B tests/ladx/oracle/gen_tables.py sample [--ladxr <dir>] [--inventory <file>]
        [--inputs <dir>]
+       python3 -B tests/ladx/oracle/gen_tables.py const --out <dir> [--ladxr <dir>] [--rom <file>]
+       [--inventory <file>] [--inputs <dir>]
 
 The planning and building of LADX's patch tables (data/ladx/, tables.py): which `table` rows form
 one unit, what each unit is keyed by, which key tuples LADXR can reach, the fewest coverage runs
@@ -50,6 +52,9 @@ first, then by unit and tuple; each new run starts from the first target left an
 order, by every witness that agrees with it on every setting it sets and keeps every chosen
 target's tuple; a run covers every target its validated settings give. The spot count is taken
 from a pool-only run on COUNT_SEED (it is a function of the settings).
+
+Constants (`const`, with the ROM; `build` writes them too): the C groups' constants files
+(CONST_GROUPS, const_group), contract in tests/ladx/README.md, "Patch tables".
 
 Sample (`sample`, ROM-free, LADXR's validate): the 12 `sample <nn> k=v ...` lines of combos.txt
 (sample_lines), appended once; a combos.txt that has them is refused.
@@ -713,6 +718,205 @@ def spot_count(driver, key_location, defaults):
     return count
 
 
+# C-group constants -------------------------------------------------------------------------------
+
+def _net(events):
+    """{position: value} of writes ("B", offset, bytes) and ("T", table, key, bytes or int),
+    positions ("B", offset) and ("T", table, key), the last write winning."""
+    net = {}
+    for e in events:
+        if e[0] == "B":
+            for i, v in enumerate(e[2]):
+                net[("B", e[1] + i)] = v
+        else:
+            net[("T", e[1], e[2])] = e[3]
+    return net
+
+
+def _const_records(net, rom, known, order):
+    """The record lines of net writes, values encoded by the table rule with no origin."""
+    banks, entries, offsets = {}, {}, sorted(p[1] for p in net if p[0] == "B")
+    for start, stop in write_log._spans(offsets):
+        values = bytes(net[("B", p)] for p in range(start, stop))
+        atoms = write_log._table_atoms(rom, values, [None] * len(values), start)
+        atoms = write_log._fragment_atoms(rom, known, start, atoms)
+        banks.update(zip(range(start, stop), atoms))
+    for pos, value in net.items():
+        if pos[0] == "T":
+            if not isinstance(value, int):
+                value = write_log._table_atoms(rom, value, [None] * len(value))
+                value = write_log._fragment_atoms(rom, known, pos[1:], value)
+            entries[pos[1:]] = value
+    return write_log._records("-", banks, entries, order)[1:]
+
+
+class _IndexedRom(bytes):
+    """The ROM whose find of a MIN_MATCH-byte needle absent from it returns -1 at once."""
+
+    def __new__(cls, data):
+        self = super().__new__(cls, data)
+        n = write_log.MIN_MATCH
+        self._windows = {data[i:i + n] for i in range(len(data) - n + 1)}
+        return self
+
+    def find(self, sub, *args):
+        if len(sub) == write_log.MIN_MATCH and not args and sub not in self._windows:
+            return -1
+        return super().find(sub, *args)
+
+
+def const_group(group, order, components, runs, own, rom, known):
+    """The text of a C group's constants file (tables.py's group format): runs [(key tuple,
+    [write])], one per reachable tuple of components, each the writes of the group's call in
+    order; own [("T", table, key) or ("B", offset)], the writes C makes itself, left out and
+    required in every run. The writes equal in every run form unit <group>.1 (no component), the
+    others <group>.2 keyed by components; either is omitted when empty. TablesPlanError on an
+    own write a run misses, or a position both units write."""
+    kept = []
+    for values, events in runs:
+        for o in own:
+            if not any(e[:len(o)] == tuple(o) for e in events):
+                raise TablesPlanError("%s: %s never writes %s" % (group, " ".join(values) or "the run",
+                                      " ".join(o[:1] + tuple("%x" % x if isinstance(x, int) else x
+                                                             for x in o[1:]))))
+        kept.append((values, [e for e in events
+                              if not any(e[:len(o)] == tuple(o) for o in own)]))
+    common = set(kept[0][1]) if kept else set()
+    for _, events in kept[1:]:
+        common &= set(events)
+    fixed = [e for e in kept[0][1] if e in common] if kept else []
+    keyed = [(values, [e for e in events if e not in common]) for values, events in kept]
+    fixed_net = _net(fixed)
+    rom = _IndexedRom(rom)
+    for values, events in keyed:
+        both = set(fixed_net) & set(_net(events))
+        if both:
+            raise TablesPlanError("%s: %s: %d positions written by both units"
+                                  % (group, " ".join(values), len(both)))
+    units = []
+    if fixed:
+        units.append(tables.Unit("", [], [tables.Entry([], _const_records(fixed_net, rom, known,
+                                                                          order), {}, {})]))
+    if any(events for _, events in keyed):
+        units.append(tables.Unit("", list(components), [
+            tables.Entry(list(values), _const_records(_net(events), rom, known, order), {}, {})
+            for values, events in sorted(keyed)]))
+    for n, unit in enumerate(units, 1):
+        unit.id = "%s.%d" % (group, n)
+    return tables.render(tables.Group(group, list(order), units))
+
+
+class ConstSpec:
+    """A C group whose call writes settings-only bytes C cannot compute (LADXR's assembler):
+    call, its text evaluated in generator.py's namespace with the seed-dependent arguments
+    None; components, ordered as a unit's; own, the writes C makes itself."""
+
+    def __init__(self, call, components, own):
+        self.call, self.components, self.own = call, components, own
+
+
+CONST_GROUPS = {
+    "bank3e": ConstSpec("patches.bank3e.addBank3E(rom, None, None)",
+                        ["asm:HARD_MODE", "asm:KEYSANITY_BEAKS", "asm:KEYSANITY_KEYS",
+                         "asm:KEYSANITY_MAPS", "asm:KEYSANITY_NIGHTMARE_KEYS"],
+                        [("T", "texts", 0xBE)]),
+}
+ASM_CONSTS_GROUP = "asm-consts"
+BANK_SIZE = 0x4000
+
+
+def _const_statements(inventory_text):
+    """generateRom's asm-consts rows (resetConsts and every assembler.const), in order."""
+    sections, bad = inventory_check.parse_inventory(inventory_text)
+    if bad:
+        raise TablesPlanError("the inventory does not parse: %s" % bad[0])
+    rows = sections.get(inventory_check.section_name("generator.py", "generateRom"), [])
+    return [r["key"] for r in rows if r["Group"] == ASM_CONSTS_GROUP]
+
+
+def _recorded(rom, table_names, events):
+    """rom with every bank byte and table entry it is given recorded into events, as
+    ("B", absolute offset, bytes) and ("T", table, key, bytes or int)."""
+    class Bank(bytearray):
+        def __setitem__(self, key, value):
+            if isinstance(key, slice):
+                start, stop, step = key.indices(len(self))
+                data = bytes(value)
+                if step != 1 or len(data) != stop - start:
+                    raise TablesPlanError("a bank write that is not one contiguous run")
+                events.append(("B", self.base + start, data))
+            else:
+                events.append(("B", self.base + key, bytes([value])))
+            super().__setitem__(key, value)
+
+    for n, data in enumerate(rom.banks):
+        rom.banks[n] = Bank(data)
+        rom.banks[n].base = n * BANK_SIZE
+    for name in table_names:
+        table = getattr(rom, name)
+        base = type(table)
+
+        def setitem(self, key, value, base=base, name=name):
+            events.append(("T", name, key, value if isinstance(value, int) else bytes(value)))
+            base.__setitem__(self, key, value)
+        table.__class__ = type("Recorded" + base.__name__, (base,), {"__setitem__": setitem})
+    return rom
+
+
+def const_runs(spec, model, statements, rom_path, table_names):
+    """[(tuple, writes)] of spec's call, one per reachable tuple of its components, each on a
+    fresh parse of the ROM after generateRom's asm-consts statements on the tuple's witness
+    (validated by LADXR); run inside the LADXR checkout. Every rom.patch's old bytes must
+    match: a patch LADXR skips as already applied is refused."""
+    import assembler
+    import generator
+    import romTables
+    import settings as ladxr_settings
+
+    found, unreached = reachable(spec.components, model)
+    if unreached:
+        raise TablesPlanError("unreached tuples %s" % unreached)
+    runs = []
+    for values, witness in found:
+        settings = ladxr_settings.Settings()
+        for line in assignment_lines(witness):
+            settings.set(line)
+        with contextlib.redirect_stdout(io.StringIO()):
+            settings.validate()
+        namespace = dict(vars(generator), settings=settings, assembler=assembler)
+        for statement in statements:
+            exec(statement, namespace)
+        events = []
+        with open(rom_path, "rb") as f:
+            rom = _recorded(romTables.ROMWithTables(f), table_names, events)
+        namespace["rom"] = rom
+        skipped = []
+        patch = rom.patch
+
+        def checked(bank, addr, old, new, **kw):
+            before = len(events)
+            patch(bank, addr, old, new, **kw)
+            if len(events) == before:
+                skipped.append((bank, addr))
+        rom.patch = checked
+        with contextlib.redirect_stdout(io.StringIO()):
+            eval(spec.call, namespace)
+        if skipped:
+            raise TablesPlanError("%s: patches skipped as already applied at %s"
+                                  % (spec.call, skipped))
+        runs.append((tuple(values), events))
+    return runs
+
+
+def const_files(model, inventory_text, rom_path, rom, known, table_names):
+    """{<group>.txt: text} of CONST_GROUPS, inside the LADXR checkout."""
+    statements = _const_statements(inventory_text)
+    return {"%s.txt" % group: const_group(group, table_names, spec.components,
+                                          const_runs(spec, model, statements, rom_path,
+                                                     table_names), spec.own, rom, known)
+            for group, spec in sorted(CONST_GROUPS.items())}
+
+
 # Building ----------------------------------------------------------------------------------------
 
 def _plan_state(inventory, done, facts, widenings, fusions):
@@ -861,6 +1065,9 @@ def build(args):
         calls = []
         files, problems = generate(inventory, model, widenings, fusions,
                                    lambda n, a: calls.append(n) or runner(n, a), rom, known)
+        if not problems:
+            files.update(const_files(model, _text(args.inventory), os.path.abspath(args.rom), rom,
+                                     known, [t.name for t in known_source.LAYOUT]))
     finally:
         driver.close()
     for line in problems:
@@ -876,6 +1083,42 @@ def build(args):
             f.write(text)
     print("gen_tables: %d coverage runs in %d s, %d files written to %s"
           % (len(calls), time.time() - start, len(files), args.out))
+    return 0
+
+
+def const(args):
+    """Writes CONST_GROUPS' files into <out>, replacing only them."""
+    import time
+    start = time.time()
+    sys.path.insert(0, HERE)
+    import known_source
+    inputs = lambda name: _text(os.path.join(args.inputs, name))
+    settings_text = inputs("settings.txt")
+    inventory_text = _text(args.inventory)
+    inventory = read_inventory(inventory_text, [s.key for s in ladx_cases.read_settings(settings_text)])
+    rom_path, out = os.path.abspath(args.rom), os.path.abspath(args.out)
+    with open(rom_path, "rb") as f:
+        rom = f.read()
+    known = known_source.build(rom)
+    cwd = os.getcwd()
+    work = ladx_oracle.enter_checkout(args.ladxr, os.path.join(TOP, "tmp", "ladx-tables"))
+    try:
+        import settings as ladxr_settings
+        model = build_model(inventory, inputs("tier1.txt"), settings_text, inputs("combos.txt"),
+                            inputs("settings_validate.txt"),
+                            settings_validate(ladxr_settings.Settings), None, [])
+        files = const_files(model, inventory_text, rom_path, rom, known,
+                            [t.name for t in known_source.LAYOUT])
+    finally:
+        os.chdir(cwd)
+        import shutil
+        shutil.rmtree(work, ignore_errors=True)
+    os.makedirs(out, exist_ok=True)
+    for name, text in sorted(files.items()):
+        with open(os.path.join(out, name), "w", encoding="ascii", newline="\n") as f:
+            f.write(text)
+    print("gen_tables: %d C-group files in %d s written to %s" % (len(files), time.time() - start,
+                                                                   args.out))
     return 0
 
 
@@ -925,12 +1168,18 @@ def main(argv):
     p.add_argument("--rom", default=os.path.join(TOP, "tmp", "ladx", "base.gbc"))
     p.add_argument("--inventory", default=os.path.join(TOP, "notes", "ladx-inventory.md"))
     p.add_argument("--inputs", default=HERE)
+    c = sub.add_parser("const")
+    c.add_argument("--out", required=True)
+    c.add_argument("--ladxr", default=os.path.join(HERE, "ladxr"))
+    c.add_argument("--rom", default=os.path.join(TOP, "tmp", "ladx", "base.gbc"))
+    c.add_argument("--inventory", default=os.path.join(TOP, "notes", "ladx-inventory.md"))
+    c.add_argument("--inputs", default=HERE)
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
         return 2 if e.code else 0
     try:
-        return (sample if args.mode == "sample" else build)(args)
+        return {"sample": sample, "build": build, "const": const}[args.mode](args)
     except (TablesPlanError, write_log.WriteLogError, ladx_oracle.OracleError, OSError) as e:
         print("gen_tables: %s" % e, file=sys.stderr)
         return 2

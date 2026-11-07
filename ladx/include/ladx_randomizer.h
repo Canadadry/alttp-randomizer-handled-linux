@@ -59,6 +59,9 @@ bool ladx_placer_add_spot(LadxPlacer *p, int spot);
  */
 LadxRandomizeStatus ladx_placer_run(LadxPlacer *p, LadxRng *rnd, LadxOutcome *outcome);
 
+/* The seed bytes kept: generateRom writes seed[:0x20] (patches/bank3e.py). */
+#define LADX_RANDOMIZER_SEED_MAX 32
+
 /* Caller-owned; read through the accessors. */
 typedef struct LadxRandomizer {
 	LadxSettings settings;
@@ -74,6 +77,8 @@ typedef struct LadxRandomizer {
 	bool read_done;
 	LadxPlacer placer;
 	LadxOutcome outcome;
+	uint8_t seed[LADX_RANDOMIZER_SEED_MAX];
+	size_t seed_len;
 } LadxRandomizer;
 
 /*
@@ -88,6 +93,8 @@ LadxRandomizeStatus ladx_randomize(LadxRandomizer *r, const LadxSettings *valida
 				   size_t seed_len, LadxRngSink sink, void *ctx);
 
 const LadxOutcome *ladx_randomizer_outcome(const LadxRandomizer *r);
+/* The seed's first LADX_RANDOMIZER_SEED_MAX bytes, *n their count. */
+const uint8_t *ladx_randomizer_seed(const LadxRandomizer *r, size_t *n);
 /* The world setup randomize gave; NULL when it did not return. */
 const LadxWorldSetup *ladx_randomizer_world_setup(const LadxRandomizer *r);
 

@@ -128,7 +128,7 @@
       - [x] Chunk 7: KS-match and fragment rule
       - [x] Chunk 8: pipeline and ladx_gen --rom
       - [x] Chunk 9: driver, e2e-rom and the real-ROM run
-    - [ ] Step 3.6.3 bank3e
+    - [x] Step 3.6.3 bank3e
     - [ ] Step 3.6.4 title
     - [ ] Step 3.6.5 marin
     - [ ] Step 3.6.6 hints

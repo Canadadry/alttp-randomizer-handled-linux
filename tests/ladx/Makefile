@@ -7,7 +7,7 @@ LADX := ../../ladx
 BUILD := build
 
 UNIT_TESTS := test_sha512 test_sha1 test_rom test_ks test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
-	test_itempool test_fill test_wlog test_tables test_encoder test_pipeline
+	test_itempool test_fill test_wlog test_tables test_encoder test_pipeline test_bank3e
 # Run again with --fixtures by make logic and unit-arm.
 LOGIC_TESTS := test_logic test_itempool test_fill test_encoder
 # Linked with the host layer ladx/host/ too.
@@ -25,7 +25,7 @@ SUPPORT_OBJ := $(BUILD)/support.o
 LOGIC_FIXTURE_OBJ := $(BUILD)/logic_fixture.o
 SYNTH_ROM_OBJ := $(BUILD)/synth_rom.o
 # Linked with the synthetic ROM builder unit/synth_rom.c.
-SYNTH_TESTS := test_rom test_ks test_pipeline
+SYNTH_TESTS := test_rom test_ks test_pipeline test_bank3e
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
 MAIN_SRC := $(wildcard $(LADX)/host/main/*.c)
 GEN := $(BUILD)/ladx_gen

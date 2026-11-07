@@ -44,7 +44,10 @@ in `docs/`, then `README.md`.
   replays `encoder_vectors.txt` with `--fixtures`; `pipeline.c`, the
   walk of `order.txt` through the encoder with the registry of ported `C`
   groups, `ladx_pipeline.h`, tested by `test_pipeline` (contract in
-  `tests/ladx/README.md`, "Pipeline"); `tables.c`, the patch tables' reader, key, walk, records
+  `tests/ladx/README.md`, "Pipeline"); `bank3e.c`, the `C` group
+  `bank3e` (`ladx_groups.h`, its constants from `data/ladx/bank3e.txt`),
+  tested by `test_bank3e`, claimed `rom-group` by `e2e-rom`, contract in
+  `tests/ladx/README.md`, "Pipeline" and "Patch tables"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
@@ -90,7 +93,8 @@ in `docs/`, then `README.md`.
   the base patch `base.bps`. Press Start 2P is `google/fonts`
   `ofl/pressstart2p/` at `24ddc1f324cac5d9f5aedca126d298f56e3f1640`, renamed.
   `data/ladx/` holds LADX's patch tables (`order.txt` and one `<group>.txt`
-  per `table` group of the inventory; format, units, keys, entries and the
+  per `table` group of the inventory, plus `bank3e.txt`, the `C` group
+  `bank3e`'s constants file; format, units, keys, entries and the
   order walk in `tests/ladx/README.md`'s "Patch tables"), written only by
   `gen_tables.sh`, never by hand.
 - `tests/alttp/` holds its tests: `unit/test_<module>.c`, one binary per
@@ -360,6 +364,9 @@ in `docs/`, then `README.md`.
   (`tmp/ladx-tables/ladxr-check/`, the network needed) and prints one
   `DIFFERENT`, `MISSING` or `EXTRA` line per file unlike `data/ladx/`
   (exit 1), else `tables: <n> files byte-identical to data/ladx`.
+  `gen_tables.sh --const [--out <dir>]` (with the ROM, outside the net)
+  rewrites only the `C` groups' constants files (`bank3e.txt`; contract
+  in `tests/ladx/README.md`, "Patch tables"), about 1 minute.
   `gen_tables.sh --sample [--ladxr <dir>]` (the checkout at the pin, no
   ROM) appends the 12 `sample <nn> k=v ...` lines to `combos.txt`
   (`gen_tables.py sample`: line `i` takes each setting's tier-1 value at

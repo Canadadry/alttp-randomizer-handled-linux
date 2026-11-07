@@ -499,6 +499,22 @@ LadxSpan ladx_tables_unit_id(const LadxTables *t, int unit)
 	return t->unit[unit].id;
 }
 
+int ladx_tables_find_group(const LadxTables *t, LadxSpan name)
+{
+	int i;
+
+	for (i = 0; i < t->group_count; i++)
+		if (span_eq(t->group[i].name, name))
+			return i;
+	return -1;
+}
+
+int ladx_tables_group_units(const LadxTables *t, int group, int *first)
+{
+	*first = t->group[group].first_unit;
+	return t->group[group].unit_count;
+}
+
 bool ladx_tables_unit_uses_count(const LadxTables *t, int unit)
 {
 	int i;

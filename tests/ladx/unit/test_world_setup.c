@@ -63,6 +63,19 @@ static void test_maze_seeds(void)
 	check(ladx_randomize(&r, &s, seed_b, sizeof seed_b, NULL, NULL) == LADX_RANDOMIZE_OK, "maze seed b: run");
 	check(ladx_randomizer_world_setup(&r) != NULL, "maze seed b: buildMaze returned");
 	check(words_before(&r) == 77, "maze seed b: words_before 77");
+	{
+		static uint8_t long_seed[40];
+		size_t n = 0;
+		const uint8_t *kept = ladx_randomizer_seed(&r, &n);
+
+		check(n == sizeof seed_b && memcmp(kept, seed_b, n) == 0, "the randomizer keeps the seed's bytes");
+		memset(long_seed, 0x5a, sizeof long_seed);
+		long_seed[31] = 1;
+		ladx_randomize(&r, &s, long_seed, sizeof long_seed, NULL, NULL);
+		kept = ladx_randomizer_seed(&r, &n);
+		check(n == 32 && kept[31] == 1, "the randomizer keeps the seed's first 32 bytes, seed[:0x20]");
+		ladx_randomize(&r, &s, seed_b, sizeof seed_b, NULL, NULL);
+	}
 
 	check(ladx_randomize(&r, &s, seed_c, sizeof seed_c, NULL, NULL) == LADX_RANDOMIZE_OK, "maze seed c: run");
 	o = ladx_randomizer_outcome(&r);

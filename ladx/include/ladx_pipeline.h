@@ -27,8 +27,10 @@ typedef struct LadxPipelineRom {
 	const LadxKs *ks;
 } LadxPipelineRom;
 
-/* rom NULL when no ROM is given (never for a needs_rom group); returns 1 on success. */
-typedef int (*LadxPipelineRun)(LadxEncoder *enc, const LadxRandomizer *r, const LadxPipelineRom *rom, void *ctx);
+typedef struct LadxPipeline LadxPipeline;
+
+/* The run's pipeline: p->rom NULL when no ROM is given (never for a needs_rom group); returns 1 on success. */
+typedef int (*LadxPipelineRun)(LadxEncoder *enc, LadxPipeline *p);
 
 typedef struct LadxPipelineGroup {
 	const char *name; /* the inventory's group, as order.txt's C rows name it */
@@ -56,7 +58,7 @@ typedef struct LadxPipelineError {
 	const char *group;
 } LadxPipelineError;
 
-typedef struct LadxPipeline {
+struct LadxPipeline {
 	const LadxTables *tables;
 	const LadxSettings *settings; /* validated */
 	int spot_count;		      /* ladx_tables_spot_count of the placement */
@@ -64,11 +66,22 @@ typedef struct LadxPipeline {
 	const LadxPipelineRom *rom; /* NULL: no ROM */
 	const LadxPipelineGroup *groups;
 	int group_count;
-	void *ctx; /* passed to every run */
+	void *ctx; /* the caller's, for every run */
 	LadxAtom scratch[LADX_WLOG_ATOM_MAX]; /* the run's, one record's atoms */
-} LadxPipeline;
+	uint8_t values[LADX_WLOG_ATOM_MAX];   /* a C group's, one record's bytes */
+	int32_t origins[LADX_WLOG_ATOM_MAX];
+};
 
 /* enc initialised over p->rom's bytes, KS and tables (or none), its log begun. */
 LadxPipelineStatus ladx_pipeline_run(LadxPipeline *p, LadxEncoder *enc, LadxPipelineError *err);
+
+/*
+ * Writes every unit of group's constants file (data/ladx/<group>.txt; its
+ * entry for the key of p's settings and spot count), in file order, as the
+ * C group's computed bytes: a reference or keep resolved from p->rom. 0
+ * when the group has no file, a unit no entry, a reference falls outside
+ * the ROM (or there is none), or the encoder refuses.
+ */
+int ladx_pipeline_const(LadxEncoder *enc, LadxPipeline *p, const char *group);
 
 #endif

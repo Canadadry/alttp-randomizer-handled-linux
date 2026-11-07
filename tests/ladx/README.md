@@ -249,6 +249,9 @@ follow the table groups' encoding rule, the fragment rule included
 - `<group>.txt` (`ladx-tables 1`), one per `table` group: `group <group>`,
   `tables <table>...` (ROMWithTables' tables in their order, as in a write
   log), then its units.
+- `<group>.txt` for a `C` group, its **constants file** (today
+  `bank3e.txt`): the settings-only writes of the group's call that C
+  cannot compute (LADXR's assembler), in the same format; below.
 
 **Units.** `unit <group>.<n> <component>...`, numbered from 1 in their
 first row's order. A unit is one `table` row, fused with the rows it is
@@ -312,8 +315,40 @@ goldens by `gen_golden.sh` like any case. A sample mismatch in
 `table_replay.py` means a key misses a dependency: widen it in
 `table_keys.txt` and regenerate the tables, never edit them.
 
+**Constants files.** A `C` group's file holds what its call writes
+without the seed, as **values**: each atom is a byte (a literal, or the
+source ROM's byte at a reference or keep), and the group's port writes
+those bytes as computed (origin `known`) through the C-group encoder, so
+a reference never carries an origin; it only keeps ROM bytes out of the
+file, which is encoded by the table rule (keep, longest source match of
+at least 4 bytes, the fragment rule, literal) and falls under the
+`tables` scope of the Nintendo-bytes check. `oracle/gen_tables.py`'s
+`CONST_GROUPS` names, per group, its call in seed-free form, its
+components and the writes C makes itself. For every reachable tuple of
+the components (with a witness validated by LADXR) the call runs on a
+fresh parse of the ROM, after `generateRom`'s `asm-consts` statements of
+the inventory evaluated in `generator.py`'s namespace, every bank and
+table write recorded; a `rom.patch` skipped as already applied, an own
+write a run misses, or a position written by both units is refused. The
+writes equal in every run form `<group>.1` (no component), the others
+`<group>.2` keyed by the components; their units match no `order.txt`
+row, and C writes them, unit by unit in file order, at the group's `C`
+row (`ladx_pipeline_const`, "Pipeline"). `bank3e`: `addBank3E(rom,
+None, None)` keyed by `asm:HARD_MODE`, `asm:KEYSANITY_BEAKS`,
+`asm:KEYSANITY_KEYS`, `asm:KEYSANITY_MAPS` and
+`asm:KEYSANITY_NIGHTMARE_KEYS` (32 entries of 9,953 to 9,978 bytes of
+assembled code and the handler pointer; the trampolines, bank 3 flags,
+owl rupees, photo-album fix and texts 0x89, 0xC8 to 0xCB and 0xD9 in the
+fixed unit); text 0xBE, the copy of 0x111, is C's own. `tables.py check`
+accepts at most one such file per `C` group of the inventory (any other
+name is `EXTRA`), checks its domains and duplicates, and matches its
+units to no row.
+
 **Regenerate.** `oracle/gen_tables.sh` rebuilds `data/ladx/` (coverage
-runs under `tmp/ladx-tables/`); `gen_tables.sh --check` rebuilds them with
+runs under `tmp/ladx-tables/`), the constants files included;
+`gen_tables.sh --const [--out <dir>]` rewrites only the constants files
+(`gen_tables.py const`, `PYTHONHASHSEED=0`, about 1 minute; any other
+file untouched); `gen_tables.sh --check` rebuilds them with
 another hash seed on a fresh clone and compares every file byte for byte.
 
 ## Table application
@@ -438,7 +473,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -450,7 +485,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -687,8 +722,21 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   parsed and its KS built, the group needing the ROM runs too, after it,
   receiving the parse; a unit with no entry for the key stops the walk
   as a tables error naming the unit; a group's failure stops it naming
-  the group; the library's registry is empty. It prints `test_pipeline:
-  <c> checks ok`.
+  the group; `ladx_pipeline_const` writes a planted constants file (a
+  fixed unit with a keep, a copy and a literal, a unit keyed by `music`
+  with a `T` record and a pointer) as computed literals for the key, and
+  fails the group on a reference beyond the ROM, a unit with no entry or
+  no file; the library's registry is `bank3e`, needing the ROM. It
+  prints `test_pipeline: <c> checks ok`.
+  `test_bank3e` runs the library's registry on a synthetic ROM and a
+  planted `bank3e.txt` (a fixed unit and one keyed by `asm:HARD_MODE`):
+  the expected log on the defaults, `hardmode=hero` (the other entry, the
+  other settings string) and `race=1` (no settings string): the
+  constants, the seed's 16 bytes at 0x3E:0x2F00, the length and bytes of
+  `ladx_settings_short_string` at 0x2F20, text 0xBE as the copy of the
+  synthetic entry 0x111's span; bank3e skipped without the ROM, failing
+  without its file. It prints `test_bank3e: constants, seed, settings
+  string and the 0xBE copy on a synthetic ROM (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -933,7 +981,26 @@ when it needs the ROM and none is given; then `ladx_enc_end`. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`; empty today.
+`rom-group` of `claims.txt`: today `bank3e` (`ladx/include/ladx_groups.h`).
+
+A group's `run` takes the encoder and the pipeline itself (tables,
+settings, spot count, randomizer, parsed ROM, `ctx`, and the `scratch`,
+`values` and `origins` buffers of one record). `ladx_pipeline_const(enc,
+p, group)` writes the group's constants file ("Patch tables"): every
+unit's entry for the key, in file order, each record's atoms resolved to
+bytes (a reference or keep from `p->rom`) and written by
+`ladx_enc_bank`, `_table` or `_pointer` with no origin; it returns 0 when
+the group has no file, a unit has no entry, a reference falls outside
+the ROM (or there is none), or the encoder refuses.
+`ladx_enc_entry_value` gives an entry's current bytes and origins, and
+`ladx_randomizer_seed` the seed's first 32 bytes.
+
+**`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
+entry 0x111's current value with its origins, then `seed[:0x20]` at bank
+0x3E 0x2F00, then, unless `race`, the short settings string's length
+byte at 0x2F20 and its bytes from 0x2F21 (over 255 bytes fails, as
+LADXR's `to_bytes` raises). LADXR writes the texts first; the order does
+not matter, since no two writes of the call share a position.
 
 ## Generator `ladx_gen`
 
@@ -964,13 +1031,13 @@ e2e` and `e2e-combos`.
 - `ladx_gen --tables <dir> <case_dir> <out_dir>` does the same, then,
   after an ok fill (`ladx_randomizer_placement` not NULL), writes
   `<out_dir>/rom_writes.txt`: the tables of `<dir>` (`order.txt` and every
-  other `.txt` file, read whole, 2 MiB in all at most; today 534,590
+  other `.txt` file, read whole, 2 MiB in all at most; today 1,050,951
   bytes) opened, the key of the validated settings and the placed logic's
   spot count, the library's pipeline ("Pipeline") walks `order.txt`:
   each selected entry's records through the encoder's `fixed` calls
   under its unit's group, and at `C` rows the library's ported groups
-  (none yet, so consecutive entries of one group merge into one segment
-  across the `C` rows). The file is a valid version-1 write log, no `I`
+  (without `--rom` none, since `bank3e` needs the ROM, so consecutive
+  entries of one group merge into one segment across the `C` rows). The file is a valid version-1 write log, no `I`
   line; the version and `tables` lines are written even when nothing
   else is. Without `--rom` the encoder has no ROM, KS or parsed tables
   and only the groups that need no ROM run. An
@@ -987,8 +1054,8 @@ e2e` and `e2e-combos`.
   --rom: not the LADX English 1.0 ROM (SHA-1 <hex>)`, the whole file's
   digest, exit 3, as `rom-check`'s refused base; a missing file exits 2),
   its tables parsed (`ladx_rom_tables_parse`), KS built (`ladx_ks_build`),
-  and all three given to the encoder and to every ported group. Today
-  its `rom_writes.txt` is the same as without `--rom`.
+  and all three given to the encoder and to every ported group, so the
+  `rom-group`s run too.
 - `ladx_gen --rom <file> --ks-spans <out>` checks and parses the ROM the
   same way and writes C's KS span list ("KS span list") to `<out>`,
   nothing else; exit 0, else as above.
@@ -1061,8 +1128,8 @@ unknown stage, a second `stage` line, no `stage` line, an unknown,
 repeated or `spoiler` group, a group both `group` and `rom-group`, a
 `rom-group` of another side, either refusal or any other line exits 2.
 Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
-`goal-fixed`, `music-fixed` and `options` (the five table groups); no
-`rom-group` (no `C` group is ported yet).
+`goal-fixed`, `music-fixed` and `options` (the five table groups);
+`rom-group bank3e`.
 
 `python3 -I -B tests/ladx/run_e2e.py [--cases <dir>] [--claims <file>]
 [--gen <binary>] [--tables <dir>] [--inventory <file>] [<case>...]`

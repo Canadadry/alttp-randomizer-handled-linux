@@ -2,6 +2,7 @@
 #include "randomizer_internal.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #define I(name) LADX_ITEM_##name
 
@@ -76,6 +77,8 @@ LadxRandomizeStatus ladx_randomize(LadxRandomizer *r, const LadxSettings *valida
 	int i, item, count;
 
 	r->settings = *validated;
+	r->seed_len = seed_len < LADX_RANDOMIZER_SEED_MAX ? seed_len : LADX_RANDOMIZER_SEED_MAX;
+	memcpy(r->seed, seed, r->seed_len);
 	r->outcome.kind = LADX_OUTCOME_UNFINISHED;
 	r->outcome.type = NULL;
 	r->outcome.message = NULL;
@@ -139,6 +142,12 @@ const LadxItemPool *ladx_randomizer_pool(const LadxRandomizer *r, uint64_t *word
 const LadxItemPool *ladx_randomizer_read_pool(const LadxRandomizer *r)
 {
 	return r->read_done ? &r->read_pool : NULL;
+}
+
+const uint8_t *ladx_randomizer_seed(const LadxRandomizer *r, size_t *n)
+{
+	*n = r->seed_len;
+	return r->seed;
 }
 
 const LadxLogic *ladx_randomizer_placement(const LadxRandomizer *r)

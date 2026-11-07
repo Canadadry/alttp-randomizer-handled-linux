@@ -358,6 +358,20 @@ static void test_queries(void)
 	check(ladx_enc_entry_origins(&enc, ENTITIES, key(1), got, 4, &n) && n == 2 && got[0] < K && got[1] < K &&
 		      got[0] != o[0] && got[0] != o[1],
 	      "a table group's entry bytes get fresh identities");
+	{
+		uint8_t val[4];
+		int32_t org[4];
+
+		check(ladx_enc_entry_value(&enc, ENTITIES, key(1), val, org, 4, &n) && n == 2 && val[0] == 1 &&
+			      val[1] == rom[0x343] && org[0] == got[0] && org[1] == got[1],
+		      "an entry's value: a literal's byte, a reference's source byte, with its origins");
+		check(ladx_enc_entry_value(&enc, ENTITIES, key(7), val, org, 4, &n) && n == 2 && val[0] == rom[0x10] &&
+			      org[1] == 0x11,
+		      "an initial entry's value is its source bytes");
+		check(!ladx_enc_entry_value(&enc, ENTITIES, key(1), val, org, 1, &n) &&
+			      !ladx_enc_entry_value(&enc, ENTITIES, key(8), val, org, 4, &n),
+		      "no value over cap bytes or for an unknown entry");
+	}
 	check(ladx_enc_fresh(&enc, 2) < got[1] && ladx_enc_fresh(&enc, 1) < got[1], "fresh identities are new ones");
 	expect("carried copies of a table group's fresh identities",
 	       HEADER "G tg\nB 120 01 @343+1\nT entities 1 01 @343+1\nG ca\nB 140 @343+1 01 @30+1\n");

@@ -151,6 +151,17 @@ static void test_walk(void)
 		      ladx_tables_entry_count(&tables) == 7,
 	      "synthetic counts");
 	check(span_is(ladx_tables_names(&tables), "texts entities"), "tables names");
+	{
+		int first = -1;
+
+		check(ladx_tables_find_group(&tables, span("gamma")) == 1 &&
+			      ladx_tables_find_group(&tables, span("beta")) == -1,
+		      "a group's index by name, -1 for a group without a file");
+		check(ladx_tables_group_units(&tables, 0, &first) == 3 && first == 0 &&
+			      ladx_tables_group_units(&tables, 1, &first) == 1 && first == 3 &&
+			      span_is(ladx_tables_unit_id(&tables, first), "gamma.1"),
+		      "a group's units: the first one and their count");
+	}
 	defaults(&s);
 	expect_walk("defaults", &s, 225,
 		    "alpha alpha.1 B 10 0102|beta - patches.b.first(rom, rnd)|alpha alpha.2 B 20 =2 @400+3 aa|gamma gamma.1 B 7 =1|"
@@ -593,16 +604,16 @@ static void test_real_tables(void)
 	int cases, combos, u, with_count = 0;
 
 	open_real();
-	check(ladx_tables_group_count(&tables) == 5, "data/ladx: 5 groups");
-	check(ladx_tables_unit_count(&tables) == 91, "data/ladx: 91 units");
-	check(ladx_tables_entry_count(&tables) == 676, "data/ladx: 676 entries");
+	check(ladx_tables_group_count(&tables) == 6, "data/ladx: 6 groups, bank3e's constants included");
+	check(ladx_tables_unit_count(&tables) == 93, "data/ladx: 93 units");
+	check(ladx_tables_entry_count(&tables) == 709, "data/ladx: 709 entries");
 	for (u = 0; u < ladx_tables_unit_count(&tables); u++)
 		with_count += ladx_tables_unit_uses_count(&tables, u);
 	check(with_count == 1, "data/ladx: one unit keyed by count");
 	cases = check_cases("cases");
 	combos = check_cases("combos");
 	check(cases > 0 && combos > 0, "case and combo folders");
-	printf("%s: data/ladx opened (5 groups, 91 units, 676 entries); %d cases and %d combos select %d entries\n",
+	printf("%s: data/ladx opened (6 groups, 93 units, 709 entries); %d cases and %d combos select %d entries\n",
 	       TEST, cases, combos, units_selected);
 }
 
