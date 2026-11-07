@@ -336,3 +336,18 @@ End of Phase 2: `warn-review` flagged duplicated constants and loaders across th
 ### Step 3.2
 
 `ladx_settings` holds the 47 settings of LADXR at the pin (all but `seed` and `forwardfactor`), 161 options, field by field equal to `settings.txt`. A settings set is a plain struct. Beyond the table, the step also took `key=value` parsing, a full port of `Settings.validate` and `getShortString`, since steps 5, 6.3 and 7 need them and the fixtures existed: 1793 validate lines replayed (123 rewritten), every short string equal. Unsupported settings stay in the table with their values, so validate is ported whole. Unsupported single values (60) carry a reason id on the value; the one pair is `boomerang=default` with `accessibility=all` (`ladxr-refuses`). Support is checked after validate, since validate can make an accepted input unsupported (`goal=maze` forces `accessibility=all`). Phase 4's grid will need to grey a single value, not only a pair. Booleans accept only `0` and `1`, a deliberate narrowing of LADXR's any-integer. Every case and combo `config.txt` (88 + 40) parses, comes out of validate unchanged and is supported. Four planted mutations each fail `test_settings`. `make unit-arm`: LADX's 3 unit tests pass under qemu-arm.
+
+### Step 3.3
+
+LADXR's `logic/` and `locations/` are ported for tier 1, in seven chunks, each a line-for-line transcription in LADXR's statement order. That covers items (167 names) and requirements (folding, stored order, shared nodes, in-place add and remove, in a caller-owned arena), the graph core and explorer, the 29 location kinds with `configure` and the 288 check-metadata entries, `RequirementsSettings`, the nine dungeons (public `ladx_logic_build_dungeon`, colour dungeon `n = 0`), the overworld, and `ladx_logic_build` (identity entrances, egg requirement for every goal, removed dungeon items). Evidence, all against Phase 1's fixtures:
+- all 1334 spot lines rebuilt from class and name id;
+- each dungeon built alone equal on the five baselines (45 walks, 2179 locations);
+- the five baselines built whole line-identical (11,034 lines);
+- under `make logic` and `make unit-arm`, all 425 configurations' graph SHA-512s and all 2550 explore vectors equal.
+
+Over 50 planted mutations each failed a test, with one exception: KeyLocation's "Unset Room" override cannot be caught at this pin, because no key name is a metadata key; the code still follows LADXR. Deviations and decisions:
+- World-setup randomisation and the per-kind ROM patch are left to steps 4 and 6.
+- The logic build refuses only values unsupported alone: the `boomerang=default`+`accessibility=all` pair builds, since LADXR's fill fails there, not its logic, and 5 fixture configurations use it.
+- The builder is public (`ladx_logic_builder.h`), so tests use public headers only.
+
+Maxima over the 425 graphs: 689 locations, 1400 edges, 348 spots, 1154 requirement nodes and 2395 terms, under capacities 1024, 2048, 512, 4096 and 16384. Fixing a quadratic `strlen` in the test renderer took the replay from 4 min 27 s to 23.6 s under qemu-arm (2.9 s on the host). `make test` stays about 6.5 s, and `make logic` is about 12.5 s. The PRD's "445 configurations" was a typo for the fixture's 425.

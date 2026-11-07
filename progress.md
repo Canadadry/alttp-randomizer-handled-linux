@@ -91,7 +91,7 @@
     - [x] Chunk 3: fast make test, unit-arm, docs
   - [x] Step 3.2 Settings table
     - [x] Settings table, validate and unsupported values
-  - [ ] Step 3.3 Logic and locations
+  - [x] Step 3.3 Logic and locations
     - [x] Chunk 1: items and requirements
     - [x] Chunk 2: graph core, explorer and harness
     - [x] Chunk 3: location kinds and metadata
