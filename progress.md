@@ -159,6 +159,6 @@
   - [x] Step 4.4 Package
     - [x] Fix: the zip builder left out of the package commit
   - [x] Step 4.5 README and screenshots
-  - [ ] Step 4.6 check-net
+  - [x] Step 4.6 check-net
   - [ ] Step 4.7 rework-comments
   - [ ] Step 4.8 Close the ROM window

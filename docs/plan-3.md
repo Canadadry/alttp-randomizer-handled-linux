@@ -563,3 +563,12 @@ LADX was measured with the real ROM and the zip's tables, and the output matches
 ### Step 4.5
 
 The README covers both games. A table gives each base ROM's place: ALttP's headerless JP 1.0 in `App/ZeldaRando/alttp/base.sfc`, and LADX's English 1.0 `.gbc` (1,048,576 bytes, SHA-1 `d90ac17e…`) in `App/ZeldaRando/ladx/base.gbc`, either alone being enough. It also covers the Package Manager's SNES and GBC lists, the output folders `Roms/SFC/ZeldaRando/` and `Roms/GBC/ZeldaRando/`, LADX's L2/R2 jumps and greyed reasons, and the old `App/ALttPR/` line. CLAUDE.md's opening paragraph describes both games. Path grep: every README path matches a `RANDO_SD_*` macro of `app/sd/rando_seed_save.h`: the base files at :17 and :29, the ROM folders at :14 and :33, and the app folder at :11. The exceptions are the log (`launch.sh:3`) and the old folder, which has no macro on purpose. `make screenshots` adds `game_choice` and `ladx_generate_top`, both existing golden states (a LADX ready screen would need a real base on the fixture). The six PNGs are drawn twice byte-identical, the four old ones unchanged. 0 literal runs.
+
+### Step 4.6
+
+`check-net`: `make -k check` was green at 2bcb189 on the first run, with no `fix:` commit:
+- lint: 75 `alttp/`, 29 `app/`, 60 `ladx/` and 4 `ladx/host/` sources;
+- logic: 425 configurations and 2550 explore vectors;
+- ALttP e2e: 50 cases and 23 combos;
+- LADX e2e: 88 cases and 40 combos, projections equal;
+- `e2e-synthetic`: 128 equal.
