@@ -1,4 +1,4 @@
-.PHONY: help test lint logic unit-arm selftest e2e e2e-combos e2e-rom measure rom-check rom-check-selftest
+.PHONY: help test lint logic unit-arm selftest e2e e2e-combos e2e-rom e2e-synthetic synthetic-refs measure rom-check rom-check-selftest
 
 CC ?= gcc
 # -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
@@ -7,7 +7,7 @@ LADX := ../../ladx
 BUILD := build
 
 UNIT_TESTS := test_sha512 test_store test_sha1 test_rom test_ks test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
-	test_itempool test_fill test_wlog test_tables test_encoder test_pipeline test_bank3e test_md5 test_background test_title test_text test_marin test_hints test_music test_endscreen test_notext test_room test_goal test_items test_entrances test_bosses test_sprite_data test_enemizer test_warp_home test_sprites test_save test_header test_spoiler
+	test_itempool test_fill test_wlog test_tables test_encoder test_pipeline test_bank3e test_md5 test_background test_title test_text test_marin test_hints test_music test_endscreen test_notext test_room test_goal test_items test_entrances test_bosses test_sprite_data test_enemizer test_warp_home test_sprites test_save test_header test_spoiler test_assemble
 # Run again with --fixtures by make logic and unit-arm.
 LOGIC_TESTS := test_logic test_itempool test_fill test_encoder test_store test_header
 # Linked with the host layer ladx/host/ too.
@@ -25,10 +25,14 @@ SUPPORT_OBJ := $(BUILD)/support.o
 LOGIC_FIXTURE_OBJ := $(BUILD)/logic_fixture.o
 SYNTH_ROM_OBJ := $(BUILD)/synth_rom.o
 # Linked with the synthetic ROM builder unit/synth_rom.c.
-SYNTH_TESTS := test_rom test_ks test_pipeline test_bank3e test_title test_marin test_music test_endscreen test_notext test_room test_goal test_items test_entrances test_bosses test_enemizer test_warp_home test_sprites test_save test_header test_spoiler
+SYNTH_TESTS := test_rom test_ks test_pipeline test_bank3e test_title test_marin test_music test_endscreen test_notext test_room test_goal test_items test_entrances test_bosses test_enemizer test_warp_home test_sprites test_save test_header test_spoiler test_assemble
 LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
 MAIN_SRC := $(wildcard $(LADX)/host/main/*.c)
 GEN := $(BUILD)/ladx_gen
+PATCH := $(BUILD)/ladx_patch
+SYNTH_REFS := $(BUILD)/synthetic_refs
+SYNTH_REFS_FILE := synthetic_refs.txt
+SYNTH_CASES = $(sort $(wildcard cases/*/)) $(sort $(wildcard combos/*/))
 GEN_DIR := $(BUILD)/gen
 GEN_OBJ := $(patsubst $(LADX)/src/%.c,$(GEN_DIR)/%.o,$(LADX_SRC)) \
 	$(patsubst $(LADX)/host/%.c,$(GEN_DIR)/host/%.o,$(HOST_SRC))
@@ -57,7 +61,9 @@ help:
 	@echo "make e2e-combos        the same on every case of combos/"
 	@echo "make e2e-rom           with LADX_ROM (default tmp/ladx/base.gbc): C's KS span list compared with known_source.build's, then build/ladx_gen --rom on every case of cases/ and combos/, every group and rom-group of claims.txt claimed; work in tmp/ladx-e2e-rom/; outside the net"
 	@echo "make measure           build/ladx_gen --time (the run stopped after the fill) 3 times on every case and combo, the minimum kept, projected onto the Cortex-A7; report in build/measure/report.txt; outside the net"
-	@echo "make rom-check          the generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
+	@echo "make e2e-synthetic     build/synthetic_refs: its self-test, then C's outputs (write log, ROM, spoiler) on a synthetic base, every case and combo, against synthetic_refs.txt; in the net"
+	@echo "make synthetic-refs    rewrites synthetic_refs.txt, each case's skipped groups found anew; only after e2e-rom and rom-check are green with the ROM, in its own commit; outside the net"
+	@echo "make rom-check          builds build/ladx_patch, then the generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
 	@echo "make rom-check-selftest rom_check.py's self-test alone: a synthetic ROM, a planted case tree and fake generators, no ROM"
 
 selftest:
@@ -80,8 +86,16 @@ e2e-rom: $(GEN)
 measure: $(GEN)
 	@CC='$(CC)' ./measure.sh $(GEN) $(BUILD)/measure
 
+e2e-synthetic: $(SYNTH_REFS)
+	@./$(SYNTH_REFS) --self-test
+	@./$(SYNTH_REFS) --tables $(TABLES) --check $(SYNTH_REFS_FILE) $(SYNTH_CASES)
+
+synthetic-refs: $(SYNTH_REFS)
+	@./$(SYNTH_REFS) --self-test
+	@./$(SYNTH_REFS) --tables $(TABLES) --write $(SYNTH_REFS_FILE) $(SYNTH_CASES)
+
 # Paths are repository-relative: the driver runs from the repository's root.
-rom-check:
+rom-check: $(PATCH)
 	cd $(TOP) && python3 -I -B tests/ladx/oracle/rom_check.py --rom $(LADX_ROM) --gen $(LADX_GEN) $(CASES)
 
 rom-check-selftest:
@@ -162,8 +176,14 @@ $(GEN_DIR)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -c -o $@ $<
 
-$(GEN): $(MAIN_SRC) $(GEN_OBJ) $(HOST_HDR) $(LADX_HDR) | $(BUILD)
-	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -o $@ $(MAIN_SRC) $(GEN_OBJ) -lm
+$(GEN): $(LADX)/host/main/ladx_gen.c $(GEN_OBJ) $(HOST_HDR) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -o $@ $< $(GEN_OBJ) -lm
+
+$(SYNTH_REFS): unit/synthetic_refs.c unit/synth_rom.c unit/synth_rom.h $(GEN_OBJ) $(HOST_HDR) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -Iunit -o $@ unit/synthetic_refs.c unit/synth_rom.c $(GEN_OBJ) -lm
+
+$(PATCH): $(LADX)/host/main/ladx_patch.c $(GEN_OBJ) $(HOST_HDR) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -DLADX_TABLES_DEFAULT='"$(TABLES)"' -o $@ $< $(GEN_OBJ) -lm
 
 $(LINT_DIR)/%.o: $(LADX)/src/%.c $(LADX_HDR)
 	@mkdir -p $(@D)

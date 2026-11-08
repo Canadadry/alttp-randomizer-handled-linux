@@ -1,4 +1,4 @@
-.PHONY: help install test test-rando test-ladx ui-cli test-template rom-guard test-ladx-oracle ladx-cases ladx-tables lint logic selftest e2e e2e-combos e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
+.PHONY: help install test test-rando test-ladx ui-cli test-template rom-guard test-ladx-oracle ladx-cases ladx-tables lint logic selftest e2e e2e-combos e2e-synthetic e2e-arm unit-arm sdl sdl-pc sdl-goldens sdl-goldens-add screenshots mockups theme-compare theme-art theme-art-write sdl-arm package patch-header measure-compare mac mac-rom mac-run mac-clean check
 
 help:
 	@echo "make install        nothing to install: host gcc and python3 are enough"
@@ -16,6 +16,7 @@ help:
 	@echo "make selftest       the e2e drivers' own self-tests (tests/alttp, then tests/ladx)"
 	@echo "make e2e            every case of tests/alttp/cases, then tests/ladx/cases, diffed against its golden"
 	@echo "make e2e-combos     every case of tests/alttp/combos, then tests/ladx/combos, diffed against its golden, kept out of e2e"
+	@echo "make e2e-synthetic  LADX's ROM-free regression reference: C's outputs on a synthetic base against tests/ladx/synthetic_refs.txt, run by make check"
 	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make unit-arm       every unit test of both games (tests/alttp, tests/ladx) on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
@@ -90,6 +91,9 @@ e2e-combos:
 	$(MAKE) -C tests/alttp e2e-combos
 	$(MAKE) -C tests/ladx e2e-combos
 
+e2e-synthetic:
+	$(MAKE) -C tests/ladx e2e-synthetic
+
 # Outside the net: needs docker and qemu-user.
 e2e-arm:
 	$(MAKE) -C tests/alttp e2e-arm
@@ -163,4 +167,4 @@ measure-compare:
 	$(MAKE) -C tests/alttp measure-compare
 
 # The net. A change that keeps it green is correct; one that breaks it is a bug.
-check: test test-ladx-oracle ladx-cases lint logic selftest e2e e2e-combos
+check: test test-ladx-oracle ladx-cases lint logic selftest e2e e2e-combos e2e-synthetic

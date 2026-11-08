@@ -138,10 +138,10 @@ def read_lines(path):
 
 class Claims:
     """claims.txt: the stage, the group lines and the rom-group lines, in file order, and whether
-    the spoiler line is there."""
+    the spoiler and net lines are there."""
 
-    def __init__(self, stage, groups, rom_groups, spoiler=False):
-        self.stage, self.groups, self.rom_groups, self.spoiler = stage, groups, rom_groups, spoiler
+    def __init__(self, stage, groups, rom_groups, spoiler=False, net=False):
+        self.stage, self.groups, self.rom_groups, self.spoiler, self.net = stage, groups, rom_groups, spoiler, net
 
 
 def read_claims(path, inventory):
@@ -153,7 +153,7 @@ def read_claims(path, inventory):
         raise Usage("cannot read claims %s: %s" % (path, e.strerror))
     stage = None
     groups, rom_groups = [], []
-    spoiler = False
+    spoiler = net = False
     table = None
     for n, line in enumerate(lines, 1):
         text = line.strip()
@@ -164,6 +164,11 @@ def read_claims(path, inventory):
             if spoiler:
                 raise Usage("%s:%d: a second spoiler line" % (path, n))
             spoiler = True
+            continue
+        if fields == ["net"]:
+            if net:
+                raise Usage("%s:%d: a second net line" % (path, n))
+            net = True
             continue
         if len(fields) != 2 or fields[0] not in ("stage", "group", "rom-group"):
             raise Usage("%s:%d: malformed line" % (path, n))
@@ -189,7 +194,7 @@ def read_claims(path, inventory):
         stage = fields[1]
     if stage is None:
         raise Usage("%s: no stage line" % path)
-    return Claims(stage, groups, rom_groups, spoiler)
+    return Claims(stage, groups, rom_groups, spoiler, net)
 
 
 def read_groups_table(inventory):
@@ -311,8 +316,31 @@ def compare_spoiler(want, out_dir, case_dir):
     return [line]
 
 
+def net_effect(segments):
+    """{offset: atom} of a parsed log's bank records replayed in log order: the final value of every
+    written output offset, a literal (negative) or a source reference."""
+    out = {}
+    for _, banks, _ in segments:
+        out.update(banks)
+    return out
+
+
+def _atom_kind(atom):
+    return "unwritten" if atom is None else "reference" if atom >= 0 else "literal"
+
+
+def compare_net(golden, c):
+    """The net claim's detail lines (offsets and kinds only), [] when the two net effects are equal."""
+    differ = sorted(p for p in set(golden) | set(c) if golden.get(p) != c.get(p))
+    if not differ:
+        return []
+    p = differ[0]
+    return ["net: %d offsets differ, first at %x: golden %s, c %s"
+            % (len(differ), p, _atom_kind(golden.get(p)), _atom_kind(c.get(p)))]
+
+
 def run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom=None, out_root=None, golden_traces=None,
-             spoiler=None):
+             spoiler=None, net=None):
     """The detail lines of a DIVERGENT case, or None when it passes. With rom, the generator gets
     --rom and writes into out_root/<case>/, the detail lines redacted. spoiler: the golden's spoiler
     line (golden_spoiler) when the spoiler is claimed, else None."""
@@ -321,14 +349,15 @@ def run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom=None
     if rom is None:
         with tempfile.TemporaryDirectory(prefix="ladx-e2e-") as out_dir:
             return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, None, out_dir,
-                             golden_traces, spoiler)
+                             golden_traces, spoiler, net)
     out_dir = os.path.join(out_root, os.path.basename(case_dir))
     os.makedirs(out_dir)
-    return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces, spoiler)
+    return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces, spoiler,
+                     net)
 
 
 def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces=None,
-              spoiler=None):
+              spoiler=None, net=None):
     args = [gen, "--tables", tables] + (["--rom", rom] if rom else []) + [case_dir, out_dir]
     try:
         proc = subprocess.run(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -354,19 +383,22 @@ def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, ou
                               [(label, line) for line in group_trace(c_lines, group)]) or []
     if spoiler is not None:
         detail += compare_spoiler(spoiler, out_dir, case_dir)
-    if groups:
+    if groups or net is not None:
         path = os.path.join(out_dir, "rom_writes.txt")
         if not os.path.isfile(path):
             return detail + ["c wrote no rom_writes.txt"]
         try:
             with open(path, encoding="utf-8", errors="replace") as f:
-                c_logs = log_projections(f.read(), groups)
+                parsed = write_log.parse(f.read())
+            c_logs = parsed_projections(parsed, groups)
         except write_log.WriteLogError as e:
             # With the ROM present a parse message may quote a token: its line number only.
             reason = str(e).split(":")[0] if rom else str(e)
             return detail + [_cut("c rom_writes.txt malformed: %s" % reason)]
         for group in groups:
             detail += compare_group(group, golden_logs[group], c_logs[group], rom is not None) or []
+        if net is not None:
+            detail += compare_net(net, net_effect(parsed[1]))
     return detail or None
 
 
@@ -530,7 +562,8 @@ def run(cases_dir, claims, gen, names, out, tables, inventory, rom=None):
         groups = claimed.groups + (claimed.rom_groups if rom else [])
         cases = list_cases(cases_dir, names)
         raw = {}
-        goldens, logs = load_goldens(cases_dir, cases, stage, bool(claimed.groups or claimed.rom_groups), raw)
+        goldens, logs = load_goldens(cases_dir, cases, stage,
+                                     bool(claimed.groups or claimed.rom_groups or claimed.net and rom), raw)
         check_needs_rom(claimed, inventory, cases, logs)
         golden_logs = {case: parsed_projections(logs[case], groups) for case in logs}
         golden_traces = {case: {g: group_trace(raw[case], g, renumber=True) for g in groups} for case in cases}
@@ -559,17 +592,22 @@ def run(cases_dir, claims, gen, names, out, tables, inventory, rom=None):
         header += ", rom-groups %s%s" % (" ".join(claimed.rom_groups), "" if rom else " skipped")
     if claimed.spoiler:
         header += ", spoiler%s" % ("" if rom else " skipped")
+    if claimed.net:
+        header += ", net%s" % ("" if rom else " skipped")
     print(header, file=out)
+    nets = {case: net_effect(logs[case][1]) for case in cases} if claimed.net and rom else {}
     workers = min(len(cases), os.cpu_count() or 1)
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         results = list(pool.map(lambda c: run_case(gen, tables, os.path.join(cases_dir, c), stage, goldens[c],
                                                    groups, golden_logs.get(c), rom and os.path.abspath(rom.rom),
                                                    out_root, golden_traces[c],
-                                                   spoilers.get(c) if rom else None), cases))
+                                                   spoilers.get(c) if rom else None, nets.get(c)), cases))
     divergent = 0
     label = "%s + %d groups" % (stage, len(groups)) if groups else stage
     if claimed.spoiler and rom:
         label += " + spoiler"
+    if claimed.net and rom:
+        label += " + net"
     for case, detail in zip(cases, results):
         if detail is None:
             print("PASS %s (%s)" % (case, label), file=out)
@@ -994,7 +1032,30 @@ def _rom_checks(tmp, config, golden, golden_log, golden_spoiler_json):
     spoiler_none.insert(len(spoiler_none) - 1, "spoiler none")
     no_spoiler_line = [l for l in golden if not l.startswith("spoiler_sha1 ")]
     claims_sp = fill + "spoiler\n"
+    spot = 0x7fff0
+    hints_seg, bank3e_seg = ("hints", {spot: write_log._lit(0x11)}, {}), ("bank3e", {spot: write_log._lit(0x22)}, {})
+    overlap = write_log.render(tables, segments + [hints_seg, bank3e_seg])
+    swapped = write_log.render(tables, segments + [bank3e_seg, hints_seg])
+    claims_net = fill + "group hints\nrom-group bank3e\nnet\n"
+    marin_seg = ("marin", {spot: write_log._lit(0x33)}, {})
+    first_same = write_log.render(tables, segments + [hints_seg, bank3e_seg, marin_seg])
+    first_same_c = write_log.render(tables, segments + [hints_seg, marin_seg, bank3e_seg])
     runs = [
+        ("e2e-rom, three writers of one offset, the first in place, the last two swapped",
+         dict(gold_log=first_same, c_log=first_same, rom_log=first_same_c, claims=fill + "net\n", rom="ok"),
+         "DIVERGENT", "  net: 1 offsets differ"),
+        ("net claimed, an overlap-order swap, skipped by e2e",
+         dict(gold_log=overlap, c_log=swapped, claims=claims_net), "PASS", "rom-groups bank3e skipped, net skipped"),
+        ("the same claimed by e2e-rom: every projection equal, the net effect divergent",
+         dict(gold_log=overlap, c_log=overlap, rom_log=swapped, claims=claims_net, rom="ok"), "DIVERGENT",
+         "  net: 1 offsets differ, first at %x: golden literal, c literal\n" % spot),
+        ("net claimed by e2e-rom, the logs in one order",
+         dict(gold_log=overlap, c_log=overlap, claims=claims_net, rom="ok"), "PASS", " + net)"),
+        ("net claimed by e2e-rom, c writing one offset more",
+         dict(gold_log=golden_log, c_log=golden_log, rom_log=overlap, claims=fill + "net\n", rom="ok"), "DIVERGENT",
+         "golden unwritten, c literal"),
+        ("net line twice", dict(gold_log=golden_log, c_log=golden_log, claims=fill + "net\nnet\n"), "exit 2",
+         "a second net line"),
         ("spoiler claimed, c's spoiler.json different, skipped by e2e",
          dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp, gold_spoiler=sj, c_spoiler=changed_sj),
          "PASS", "groups none, spoiler skipped"),

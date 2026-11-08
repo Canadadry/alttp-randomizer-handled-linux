@@ -544,7 +544,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_store`, `test_save`, `test_header`, `test_spoiler`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`, `test_store`, `test_header`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_store`, `test_save`, `test_header`, `test_spoiler`, `test_assemble`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`, `test_store`, `test_header`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -556,7 +556,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_save`, `test_header`, `test_spoiler`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_save`, `test_header`, `test_spoiler`, `test_assemble`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -1119,6 +1119,25 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   and a room 0x010 with no warp (`FAILED`). It prints `test_spoiler:
   LADXR's outputJson on 5 fill placements, each kind's read, the world
   setup read back (<c> checks)`.
+  `test_assemble` checks `ladx_assemble` ("Assembly") on the synthetic
+  ROM (its own SHA-1 passed as the expected digest), synthetic tables
+  (a table unit, a `C` row, a second unit, a second `C` row) and a planted
+  registry of two groups that record what they see: the groups run once
+  each in `order.txt`'s order, a group sees the table entry of a row
+  before it and not the one after it, the log sink receives the log in
+  that order, the trace sink the fill's draws, the image holds the
+  entries' bytes (a copy read from the base) and the groups' bytes,
+  every other byte is the base's, and the header is fixed on the image
+  last (name "LADXR", the checksum and the global sum by `fixHeader`'s
+  formula written out in the test, a group's write to 0x14E overwritten);
+  then every refusal with the output untouched and nothing drawn: a base
+  1 byte short, another base with no expected digest (its SHA-1
+  reported), a base whose Alt8C pointer does not parse, unsupported
+  settings, a fill LADXR refuses (baseline's settings, seed
+  `3ad484d5…`, `fill_outcomes.txt`'s first line: `OUTCOME`, no group
+  run), a group failing, a group raising, a unit without an entry, an
+  output overlapping the base and NULL arguments. It prints
+  `test_assemble: <n> checks passed`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -2006,13 +2025,14 @@ e2e` and `e2e-combos`.
   about 12 ms per run on the host (slowest case, `sample-05`); `--rom`'s
   read, check, parse and KS about 30 ms more.
 - `ladx_gen --tables <dir> --rom <file> <case_dir> <out_dir>` does the
-  same with the source ROM: the file is read whole and refused unless it
-  is 1 MiB with SHA-1 `d90ac17e…` (`ladx_rom_check`; else `ladx_gen:
-  --rom: not the LADX English 1.0 ROM (SHA-1 <hex>)`, the whole file's
-  digest, exit 3, as `rom-check`'s refused base; a missing file exits 2),
-  its tables parsed (`ladx_rom_tables_parse`), KS built (`ladx_ks_build`),
-  and all three given to the encoder and to every ported group, so the
-  `rom-group`s run too; after an ok pipeline it writes
+  same with the source ROM, through `ladx_assemble` ("Assembly"), the
+  log sink writing `rom_writes.txt` and the trace sink the run text: the
+  file is read whole and refused unless it is 1 MiB with SHA-1
+  `d90ac17e…` (else `ladx_gen: --rom: not the LADX English 1.0 ROM
+  (SHA-1 <hex>)`, or `(over 1 MiB)` for a longer file, exit 3, as
+  `rom-check`'s refused base; a missing file exits 2), its tables parsed,
+  KS built, and every ported group run, the `rom-group`s too; the image
+  is built and dropped. After an ok pipeline it writes
   `<out_dir>/spoiler.json` (`ladx_spoiler_render`, "Spoiler") unless
   `race` is on, nothing when a group raised.
 - `ladx_gen --rom <file> --ks-spans <out>` checks and parses the ROM the
@@ -2034,7 +2054,83 @@ e2e` and `e2e-combos`.
 
 `ladx_gen` writes the file with the host layer's
 `ladx_run_text_write_run` (`ladx/host/ladx_run_text.h`), which
-`test_fill --fixtures` uses too.
+`test_fill --fixtures` uses too. It reads its inputs through the host
+layer's `ladx/host/ladx_inputs.h` (a case directory, a tables directory
+read whole, 2 MiB at most, a whole file), which `ladx_patch` and
+`synthetic_refs` use too.
+
+## Assembly
+
+`ladx/include/ladx_assemble.h`'s `ladx_assemble(a, in, out)` generates
+one seed whole, on caller-owned memory: the `LadxAssembler` (about 21
+MiB: the encoder about 16.5 MiB, the write log about 2.7 MiB, the
+pipeline's scratch, the randomizer, the parsed source tables, KS and the
+spoiler), the base (1 MiB, read until the call returns) and the output
+(`LADX_ROM_SIZE` bytes, not overlapping the base, since references read
+the base until the image is complete). The library keeps no state of its
+own; Phase 4 decides where the app holds the three buffers.
+
+Input: the base and its length; the SHA-1 it must have (NULL: the LADX
+English 1.0 ROM's; only tests and `synthetic_refs` pass another); the
+opened tables ("Table application"); the validated settings; the seed
+bytes; an optional trace sink (every draw, as `ladx_randomize` reports
+them); an optional write-log sink (NULL: the text is discarded, the
+encoder still runs, since the groups read its state); an optional group
+registry (NULL: `ladx_pipeline_groups`).
+
+Steps, each only after the one before succeeded:
+
+1. the base's size and SHA-1 (`WRONG_BASE`, its digest in
+   `a->base_digest`);
+2. its tables parsed (`ladx_rom_tables_parse`) and KS built
+   (`ladx_ks_build`; else `BAD_BASE`);
+3. the settings' support (`ladx_settings_supported`; else
+   `UNSUPPORTED`);
+4. `ladx_randomize` with the trace sink (`UNSUPPORTED` for a value it
+   refuses, `BROKEN` for a C bug, `OUTCOME` when LADXR's fill ends in an
+   error or a raise: `ladx_randomizer_outcome(&a->randomizer)`);
+5. the pipeline ("Pipeline") over the encoder given the base, KS and the
+   parsed tables, every registered group run with the ROM, `save`,
+   `spoiler` and `header` included, the log ended (`PIPELINE`, the
+   pipeline's error in `a->pipeline_error`; `RAISED` there is LADXR
+   raising, its outcome in `a->pipeline.raised`);
+6. the image read out of the encoder's final state, every byte
+   (`ladx_enc_bank_value`);
+7. `ladx_header_fix` (name "LADXR") on the image through buffer
+   callbacks (`IMAGE` when 6 or 7 fails: a C bug).
+
+The `header` group already wrote the same name and checksums into the
+log; `fixHeader` is idempotent on its own output, so step 7 changes
+nothing when `header` ran, and still leaves a valid header with a
+registry without it. `out` is untouched before step 6 and holds the
+image only on `OK`. The spoiler is in `a->spoiler` when `spoiler.built`
+(the `spoiler` group ran and `race` is off). `BAD_INPUT`: a NULL
+pointer, or `out` overlapping the base. `ladx_assemble_status_name`
+names each status.
+
+## Generator `ladx_patch`
+
+`ladx/host/main/ladx_patch.c`, built `-O2` into
+`tests/ladx/build/ladx_patch` (`make -C tests/ladx build/ladx_patch`, and
+by `rom-check`), the generator of the "Full-ROM check" contract:
+`ladx_patch --base <file> --out <file> [--seed <32 lowercase hex>]
+[--tables <dir>] [<key>=<value> ...]`.
+
+- The settings are applied over the defaults in order
+  (`ladx_settings_set`), validated, and refused when unsupported. The
+  tables default to the repository's `data/ladx`, an absolute path
+  compiled in by the Makefile (`LADX_TABLES_DEFAULT`), since `rom-check`
+  runs the tool in each case's work directory. Without `--seed`, 16 bytes
+  from `/dev/urandom`, printed on stdout as `seed <hex>`.
+- It runs `ladx_assemble` and writes the image to `<out>.part`, then
+  renames it to `<out>`; on any failure no `<out>` or `<out>.part` is
+  left.
+- Exit 0 with `<out>` written; 3 when the base is missing, over 1 MiB or
+  refused (`ladx_patch: --base: not the LADX English 1.0 ROM (SHA-1
+  <hex>)`); 2 on a usage error, a bad or unsupported setting, a bad seed
+  or unreadable tables; 1 when LADXR's fill errs or a group raises
+  (`ladx_patch: LADXR error|raises: <type>: <message>`), on a C failure
+  or an I/O failure. Messages go to stderr, prefixed `ladx_patch: `.
 
 ## Stage projection
 
@@ -2068,7 +2164,7 @@ order: `init`, `ws`, `pool`, `fill`.
 
 `tests/ladx/claims.txt` holds one `stage <name>` line (one of the four
 stages), zero or more `group <name>` and `rom-group <name>` lines and at
-most one `spoiler` line
+most one `spoiler` line and at most one `net` line
 (blank lines and `#` comments skipped), all applying to every case of
 the directory run, cases and combos alike. A group must be in the
 inventory's Groups table (`--inventory`, default
@@ -2094,7 +2190,26 @@ Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
 `rom-group entrances`, `rom-group bosses`, `rom-group enemizer`,
 `rom-group warp-home`, `rom-group title`, `rom-group sprites`,
 `rom-group save` and `rom-group header` (its whole projection, the
-checksum bytes 0x14D..0x14F included), and `spoiler`.
+checksum bytes 0x14D..0x14F included), `spoiler` and `net`.
+
+The `net` line claims the net effect of C's whole write log: every bank
+record of every segment replayed in log order into one map, offset to
+its final atom (a literal byte or a source reference), table records
+left out (they reach the output through `save`'s bank records). C's map
+must equal the golden's on every offset either writes. It catches what
+per-group projections cannot: two groups writing one offset in the wrong
+order. `e2e` and `e2e-combos` skip it (the header line ends `, net
+skipped`); `e2e-rom` claims it on every case, reading the golden's log
+for it, with one detail line, offsets and kinds only: `net: <n> offsets
+differ, first at <offset>: golden <literal|reference|unwritten>, c
+<...>`. A second `net` line exits 2. A passing case under `e2e-rom`
+prints `PASS <case> (<stage> + <n> groups + spoiler + net)`. The
+self-test plants, on baseline's golden log, two segments of `hints` and
+`bank3e` writing one offset: swapped in C's log, every projection stays
+equal, `e2e` passes and `e2e-rom` prints `DIVERGENT` with the `net:`
+line; a third writer (`marin`) with the last two swapped catches a
+first-write-wins net; unswapped passes; one more offset written by C
+diverges (`golden unwritten, c literal`).
 
 The `spoiler` line claims `spoiler.json`: `e2e` and `e2e-combos` skip it
 (the header line ends `, spoiler skipped`), `e2e-rom` claims it on every
@@ -2283,8 +2398,8 @@ passing.
   distinct offsets).
 - Runs `<gen> --tables <dir> --rom <file> <case_dir>
   <work>/runs/<directory>/<case>` per case, in parallel, kept there,
-  claiming the stage, every `group`, every `rom-group` and the
-  `spoiler` line, with `e2e`'s
+  claiming the stage, every `group`, every `rom-group`, the
+  `spoiler` line and the `net` line, with `e2e`'s
   verdict lines prefixed `e2e-rom:`. A divergent projection line shows
   only the record's head and its token count (`B <offset> (<k>
   tokens)`, `T <table> <key> (<k> tokens)`; `G`, `tables` and version
@@ -2296,7 +2411,7 @@ Nothing is committed: the span lists and C's runs stay under `tmp/`;
 only counts, labels, offsets and digests are printed. With the ROM:
 `e2e-rom: KS equal, 6105 spans, 59971 bytes, 186 not rebuilt`, then
 `e2e-rom: 88 pass, 0 divergent` and `e2e-rom: 40 pass, 0 divergent`,
-about 12 s.
+every group, the spoiler and the net effect claimed, about 27 s.
 
 ## Fill-outcome fixture
 
@@ -2557,7 +2672,10 @@ planted case tree and a fake generator (`make -C tests/ladx
 rom-check-selftest` runs only that; `make check` runs it too, through `make test-ladx-oracle`).
 
 Defaults: `LADX_ROM` `tmp/ladx/base.gbc`, `LADX_GEN`
-`tests/ladx/build/ladx_patch`, both repository-relative. The work
+`tests/ladx/build/ladx_patch` ("Generator `ladx_patch`", built by the
+target first), both repository-relative. With the ROM: `rom-check: 88
+cases, 40 combos: 128 ok, ...`, about 13 s; with a synthetic base, every
+case `REFUSED`. The work
 directory is `tmp/ladx-rom-check/<case>/` (`out.gbc`, deleted when `ok`,
 and `gen.log`), emptied at the start.
 
@@ -2595,6 +2713,61 @@ self-test change with it, in one commit.
 Exit 0 when every case is `ok`, else 1; a missing ROM or generator is a
 `setup:` line and a usage error (an unknown case, a `--work` outside
 `tmp/`) exits 2. Only digests are printed, never ROM bytes.
+
+## Synthetic reference
+
+`tests/ladx/synthetic_refs.txt` is the ROM-free regression reference of
+C's whole output: digests of what `ladx_assemble` writes on a synthetic
+base, no ROM content. Tool: `tests/ladx/unit/synthetic_refs.c`, built
+`-O2` into `tests/ladx/build/synthetic_refs` with the library, the host
+layer and `unit/synth_rom.c`.
+
+The synthetic base: `synth_rom_build` at seed `0x5EED7001`, then made
+well formed for the real tables: for every `T` record of every file
+under the tables directory (in `order.txt`, then file-name order), the
+source bytes its references name are given values (from a xorshift
+seeded the same) so that the record's value parses as its table's kind:
+entities, pairs then 0xFF at the end; texts, 0xFE or 0xFF only at the
+end; rooms, a two-byte header, objects whose widths follow their first
+byte (a new object start avoids 0x8_, 0xC_, 0xE_ and 0xF_), 0xFE at the
+end; others, any value. The first value given to a byte stays; a later
+record it does not fit is left ill formed and counted (`synthetic base:
+<n> table bytes left ill-formed by conflicting records` when any). Then
+the old bytes of `items`' two single-byte `rom.patch` checks, LADXR's
+public values (0x09 at bank 5 0x08D5, 0x00 at bank 0x19 0x072B). Every
+byte comes from the PRNG, the committed tables' structure or LADXR's
+source; the base must still parse.
+
+Per case: its `config.txt` and `seed`, `ladx_assemble` with the base's
+own digest, the log hashed through the sink, the image hashed, the
+spoiler rendered and hashed when built. Some groups need the real
+ROM's semantics (an entrance's warps, a boss room's objects, storage
+space, sprite graphics sets): on the synthetic base they fail or raise.
+A failing group is removed from the registry and the case re-run, until
+it completes; the groups removed are the case's `skipped` list, groups
+with no reference in that case.
+
+Format: `ladx-synthetic-refs 1`, `base <sha1>` (the synthetic base),
+then one line per case then combo directory, sorted: `<name> log <sha1>
+rom <sha1> spoiler <sha1|none> skipped <group,...|->`.
+
+- `make -C tests/ladx e2e-synthetic` (in the net, run by the root `make
+  check` after `e2e-combos`): the self-test first (9 planted references:
+  equal, a flipped log, output or spoiler digest, a changed skip list, a
+  group failing that the reference ran, a missing case, an extra case,
+  another base; `e2e-synthetic: self-test, 9 planted references as
+  expected`), then every case run once with its recorded skip list: `ok
+  <case>`, `DIFFERENT <case>: log|rom|spoiler|skipped`, `DIFFERENT
+  <case>: fails in <group>`, `MISSING <case>`, `EXTRA <case>`,
+  `DIFFERENT base: ...`, then `e2e-synthetic: <n> cases and combos equal
+  to synthetic_refs.txt (base <sha1>), groups without a reference in
+  some: <groups>`, else `e2e-synthetic: <n> cases and combos, <k>
+  problems against ...`, exit 1. About 5 s.
+- `make -C tests/ladx synthetic-refs` (outside the net) rewrites the file
+  with each case's skip list found anew. It is run only on purpose, after
+  `e2e-rom` and `rom-check` are green with the ROM at the same commit,
+  and committed alone with its reason: a change of C's outputs, of the
+  tables or of the synthetic base rewrites every digest.
 
 ## Regenerate and verify
 

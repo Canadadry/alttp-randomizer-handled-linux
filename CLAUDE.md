@@ -115,16 +115,25 @@ in `docs/`, then `README.md`.
   `tests/ladx/README.md`, "Pipeline", "Spoiler" and "E2E driver and
   claims"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
-  `tests/ladx/README.md`, "Table application"; contract in
+  `tests/ladx/README.md`, "Table application"; `assemble.c`,
+  `ladx_assemble` (`ladx_assemble.h`: the base checked and parsed, the
+  fill, the pipeline, the image read out and its header fixed, on
+  caller-owned memory), tested by `test_assemble`, contract in
+  `tests/ladx/README.md`, "Assembly"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
   pure C99 like `alttp/`, built with only `ladx/include` on the include path,
   never including `alttp/` or `app/`. `ladx/host/` is host-side code on top
   of it (C99, stdio allowed, `ladx/include` and itself on the include path):
   `run_text.c`, `run.txt`'s line renderer with CPython's `float.hex`
   (contract in `tests/ladx/README.md`, "Unit tests and lint"), and
-  `main/ladx_gen.c`, the host generator `ladx_gen` (`randomizer.c`'s
-  `ladx_randomize` run on a case, its `run.txt` written; contract in
-  `tests/ladx/README.md`, "Generator `ladx_gen`").
+  `inputs.c`, the mains' inputs (`ladx_inputs.h`: a case directory, a
+  tables directory, a whole file); `main/ladx_gen.c`, the host generator
+  `ladx_gen` (`randomizer.c`'s `ladx_randomize` run on a case, its
+  `run.txt` written, `--rom` through `ladx_assemble`; contract in
+  `tests/ladx/README.md`, "Generator `ladx_gen`"); and
+  `main/ladx_patch.c`, the CLI `ladx_patch --base <file> --out <file>
+  [settings]` (`rom-check`'s generator; contract in
+  `tests/ladx/README.md`, "Generator `ladx_patch`").
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
   like the library, built with only `alttp/include` and itself on the include
   path, no SDL; the app opens on its game-choice screen (`ui_games.c`), A
@@ -245,8 +254,8 @@ in `docs/`, then `README.md`.
   "E2E driver and claims";
   `unit-arm`, `measure` (the run stopped after the fill timed on every
   case, projected onto the Cortex-A7; contract in `tests/ladx/README.md`,
-  "Measure"), `rom-check`, `rom-check-selftest`, `e2e-rom`, outside the
-  net); Phase 3
+  "Measure"), `rom-check`, `rom-check-selftest`, `e2e-rom`,
+  `synthetic-refs`, outside the net; `e2e-synthetic`, in the net); Phase 3
   adds its targets there. `tests/ladx/oracle/fill_outcomes.txt`, LADXR's
   fill outcomes on seeds that are not case seeds, is written only by
   `gen_fill_outcomes.py` (`--check` re-renders it), replayed by
@@ -742,8 +751,8 @@ in `docs/`, then `README.md`.
   <c> refused, <d> failed, <e> no golden`; exit 0 when every case is `ok`,
   else 1; a missing ROM (`setup: rom-check: no ROM at <path> ...`) or
   generator (`setup: rom-check: no generator at <path> ...`) or a usage
-  error exits 2. Digests only, never ROM bytes or the link. Until Phase 3
-  builds `ladx_patch`, it ends on the `no generator` line.
+  error exits 2. Digests only, never ROM bytes or the link. The target
+  builds `ladx_patch` first; with the ROM every case and combo is `ok`.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
@@ -766,12 +775,19 @@ in `docs/`, then `README.md`.
   selftest|e2e|e2e-combos`, LADX's `e2e` and `e2e-combos` first comparing
   C's projection of every golden with `write_log.py`'s, `run_e2e.py
   --projections`; contract in `tests/ladx/README.md`, "E2E
-  driver and claims"). Run
+  driver and claims") and `e2e-synthetic` (`make -C tests/ladx
+  e2e-synthetic`: LADX's ROM-free regression reference
+  `tests/ladx/synthetic_refs.txt`, digests of `ladx_assemble`'s outputs
+  on a synthetic base, every case and combo; rewritten only by `make -C
+  tests/ladx synthetic-refs`, outside the net, after `e2e-rom` and
+  `rom-check` are green with the ROM, in its own commit; contract in
+  `tests/ladx/README.md`, "Synthetic reference"). Run
   `make -k check` to see every failure at once.
 - `make -C tests/ladx e2e-rom [LADX_ROM=<file>]`, outside the net (the
   ROM, else a `setup:` line, exit 2): C's KS span list against
   `known_source.build`'s, then `ladx_gen --rom` on every case and combo,
-  every `group` and `rom-group` of `claims.txt` claimed; contract in
+  every `group` and `rom-group` of `claims.txt` claimed, the spoiler and
+  the net effect of the whole write log (`net`) too; contract in
   `tests/ladx/README.md`, "ROM-present e2e".
 - `make -C tests/alttp measure`, outside the net, gives the per-case times
   every later budget is measured against, the whole pipeline's time

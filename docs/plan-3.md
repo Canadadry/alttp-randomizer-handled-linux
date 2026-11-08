@@ -480,3 +480,23 @@ Encoder change found here: the oracle gives each written KNOWN byte of a C group
 ### Step 3.6
 
 Closed: sub-steps 6.1 to 6.19 each have their note. Every `C` group is ported and claimed: `hints` without the ROM under `make check`, the others as rom-groups under `e2e-rom`, along with the spoiler. `e2e-rom` passes 88 cases and 40 combos with every group, checksums and `spoiler.json` included.
+
+### Step 3.7
+
+`ladx_assemble` (`ladx/src/assemble.c`, caller-owned memory only: about 21 MiB of state, plus a 1 MiB base and a 1 MiB output) runs, in order:
+1. the size and SHA-1 check;
+2. parse and KS;
+3. settings support;
+4. the fill;
+5. the pipeline (tables, every C group, save, spoiler, header);
+6. the image read out of the encoder;
+7. the header fix on the image.
+
+`ladx_patch --base --out [--seed] [settings]` honours rom-check's contract: exit 3 for a refused base, 2 for usage or settings, 1 for LADXR's error. It writes `<out>.part`, then renames it. `ladx_gen --rom` goes through `ladx_assemble`. A new `net` claim, under `e2e-rom` only, replays the whole log and compares each written offset's final value. The driver's self-test (71 planted runs) proves that an overlap-order swap diverges only there.
+
+Results with the real ROM:
+- `rom-check`: **128 ok** of 88 cases and 40 combos, every output SHA-1 equal to its golden's, in about 13 s.
+- With a synthetic base: 128 refused.
+- `e2e-rom`: 88 and 40 pass, every group, the spoiler and `net` claimed.
+
+ROM-free regression reference: `tests/ladx/synthetic_refs.txt` holds digests of C's log, ROM and spoiler on a well-formed synthetic LADX base (PRNG, no ROM byte). It is recorded after `e2e-rom` and `rom-check` were green, and `make check`'s new `e2e-synthetic` checks it. The synthetic base cannot drive `entrances`, `bosses`, `warp-home`, `sprites` or `save` in any case, nor `spoiler` in 122, `items` in 7, `enemizer` in 5 or `goal` in 1, since they need the real ROM's meaning. Those parts keep only the ROM-present checks, as the owner accepted. Eleven planted mutations are caught. `make unit-arm`: 41 LADX unit tests.
