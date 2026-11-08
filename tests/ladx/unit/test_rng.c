@@ -51,7 +51,6 @@ static void sink(void *ctx, const LadxRngRecord *r)
 static const uint8_t seed_bytes[] = {0xe8, 0x51, 0x5e, 0x70, 0x64, 0xfb, 0x5f, 0xd6,
 				     0x45, 0x8e, 0x72, 0xd5, 0x61, 0x22, 0x67, 0x3b};
 
-/* A traced generator and the bare one it must match, both seeded with seed_bytes. */
 static void pair(LadxRng *rng, LadxPyRandom *py, Log *log)
 {
 	memset(log, 0, sizeof *log);

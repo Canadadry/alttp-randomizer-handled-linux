@@ -1,8 +1,3 @@
-"""Usage: python3 -I test_gen_tables.py
-
-Unit tests of gen_tables.py's ROM-free planning (units, keys, reachability, coverage runs) on
-planted event streams, inventories and models.
-"""
 
 import hashlib
 import importlib.util
@@ -44,7 +39,6 @@ def stream(*events):
 
 
 class Coupling(unittest.TestCase):
-
     def couplings(self, *events):
         return gen_tables.couplings(stream(*events), bytes(ROM), SIDES)
 
@@ -75,7 +69,6 @@ class Coupling(unittest.TestCase):
 
 
 class RunEntries(unittest.TestCase):
-
     UNITS = {site("a(rom)"): "fixed.1", site("b(rom)"): "fixed.2", site("c(rom)"): "fixed.3"}
 
     def entries(self, *events, units=UNITS):
@@ -109,7 +102,6 @@ class RunEntries(unittest.TestCase):
 
 
 def rows(*specs):
-    """Rows of `<side> <group> <call>` specs, in order."""
     out = []
     for spec in specs:
         side, group, call = spec.split(" ", 2)
@@ -123,7 +115,6 @@ ORDER = rows("table fixed a(rom)", "C items b(rom)", "table fixed c(rom)", "tabl
 
 
 class Units(unittest.TestCase):
-
     def units(self, pairs, forced=(), writing=()):
         got, problems = gen_tables.units(ORDER, [(site(a), site(b), "match") for a, b in pairs],
                                          [(site(a), site(b), "why") for a, b in forced],
@@ -171,7 +162,6 @@ GROUP_SIDES = {"fixed": "table", "opts": "table", "goal-fixed": "table",
 
 
 class Keys(unittest.TestCase):
-
     def keys(self, facts=None, widenings=(), rewrites=()):
         units, _ = gen_tables.units(KEY_ORDER, [], [], set())
         model = gen_tables.Inventory(KEY_ORDER, GROUP_KEYS, GROUP_SIDES, CONSTANTS, SETTINGS)
@@ -269,7 +259,6 @@ def inventory_text():
 
 
 class Inputs(unittest.TestCase):
-
     def test_the_inventory_gives_the_rows_group_keys_and_setting_constants(self):
         inv = gen_tables.read_inventory(inventory_text(), SETTINGS)
         self.assertEqual([(r.site, r.side, r.group, r.settings) for r in inv.rows], [
@@ -304,7 +293,6 @@ class Inputs(unittest.TestCase):
 
 
 class TracedFacts(unittest.TestCase):
-
     def test_events_give_each_rows_targets_and_the_writes_it_carries(self):
         made = write_log.KNOWN - 1
         facts = gen_tables.Facts()
@@ -347,9 +335,6 @@ class TracedFacts(unittest.TestCase):
 
 
 def planted_model():
-    """race 0/1, textmode fast/normal/notextbox, witch 0/1: race=1 forces witch=0; ITEM_DIALOGS
-    is 0 under notextbox; the count is 10 + witch; textmode=notextbox is refused alone, its
-    companion race=1."""
     defaults = {"race": "0", "textmode": "fast", "witch": "0"}
 
     def validate(assignment):
@@ -368,7 +353,6 @@ def planted_model():
 
 
 class Reachability(unittest.TestCase):
-
     def test_tuples_are_the_image_of_the_tier1_product_through_validate(self):
         got, unreached = gen_tables.reachable(["race", "witch"], planted_model())
         self.assertEqual(got, [(("0", "0"), {}), (("0", "1"), {"witch": "1"}),
@@ -389,7 +373,6 @@ class Reachability(unittest.TestCase):
 
 
 class CoverageRuns(unittest.TestCase):
-
     KEYS = {"u.1": ["race"], "u.2": ["textmode"], "u.3": ["count"]}
 
     def plan(self, keys=None):
@@ -440,7 +423,6 @@ def drawn(i, key, values, suffix=""):
 
 
 class Sample(unittest.TestCase):
-
     def expected_line(self, model, i, suffix=""):
         values = model.validated({k: v for k, v in (
             (k, drawn(i, k, model.domains[k], suffix)) for k in model.settings)
@@ -488,10 +470,6 @@ NOT_ROM_10 = bytes([ROM[0x10] ^ 0xff])
 
 
 class PlantedRunner:
-    """Coverage runs of a planted LADXR: a(rom) copies ROM 0x800.. to 0x100 (plus a byte when
-    a_reads_race and race=1), b(rom) writes 0x400, c(rom) writes 0x10 when race=1 (and 0x11 when
-    witch=1, a read the key trace shows when c_reads_witch); runs in `fail` have no ok seed."""
-
     def __init__(self, a_reads_race=False, c_reads_witch=False, fail=(), c_reads_items=False,
                  d_rewrites=False):
         self.a_reads_race, self.c_reads_witch = a_reads_race, c_reads_witch
@@ -524,7 +502,6 @@ class PlantedRunner:
 
 
 class Generate(unittest.TestCase):
-
     def generate(self, runner, widenings=(), fusions=(), rows=BUILD_ROWS):
         inv = gen_tables.Inventory(rows, {"fixed": [], "opts": ["race"]}, BUILD_SIDES, {},
                                    ["race", "textmode", "witch"])
@@ -596,7 +573,6 @@ PLANT_VALIDATE = "# keys \n"
 
 
 class ModelInputs(unittest.TestCase):
-
     def model(self, validate=None, count=None):
         inv = gen_tables.Inventory([], {}, {}, {"ITEM_DIALOGS": ["textmode"]}, [],
                                    {"ITEM_DIALOGS": "1 if settings.textmode != 'notextbox' else 0"})
@@ -666,8 +642,6 @@ class ModelInputs(unittest.TestCase):
 
 
 class ConstGroups(unittest.TestCase):
-    """const_group: a C group's settings-only writes, one run per key tuple, as a group file."""
-
     ORDER = ["texts", "entities"]
 
     def group(self, runs, own=(), components=("asm:A", "asm:B")):
@@ -779,8 +753,6 @@ class ConstGroups(unittest.TestCase):
 
 
 class VariantRuns(unittest.TestCase):
-    """variant_runs: a call drawing once from a module's choice, run once per element."""
-
     class Module:
         def choice(self, seq):
             raise AssertionError("the real choice was called")

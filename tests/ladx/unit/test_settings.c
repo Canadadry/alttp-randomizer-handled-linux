@@ -52,7 +52,6 @@ static const char *unquote(const char *s)
 	return strcmp(s, "\"\"") == 0 ? "" : s;
 }
 
-/* Reads the next line into line_buf, newline stripped; 0 at the end. */
 static int next_line(FILE *file, const char *path)
 {
 	size_t len;
@@ -77,7 +76,6 @@ static FILE *open_fixture(const char *path)
 	return file;
 }
 
-/* A fixture line: "<kind> <tab-separated fields>". */
 static const char *kind_of(char *line, Fields *f)
 {
 	char *space = strchr(line, ' ');
@@ -123,7 +121,6 @@ static void check_visible_if(LadxSettingId id, char *text)
 	}
 }
 
-/* The setting whose options are being read, its option count so far. */
 static LadxSettingId table_now = LADX_SETTING_COUNT;
 static int options_now;
 
@@ -242,7 +239,6 @@ static void apply(LadxSettings *s, const char *assignment)
 		test_fail(TEST, "%s refused: %s", assignment, line_now);
 }
 
-/* "k=v" with the fixtures' "" for the empty string, applied through the parser. */
 static void apply_fixture(LadxSettings *s, char *text)
 {
 	char assignment[MAX_LINE];
@@ -376,10 +372,7 @@ static void test_validate(void)
 	       VALIDATE, changed);
 }
 
-/*
- * Plan 3's section 2 and step notes 2.3 and 2.4, written out: a value is
- * NULL for every value of the setting but its default.
- */
+/* Tier 1 written out by hand: NULL stands for every value of the setting but its default. */
 static const struct {
 	const char *key;
 	const char *value;
@@ -488,7 +481,6 @@ static void test_unsupported_list(void)
 	       COUNT_OF(unsupported_pairs));
 }
 
-/* Every tier-1 value supported alone, every other value unsupported but a non-tier-1 setting's default. */
 static void test_tier1(void)
 {
 	FILE *file = open_fixture(TIER1);

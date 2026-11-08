@@ -7,16 +7,12 @@
 
 #include <stdbool.h>
 
-/* LADXR's logic graph at 4325207e (logic/location.py, Logic's discovery,
- * explorer.py), tier 1 only, in a caller-owned struct with no allocation. */
-
 #define LADX_LOGIC_LOCATION_CAP 1024
 #define LADX_LOGIC_EDGE_CAP 2048
 #define LADX_LOGIC_SPOT_CAP 512
 #define LADX_LOGIC_OPTION_CAP 20480
 #define LADX_SPOT_NAME_ID_MAX 23
 
-/* LADXR's ItemInfo subclasses of locations/, by class name. */
 typedef enum LadxSpotKind {
 	LADX_SPOT_ANGLER_KEY,
 	LADX_SPOT_BEACH_SWORD,
@@ -50,10 +46,8 @@ typedef enum LadxSpotKind {
 	LADX_SPOT_KIND_COUNT
 } LadxSpotKind;
 
-/* LADXR's class name ("DungeonChest"); NULL out of range. */
 const char *ladx_spot_kind_name(int kind);
 
-/* Python's None is dungeon -1 and name NULL. */
 typedef struct LadxLocation {
 	int dungeon;
 	const char *name;
@@ -66,8 +60,6 @@ typedef struct LadxEdge {
 	LadxReq req;
 } LadxEdge;
 
-/* Options: base_options (static, never copied), then the spot's suffix in
- * the logic's option pool; read them through ladx_logic_spot_options. */
 typedef struct LadxSpot {
 	int location;
 	LadxSpotKind kind;
@@ -76,11 +68,11 @@ typedef struct LadxSpot {
 	int base_option_count;
 	int suffix_first, suffix_count;
 	int metadata;
-	int room;	  /* the constructor's room; -1 for None (KeyLocation) */
-	int index;	  /* ShopItem's, TunicFairy's, SeashellMansionBonus's; else -1 */
-	int default_item; /* KeyHole's reward, TradeSequenceItem's item, KeyLocation's key; else none */
-	int forced_item;  /* forced_item: LADX_ITEM_NONE (None) unless the logic forces one */
-	int item;	  /* LADX_ITEM_NONE until placed */
+	int room;
+	int index;
+	int default_item;
+	int forced_item;
+	int item;
 } LadxSpot;
 
 typedef struct LadxBuildLocation {
@@ -97,8 +89,6 @@ typedef struct LadxBuildEdge {
 	int next;
 } LadxBuildEdge;
 
-/* Read only, through the functions below; the build_* fields belong to
- * the builder (ladx_logic_builder.h). */
 typedef struct LadxLogic {
 	LadxReqArena arena;
 	LadxLocation location[LADX_LOGIC_LOCATION_CAP];
@@ -107,7 +97,7 @@ typedef struct LadxLogic {
 	unsigned char option[LADX_LOGIC_OPTION_CAP];
 	int location_count, edge_count, spot_count, option_count;
 	int start;
-	int windfish, egg, nightmare; /* creation ids until finished, then location indexes; -1 for none */
+	int windfish, egg, nightmare;
 	bool finished;
 	bool configured;
 	bool broken;
@@ -119,34 +109,23 @@ typedef struct LadxLogic {
 	int stack[2 * LADX_LOGIC_LOCATION_CAP];
 } LadxLogic;
 
-/* Set by the first capacity overflow or LADXR assertion, the arena's
- * included; the graph is then unusable. */
 bool ladx_logic_broken(const LadxLogic *logic);
 
-/* Once finished: locations in LADXR's location_list order, spots in
- * iteminfo_list order. Out of range gives NULL, or -1 for start. */
 const LadxReqArena *ladx_logic_arena(const LadxLogic *logic);
 int ladx_logic_start(const LadxLogic *logic);
-/* World's windfish, egg and nightmare (ladx_logic_build only); -1 when
- * not reached or not built. */
 int ladx_logic_windfish(const LadxLogic *logic);
 int ladx_logic_egg(const LadxLogic *logic);
 int ladx_logic_nightmare(const LadxLogic *logic);
 int ladx_logic_location_count(const LadxLogic *logic);
 const LadxLocation *ladx_logic_location(const LadxLogic *logic, int i);
-/* The location's connections in order: edge_first + 0 .. edge_count - 1. */
 const LadxEdge *ladx_logic_edge(const LadxLogic *logic, int i);
 int ladx_logic_spot_count(const LadxLogic *logic);
 const LadxSpot *ladx_logic_spot(const LadxLogic *logic, int i);
-/* getOptions() in order, at most cap copied; returns the full count. */
 int ladx_logic_spot_options(const LadxLogic *logic, int spot, int *out, int cap);
-/* checkMetadata.py's entry of the spot: its name and area. */
 const char *ladx_spot_metadata_name(const LadxSpot *spot);
 const char *ladx_spot_metadata_area(const LadxSpot *spot);
-/* The fill's placement; false (nothing set) for a bad spot or item. */
 bool ladx_logic_place(LadxLogic *logic, int spot, int item);
 
-/* worldSetup.py WorldSetup: the fields logic reads. */
 typedef enum LadxMiniboss {
 	LADX_MINIBOSS_ROLLING_BONES,
 	LADX_MINIBOSS_HINOX,
@@ -163,7 +142,6 @@ typedef enum LadxMiniboss {
 	LADX_MINIBOSS_COUNT
 } LadxMiniboss;
 
-/* miniboss_mapping's keys: 0 to 7, c1, c2, moblin_cave, armos_temple. */
 #define LADX_MINIBOSS_KEY_COUNT 12
 
 typedef enum LadxGoal {
@@ -172,11 +150,10 @@ typedef enum LadxGoal {
 	LADX_GOAL_OPEN,
 	LADX_GOAL_SEASHELLS,
 	LADX_GOAL_MAZE,
-	LADX_GOAL_SPECIFIC, /* LADXR's "=<digits>" */
+	LADX_GOAL_SPECIFIC,
 	LADX_GOAL_COUNT
 } LadxGoal;
 
-/* patches/maze.py buildMaze's signs: the 20 of its walk, the connection and the egg. */
 #define LADX_SIGN_MAZE_SIGNS 22
 
 typedef struct LadxSign {
@@ -187,53 +164,33 @@ typedef struct LadxWorldSetup {
 	int boss_mapping[9];
 	LadxMiniboss miniboss_mapping[LADX_MINIBOSS_KEY_COUNT];
 	LadxGoal goal;
-	char goal_instruments[9]; /* SPECIFIC: digits 1 to 8, NUL-terminated */
+	char goal_instruments[9];
 	int goal_count;
-	/* sign_maze: sign_count 0 is None, else LADX_SIGN_MAZE_SIGNS signs and one direction fewer. */
 	int sign_count;
 	LadxSign signs[LADX_SIGN_MAZE_SIGNS];
 	int directions[LADX_SIGN_MAZE_SIGNS - 1];
-	int multichest; /* an item */
+	int multichest;
 	bool inside_to_outside, keep_two_way, one_on_one;
 } LadxWorldSetup;
 
-/* WorldSetup(): bosses in place, the vanilla minibosses, goal vanilla, 8,
- * no sign maze, multichest RUPEES_20, the three entrance flags true. */
 void ladx_world_setup_defaults(LadxWorldSetup *ws);
-/* NULL out of range; key i of miniboss_mapping ("c1"). */
 const char *ladx_miniboss_key(int i);
 const char *ladx_miniboss_name(int miniboss);
-/* -1 when unknown. */
 int ladx_miniboss_find(const char *name);
-/* LADXR's goal text ("seashells"); NULL for SPECIFIC and out of range. */
 const char *ladx_goal_name(int goal);
-/* -1 when unknown; never SPECIFIC. */
 int ladx_goal_find(const char *name);
 
 typedef enum LadxLogicStatus {
 	LADX_LOGIC_OK,
-	LADX_LOGIC_UNSUPPORTED, /* a value unsupported alone, or a pair other than LADXR_REFUSES; nothing built */
-	LADX_LOGIC_BROKEN	/* a capacity overflow or LADXR assertion; the logic is unusable */
+	LADX_LOGIC_UNSUPPORTED,
+	LADX_LOGIC_BROKEN
 } LadxLogicStatus;
 
-/*
- * main.py Logic(options, world_setup=ws) for overworld=normal and the
- * identity entrance mapping: World, the nine dungeons, the entrance loop,
- * the egg requirement, the removed dungeon items, discovery and configure.
- * Draws no random number.
- */
 LadxLogicStatus ladx_logic_build(LadxLogic *out, const LadxSettings *validated, const LadxWorldSetup *ws);
 
-/*
- * Dungeon n alone (0 the colour dungeon, 1 to 8; any other n BROKEN):
- * RequirementsSettings, then DungeonN with its entrance as the start,
- * discovery and configure. Not LADXR's whole graph:
- * for the per-dungeon claims and for narrowing a divergence.
- */
 LadxLogicStatus ladx_logic_build_dungeon(LadxLogic *out, const LadxSettings *validated, const LadxWorldSetup *ws,
 					 int n);
 
-/* explorer.py Explorer over a finished graph. */
 typedef struct LadxExplorerTodo {
 	int target;
 	LadxReq req;
@@ -248,13 +205,9 @@ typedef struct LadxExplorer {
 } LadxExplorer;
 
 void ladx_explorer_init(LadxExplorer *e);
-/* Explorer.addItem: RUPEES_<n> folding, LADX_ITEM_NONE ignored. */
 void ladx_explorer_add_item(LadxExplorer *e, int item, int count);
-/* Explorer.visit: _visit, then _process until no progress. False, nothing
- * done, for a location already visited (LADXR's assertion) or out of range. */
 bool ladx_explorer_visit(LadxExplorer *e, const LadxLogic *logic, int location);
 bool ladx_explorer_reached(const LadxExplorer *e, int location);
-/* getRequiredItemsForNextLocations, into a cleared set. */
 void ladx_explorer_required_next(const LadxExplorer *e, const LadxLogic *logic, LadxItemSet *out);
 
 #endif

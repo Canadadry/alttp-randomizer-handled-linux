@@ -1,7 +1,3 @@
-"""Usage: python3 -I test_write_log.py
-
-Unit tests of write_log.py on synthetic ROMs and event streams, with no LADXR and no ROM.
-"""
 
 import importlib.util
 import os
@@ -54,7 +50,6 @@ def encode(events, rom, known=(), sides=SIDES, **kw):
 
 
 def body(text):
-    """The log's lines after its header."""
     lines = text.splitlines()
     assert lines[0] == "ladx-rom-writes 1" and lines[1].startswith("tables"), lines[:2]
     return lines[2:]
@@ -130,8 +125,6 @@ class KnownSourceMatch(unittest.TestCase):
 
 
 def planted_known(rom):
-    """A KS of entries rooms 3 (0x100..0x110) and rooms 4 (0x208..0x210) and a span that is not
-    an entry (0x200..0x208)."""
     ks = known_source.KnownSource(len(rom))
     ks.add(0x100, 0x110, "rooms 3", ("rooms", 3))
     ks.add(0x200, 0x208, "pointers")
@@ -140,7 +133,6 @@ def planted_known(rom):
 
 
 def absent(data):
-    """Byte values that are not in data."""
     return bytes(v for v in range(256) if v not in data)
 
 
@@ -148,8 +140,6 @@ LOG_HEADER = "ladx-rom-writes 1\ntables texts rooms\n"
 
 
 class Fragments(unittest.TestCase):
-    """The finder: literal pieces of a record that occur in the source bytes it replaces."""
-
     def setUp(self):
         self.rom = synthetic_rom()
         self.known = planted_known(self.rom)
@@ -197,9 +187,6 @@ class Fragments(unittest.TestCase):
 
 
 class FragmentRule(unittest.TestCase):
-    """The encoder's fragment rule: a literal piece of a record that occurs in the source bytes it
-    replaces becomes a copy of its lowest offset there, for both sides."""
-
     def setUp(self):
         self.rom = synthetic_rom()
         self.known = planted_known(self.rom)
@@ -257,9 +244,6 @@ class FragmentRule(unittest.TestCase):
 
 
 class Invariant(unittest.TestCase):
-    """The `I` lines: a C group's literal bytes the oracle's re-run on a scrambled copy gave
-    unchanged, kept where such a run of at least 4 bytes holds source bytes."""
-
     def setUp(self):
         self.rom = synthetic_rom()
         self.value = self.rom[0x300:0x306]

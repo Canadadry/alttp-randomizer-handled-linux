@@ -30,7 +30,6 @@ typedef struct Layout {
 	int claim_gaps, expand;
 } Layout;
 
-/* romTables.py at the pin; alt keys in their dict order. */
 static const Layout layout[LADX_ROM_TABLES] = {
 	{ "texts", LADX_ROM_KIND_TEXT, 0x2B0, 0x1C, 1, -1, 0x1C, 0x741, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0 },
 	{ "entities", LADX_ROM_KIND_DATA, 0x320, 0x16, 0, 0x16, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0 },
@@ -52,13 +51,11 @@ static const Layout layout[LADX_ROM_TABLES] = {
 	  { 0 }, 0, 1 },
 };
 
-/* A bank's byte at addr, -1 past its end (Python's IndexError). */
 static int at(const uint8_t *bank, uint32_t addr)
 {
 	return addr < LADX_ROM_BANK ? bank[addr] : -1;
 }
 
-/* The end of the entry at addr in bank, as the table's _readData finds it; 0 past the bank's end. */
 static uint32_t entry_end(const Layout *l, const uint8_t *bank, uint32_t addr)
 {
 	uint32_t p = addr;
@@ -108,7 +105,6 @@ static uint16_t le16(const uint8_t *rom, uint32_t at)
 	return (uint16_t)(rom[at] | rom[at + 1] << 8);
 }
 
-/* Reads the entry at pointer (inside 0x4000..0x7FFF) of bank; 0 past the bank's end. */
 static int read_entry(const uint8_t *rom, const Layout *l, LadxRomEntry *e, uint16_t pointer)
 {
 	uint32_t addr = pointer & 0x3FFFu, end = entry_end(l, rom + e->bank * LADX_ROM_BANK, addr);

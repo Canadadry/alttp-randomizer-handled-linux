@@ -9,7 +9,6 @@
 
 #include <stdbool.h>
 
-/* An item is a setting id, the spoiler row, the action row or a category heading. */
 #define UI_LADX_ITEM_SPOILER LADX_SETTING_COUNT
 #define UI_LADX_ITEM_ACTION (LADX_SETTING_COUNT + 1)
 #define UI_LADX_ITEM_HEADING (LADX_SETTING_COUNT + 2)
@@ -43,7 +42,6 @@ UiGenerateEvent ui_ladx_generate_key(UiLadxGenerate *state, UiButton button);
 
 void ui_ladx_generate_screen(const UiLadxGenerate *state, UiScreen *out);
 
-/* The settings as shown, not validated. */
 void ui_ladx_generate_settings(const UiLadxGenerate *state, LadxSettings *settings, bool *spoiler);
 
 #endif

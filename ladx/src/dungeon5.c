@@ -1,12 +1,9 @@
 #include "dungeon_build.h"
 
-/* logic/dungeon5.py Dungeon5 at 4325207e, line for line. */
-
 #define DUNGEON 5
 
 int ladx_dungeon5(const LadxDungeonContext *c)
 {
-	/* locations */
 	int entrance = LOC("D5 Entrance");
 	int entrance_ledge = LOC("D5 Entrance Ledge");
 	int entrance_ledge_chest1 = ADD(LOC(NULL), DUNGEON_CHEST, 0x1A0);
@@ -63,8 +60,6 @@ int ladx_dungeon5(const LadxDungeonContext *c)
 	int boss_room_drop3 = ADD(LOC(NULL), HEART_CONTAINER, 0x185);
 	int instrument = ADD(LOC("D5 Instrument Room"), INSTRUMENT, 0x182);
 
-	/* connections */
-	/* entrance / ms1 */
 	CONNECT_BACK(entrance, entrance_ledge, I(HOOKSHOT), NO);
 	CONNECT_BACK(entrance_ledge, entrance_ledge_chest1, NONE, NO);
 	CONNECT_BACK(entrance, before_a_passage, AND(ENEMY(KEESE), ENEMY(IRON_MASK)), ENEMY(IRON_MASK));
@@ -77,7 +72,6 @@ int ladx_dungeon5(const LadxDungeonContext *c)
 	CONNECT_ALL_BACK(ms_1_room, TARGETS(ms_1_victory, crystal_puddle_room, before_d_passage), ENEMY(MASTER_STALFOS),
 			 NO);
 	CONNECT_BACK(before_d_passage, ms_1_room, NONE, NO);
-	/* crossroads */
 	CONNECT_BACK(before_d_passage, before_d_passage_chest5, NONE, NO);
 	CONNECT(before_d_passage, north_crossroads, I(FEATHER));
 	CONNECT(before_d_passage, after_d_passage, I(FEATHER));
@@ -99,18 +93,15 @@ int ladx_dungeon5(const LadxDungeonContext *c)
 	CONNECT_BACK(ms_3_room, ms_3_victory, AND(I(MS1_KILL), I(MS2_KILL), ENEMY(MASTER_STALFOS)), NO);
 	CONNECT_BACK(ms_3_room, pot_locked_room, I(POWER_BRACELET), NO);
 	CONNECT_BACK(pot_locked_room, pot_locked_room_chest9, NONE, NO);
-	/* ms4 */
 	CONNECT(before_a_passage, after_a_passage, I(FEATHER));
 	CONNECT_BACK(after_a_passage, crystal_room, I(SWORD), NO);
 	CONNECT_BACK(crystal_room, crystal_room_drop1, I(SWORD), NO);
 	CONNECT_BACK(crystal_room, ms_4_room, NONE, NO);
 	CONNECT_BACK(ms_4_room, ms_4_room_drop2, AND(I(MS3_KILL), ENEMY(MASTER_STALFOS)), NO);
-	/* boss key */
 	CONNECT(west_crossroads, before_b_passage, I(FLIPPERS));
 	CONNECT(before_b_passage, after_b_passage, I(FLIPPERS));
 	CONNECT_BACK(after_b_passage, boss_key_room, I(HOOKSHOT), NO);
 	CONNECT_BACK(boss_key_room, boss_key_room_chest10, NONE, NO);
-	/* miniboss */
 	CONNECT_ALL_BACK(statue_room, TARGETS(after_blade_trap, before_miniboss), I(HOOKSHOT), NO);
 	CONNECT_BACK(after_blade_trap, pot_column_room, I(HOOKSHOT), NONE);
 	CONNECT_BACK(pot_column_room, pot_column_room_chest4, NONE, NO);
@@ -120,17 +111,14 @@ int ladx_dungeon5(const LadxDungeonContext *c)
 	CONNECT_ALL_BACK(star_room, TARGETS(after_d_passage, spark_hallway), ENEMY(STAR), NONE);
 	CONNECT_BACK(spark_hallway, after_c_passage, NONE, NO);
 	CONNECT_BACK(before_c_passage, after_c_passage, AND(I(HOOKSHOT), I(FEATHER)), I(FEATHER));
-	/* boss */
 	CONNECT(after_c_passage, after_boss_keyblock, FOUND(KEY5, 3));
 	CONNECT(after_boss_keyblock, pre_boss_room, I(HOOKSHOT));
 	CONNECT_BACK(pre_boss_room, boss_room, I(NIGHTMARE_KEY5), NO);
 	CONNECT_ALL_BACK(boss_room, TARGETS(boss_room_drop3, instrument), BOSS(4), NO);
-	/* owl statues */
 	if (OPTION(OWLSTATUES, "both") || OPTION(OWLSTATUES, "dungeon")) {
 		CONNECT(crystal_puddle_room, crystal_puddle_room_owl1, I(STONE_BEAK5));
 		CONNECT(star_room, star_room_owl2, I(STONE_BEAK5));
 	}
-	/* hard */
 	if (HARD_OR_ABOVE) {
 		CONNECT_BACK(statue_room, after_blade_trap, I(FEATHER), NO);
 		CONNECT_BACK(after_blade_trap, pot_column_room, R->tight_jump, NO);
@@ -147,7 +135,6 @@ int ladx_dungeon5(const LadxDungeonContext *c)
 		CONNECT_BACK(after_b_passage, boss_key_room, R->boots_jump, NO);
 		CONNECT_BACK(north_crossroads, west_crossroads_zol_clear, OR(I(SWORD), I(BOMB)), NO);
 	}
-	/* glitched */
 	if (GLITCHED_OR_ABOVE) {
 		CONNECT_BACK(entrance, entrance_ledge, R->pit_buffer, NO);
 		CONNECT_BACK(before_miniboss, before_c_passage, R->hookshot_clip_wall, NO);
@@ -156,7 +143,6 @@ int ladx_dungeon5(const LadxDungeonContext *c)
 		CONNECT(middle_ledge, east_ledge, R->pit_buffer);
 		CONNECT_BACK(after_c_passage, spark_hallway, R->super_jump_boots, NO);
 	}
-	/* hell */
 	if (LOGIC_IS("hell")) {
 		CONNECT_BACK(entrance, entrance_ledge, R->pit_buffer_boots, NO);
 		CONNECT_BACK(before_a_passage, after_a_passage, R->boots_bonk_2d_hell, NO);

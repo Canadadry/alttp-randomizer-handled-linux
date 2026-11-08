@@ -31,8 +31,7 @@ static void enter(LadxExplorer *e, const LadxLogic *logic, int location, int dep
 	e->stack[2 * depth + 1] = loc->edge_first + loc->edge_count;
 }
 
-/* _visit's recursion on an explicit stack of (next edge, end) frames: each
- * frame is a newly visited location, so the depth stays within the cap. */
+/* An explicit stack, not recursion: each frame is a newly visited location, so the depth stays within the cap. */
 static void visit_one(LadxExplorer *e, const LadxLogic *logic, int location)
 {
 	const LadxReqArena *arena = ladx_logic_arena(logic);

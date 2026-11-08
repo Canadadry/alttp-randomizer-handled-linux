@@ -1,8 +1,3 @@
-"""Usage: python3 -I test_key_trace.py
-
-Unit tests of key_trace.py on a stand-in Settings class and assembler module written to a
-temporary directory, with no LADXR.
-"""
 
 import importlib.util
 import os
@@ -65,7 +60,6 @@ PLANTED = textwrap.dedent('''\
 
 
 class KeyTrace(unittest.TestCase):
-
     def setUp(self):
         self.root = tempfile.mkdtemp()
         for name, text in (("standins.py", STAND_INS), ("planted.py", PLANTED)):
@@ -127,7 +121,6 @@ class KeyTrace(unittest.TestCase):
 
 
 class Main(unittest.TestCase):
-
     def test_no_checkout_is_a_setup_line(self):
         empty = tempfile.mkdtemp()
         try:

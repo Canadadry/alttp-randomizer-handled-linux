@@ -134,8 +134,6 @@ class KeyTrace:
 
 
 def install(settings_class, assembler, sections, roots):
-    """A KeyTrace of settings_class's attribute reads and assembler.CONST_MAP's lookups;
-    sections [(file, function)], files relative to the first of roots."""
     trace = KeyTrace(sections, roots)
     original = settings_class.__getattr__
 
@@ -151,8 +149,6 @@ def install(settings_class, assembler, sections, roots):
 
 
 def parse(text):
-    """({site: settings read}, {site: constants looked up}) of a key trace's text;
-    KeyTraceError on a malformed one."""
     lines = text.split("\n")
     if not lines or lines[0] != VERSION_LINE or lines[-1] != "":
         raise KeyTraceError("not a key trace (no `%s` line, or no final newline)"
@@ -193,7 +189,6 @@ SELF_TEST_EXPECTED = [
 
 
 def self_test(ladxr):
-    """Failure lines of the planted run on LADXR's Settings and assembler."""
     folder = tempfile.mkdtemp()
     old_path, old_cwd = list(sys.path), os.getcwd()
     try:

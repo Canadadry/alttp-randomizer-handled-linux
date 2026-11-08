@@ -57,7 +57,6 @@ static const char *const order_text = "ladx-tables-order 1\n"
 				      "section generator.py generateRom\n"
 				      "C bank3e - patches.bank3e.addBank3E(rom, seed, settings)\n";
 
-/* A planted constants file: a fixed unit and one keyed by HARD_MODE. */
 static const char *const bank3e_text = "ladx-tables 1\n"
 				       "group bank3e\n"
 				       "tables " TABLES "\n"
@@ -112,7 +111,6 @@ static LadxPipelineStatus run(const char *assignment, int with_rom, LadxPipeline
 	return ladx_pipeline_run(&pipeline, &enc, err);
 }
 
-/* The expected log: the planted constant, the seed, the settings string unless race, 0xBE copied. */
 static void expected(char *want, size_t cap, uint8_t keyed, const LadxSettings *s)
 {
 	const SynthEntry *skull = &synth.entry[synth.table_first[0] + 0x111];

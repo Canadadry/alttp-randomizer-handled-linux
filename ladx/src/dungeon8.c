@@ -1,16 +1,12 @@
 #include "dungeon_build.h"
 
-/* logic/dungeon8.py Dungeon8 at 4325207e, line for line. */
-
 #define DUNGEON 8
 
 int ladx_dungeon8(const LadxDungeonContext *c)
 {
-	/* Logic passes 0x0E0 only under overworld=alttp; never None. */
 	const int back_entrance_heartpiece = 0x000;
 	int i, loop[5];
 
-	/* locations */
 	int entrance = LOC("D8 Entrance");
 	int lava_beamos_room = LOC("D8 Lava Beamos Room");
 	int miniboss1_room = LOC("D8 Hinox Room");
@@ -93,15 +89,12 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 	int boss_room_drop5 = ADD(LOC(NULL), HEART_CONTAINER, 0x234);
 	int instrument = ADD(LOC("D8 Instrument Room"), INSTRUMENT, 0x230);
 
-	/* back exits */
 	CONNECT_ALL(taltal_passage, TARGETS(before_f_stairs, after_f_stairs), NONE);
 	{
 		int taltal_chest = ADD(LOC_OUTSIDE(NULL), HEART_PIECE, back_entrance_heartpiece);
 		CONNECT_BACK(taltal_passage, taltal_chest, NONE, NO);
 	}
 
-	/* connections */
-	/* west */
 	CONNECT_ALL_BACK(entrance, TARGETS(lava_beamos_room, spark_pot_room), ENEMY(VIRE), NO);
 	CONNECT_BACK(lava_beamos_room, entrance, NONE, NO);
 	CONNECT_BACK(lava_beamos_room, miniboss1_room, ENEMY(SNAKE), NONE);
@@ -114,7 +107,6 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 			 MINIBOSS_NAMED(ROLLING_BONES), NO);
 	CONNECT_BACK(sw_vire_room, sw_vire_room_drop1, R->attack_hookshot_no_bomb, NO);
 	CONNECT_ALL_BACK(vacuum_room, TARGETS(vacuum_room_chest4, entrance), NONE, NO);
-	/* east */
 	CONNECT_ALL_BACK(spark_pot_room, TARGETS(entrance, slime_trap_room, mimic_room), I(POWER_BRACELET), NO);
 	CONNECT_ALL_BACK(slime_trap_room, TARGETS(slime_trap_room_chest5, spark_pot_room), NONE, NO);
 	CONNECT_BACK(slime_trap_room, zamboni_pit_west, I(FEATHER), OR(I(FEATHER), I(HOOKSHOT)));
@@ -131,7 +123,6 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 	CONNECT(pot_pit_room_doorway, pot_pit_room, OR(I(FEATHER), I(POWER_BRACELET)));
 	CONNECT_BACK(pot_pit_room, pot_pit_room_chest6, NONE, NO);
 	CONNECT(pot_pit_room, after_e_passage, I(POWER_BRACELET));
-	/* center */
 	CONNECT(entrance, pre_center_zamboni, I(FEATHER));
 	CONNECT_ALL_BACK(pre_center_zamboni,
 			 TARGETS(bombwall_corridor, before_e_passage, pre_center_keyblock, loop_ledge, before_c_passage,
@@ -148,13 +139,11 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 	CONNECT_ALL(pre_center_keyblock, TARGETS(heart_vire, peahat_area), FOUND(KEY8, 1));
 	CONNECT_BACK(peahat_area, before_e_passage, NONE, NO);
 	CONNECT(before_e_passage, after_e_passage, I(FEATHER));
-	/* east */
 	CONNECT(heart_vire, before_g_passage, FOUND(KEY8, 2));
 	CONNECT_BACK(before_g_passage, hidden_arrow_room, NONE, NO);
 	CONNECT(before_g_passage, after_g_passage, AND(I(FEATHER), I(HOOKSHOT)));
 	CONNECT_BACK(hidden_arrow_room, dodongo_area, ENEMY(HIDING_ZOL), NONE);
 	CONNECT(hidden_arrow_room, dark_east_spark, I(BOMB));
-	/* dark */
 	CONNECT(dark_east_spark, dark_east_zol, I(FEATHER));
 	CONNECT(dark_east_zol, dark_center, FOUND(KEY8, 4));
 	CONNECT_ALL_BACK(peahat_area, TARGETS(dark_center, dark_west), AND(I(BOW), I(BOMB), I(FEATHER)),
@@ -168,13 +157,11 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 	CONNECT_BACK(dark_west, before_f_stairs, AND(I(BOMB), I(FEATHER)), AND(I(BOW), I(BOMB), I(FEATHER)));
 	CONNECT(dark_center_torches, dark_center_pre_keyblock, I(HOOKSHOT));
 	CONNECT(dark_center_pre_keyblock, before_d_passage, FOUND(KEY8, 7));
-	/* miniboss */
 	CONNECT(before_d_passage, after_d_passage, I(FEATHER));
 	CONNECT(after_d_passage, miniboss_room, NONE);
 	CONNECT_ALL_BACK(miniboss_room, TARGETS(miniboss_cubby, entrance), MINIBOSS(7), NO);
 	CONNECT_BACK(miniboss_cubby, rod_ledge, I(SWITCH8), NO);
 	CONNECT_BACK(rod_ledge, rod_ledge_chest8, NONE, NO);
-	/* northeast */
 	CONNECT_BACK(dodongo_area, dodongo_area_drop3, ENEMY(GIBDO), NO);
 	CONNECT(dodongo_area, pre_lava_ledge, I(FEATHER));
 	CONNECT_ALL_BACK(pre_lava_ledge, TARGETS(slime_corridor, after_g_passage), NONE, NO);
@@ -182,7 +169,6 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 	CONNECT_ALL_BACK(lava_ledge, TARGETS(lava_ledge_chest9, after_g_passage), NONE, NO);
 	CONNECT_BACK(after_f_stairs, after_f_stairs_chest10, MINIBOSS_NAMED(DODONGO), NO);
 	CONNECT_BACK(after_f_stairs, dodongo_area, NONE, NO);
-	/* northwest */
 	CONNECT(slime_corridor, before_f_stairs, FOUND(KEY8, 4));
 	CONNECT_ALL_BACK(before_f_stairs, TARGETS(before_f_stairs_chest11, sw_zamboni_area), NONE, NO);
 	CONNECT_BACK(before_f_stairs, before_f_stairs_drop4, I(BOW), NO);
@@ -190,45 +176,35 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 	CONNECT_BACK(before_f_stairs, peahat_area, I(FEATHER), NO);
 	CONNECT_BACK(miniboss4_cubby, ledge_west_boss, I(HOOKSHOT), NO);
 	CONNECT_BACK(ledge_west_boss, ledge_west_boss_chest12, NONE, NO);
-	/* cueball */
 	CONNECT_BACK(before_b_passage, after_b_passage, AND(I(FEATHER), I(MAGIC_ROD)), I(MAGIC_ROD));
 	CONNECT_BACK(after_b_passage, miniboss4_cubby, NONE, NO);
 	CONNECT_BACK(after_b_passage, miniboss4_room, FOUND(KEY8, 7), NO);
 	CONNECT_BACK(miniboss4_room, nw_zamboni_room, AND(I(FEATHER), MINIBOSS_NAMED(CUE_BALL)), NO);
 	CONNECT_BACK(nw_zamboni_room, nw_zamboni_room_chest13, NONE, NO);
-	/* boss */
 	CONNECT_BACK(before_c_passage, after_c_passage, AND(I(FEATHER), I(MAGIC_ROD)), I(MAGIC_ROD));
 	CONNECT_BACK(after_c_passage, boss_room, I(NIGHTMARE_KEY8), NO);
 	CONNECT_BACK(boss_room, boss_room_drop5, BOSS(7), NO);
 	CONNECT_BACK(boss_room, instrument, AND(I(FEATHER), BOSS(7)), NO);
-	/* owl statues */
 	if (OPTION(OWLSTATUES, "both") || OPTION(OWLSTATUES, "dungeon")) {
 		CONNECT(after_a_passage, after_a_passage_owl1, I(STONE_BEAK8));
 		CONNECT(hidden_arrow_room, hidden_arrow_room_owl2, I(STONE_BEAK8));
 		CONNECT(before_f_stairs, before_f_stairs_owl3, I(STONE_BEAK8));
 	}
-	/* hard */
 	if (HARD_OR_ABOVE) {
-		/* south */
 		CONNECT_BACK(zamboni_pit_west, zamboni_pit_east, R->tight_jump, NO);
 		CONNECT_BACK(after_a_passage, before_a_passage, R->damage_boost, NO);
 		CONNECT(pot_pit_room_doorway, pot_pit_room, R->boots_bonk_pit);
 		CONNECT_BACK(pot_pit_room_doorway, miniboss3_room, OR(R->throw_pot, AND(I(FEATHER), R->shield_bump)), NO);
-		/* center */
 		CONNECT(peahat_area, heart_vire, R->tight_jump);
 		CONNECT_ALL_BACK(peahat_area, TARGETS(dark_center, dark_west), AND(I(BOMB), I(FEATHER)), NO);
-		/* north */
 		CONNECT_BACK(dodongo_area, dodongo_area_drop3, OR(I(HOOKSHOT), I(MAGIC_ROD)), NO);
 		CONNECT_BACK(before_f_stairs, dark_west, AND(I(BOMB), I(FEATHER)), NO);
 		CONNECT_BACK(before_f_stairs, miniboss4_cubby, R->throw_pot, NO);
 		CONNECT_BACK(before_f_stairs, sw_vire_room_drop1, AND(MINIBOSS_NAMED(ROLLING_BONES), ENEMY(VIRE)), NO);
 	}
-	/* glitched */
 	if (GLITCHED_OR_ABOVE) {
-		/* south */
 		CONNECT_BACK(sw_zamboni_area, spark_pit_room, AND(R->pit_buffer_itemless, R->diagonal_walk), NO);
 		CONNECT_BACK(after_e_passage, pot_pit_room, AND(R->hookshot_clip_wall, R->super_jump_feather), NO);
-		/* center */
 		CONNECT_BACK(before_e_passage, peahat_area, R->sideways_block_push, NO);
 		CONNECT_BACK(before_e_passage, bombwall_corridor, R->super_jump_feather, NO);
 		loop[0] = before_e_passage;
@@ -247,7 +223,6 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 		CONNECT_BACK(dark_center, dark_east_zol, R->hookshot_clip_block, NO);
 		CONNECT_BACK(dark_center_torches, before_d_passage, R->bookshot, NO);
 		CONNECT_BACK(miniboss_cubby, rod_ledge, R->super_jump_feather, NO);
-		/* north */
 		CONNECT_ALL(slime_corridor, TARGETS(before_f_stairs, after_g_passage), R->jesus_jump);
 		CONNECT(miniboss4_cubby, after_b_passage, R->super_jump_feather);
 		loop[0] = after_g_passage;
@@ -258,9 +233,7 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 		CONNECT_BACK(dodongo_area, after_f_stairs_chest10, AND(MINIBOSS_NAMED(DODONGO), R->super_jump_feather), NO);
 		CONNECT_BACK(before_f_stairs, after_c_passage, R->super_jump_feather, NO);
 	}
-	/* hell */
 	if (LOGIC_IS("hell")) {
-		/* south */
 		CONNECT_ALL_BACK(entrance, TARGETS(lava_beamos_room, pre_center_zamboni),
 				 AND(R->jesus_buffer, R->lava_swim_sword), NO);
 		CONNECT_BACK(entrance, lava_beamos_room, R->jesus_jump, NO);
@@ -274,7 +247,6 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 		CONNECT_BACK(after_e_passage, before_e_passage, R->boots_bonk, NO);
 		CONNECT_BACK(zamboni_pit_west, slime_trap_room, AND(R->boots_bonk, R->jesus_buffer), R->boots_bonk_lava);
 		CONNECT_BACK(zamboni_pit_west, zamboni_pit_east, AND(R->hookshot_spam_pit, R->hookshot_over_pit), NO);
-		/* center */
 		CONNECT_BACK(before_f_stairs, peahat_area, AND(R->boots_bonk, R->jesus_buffer), NO);
 		CONNECT_BACK(peahat_area, before_f_stairs, AND(R->jesus_buffer, R->lava_swim), NO);
 		loop[0] = before_e_passage;
@@ -287,7 +259,6 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 		CONNECT_BACK(before_b_passage, loop_ledge, I(HOOKSHOT), NO);
 		CONNECT_BACK(loop_ledge, heart_vire, R->hookshot_clip_block, NO);
 		CONNECT_BACK(before_g_passage, after_g_passage, AND(I(HOOKSHOT), R->damage_boost_special, I(TOADSTOOL2)), NO);
-		/* dark */
 		CONNECT_BACK(before_f_stairs, dark_west, AND(I(BOMB), R->jesus_buffer, R->lava_swim), NO);
 		loop[0] = dark_west;
 		loop[1] = dark_center;
@@ -297,22 +268,18 @@ int ladx_dungeon8(const LadxDungeonContext *c)
 		CONNECT(dark_east_zol, dark_east_spark, OR(R->hookshot_spam_pit, R->boots_bonk));
 		CONNECT_BACK(dark_center, before_d_passage, AND(R->super_jump_feather, R->shield_bump), NO);
 		CONNECT_BACK(dark_center_pre_keyblock, before_d_passage, R->zoomerang_shovel, NO);
-		/* miniboss */
 		CONNECT(before_d_passage, after_d_passage, R->boots_bonk_2d_hell);
 		CONNECT_BACK(dodongo_area, dodongo_area_drop3, AND(I(FEATHER), I(SHIELD)), NO);
 		CONNECT(dodongo_area, pre_lava_ledge, R->boots_bonk);
 		CONNECT(pre_lava_ledge, lava_ledge, R->super_jump_feather);
 		CONNECT(slime_corridor, before_f_stairs, AND(R->jesus_buffer, R->lava_swim));
-		/* northwest */
 		CONNECT_BACK(before_b_passage, after_b_passage, AND(R->boots_bonk_2d_hell, I(MAGIC_ROD)), NO);
 		CONNECT_BACK(before_f_stairs, ledge_west_boss, R->super_bump, NO);
 		CONNECT_BACK(miniboss4_room, nw_zamboni_room, AND(R->boots_bonk, R->jesus_buffer, MINIBOSS_NAMED(CUE_BALL)),
 			     NO);
-		/* boss */
 		CONNECT_BACK(before_c_passage, after_c_passage, AND(R->boots_bonk_2d_hell, I(MAGIC_ROD)), NO);
 		CONNECT_BACK(after_c_passage, before_f_stairs, AND(R->jesus_jump, R->zoomerang), NO);
 		CONNECT_BACK(boss_room, instrument, AND(R->boots_bonk_lava, BOSS(7)), NO);
-		/* connections that require overworld-only replenishable items */
 		if (!OPTION(OVERWORLD, "alttp") && !OPTION(OVERWORLD, "dungeondive"))
 			CONNECT_BACK(before_a_passage, after_a_passage, R->toadstool_bounce_2d_spikepit, NO);
 	}

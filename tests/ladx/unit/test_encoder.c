@@ -152,7 +152,6 @@ static void entry(const char *group, uint32_t k, const uint8_t *values, const in
 	      "an entry write");
 }
 
-/* The source copy of rom[q..q+n), origins included. */
 static void src(uint32_t q, size_t n, uint8_t *values, int32_t *origins)
 {
 	size_t i;
@@ -184,7 +183,6 @@ static void test_carried_source(void)
 	expect("a carried source copy", HEADER "G ca\nB 100 =1 @300+3\n");
 }
 
-/* hex of rom[q..q+n) */
 static const char *hex(uint32_t q, size_t n)
 {
 	static char buf[8][200];
@@ -565,8 +563,6 @@ static void test_refusals(void)
 	expect("refused writes change nothing", HEADER "G tg\nB 0 01\n");
 }
 
-/* The fixture ------------------------------------------------------------------------------------ */
-
 #define VECTORS "oracle/encoder_vectors.txt"
 #define FIX_MAX (1 << 20)
 #define FIELD_MAX 16
@@ -586,7 +582,6 @@ typedef struct Cursor {
 	long line;
 } Cursor;
 
-/* The next line, NUL-terminated in place; NULL at the end. */
 static char *next_line(Cursor *c)
 {
 	char *line = c->at, *nl;
@@ -682,7 +677,6 @@ static LadxWlogKey key_of(const char *text)
 	return k;
 }
 
-/* write_log._origins: `-`, or comma-separated `k<n>`, `v<i>+<n>`, `<q>+<n>`. */
 static size_t parse_origins(char *text, int32_t *out)
 {
 	char *runs[4096];
@@ -714,7 +708,6 @@ static size_t parse_origins(char *text, int32_t *out)
 	return n;
 }
 
-/* A payload: 1 for an integer pointer in *pointer, else values and origins of *n bytes. */
 static int payload(const char *value, char *origin_text, uint32_t *pointer, size_t *n)
 {
 	if (value[0] == 'p') {
@@ -727,7 +720,6 @@ static int payload(const char *value, char *origin_text, uint32_t *pointer, size
 	return 0;
 }
 
-/* A record's tokens decoded into atoms; 1 for an integer pointer in *pointer. */
 static int decode_tokens(char **tokens, int count, uint32_t offset, int bank_record, uint32_t *pointer, size_t *n)
 {
 	int t;
@@ -814,7 +806,6 @@ static void run_c_event(const Vector *v, char **f, int n)
 		test_fail(TEST, "%s: %s: event refused (status %d)", VECTORS, v->name, (int)st);
 }
 
-/* The expected log's segment s: its first record line, and the line after its last. */
 static void log_segment(const Vector *v, int s, int *first, int *stop)
 {
 	int i, seen = -1;
@@ -829,7 +820,6 @@ static void log_segment(const Vector *v, int s, int *first, int *stop)
 		;
 }
 
-/* A table group's segment: its net origins from the events, its atoms from the expected log. */
 static void run_table_segment(const Vector *v, char **events, int count, int s)
 {
 	static int32_t bank_origin[ROM_LEN];
@@ -884,7 +874,6 @@ static void run_table_segment(const Vector *v, char **events, int count, int s)
 	group.at = events[0] + (f[1] - line);
 	group.len = strlen(f[1]);
 	log_segment(v, s, &first, &stop);
-	/* banks from the log in its order; entries in the events' first-write order */
 	for (r = first; r < stop; r++) {
 		char rec[4096], *tok[1024];
 		int n;
@@ -1008,7 +997,6 @@ static void replay_vector(const Vector *v, const LadxKs *k)
 		test_fail(TEST, "%s: vector %s: got\n%s---\nwant\n%s---", VECTORS, v->name, out, want_log);
 }
 
-/* known_source's span-list label: `<table> pointer|bank <key>`, `<table> <key>`, `boss zero|item <n>`. */
 static void add_ks_span(char *text, const char *name)
 {
 	char *f[8];
@@ -1049,7 +1037,6 @@ static void add_ks_span(char *text, const char *name)
 		test_fail(TEST, "%s: %s: K span refused", VECTORS, name);
 }
 
-/* A count line `<word> <hex n>`, then its n lines. */
 static int counted(Cursor *c, const char *word, char **lines, int cap, const char *name)
 {
 	char *line = next_line(c), *f[2];

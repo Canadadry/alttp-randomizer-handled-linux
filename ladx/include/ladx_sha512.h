@@ -17,10 +17,8 @@ typedef struct LadxSha512 {
 
 void ladx_sha512_init(LadxSha512 *ctx);
 
-/* bytes may be NULL when size is 0; any number of calls of any size. */
 void ladx_sha512_update(LadxSha512 *ctx, const uint8_t *bytes, size_t size);
 
-/* ctx must be initialised again before reuse. */
 void ladx_sha512_final(LadxSha512 *ctx, uint8_t digest[LADX_SHA512_SIZE]);
 
 void ladx_sha512(const uint8_t *bytes, size_t size, uint8_t digest[LADX_SHA512_SIZE]);

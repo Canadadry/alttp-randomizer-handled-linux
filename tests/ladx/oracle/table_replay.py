@@ -60,7 +60,6 @@ class SetupError(Exception):
 
 
 def _stream_segments(events):
-    """[(group, [event])] of the stream's maximal runs of one group's events."""
     out = []
     for event in events.events:
         if out and out[-1][0] == event[1]:
@@ -80,9 +79,6 @@ def _first_difference(a, b):
 
 
 def replay(tabs, values, golden, events, rom, sha1):
-    """[(check, detail)] of one case: tabs a tables.Tables, values {component: value} of the
-    case's key, golden its rom_writes.txt, events its write_log.Events, rom the source ROM, sha1
-    run.txt's rom_sha1. Empty when the replay gives the golden's output and projections."""
     try:
         steps = tables.select(tabs, values)
     except tables.TablesError as e:
@@ -146,9 +142,6 @@ def replay(tabs, values, golden, events, rom, sha1):
 
 
 def table_fragments(texts, rom, known):
-    """[(file, line number, fragments, bytes)] of every `B` or `T` record of the table files
-    texts {file: text} holding a fragment (write_log.record_fragments against KS known), files
-    in name order."""
     out = []
     for name in sorted(texts):
         for number, line in enumerate(texts[name].split("\n"), 1):
@@ -160,8 +153,6 @@ def table_fragments(texts, rom, known):
                 out.append((name, number, len(found), sum(n for _, n in found)))
     return out
 
-
-# The self-proof ----------------------------------------------------------------------------------
 
 _SECTION = "generator.py generateRom"
 _ORDER = ("ladx-tables-order 1\nsection %s\ntable fixed fixed.1 a(rom)\nC items - b(rom)\n"
@@ -188,9 +179,6 @@ def _plant_stream(rom):
 
 
 def self_test():
-    """Replays a planted case, correct then with a flipped table byte, a copy token swapped for
-    the same bytes as a literal and an entry under another key, then scans planted tables with
-    and without a fragment; the first variant that does not give exactly its checks, or None."""
     rom = bytes((i * 7 + 3) % 256 for i in range(0x100))
     stream = _plant_stream(rom)
     sha1 = hashlib.sha1(write_log.decode(_GOLDEN, rom)).hexdigest()
@@ -223,8 +211,6 @@ def self_test():
 SELF_TEST_CASES = 5
 
 
-# The command line --------------------------------------------------------------------------------
-
 def _read(path, binary=False):
     with open(path, "rb") as f:
         data = f.read()
@@ -232,7 +218,6 @@ def _read(path, binary=False):
 
 
 def load_tables(root):
-    """The tables.Tables of the files under root; SetupError on a missing or broken file."""
     try:
         order = tables.parse(_read(os.path.join(root, tables.ORDER_FILE)))
         groups = {}
@@ -262,7 +247,6 @@ def case_folders(root, names):
 
 
 def assignment_of(config_text):
-    """{key: value rendered as in the tables} of a case's config.txt."""
     out = {}
     for line in config_text.splitlines():
         key, _, value = line.partition("=")
@@ -271,8 +255,6 @@ def assignment_of(config_text):
 
 
 class KeyModel:
-    """The case keys, through gen_tables.py's model on LADXR (validate and the spot count)."""
-
     def __init__(self, ladxr, inventory_path, inputs, work):
         self.gen_tables = _load("gen_tables")
         sys.path.insert(0, HERE)

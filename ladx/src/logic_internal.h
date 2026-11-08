@@ -7,22 +7,13 @@
 
 #include <stdbool.h>
 
-/* options.<key> == "<name>"; an unknown name is never equal. */
 bool ladx_setting_is(const LadxSettings *settings, LadxSettingId id, const char *name);
-/* A boolean setting's truth. */
 bool ladx_setting_on(const LadxSettings *settings, LadxSettingId id);
 
-/* items[0].forced_item = item: the location's first spot. */
 void ladx_logic_force_first_item(LadxLogic *logic, int location, int item);
-/* Location.add(<Kind>(room, arg)), as ladx_logic_add_item_info; returns the
- * location, as add returns self. */
 int ladx_logic_add_to(LadxLogic *logic, int location, LadxSpotKind kind, int room, int arg);
-/* Location.connect(others, req, back=back) on a tuple: each target's both
- * edges in turn, req and back the same nodes for all. */
 void ladx_logic_connect_all(LadxLogic *logic, int from, int n, const int *targets, LadxReq req, LadxReq back);
 
-/* requirements.py RequirementsSettings.enemy_requirements' keys, in its order;
- * the last three exist only under the settings that add them. */
 typedef enum LadxEnemy {
 	LADX_ENEMY_HARDHAT_BEETLE,
 	LADX_ENEMY_MINI_MOLDORM,
@@ -113,7 +104,6 @@ typedef enum LadxEnemy {
 	LADX_ENEMY_COUNT
 } LadxEnemy;
 
-/* The string keys boss_requirements and miniboss_requirements share. */
 typedef enum LadxNightmare {
 	LADX_NIGHTMARE_GEL,
 	LADX_NIGHTMARE_AGAHNIM,
@@ -123,7 +113,6 @@ typedef enum LadxNightmare {
 	LADX_NIGHTMARE_COUNT
 } LadxNightmare;
 
-/* requirements.py RequirementsSettings, its attributes by name. */
 typedef struct LadxRequirementsSettings {
 	LadxReq bush, pit_bush, attack, attack_hookshot, hit_switch, hit_switch_color;
 	LadxReq attack_hookshot_powder, attack_no_bomb, attack_hookshot_no_bomb, attack_no_boomerang;
@@ -148,10 +137,8 @@ typedef struct LadxRequirementsSettings {
 	bool enemy_present[LADX_ENEMY_COUNT];
 } LadxRequirementsSettings;
 
-/* RequirementsSettings(options), its nodes in logic's arena. */
 void ladx_requirements_settings(LadxRequirementsSettings *r, LadxLogic *logic, const LadxSettings *options);
 
-/* What a DungeonN(options, world_setup, r) reads, and the logic it builds in. */
 typedef struct LadxDungeonContext {
 	LadxLogic *logic;
 	const LadxSettings *options;
@@ -159,11 +146,8 @@ typedef struct LadxDungeonContext {
 	const LadxRequirementsSettings *r;
 } LadxDungeonContext;
 
-/* r.enemy_requirements[key]; a key the settings did not add breaks the
- * logic (Python's KeyError). */
 LadxReq ladx_dungeon_enemy(const LadxDungeonContext *c, LadxEnemy enemy);
 
-/* DungeonN(...).entrance: its handle, -1 once the logic is broken. */
 int ladx_dungeon1(const LadxDungeonContext *c);
 int ladx_dungeon2(const LadxDungeonContext *c);
 int ladx_dungeon3(const LadxDungeonContext *c);
@@ -172,14 +156,10 @@ int ladx_dungeon5(const LadxDungeonContext *c);
 int ladx_dungeon6(const LadxDungeonContext *c);
 int ladx_dungeon7(const LadxDungeonContext *c);
 int ladx_dungeon8(const LadxDungeonContext *c);
-/* DungeonColor(...).entrance. */
 int ladx_dungeon_color(const LadxDungeonContext *c);
 
-/* entranceInfo.py ENTRANCE_INFO's keys, in its order. */
 #define LADX_ENTRANCE_COUNT 104
 
-/* overworld.py EntranceExterior; Python's None is location -1 and a NONE
- * requirement, "UNSET" a false *_set flag. */
 typedef struct LadxEntranceExterior {
 	bool added;
 	int location;
@@ -188,18 +168,13 @@ typedef struct LadxEntranceExterior {
 	LadxReq one_way_enter, one_way_exit;
 } LadxEntranceExterior;
 
-/* overworld.py World: entrances[2 k] is ENTRANCE_INFO key k, [2 k + 1]
- * its "<key>:inside"; locations are creation ids. */
 typedef struct LadxWorld {
 	LadxEntranceExterior entrance[2 * LADX_ENTRANCE_COUNT];
 	int start, egg, nightmare, windfish;
 } LadxWorld;
 
-/* ENTRANCE_INFO's key k; NULL out of range. */
 const char *ladx_entrance_name(int k);
-/* World(options, world_setup, r). */
 void ladx_overworld(const LadxDungeonContext *c, LadxWorld *w);
-/* World.updateIndoorLocation(name, location): "d0" to "d8". */
 void ladx_world_update_indoor(LadxLogic *logic, LadxWorld *w, const char *name, int location);
 
 #endif

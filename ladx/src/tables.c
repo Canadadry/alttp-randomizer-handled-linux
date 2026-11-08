@@ -27,7 +27,6 @@ const char *ladx_tables_status_name(LadxTablesStatus status)
 	return (unsigned)status < LADX_TABLES_STATUS_COUNT ? status_names[status] : "unknown";
 }
 
-/* generateRom's 0/1 assembler.const rows (the inventory's asm-consts group). */
 typedef enum AsmConst {
 	ASM_HARD_MODE,
 	ASM_DUNGEON_CHAIN,
@@ -71,8 +70,6 @@ static int asm_value(AsmConst c, const LadxSettings *s)
 	}
 }
 
-/* Text helpers -------------------------------------------------------------------------------- */
-
 static LadxSpan sub(LadxSpan s, size_t from, size_t to)
 {
 	LadxSpan r;
@@ -99,7 +96,6 @@ static int starts(LadxSpan a, const char *s)
 	return a.len >= n && memcmp(a.at, s, n) == 0;
 }
 
-/* Splits off the next space-separated field of *rest; false when none is left. */
 static int field(LadxSpan *rest, LadxSpan *out)
 {
 	size_t i = 0;
@@ -155,7 +151,6 @@ static int is_hex(LadxSpan s)
 	return 1;
 }
 
-/* Canonical lowercase hex (no leading zero) of at most 32 bits. */
 static int parse_hex(LadxSpan s, uint32_t *v)
 {
 	size_t i;
@@ -168,7 +163,6 @@ static int parse_hex(LadxSpan s, uint32_t *v)
 	return 1;
 }
 
-/* A file's lines: each ends with '\n', and holds no NUL. */
 typedef struct Lines {
 	LadxSpan rest;
 	int number;
@@ -187,8 +181,6 @@ static int next_line(Lines *l, LadxSpan *line)
 	l->number++;
 	return 1;
 }
-
-/* Opening ------------------------------------------------------------------------------------- */
 
 static LadxTablesStatus fail(LadxTablesError *err, LadxTablesStatus status, const char *file, int line)
 {
@@ -223,7 +215,6 @@ static int component_ok(LadxSpan c)
 	return ladx_setting_find(key) != LADX_SETTING_COUNT;
 }
 
-/* write_log v1 tokens of a record; pointer allowed alone in a T record. */
 static int tokens_ok(LadxSpan rest, int bank)
 {
 	LadxSpan tok;
@@ -525,9 +516,6 @@ bool ladx_tables_unit_uses_count(const LadxTables *t, int unit)
 	return false;
 }
 
-/* Key and walk -------------------------------------------------------------------------------- */
-
-/* Appends text to buf (cap with its NUL); false when it does not fit. */
 static int append(char *buf, size_t cap, size_t *len, const char *text, size_t n)
 {
 	if (*len + n >= cap)
@@ -553,7 +541,6 @@ static int append_decimal(char *buf, size_t cap, size_t *len, int v)
 	return append(buf, cap, len, tmp + sizeof tmp - n, (size_t)n);
 }
 
-/* The unit's key as an E line writes its values. */
 static int key_values(const LadxTablesUnit *u, const LadxSettings *s, int spot_count, char *buf, size_t cap)
 {
 	size_t len = 0;
@@ -655,8 +642,6 @@ bool ladx_tables_walk_next(LadxTablesWalk *w, LadxTablesStep *step, LadxTablesEr
 	}
 	return false;
 }
-
-/* Records and applier ------------------------------------------------------------------------- */
 
 void ladx_tables_records_init(LadxTablesRecords *it, const LadxTables *t, const LadxTablesStep *step)
 {

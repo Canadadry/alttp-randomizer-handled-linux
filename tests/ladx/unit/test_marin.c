@@ -226,7 +226,6 @@ static const unsigned texts[] = {
 	0xEB, 0xEC, 0xED, 0xEE, 0xEF, 0xF0,
 };
 
-/* The hex of the log's T texts record for key, "" when absent. */
 static const char *record(unsigned key, char *buf, size_t cap)
 {
 	char head[32];

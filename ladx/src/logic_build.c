@@ -12,8 +12,6 @@ LadxReq ladx_dungeon_enemy(const LadxDungeonContext *c, LadxEnemy enemy)
 	return c->r->enemy_requirements[enemy];
 }
 
-/* Every value supported alone, and no pair but the one LADXR's fill
- * refuses: its logic builds (logic_vectors.txt holds five such). */
 static bool supported(const LadxSettings *settings)
 {
 	const LadxSettingPair *p;
@@ -76,9 +74,6 @@ LadxLogicStatus ladx_logic_build_dungeon(LadxLogic *out, const LadxSettings *val
 	return ladx_logic_broken(out) ? LADX_LOGIC_BROKEN : LADX_LOGIC_OK;
 }
 
-/* World and its entrances, then main.py's loop over the identity
- * entrance_mapping: every key to its ":inside" in ENTRANCE_INFO's order,
- * then every ":inside" back. */
 static void connect_entrances(LadxLogic *logic, LadxWorld *w)
 {
 	LadxReqArena *a = ladx_logic_arena_mut(logic);
@@ -87,7 +82,7 @@ static void connect_entrances(LadxLogic *logic, LadxWorld *w)
 
 	for (i = 0; i < 2 * LADX_ENTRANCE_COUNT; i++)
 		if (!w->entrance[i].added) {
-			logic->broken = true; /* assert k in world.entrances */
+			logic->broken = true;
 			return;
 		}
 	for (i = 0; i < 2 * LADX_ENTRANCE_COUNT; i++) {
@@ -140,7 +135,6 @@ static const int instrument_items[8] = {
 	LADX_ITEM_INSTRUMENT5, LADX_ITEM_INSTRUMENT6, LADX_ITEM_INSTRUMENT7, LADX_ITEM_INSTRUMENT8,
 };
 
-/* main.py's egg requirement, on world.nightmare -> world.egg. */
 static void connect_egg(LadxLogic *logic, const LadxSettings *options, const LadxWorldSetup *ws, const LadxWorld *w)
 {
 	LadxReqArena *a = ladx_logic_arena_mut(logic);
@@ -222,7 +216,6 @@ LadxLogicStatus ladx_logic_build(LadxLogic *out, const LadxSettings *validated, 
 		ladx_world_update_indoor(out, &w, indoor[i], dungeons[(i + 1) % 9](&c));
 	connect_entrances(out, &w);
 	connect_egg(out, validated, ws, &w);
-	/* LADXR's unused inner loop: nine KeyLocations per key, 81 in all. */
 	if (ladx_setting_is(validated, LADX_SETTING_DUNGEON_KEYS, "removed"))
 		for (n = 0; n < 9; n++)
 			for (count = 0; count < 9; count++)

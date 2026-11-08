@@ -22,7 +22,6 @@ static void check(int ok, const char *what)
 		test_fail(TEST, "%s", what);
 }
 
-/* An image as the I/O: every write recorded as a fixture's W line. */
 typedef struct ArrayIo {
 	uint8_t *bytes;
 	size_t len;
@@ -186,8 +185,6 @@ static void test_failures(void)
 	}
 }
 
-/* The group on the synthetic ROM, after a planted table group. */
-
 #define OUT_MAX 65536
 #define TABLES                                                                                                    \
 	"texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b "               \
@@ -314,8 +311,6 @@ static void test_registry(void)
 	memset(&pipeline, 0, sizeof pipeline);
 	check(!ladx_group_header(&enc, &pipeline), "no ROM: the group fails");
 }
-
-/* --fixtures: header_vectors.txt replayed. */
 
 static char fixture[FIX_MAX];
 

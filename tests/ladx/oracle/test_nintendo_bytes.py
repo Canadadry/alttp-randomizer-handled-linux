@@ -1,7 +1,3 @@
-"""Usage: python3 -I test_nintendo_bytes.py
-
-Unit tests of nintendo_bytes.py on synthetic ROMs, with no real ROM.
-"""
 
 import contextlib
 import hashlib
@@ -48,7 +44,6 @@ GENERAL = "notes/x.md"
 
 
 def check(path, data, corpus=NO_CORPUS, **kwargs):
-    """(literal runs as (view, offset, length, scope), cleared runs as (view, length, category))."""
     literals, cleared = nintendo_bytes.check_blob(path, data, INDEX, corpus, **kwargs)
     return literals, [(view, length, category) for view, _, length, category in cleared]
 
@@ -171,8 +166,6 @@ class LadxrPublic(unittest.TestCase):
 
 
 class PaddedLabels(unittest.TestCase):
-    """General raw runs whose ASCII spaces are the UI grid's padding around a LADXR label."""
-
     corpus = nintendo_bytes.Corpus([("settings.py", b"label='Seashell Mansion Owner'\n")])
 
     def test_a_padded_public_label_is_cleared_as_ladxr_public(self):
@@ -209,7 +202,6 @@ class PaddedLabels(unittest.TestCase):
 
 
 def planted_ladxr(directory, files):
-    """A git checkout in directory holding files [(path, bytes)] in one commit; its commit."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
     git = lambda *args: subprocess.run(["git", *args], cwd=directory, env=env, check=True,
@@ -313,7 +305,6 @@ CASE = "tests/ladx/cases/c/"
 
 
 def log(*lines):
-    """A write log of lines after the version and tables lines."""
     return ("ladx-rom-writes 1\ntables texts\n" + "".join(l + "\n" for l in lines)).encode()
 
 
@@ -346,9 +337,7 @@ class CaseFolders(unittest.TestCase):
                          [("hex", 0, 4, "strict")])
 
 
-
 def table_file(*records):
-    """A patch-table group file of one unit with one entry holding records."""
     return ("ladx-tables 1\ngroup g\ntables texts\nunit g.1 race\nE 0\n"
             + "".join(r + "\n" for r in records)).encode()
 
@@ -570,8 +559,6 @@ class Computed(unittest.TestCase):
 
 
 class Invariant(unittest.TestCase):
-    """A literal run whose bytes the oracle's re-run on a scrambled copy gave unchanged (the
-    log's `I` lines) is cleared `invariant`, unless it is source bytes C knows."""
     PATH = CASE + "rom_writes.txt"
     RUN = ROM[0x480:0x488]
     READER = [("g(rom)", "bank 0x00 source 0x0400..0x04FF", "g")]

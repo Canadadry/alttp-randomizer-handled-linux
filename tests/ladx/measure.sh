@@ -67,8 +67,6 @@ case_dirs() {
 	done
 }
 
-# One timed ladx_patch run of $case_dir by "$@" (the generator, maybe under qemu-arm):
-# sets t_asm, t_all, rss; dies unless the output's SHA-1 is the golden's.
 patch_run() {
 	out="$dir/out.gbc"
 	rm -f "$out"
@@ -121,7 +119,6 @@ sizes="$("$probe")" || die "the sizeof probe failed"
 state="${sizes% *}"
 assembler="${sizes#* }"
 
-# stats <file> <column> <label> [<factor note>]: median, max (with its case) and total of a column, in us.
 stats() {
 	sort -k"$2,$2n" "$1" | awk -v col="$2" -v label="$3" '
 	{ t[NR] = $col; c[NR] = $1; s += $col }
@@ -131,7 +128,6 @@ stats() {
 	}'
 }
 
-# max <file> <column>: the column's maximum.
 max() {
 	sort -k"$2,$2n" "$1" | awk -v col="$2" 'END { print $col }'
 }

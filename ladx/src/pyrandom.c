@@ -17,7 +17,6 @@ static void init_genrand(LadxPyRandom *rng, uint32_t s)
 	rng->words = 0;
 }
 
-/* Key word i (least significant first) of the integer read big-endian from seed || digest. */
 static uint32_t key_word(const uint8_t *seed, size_t size, const uint8_t *digest, size_t i)
 {
 	size_t length = size + LADX_SHA512_SIZE;
@@ -137,7 +136,6 @@ static int bit_length(uint64_t n)
 	return bits;
 }
 
-/* n > 0. */
 static uint64_t randbelow(LadxPyRandom *rng, uint64_t n)
 {
 	int k = bit_length(n);

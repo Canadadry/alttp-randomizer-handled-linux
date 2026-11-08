@@ -58,7 +58,6 @@ static int random_seed(uint8_t seed[LADX_INPUTS_SEED_BYTES])
 	return 1;
 }
 
-/* LADXR's error or raise, or a C failure, on stderr: always exit 1. */
 static int generation_failed(LadxAssembleStatus st)
 {
 	const LadxOutcome *o = NULL;

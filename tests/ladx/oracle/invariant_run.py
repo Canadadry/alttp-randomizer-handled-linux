@@ -44,14 +44,12 @@ def _mask(at):
 
 
 def sides_of(inventory_text):
-    """{group: side} of the inventory's Groups table, empty when it has none."""
     import inventory_check
     named, _ = inventory_check.parse_named(inventory_text)
     return {row["Group"]: row["Side"] for row in named["Groups"]}
 
 
 def targets_of(inventory_text):
-    """[(module name, attribute)] of the C groups' calls in generator.py generateRom, sorted."""
     import inventory_check
     sides = sides_of(inventory_text)
     tables, _ = inventory_check.parse_inventory(inventory_text)
@@ -189,7 +187,6 @@ class Rerun:
         return self._known
 
     def _scrambled(self, rom):
-        """A copy of rom's state, scrambled; plain classes, untraced, patch unchecked."""
         trace = self.trace
         known = self.known()
         state = {}
@@ -255,7 +252,6 @@ class Rerun:
 
 
 def _copied(value, memo):
-    """A deep copy of value, value itself when it cannot be copied (LADXR's Settings, logic)."""
     try:
         return copy.deepcopy(value, memo)
     except Exception:
@@ -293,8 +289,6 @@ def _set_rng_state(r, state):
 
 
 def install(trace, targets, sides, known=None, tracer=None):
-    """Wraps each (module or class, attribute) of targets; returns the Rerun. sides {group:
-    side}; known(source bytes) -> container of the C-knowable source offsets."""
     if known is None:
         import known_source
         known = known_source.build

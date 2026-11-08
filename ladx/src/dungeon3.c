@@ -1,12 +1,9 @@
 #include "dungeon_build.h"
 
-/* logic/dungeon3.py Dungeon3 at 4325207e, line for line. */
-
 #define DUNGEON 3
 
 int ladx_dungeon3(const LadxDungeonContext *c)
 {
-	/* locations */
 	int entrance = LOC("D3 Entrance");
 	int entrance_chest1 = ADD(LOC(NULL), DUNGEON_CHEST, 0x153);
 	int after_pot_door = LOC("D3 After Pot Door");
@@ -65,8 +62,6 @@ int ladx_dungeon3(const LadxDungeonContext *c)
 	int boss_room_drop8 = ADD(LOC(NULL), HEART_CONTAINER, 0x15A);
 	int instrument = ADD(LOC("D3 Instrument Room"), INSTRUMENT, 0x159);
 
-	/* connections */
-	/* entrance */
 	CONNECT_BACK(entrance, entrance_chest1, I(PEGASUS_BOOTS), NO);
 	CONNECT_BACK(entrance, after_pot_door, I(POWER_BRACELET), NONE);
 	CONNECT_BACK(after_pot_door, after_pot_door_chest2,
@@ -81,7 +76,6 @@ int ladx_dungeon3(const LadxDungeonContext *c)
 	CONNECT_BACK(swordstalfos_room, swordstalfos_room_chest4, I(SWITCH3), NO);
 	CONNECT_BACK(before_a_stairs, before_a_stairs_chest6, I(SWITCH3), NO);
 	CONNECT(before_a_stairs, after_a_stairs, NONE);
-	/* 4 way */
 	CONNECT_ALL_BACK(after_a_stairs, TARGETS(north_4way, south_4way, west_4way), FOUND(KEY3, 8), NO);
 	CONNECT_BACK(north_4way, north_4way_drop3, AND(ENEMY(STALFOS_AGGRESSIVE), ENEMY(MOBLIN)), NO);
 	CONNECT_BACK(north_4way, north_4way_switch, R->hit_switch, NO);
@@ -89,7 +83,6 @@ int ladx_dungeon3(const LadxDungeonContext *c)
 		     AND(ENEMY(HIDING_ZOL), ENEMY(MOBLIN), OR(ENEMY(PAIRODD), I(BOOMERANG))), NO);
 	CONNECT_BACK(west_4way, west_4way_drop2, AND(ENEMY(HIDING_ZOL), OR(ENEMY(PAIRODD), I(BOOMERANG))), NO);
 	CONNECT(after_a_stairs, before_b_stairs, FOUND(KEY3, 4));
-	/* main area */
 	CONNECT(before_b_stairs, after_b_stairs, NONE);
 	CONNECT_BACK(after_b_stairs, after_b_stairs_drop4, ENEMY(HIDING_ZOL), NO);
 	CONNECT_BACK(after_b_stairs, two_pairodd_room, AND(ENEMY(ZOL), ENEMY(GEL)), NONE);
@@ -97,27 +90,23 @@ int ladx_dungeon3(const LadxDungeonContext *c)
 	CONNECT_BACK(miniboss_room, entrance, MINIBOSS(2), NO);
 	CONNECT_BACK(miniboss_room, after_miniboss_room, MINIBOSS(2), NONE);
 	CONNECT_ALL_BACK(after_miniboss_room, TARGETS(after_miniboss_room_chest10, after_b_stairs), NONE, NO);
-	/* main west */
 	CONNECT_BACK(two_pairodd_room, two_pairodd_room_drop5, AND(ENEMY(HIDING_ZOL), ENEMY(PAIRODD)), NO);
 	CONNECT_BACK(two_pairodd_room, two_zol_stalfos_room, NONE, NO);
 	CONNECT_BACK(two_zol_stalfos_room, two_zol_stalfos_room_clear, AND(ENEMY(ZOL), ENEMY(STALFOS_AGGRESSIVE)), NO);
 	CONNECT_BACK(two_zol_stalfos_room, fenced_walkway, NONE, NO);
 	CONNECT_BACK(fenced_walkway, fenced_walkway_chest7, AND(I(D3_ZOLS_CLEAR), I(D3_STALFOS_CLEAR)), NO);
 	CONNECT_BACK(fenced_walkway, north_bombwall, I(BOMB), NO);
-	/* main north */
 	CONNECT_ALL_BACK(timer_bombite_room, TARGETS(after_b_stairs, three_zol_stalfos_room),
 			 AND(ENEMY(HIDING_ZOL), ENEMY(TIMER_BOMBITE)), NONE);
 	CONNECT_BACK(three_zol_stalfos_room, three_zol_stalfos_room_chest8, NONE, NO);
 	CONNECT_BACK(three_zol_stalfos_room, north_bombwall, I(BOMB), NO);
 	CONNECT(three_zol_stalfos_room, bouncing_bombite_room, I(D3_BOMBWALL));
 	CONNECT_BACK(bouncing_bombite_room, bouncing_bombite_room_drop_6, ENEMY(BOUNCING_BOMBITE), NO);
-	/* main east */
 	CONNECT(after_b_stairs, big_pit_room, I(BOMB));
 	CONNECT(big_pit_room, ledge_pre_pit, AND(I(FEATHER), I(PEGASUS_BOOTS)));
 	CONNECT_ALL_BACK(ledge_pre_pit, TARGETS(after_b_stairs, big_pit_room), NONE, NO);
 	CONNECT_BACK(ledge_pre_pit, ledge_post_pit, OR(I(HOOKSHOT), I(FEATHER)), NO);
 	CONNECT_ALL_BACK(ledge_post_pit, TARGETS(after_b_stairs, ledge_post_pit_chest_9), NONE, NO);
-	/* boss */
 	CONNECT_BACK(after_b_stairs, towards_boss1, FOUND(KEY3, 5), FOUND(KEY3, 4));
 	CONNECT_BACK(towards_boss1, towards_boss2, FOUND(KEY3, 6), FOUND(KEY3, 3));
 	CONNECT_BACK(towards_boss2, towards_boss3, FOUND(KEY3, 7), FOUND(KEY3, 2));
@@ -127,20 +116,17 @@ int ladx_dungeon3(const LadxDungeonContext *c)
 	CONNECT_BACK(conveyor_room, conveyor_room_drop7, ENEMY(KEESE), NO);
 	CONNECT_BACK(conveyor_room, boss_room, I(NIGHTMARE_KEY3), NO);
 	CONNECT_ALL_BACK(boss_room, TARGETS(boss_room_drop8, instrument), BOSS(2), NO);
-	/* owl statues */
 	if (OPTION(OWLSTATUES, "both") || OPTION(OWLSTATUES, "dungeon")) {
 		CONNECT_BACK(north_4way, north_4way_owl1, I(STONE_BEAK3), NO);
 		CONNECT_BACK(after_b_stairs, after_b_stairs_owl2, I(STONE_BEAK3), NO);
 		CONNECT_BACK(fenced_walkway, fenced_walkway_owl3, I(STONE_BEAK3), NO);
 	}
-	/* without keysanity we need to fix the keylogic here, else we can never generate proper placement. */
 	if (OPTION(DUNGEON_KEYS, "")) {
 		CONNECT_BACK(after_a_stairs, west_4way, FOUND(KEY3, 1), NO);
 		ladx_logic_force_first_item(L, west_4way_drop2, LADX_ITEM_KEY3);
 		CONNECT_BACK(after_a_stairs, south_4way, FOUND(KEY3, 1), NO);
 		ladx_logic_force_first_item(L, south_4way_drop1, LADX_ITEM_KEY3);
 	}
-	/* hard */
 	if (HARD_OR_ABOVE) {
 		CONNECT_BACK(entrance, entrance_chest1, R->hookshot_over_pit, NO);
 		CONNECT_BACK(north_4way, north_4way_switch, R->throw_pot, NO);
@@ -151,7 +137,6 @@ int ladx_dungeon3(const LadxDungeonContext *c)
 		CONNECT_BACK(fenced_walkway, north_bombwall,
 			     OR(AND(I(FEATHER), OR(I(SWORD), I(MAGIC_POWDER))), I(BOW), I(MAGIC_ROD), I(BOOMERANG)), NO);
 	}
-	/* glitched */
 	if (GLITCHED_OR_ABOVE) {
 		CONNECT_BACK(before_a_stairs, west_hallway,
 			     OR(AND(I(SWITCH3), R->super_jump_feather), R->hookshot_clip_block), NO);
@@ -163,7 +148,6 @@ int ladx_dungeon3(const LadxDungeonContext *c)
 		CONNECT_BACK(towards_boss2, after_miniboss_room, R->super_jump_feather, NO);
 		CONNECT_ALL_BACK(towards_boss3, TARGETS(after_miniboss_room, after_b_stairs), R->super_jump_feather, NO);
 	}
-	/* hell */
 	if (LOGIC_IS("hell")) {
 		CONNECT_BACK(entrance, entrance_chest1, I(SWORD), NO);
 		CONNECT_ALL_BACK(west_hallway, TARGETS(before_a_stairs, before_a_stairs_chest6), R->boots_superhop, NO);
@@ -181,7 +165,6 @@ int ladx_dungeon3(const LadxDungeonContext *c)
 		CONNECT_BACK(after_b_stairs, towards_boss3, R->super_bump, NO);
 		CONNECT_BACK(before_c_passage, after_c_passage, R->bracelet_bounce_2d_spikepit,
 			     OR(R->bracelet_bounce_2d_spikepit, R->boots_bonk_2d_hell));
-		/* connections that require overworld-only replenishable items such as "TOADSTOOL2" and "MEDICINE2" */
 		if (!OPTION(OVERWORLD, "alttp") && !OPTION(OVERWORLD, "dungeondive"))
 			CONNECT_BACK(before_c_passage, after_c_passage,
 				     OR(R->boots_bonk_2d_spikepit, R->toadstool_bounce_2d_spikepit),

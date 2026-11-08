@@ -135,7 +135,6 @@ static const SynthEntry *first_span(int table)
 	return NULL;
 }
 
-/* Points table's first span entry at bank's last bytes, filled with tail. */
 static void plant_at_bank_end(int table, const uint8_t *tail, size_t n)
 {
 	const SynthEntry *e = first_span(table);

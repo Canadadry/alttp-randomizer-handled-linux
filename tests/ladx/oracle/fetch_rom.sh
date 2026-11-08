@@ -29,8 +29,6 @@ else
 	exit 2
 fi
 
-# fetch_checked <url> <target> <expected sha1>: prints the SHA-1 on stdout and exits 0 when the
-# download matches; else leaves no target and no part, prints a setup: line and returns 2.
 fetch_checked() {
 	fc_url="$1"
 	fc_target="$2"

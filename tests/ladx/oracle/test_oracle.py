@@ -1,7 +1,3 @@
-"""Usage: python3 -I test_oracle.py
-
-Unit tests of ladx_oracle.py, the LADX oracle's shared helpers, with no LADXR and no network.
-"""
 
 import contextlib
 import importlib.util
@@ -325,7 +321,6 @@ class SettingsTest(unittest.TestCase):
 
 
 class FakeSettings:
-    """LADXR's Settings in miniature: values behind __getattr__/__setattr__, validate printing."""
     deep_read = False
 
     def __init__(self):

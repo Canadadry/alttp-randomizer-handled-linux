@@ -120,7 +120,6 @@ static void open_tables(void)
 		test_fail(TEST, "synthetic tables: %s line %d", ladx_tables_status_name(err.status), err.line);
 }
 
-/* An ok fill of the settings: the first of the seeds 0, 1, ... whose fill is ok. */
 static void randomize(const char *const *assignments)
 {
 	uint8_t seed[16];
@@ -141,7 +140,6 @@ static void randomize(const char *const *assignments)
 	test_fail(TEST, "no ok fill below 64 seeds");
 }
 
-/* The spot of kind in room (index -1: any), placed item; its index. */
 static int place(int kind, int room, int index, int item)
 {
 	int i;
@@ -223,7 +221,6 @@ static int unwritten(uint32_t offset)
 	return origin_at(offset) == (int32_t)offset;
 }
 
-/* The text entry's current bytes equal formatText(text, ask=ask). */
 static int text_is(unsigned id, const char *text, const char *ask)
 {
 	uint8_t want[1024], got[1024];

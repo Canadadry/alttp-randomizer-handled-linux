@@ -163,7 +163,6 @@ static void wrap_spoiler(UiHistory *state)
 	}
 }
 
-/* The settings rows of entry's detail: ALttP's every setting, LADX's those Generate shows. */
 static void list_settings(UiHistory *state, const UiHistoryEntry *entry)
 {
 	int id;

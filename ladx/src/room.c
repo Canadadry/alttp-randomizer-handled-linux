@@ -11,7 +11,6 @@
 #define ROOM_COUNT 0x320
 #define BANK 0x4000u
 
-/* roomEditor.py's ALT_ROOM_OVERLAYS: offsets in bank 0x27. */
 static const struct {
 	const char *alt;
 	uint32_t at;
@@ -19,7 +18,6 @@ static const struct {
 	{"Alt06", 0x1040}, {"Alt0E", 0x1090}, {"Alt1B", 0x10E0}, {"Alt2B", 0x1130}, {"Alt79", 0x1180}, {"Alt8C", 0x11D0},
 };
 
-/* The tables an alt room is looked up in, in RoomEditor's order. */
 static const int alt_tables[] = {TOP, BOTTOM, INDOOR_A};
 
 static LadxWlogKey index_key(uint32_t index)
@@ -42,7 +40,6 @@ static LadxWlogKey alt_key(const char *alt)
 	return k;
 }
 
-/* The objects entry of an index room. */
 static void objects_place(int room, int *table, uint32_t *index)
 {
 	static const int tables[] = {TOP, BOTTOM, INDOOR_A, INDOOR_A, INDOOR_B, INDOOR_B, COLOR};
@@ -53,7 +50,6 @@ static void objects_place(int room, int *table, uint32_t *index)
 	*index = (uint32_t)(room - bases[k]);
 }
 
-/* The alt key's table, -1 when none holds it. */
 static int alt_table(const LadxEncoder *enc, const char *alt)
 {
 	size_t i;
@@ -65,7 +61,6 @@ static int alt_table(const LadxEncoder *enc, const char *alt)
 	return -1;
 }
 
-/* The overlay's absolute offset, -1 for none. */
 static int32_t overlay_at(int room, const char *alt)
 {
 	size_t i;
@@ -213,14 +208,11 @@ LadxRoomStatus ladx_room_load(LadxRoom *r, const LadxEncoder *enc, int room, con
 	return LADX_ROOM_OK;
 }
 
-/* Store ------------------------------------------------------------------------------------------- */
-
 static int byte_ok(int v)
 {
 	return v >= 0 && v <= 0xFF;
 }
 
-/* Object.export() and its subclasses' onto out; 0 on a byte out of range. */
 static size_t export_object(const LadxRoomObject *o, uint8_t *out)
 {
 	int b[5], n, i;
@@ -268,7 +260,6 @@ static LadxRoomStatus put_byte(LadxEncoder *enc, LadxSpan group, uint32_t offset
 	return ladx_enc_bank(enc, group, offset, &v, &origin, 1) == LADX_ENC_OK ? LADX_ROOM_OK : LADX_ROOM_ENCODER;
 }
 
-/* The entry in r->raw, its bytes with no origin (LADXR builds plain bytearrays). */
 static LadxRoomStatus put_entry(LadxRoom *r, LadxEncoder *enc, LadxSpan group, int table, LadxWlogKey key, size_t n)
 {
 	size_t i;
@@ -279,7 +270,6 @@ static LadxRoomStatus put_entry(LadxRoom *r, LadxEncoder *enc, LadxSpan group, i
 											       : LADX_ROOM_ENCODER;
 }
 
-/* The optional bytes RoomEditor.store writes for an index room. */
 static LadxRoomStatus store_extras(const LadxRoom *r, LadxEncoder *enc, LadxSpan group, int nr)
 {
 	LadxRoomStatus st = LADX_ROOM_OK;
@@ -376,8 +366,6 @@ LadxRoomStatus ladx_room_store(LadxRoom *r, LadxEncoder *enc, LadxSpan group, in
 		       : LADX_ROOM_ENCODER;
 }
 
-/* Edits ------------------------------------------------------------------------------------------- */
-
 LadxRoomStatus ladx_room_insert_entity(LadxRoom *r, size_t index, int x, int y, int type_id)
 {
 	if (r->entity_count == LADX_ROOM_ENTITY_MAX)
@@ -442,7 +430,6 @@ void ladx_room_remove_object(LadxRoom *r, int x, int y)
 	r->object_count = n;
 }
 
-/* overlay[i] = value, Python's index rules; 0 where it raises. */
 static int set_overlay(LadxRoom *r, int i, int value, int32_t origin)
 {
 	if (i < 0)

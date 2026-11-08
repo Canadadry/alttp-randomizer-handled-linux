@@ -82,8 +82,6 @@ static void use_settings(const char *const *assignments)
 	ladx_settings_validate(&settings);
 }
 
-/* --- spheres and outputJson against LADXR's own --------------------------------------------- */
-
 static int hex_digit(int c)
 {
 	return c <= '9' ? c - '0' : c - 'a' + 10;
@@ -187,8 +185,6 @@ static void test_vectors(void)
 	      "outputJson's indent=\"  \" layout, no trailing newline");
 }
 
-/* --- reads on the synthetic ROM -------------------------------------------------------------- */
-
 static void begin_encoder(void)
 {
 	if (ladx_wlog_begin(&wlog, span(TABLES), discard, NULL) != LADX_WLOG_OK ||
@@ -248,7 +244,6 @@ static void plant_room(int nr, const char *alt, const uint8_t *objects, size_t n
 	plant_key(ENTITIES, key, raw, 2 * e + 1);
 }
 
-/* The first spot of kind (in a dungeon when dungeon > 0, outside any when 0, either when -1, index when index >= 0). */
 static int find(int kind, int dungeon, int index)
 {
 	int i;
@@ -439,8 +434,6 @@ static void test_reads(void)
 	check(strncmp(ladx_item_name(ladx_logic_spot(&sp.logic, s)->default_item), "KEY", 3) == 0,
 	      "KeyLocation: a key");
 }
-
-/* --- the world setup read back --------------------------------------------------------------- */
 
 static const int boss_rooms[9] = {0x106, 0x12b, 0x15a, 0x166, 0x185, 0x1bc, 0x223, 0x234, 0x300};
 

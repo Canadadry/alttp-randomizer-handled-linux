@@ -299,7 +299,6 @@ void ladx_inventory_init(LadxInventory *inv)
 	memset(inv, 0, sizeof *inv);
 }
 
-/* n of RUPEES_<n>, else 0. */
 static int rupees(int item)
 {
 	const char *name = ladx_item_name(item);
@@ -371,7 +370,6 @@ static bool test_node(const LadxReqArena *a, int node, const LadxInventory *inv)
 		return sum >= nd->amount;
 	case LADX_NODE_COUNT:
 	case LADX_NODE_FOUND:
-		/* FOUND's "<item>_USED" count is 0: no LADXR code adds one. */
 		return inv->count[a->terms[nd->items_head].value] >= nd->amount;
 	}
 	return false;

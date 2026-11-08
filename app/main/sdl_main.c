@@ -44,7 +44,6 @@ typedef struct ScriptPos {
 	int key, repeat;
 } ScriptPos;
 
-/* tab_count is that of the screen render refused. */
 typedef struct Presenter {
 	SdlRender *render;
 	SDL_Surface *offscreen, *screen;
@@ -152,7 +151,6 @@ static void parse_args(int argc, char **argv)
 	}
 }
 
-/* Without --theme: themes/default next to the binary, argv[0]'s directory, or . when it has no slash. */
 static void use_default_theme(const char *argv0)
 {
 	const char *slash = argv0 != NULL ? strrchr(argv0, '/') : NULL;

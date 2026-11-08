@@ -180,7 +180,6 @@ static void test_groups(void)
 					    "B 20 =1\n");
 }
 
-/* A refused record changes nothing and opens no segment. */
 static void test_bad_input(void)
 {
 	static const LadxAtom ok[] = {LIT(1)}, bad_atom[] = {LADX_ATOM_LITERAL(256)};
@@ -204,7 +203,6 @@ static void test_bad_input(void)
 
 static LadxAtom big[(LADX_WLOG_BANK_MAX > LADX_WLOG_ATOM_MAX ? LADX_WLOG_BANK_MAX : LADX_WLOG_ATOM_MAX) + 1];
 
-/* A record longer than any internal buffer goes out whole. */
 static void test_long_record(void)
 {
 	char want[2 * 1000 + 64];
@@ -245,7 +243,6 @@ static void test_overflow(void)
 	check(ladx_wlog_bank(&wlog, span("fixed"), LADX_WLOG_BANK_MAX, big, 1) == LADX_WLOG_OVERFLOW, "bank overflow");
 	expect_overflow("after a bank overflow");
 
-	/* Entries. */
 	begin();
 	for (i = 0; i < LADX_WLOG_ENTRY_MAX; i++)
 		pointer(0, index_key(i), i);
@@ -268,8 +265,6 @@ static void test_overflow(void)
 	check(ladx_wlog_table(&wlog, span("options"), 0, index_key(2), big, 2) == LADX_WLOG_OVERFLOW, "atom overflow");
 	expect_overflow("after an atom overflow");
 }
-
-/* Parsing and projection ---------------------------------------------------------------------- */
 
 static const char sample_log[] = HEADER "G a\n"
 					"B 10 =2 @400+3 aa\n"

@@ -4,13 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAP_W 160 /* 16 * 10 */
-#define MAP_H 128 /* 16 * 8 */
+#define MAP_W 160
+#define MAP_H 128
 /* get_options_from scans one row and one column: never more than this many options. */
 #define MAX_OPTIONS (MAP_W + MAP_H)
 #define MAZE_TRIES 50
 
-/* patches/maze.py ALL_SIGN_OPTION_TILES at 4325207e (LADXR source data). */
 static const unsigned char sign_option_tiles[][2] = {
 	{101, 1}, {102, 1}, {106, 1}, {107, 1}, {108, 1}, {111, 1}, {74, 2}, {75, 2},
 	{76, 2}, {77, 2}, {78, 2}, {81, 2}, {82, 2}, {88, 2}, {91, 2}, {92, 2},
@@ -326,7 +325,7 @@ typedef struct Maze {
 
 typedef enum Drawn {
 	DRAWN_OK,
-	DRAWN_CRASH, /* outcome set */
+	DRAWN_CRASH,
 	DRAWN_BROKEN
 } Drawn;
 
@@ -394,7 +393,6 @@ static int options_from(const Maze *m, int cx, int cy, Option *out)
 	return n;
 }
 
-/* The 10 by 8 screen holding (x, y), as buildMaze's `x // 10 * 10` and `y // 8 * 8`. */
 static void discard_screen(Maze *m, int x, int y)
 {
 	int sx, sy;
@@ -410,7 +408,6 @@ static void add_sign(Maze *m, int x, int y)
 	m->signs[m->sign_count++].y = y;
 }
 
-/* range(from, to, -1 if to < from else 1). */
 static int step_toward(int from, int to)
 {
 	return to < from ? -1 : 1;

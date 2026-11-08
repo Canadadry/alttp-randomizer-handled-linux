@@ -50,7 +50,6 @@ class FixtureError(Exception):
 
 
 class RecBank(bytearray):
-    """A bank recording every assignment while its log is set."""
     log = None
     number = 0
 
@@ -73,11 +72,6 @@ class FakeRom:
 
 
 class Spec:
-    """A synthetic table: info (LADXR's dict), end (END_OF_DATA), writes [(bank, addr, bytes)]
-    planted into zero banks, changes {key: bytes or int}, extra [(bank, start, end)] or None,
-    adjust a data address or None, first: an optional Spec stored before, whose leftover is extra
-    and whose leftover[0] start is adjust (sprite chains)."""
-
     def __init__(self, name, info, writes, changes=None, end=(0xFF,), extra=None, adjust=None,
                  first=None):
         self.name, self.info, self.writes, self.end = name, info, writes, end
@@ -103,7 +97,6 @@ def _table_class(pointer_table, end):
 
 
 def run_spec(pointer_table, spec):
-    """The vector's lines (without V), LADXR's own parse and store on spec's banks."""
     rom = FakeRom()
     for bank, addr, data in spec.writes:
         rom.banks[bank][addr:addr + len(data)] = data
@@ -184,8 +177,6 @@ def var_info(count, pointers_bank, pointers_addr, data_bank, **extra):
 
 def var_table(name, data_bank, entries, *, pointers_bank=0x01, pointers_addr=0x100, at=None,
               changes=None, alts=(), **extra):
-    """A variable-size table of data_bank: entries [(addr, bytes)] planted at addr (bytes None:
-    an integer pointer addr); alts [(addr, bytes, (ptr bank, ptr addr))] parsed first."""
     writes, pointers = [], b""
     for addr, data in entries:
         if data is None:
@@ -206,8 +197,6 @@ def var_table(name, data_bank, entries, *, pointers_bank=0x01, pointers_addr=0x1
 
 def sprite_table(name, values, *, data_addr=0x2000, pointers_addr=0x1000, changes=None, extra=None,
                  adjust=None, first=None, gaps=True):
-    """A sprite data table of bank 0x20: values [(index, bytes4)]: pointer n is index (data at
-    data_addr + 4 * index)."""
     writes = [(0x20, pointers_addr, bytes(i for i, _ in values))]
     for i, data in values:
         writes.append((0x20, data_addr + 4 * i, data))
@@ -219,8 +208,6 @@ def sprite_table(name, values, *, data_addr=0x2000, pointers_addr=0x1000, change
 
 
 def text_table(name, entries, *, changes=None):
-    """A texts-style table (END_OF_DATA 0xFE, 0xFF; a banks table at bank 0x01 0x200): entries
-    [(bank byte, addr, bytes)]."""
     writes, pointers, banks = [], b"", b""
     for bank, addr, data in entries:
         pointers += le16(addr | 0x4000)
@@ -376,7 +363,6 @@ def render(pointer_table):
 
 
 def parse(text):
-    """[(name, [line])] of a fixture's vectors; FixtureError on a malformed text."""
     lines = [line for line in text.split("\n") if line and not line.startswith("#")]
     if not lines or lines[0] != VERSION_LINE:
         raise FixtureError("no version line")

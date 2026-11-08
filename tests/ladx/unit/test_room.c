@@ -129,7 +129,6 @@ static int32_t overlay_at(uint32_t room_nr)
 	return -1;
 }
 
-/* Each room loaded and stored unchanged: its overlay kept, its entries copies of themselves. */
 static void test_round_trip(void)
 {
 	static char want[OUT_MAX];
@@ -176,7 +175,6 @@ static void test_round_trip(void)
 	}
 	check(stored > 100 && refused > 0, "most rooms round-trip, the planted ones are refused");
 }
-
 
 static void plant(int table, uint32_t index, const uint8_t *bytes, size_t n)
 {
@@ -260,7 +258,6 @@ static void test_warp_maps(void)
 	}
 }
 
-/* LADXR's helpers, then store: entries with no origin, the overlay's edited bytes literals. */
 static void test_edits_and_store(void)
 {
 	static char want[OUT_MAX];
@@ -332,7 +329,6 @@ static void test_update_overlay(void)
 	      "a negative index wraps as Python's");
 }
 
-/* A source room's floor carries its origin into the overlay. */
 static void test_floor_origin(void)
 {
 	static char want[OUT_MAX];
@@ -379,7 +375,6 @@ static void test_alt_rooms(void)
 	check(ladx_room_load(&room, &enc, -1, NULL) == LADX_ROOM_BAD_ROOM, "a negative room is refused");
 }
 
-/* store(rom, new_room_nr), and the optional bytes RoomEditor stores. */
 static void test_store_elsewhere(void)
 {
 	static char want[OUT_MAX];

@@ -1,5 +1,3 @@
-"""Unit tests of golden_check.py on synthetic ROMs, event streams and case folders, with no LADXR
-and no ROM."""
 
 import contextlib
 import hashlib
@@ -137,7 +135,6 @@ class Case(unittest.TestCase):
         self.assertEqual(problems, [("nintendo", "rom_writes.txt: @3 4 bytes writes")])
 
     def known_source(self):
-        """A KS of self.known's offsets, texts 0 (0x100..0x108) its one entry."""
         ks = golden_check._sibling("known_source").KnownSource(len(self.rom))
         ks.add(0x100, 0x108, "texts 0", ("texts", 0))
         ks.add(0x108, 0x180, "other")

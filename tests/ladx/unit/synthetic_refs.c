@@ -1,8 +1,3 @@
-/*
- * e2e-synthetic's tool (tests/ladx/README.md, "Synthetic reference"): C's
- * outputs on a synthetic base, as digests, written or checked against
- * tests/ladx/synthetic_refs.txt. Host only; never reads the ROM.
- */
 #include "ladx_assemble.h"
 #include "ladx_inputs.h"
 #include "synth_rom.h"
@@ -36,8 +31,6 @@ static void hex(const uint8_t *bytes, size_t n, char *out)
 	}
 	out[2 * n] = '\0';
 }
-
-/* The synthetic base ------------------------------------------------------------------------------ */
 
 typedef struct Fixer {
 	uint8_t *rom;
@@ -78,7 +71,6 @@ static int fits(int want, uint8_t b)
 	}
 }
 
-/* A fresh value for want; an object start prefers a two-byte object. */
 static uint8_t pick(Fixer *f, int want)
 {
 	uint8_t b;
@@ -93,7 +85,6 @@ static uint8_t pick(Fixer *f, int want)
 	return b;
 }
 
-/* The value of an atom constrained to want: a literal's, a fixed byte's, or a new one; -1 on a conflict. */
 static int need(Fixer *f, LadxAtom a, int want)
 {
 	uint32_t q;
@@ -146,7 +137,6 @@ static void fix_record(Fixer *f, const char *table, const LadxAtom *atoms, size_
 	}
 }
 
-/* `@<q>+<n>` and literal hex tokens of a T record's value into atoms; 0 for a pointer or a bad token. */
 static int record_atoms(const char *tokens, LadxAtom *atoms, size_t cap, size_t *n)
 {
 	const char *p = tokens;
@@ -228,14 +218,11 @@ static int build_base(void)
 	return 1;
 }
 
-/* One case ---------------------------------------------------------------------------------------- */
-
 static void sha1_sink(void *ctx, const char *text, size_t len)
 {
 	ladx_sha1_update(ctx, (const uint8_t *)text, len);
 }
 
-/* Each skipped group's name, comma-separated in the library's order, or "-". */
 static int in_list(const char *list, const char *name)
 {
 	size_t n = strlen(name);
@@ -249,11 +236,6 @@ static int in_list(const char *list, const char *name)
 	return 0;
 }
 
-/*
- * The case's line after its name into out, groups of skip left out: 1, or
- * 0 with *failed the failing group (a group failing or raising), or -1 on
- * another failure (printed).
- */
 static int run_case(const char *dir, const char *skip, char *out, size_t cap, const char **failed)
 {
 	static LadxPipelineGroup kept[LADX_PIPELINE_GROUP_MAX];
@@ -313,7 +295,6 @@ static int run_case(const char *dir, const char *skip, char *out, size_t cap, co
 	return 1;
 }
 
-/* dir's last component, trailing slashes dropped (static, overwritten by the next call). */
 static const char *base_name(const char *dir)
 {
 	static char name[NAME_MAX_LEN];
@@ -327,8 +308,6 @@ static const char *base_name(const char *dir)
 	return name;
 }
 
-/* The comparison ---------------------------------------------------------------------------------- */
-
 typedef struct Refs {
 	char name[CASE_MAX][NAME_MAX_LEN];
 	char line[CASE_MAX][LINE_MAX];
@@ -336,7 +315,6 @@ typedef struct Refs {
 	char base[LINE_MAX];
 } Refs;
 
-/* The value of field (the token after it) in line into out; "" when absent. */
 static void field_value(const char *line, const char *field, char *out)
 {
 	char copy[LINE_MAX], *t;
@@ -352,7 +330,6 @@ static void field_value(const char *line, const char *field, char *out)
 		}
 }
 
-/* The first field whose value differs ("log", "rom", "spoiler", "skipped", else "line"), or NULL when equal. */
 static const char *first_difference(const char *want, const char *got)
 {
 	static const char *const fields[] = {"log", "rom", "spoiler", "skipped"};
@@ -380,7 +357,6 @@ static int find(const Refs *r, const char *name)
 	return -1;
 }
 
-/* got's lines against want's, one verdict line each, to out; the number of problems. */
 static int compare(const Refs *want, const Refs *got, FILE *out)
 {
 	int i, bad = 0;
@@ -462,7 +438,6 @@ static int read_refs(const char *path, Refs *r)
 	return 1;
 }
 
-/* Planted references against a planted run: every kind of problem detected. */
 static int self_test(void)
 {
 	static Refs want, got;
@@ -555,8 +530,6 @@ static int self_test(void)
 	return 0;
 }
 
-/* Modes ------------------------------------------------------------------------------------------- */
-
 static Refs refs_want, refs_got;
 
 static void note_skipped(char *all, size_t cap, const char *skip)
@@ -574,7 +547,6 @@ static void note_skipped(char *all, size_t cap, const char *skip)
 		}
 }
 
-/* --write: each case's skip list found by removing every group that fails on the synthetic base. */
 static int write_refs(const char *path, char **dirs, int n)
 {
 	char skip[LINE_MAX], line[LINE_MAX];

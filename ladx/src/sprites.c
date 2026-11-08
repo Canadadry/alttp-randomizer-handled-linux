@@ -14,7 +14,6 @@
 
 typedef enum Kind { NONE = 0, INT, SET } Kind;
 
-/* A slot as LADXR holds it: None, an int, or a set kept as its insertion order. */
 typedef struct Slot {
 	Kind kind;
 	int value;
@@ -94,7 +93,6 @@ static void intersect(Slot *so, const Slot *other)
 	memcpy(so->set, kept, so->n * sizeof kept[0]);
 }
 
-/* Python's str() of a slot: an int in decimal, a set as {a, b} in iteration order. */
 static int print_slot(char *buf, size_t cap, const Slot *s)
 {
 	int order[LADX_SPRITES_SET_MAX];

@@ -130,7 +130,6 @@ static LadxWlogKey index_key(uint32_t index)
 	return k;
 }
 
-/* One background entry decoded from its current value, edited, re-encoded and written. */
 static int store(LadxEncoder *enc, LadxPipeline *p, int table, uint32_t index, const char *text, size_t n,
 		 uint64_t number)
 {

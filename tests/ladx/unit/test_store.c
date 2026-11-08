@@ -35,7 +35,6 @@ static void append(const char *fmt, unsigned a, unsigned b)
 	got_len += (size_t)k;
 }
 
-/* Records each write as the fixture's `W <bank> <addr> <hex>` line and applies it. */
 static int write_rec(void *ctx, uint8_t bank, uint32_t addr, const uint8_t *bytes, size_t n, int entry)
 {
 	size_t i;
@@ -189,8 +188,6 @@ static void test_no_room_message(void)
 	check(ladx_store_message(&info, &err, &type, small, sizeof small) == full && strlen(small) == sizeof small - 1,
 	      "no room: a cut message keeps its full length");
 }
-
-/* --fixtures: store_vectors.txt replayed. */
 
 static char fix[FIX_MAX];
 static uint8_t entry_bytes[BYTES_MAX];

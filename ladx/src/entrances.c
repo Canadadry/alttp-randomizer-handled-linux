@@ -122,13 +122,12 @@ typedef struct RoomId {
 	const char *alt;
 } RoomId;
 
-/* An ObjectWarp's fields; room offset by its map as LADXR's constructor does. */
 typedef struct Warp {
 	int warp_type, map_nr, room, target_x, target_y;
 } Warp;
 
 typedef struct Change {
-	size_t room; /* into State.rooms */
+	size_t room;
 	int target;
 	Warp warp;
 } Change;
@@ -141,7 +140,7 @@ typedef struct State {
 	int vanilla[KEYS];
 	RoomId from[KEYS][2];
 	int from_n[KEYS];
-	RoomId rooms[CHANGES]; /* changes_per_room's keys, in insertion order */
+	RoomId rooms[CHANGES];
 	size_t room_n;
 	Change change[CHANGES];
 	size_t change_n;
@@ -187,7 +186,6 @@ static Warp warp_of(const LadxRoomObject *o)
 	return w;
 }
 
-/* re.getWarps()[i], or NULL past the last warp. */
 static const LadxRoomObject *nth_warp(const LadxRoom *r, size_t i)
 {
 	size_t k;
@@ -198,7 +196,6 @@ static const LadxRoomObject *nth_warp(const LadxRoom *r, size_t i)
 	return NULL;
 }
 
-/* raised's text already written. */
 static LadxEntrancesStatus crash(LadxOutcome *raised, const char *type)
 {
 	raised->kind = LADX_OUTCOME_CRASH;
@@ -207,7 +204,6 @@ static LadxEntrancesStatus crash(LadxOutcome *raised, const char *type)
 	return LADX_ENTRANCES_RAISED;
 }
 
-/* changes_per_room[source][target] = warp; 0 when full. */
 static int add_change(State *s, RoomId source, int target, Warp warp)
 {
 	size_t i;
@@ -235,7 +231,6 @@ static int add_change(State *s, RoomId source, int target, Warp warp)
 	return 1;
 }
 
-/* The first loop's body for entrance k: its warps in and out, its vanilla rooms and its rooms. */
 static LadxEntrancesStatus read_entrance(State *s, LadxRoom *r, const LadxEncoder *enc, const LadxEntranceInfo *info,
 					 size_t k, size_t count, LadxOutcome *raised)
 {
@@ -281,7 +276,6 @@ static LadxEntrancesStatus read_entrance(State *s, LadxRoom *r, const LadxEncode
 	return LADX_ENTRANCES_OK;
 }
 
-/* The last loop's body: room's warps to a changed room replaced by a copy of the new warp, stored. */
 static LadxEntrancesStatus apply_room(const State *s, size_t room, LadxRoom *r, LadxEncoder *enc, LadxSpan group)
 {
 	size_t i, c;

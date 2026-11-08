@@ -1,6 +1,5 @@
 #include "marin_lines.h"
 
-/* LADXR's patches/marin.txt at the pin, one line each with its newline (test_marin checks its SHA-1). */
 const char *const ladx_marin_lines[LADX_MARIN_LINE_COUNT] = {
 	"Let's a go!\n",
 	"Remember, sword goes on <bigA>!\n",

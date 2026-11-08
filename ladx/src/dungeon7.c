@@ -1,14 +1,11 @@
 #include "dungeon_build.h"
 
-/* logic/dungeon7.py Dungeon7 at 4325207e, line for line. */
-
 #define DUNGEON 7
 
 int ladx_dungeon7(const LadxDungeonContext *c)
 {
 	int i, loop[3];
 
-	/* locations */
 	int entrance = LOC("D7 Entrance");
 	int entrance_drop1 = ADD(LOC(NULL), DROPPED_KEY, 0x210);
 	int before_a_stairs = LOC("D7 Key Locked Staircase");
@@ -72,8 +69,6 @@ int ladx_dungeon7(const LadxDungeonContext *c)
 	int boss_room_drop3 = ADD_KEY(ADD(LOC(NULL), HEART_CONTAINER, 0x223), D7_BOSS_CLEAR);
 	int instrument = ADD(LOC("D7 Instrument Room"), INSTRUMENT, 0x22c);
 
-	/* connections */
-	/* floor 1 */
 	CONNECT_BACK(entrance, entrance_drop1, ENEMY(LIKE_LIKE), NO);
 	CONNECT(entrance, before_a_stairs, FOUND(KEY7, 1));
 	CONNECT_BACK(before_b_stairs, before_b_stairs_chest1, NONE, NO);
@@ -85,7 +80,6 @@ int ladx_dungeon7(const LadxDungeonContext *c)
 	CONNECT_BACK(before_b_stairs, entrance, I(SWITCH7A), NO);
 	CONNECT_ALL_BACK(west_ledge, TARGETS(entrance, before_b_stairs, west_ledge_chest4), NONE, NO);
 	CONNECT_ALL_BACK(east_ledge, TARGETS(entrance, before_a_stairs, before_b_stairs, east_ledge_chest3), NONE, NO);
-	/* connect floor 1 & 2 */
 	CONNECT(before_a_stairs, after_a_stairs, NONE);
 	CONNECT(before_b_stairs, after_b_stairs, NONE);
 	CONNECT(before_c_stairs, after_c_stairs, NONE);
@@ -101,7 +95,6 @@ int ladx_dungeon7(const LadxDungeonContext *c)
 	CONNECT_ALL_BACK(tile_room, TARGETS(before_b_stairs, west_ledge), NONE, NO);
 	CONNECT_ALL_BACK(after_d_stairs, TARGETS(entrance, west_ledge), NONE, NO);
 	CONNECT_BACK(pegs_before_ball, east_ledge, NONE, NO);
-	/* floor 2 north */
 	CONNECT_BACK(after_a_stairs, ball_access, I(POWER_BRACELET), NO);
 	CONNECT_BACK(after_a_stairs, ne_pillar, I(POWER_BRACELET), NONE);
 	CONNECT_BACK(after_a_stairs, pegs_before_ball, OR(I(SWITCH7A), I(SWITCH7B_RANGE)), NO);
@@ -121,7 +114,6 @@ int ladx_dungeon7(const LadxDungeonContext *c)
 	CONNECT_BACK(nw_pillar, spike_corridor, I(FEATHER), NO);
 	CONNECT_BACK(nw_pillar, nw_pillar_fall, I(D7_BALL), NO);
 	CONNECT(nw_pillar, tile_room, NONE);
-	/* floor 2 south */
 	CONNECT_BACK(after_d_stairs, tile_room, NONE, NO);
 	CONNECT_BACK(after_d_stairs, after_d_stairs_drop2, MINIBOSS_NAMED(HINOX), NO);
 	CONNECT_BACK(after_d_stairs, sw_pillar_toak_clear, ENEMY(THREE_OF_A_KIND), NO);
@@ -132,18 +124,15 @@ int ladx_dungeon7(const LadxDungeonContext *c)
 	CONNECT_ALL_BACK(keylock_ledge, TARGETS(se_pillar, pegs_before_ball, after_d_stairs), NONE, NO);
 	CONNECT_BACK(pegs_before_ball, after_a_stairs_switch, R->hit_switch, NO);
 	CONNECT_ALL_BACK(pegs_before_ball, TARGETS(after_a_stairs, pegs_before_ball_chest7, after_d_stairs), NONE, NO);
-	/* floor 2 center */
 	CONNECT_ALL(bombwall_corridor, TARGETS(bombwall_pit, nw_pillar), I(BOMB));
 	CONNECT_BACK(bombwall_corridor, after_d_stairs, NONE, NO);
 	CONNECT_BACK(bombwall_pit, sw_pillar, AND(I(HOOKSHOT), I(D7_TOAK_CLEAR)), NO);
 	CONNECT_BACK(sw_pillar, sw_pillar_chest6, I(D7_TOAK_CLEAR), NO);
 	CONNECT_BACK(sw_pillar, sw_pillar_fall, I(D7_BALL), NO);
-	/* connect floor 2 & 3 */
 	CONNECT(after_d_stairs, before_e_stairs, NONE);
 	CONNECT(before_e_stairs, after_e_stairs, NONE);
 	CONNECT_BACK(after_e_stairs, pre_cut_floor3, NONE, NO);
 	CONNECT_BACK(after_e_stairs, post_cut_floor3, FOUND(D7_PILLAR, 4), NO);
-	/* floor 3 before cutscene */
 	CONNECT_BACK(pre_cut_floor3, miniboss, NONE, NO);
 	loop[0] = pre_cut_conveyor_area;
 	loop[1] = post_cut_conveyor_area;
@@ -155,28 +144,23 @@ int ladx_dungeon7(const LadxDungeonContext *c)
 	CONNECT(pre_cut_floor3, pre_cut_boss_backdoor, FOUND(KEY7, 3));
 	for (i = 0; i < 2; i++)
 		CONNECT_BACK(loop[i], conveyor_area_chest9, I(POWER_BRACELET), NO);
-	/* floor 3 after cutscene */
 	CONNECT(post_cut_floor3, post_cut_conveyor_area, I(NIGHTMARE_KEY7));
 	CONNECT_BACK(post_cut_conveyor_area, pre_boss_stairs, I(HOOKSHOT), NONE);
 	CONNECT(pre_boss_stairs, boss_room, NONE);
 	CONNECT_BACK(boss_room, boss_room_drop3, BOSS(6), NO);
 	CONNECT_BACK(boss_room, instrument, I(D7_BOSS_CLEAR), NO);
-	/* key logic patch */
 	if (OPTION(DUNGEON_KEYS, ""))
 		ladx_logic_force_first_item(L, entrance_drop1, LADX_ITEM_KEY7);
-	/* owl statues */
 	if (OPTION(OWLSTATUES, "both") || OPTION(OWLSTATUES, "dungeon")) {
 		CONNECT_BACK(after_a_stairs, after_a_stairs_owl1, I(STONE_BEAK7), NO);
 		CONNECT_BACK(before_b_stairs, before_b_stairs_owl2, I(STONE_BEAK7), NO);
 		CONNECT_BACK(bombwall_pit, bombwall_pit_owl3, I(STONE_BEAK7), NO);
 	}
-	/* normal */
 	if (!LOGIC_IS("casual")) {
 		CONNECT(after_a_stairs, ne_pillar, NONE);
 		CONNECT_BACK(after_a_stairs, after_a_stairs_switch_range, I(BOOMERANG), NO);
 		CONNECT_BACK(before_b_stairs, before_c_stairs, I(SWITCH7A), NO);
 	}
-	/* hard */
 	if (HARD_OR_ABOVE) {
 		CONNECT_BACK(after_c_stairs, after_c_stairs_chest2, I(BOMB), NO);
 		CONNECT(after_c_stairs, spike_corridor, R->damage_boost);
@@ -189,7 +173,6 @@ int ladx_dungeon7(const LadxDungeonContext *c)
 		for (i = 0; i < 3; i++)
 			CONNECT_BACK(loop[i], sw_pillar_toak_clear, I(BOMB), NO);
 	}
-	/* glitched */
 	if (GLITCHED_OR_ABOVE) {
 		CONNECT_BACK(ne_pillar, se_pillar, AND(R->boots_bonk, R->pit_buffer_itemless), NO);
 		CONNECT_BACK(ne_pillar, ne_pillar_fall, AND(R->bomb_trigger, ENEMY(HIDING_ZOL)), NO);
@@ -213,7 +196,6 @@ int ladx_dungeon7(const LadxDungeonContext *c)
 			     AND(R->hookshot_clip_wall, R->super_jump_feather), NO);
 	}
 
-	/* hell */
 	if (LOGIC_IS("hell")) {
 		CONNECT_BACK(entrance, before_a_stairs, OR(R->boots_superbump, R->boots_superpoke),
 			     AND(OR(R->super_jump_boots, R->zoomerang), R->zoomerang_shovel));

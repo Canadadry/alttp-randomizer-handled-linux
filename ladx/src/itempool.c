@@ -103,7 +103,6 @@ typedef struct Stock {
 
 #define I(name) LADX_ITEM_##name
 
-/* itempool.py DEFAULT_ITEM_POOL, in its order. */
 static const Stock default_pool[] = {
 	{I(SWORD), 2}, {I(FEATHER), 1}, {I(HOOKSHOT), 1}, {I(BOW), 1}, {I(BOMB), 1}, {I(MAGIC_POWDER), 1},
 	{I(MAGIC_ROD), 1}, {I(OCARINA), 1}, {I(PEGASUS_BOOTS), 1}, {I(POWER_BRACELET), 2}, {I(SHIELD), 2},
@@ -139,7 +138,6 @@ static const Stock default_pool[] = {
 	{I(FACE_SHRINE_OPENED), 1}, {I(CASTLE_GATE_OPENED), 1}, {I(EAGLE_TOWER_OPENED), 1},
 };
 
-/* STATIC_DUNGEON_ITEMS, dungeons 3 to 8 in its order. */
 static const Stock static_dungeon_items[] = {
 	{I(D3_BOMBWALL), 1}, {I(D3_GEL_CLEAR), 1}, {I(D3_STALFOS_CLEAR), 1}, {I(D3_ZOLS_CLEAR), 1}, {I(SWITCH3), 1},
 	{I(D4_BOSS_CLEAR), 1}, {I(D4_PITKEY), 1}, {I(D4_PUZZLE_CLUE), 1},
@@ -170,7 +168,6 @@ static void crash(LadxOutcome *outcome, const char *message)
 	outcome->message = message;
 }
 
-/* removeRupee; false with LADXR's RuntimeError when no rupee is left. */
 static bool remove_rupee(LadxItemPool *pool, LadxOutcome *outcome)
 {
 	static const int rupees[] = {I(RUPEES_20), I(RUPEES_50), I(RUPEES_100), I(RUPEES_200), I(RUPEES_500)};
@@ -195,7 +192,6 @@ static bool remove_rupees(LadxItemPool *pool, int count, LadxOutcome *outcome)
 	return true;
 }
 
-/* The maps and compasses out, a key and a nightmare key in, per dungeon (casual and keyup). */
 static void maps_to_keys(LadxItemPool *pool)
 {
 	int n;
@@ -208,7 +204,6 @@ static void maps_to_keys(LadxItemPool *pool)
 	}
 }
 
-/* The `<setting> == 'removed'` blocks: an item in the pool turned into RUPEES_20, then add back count (0: none). */
 static void to_rupees(LadxItemPool *pool, int item, int add_back)
 {
 	if (ladx_itempool_contains(pool, item)) {
@@ -278,7 +273,6 @@ static bool setup(LadxItemPool *pool, const LadxSettings *s, LadxOutcome *outcom
 			}
 	}
 
-	/* overworld is normal: the dungeondive and alttp branches are not taken. */
 	if (!s->value[LADX_SETTING_ROOSTER]) {
 		ladx_itempool_remove(pool, I(ROOSTER), 1);
 		ladx_itempool_add(pool, I(RUPEES_50), 1);

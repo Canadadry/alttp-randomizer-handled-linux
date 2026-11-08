@@ -166,7 +166,6 @@ static LadxEntrancesStatus change(const LadxEntranceInfo *info, size_t count, co
 	return ladx_entrances_change(&enc, span("entrances"), &room, info, count, mapping, &raised);
 }
 
-/* The i-th warp of a room as it stands now. */
 static const LadxRoomObject *warp(int nr, const char *alt, size_t i)
 {
 	size_t k;
@@ -222,7 +221,6 @@ static void test_table(void)
 	checks++;
 }
 
-/* Identity: every room re-stored, a second warp to the same room rewritten, the last way out taken. */
 static void test_identity(void)
 {
 	int mapping[6];

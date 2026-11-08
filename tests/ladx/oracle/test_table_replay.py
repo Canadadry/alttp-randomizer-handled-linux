@@ -1,5 +1,3 @@
-"""Unit tests of table_replay.py on a synthetic ROM, planted tables, goldens and event streams,
-with no LADXR and no ROM."""
 
 import contextlib
 import hashlib
@@ -99,8 +97,6 @@ class Replay(unittest.TestCase):
 
 
 class Fragments(unittest.TestCase):
-    """The tables' scan: no literal piece of a record occurs in the source bytes it replaces."""
-
     def setUp(self):
         self.known = table_replay.known_source.KnownSource(len(ROM))
         self.known.add(0x40, 0x48, "texts 2", ("texts", 2))

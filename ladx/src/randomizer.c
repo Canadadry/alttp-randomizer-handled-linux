@@ -14,7 +14,6 @@ void ladx_outcome_key_error(LadxOutcome *outcome, int item)
 	outcome->message = outcome->text;
 }
 
-/* Randomizer.readItemPool with no plan: false on a KeyError outcome (or a full spot list, the logic then checked). */
 static bool read_item_pool(LadxRandomizer *r)
 {
 	static const int fillers[] = {I(RUPEES_50), I(RUPEES_20), I(RUPEES_200), I(MESSAGE), I(MEDICINE), I(GEL),

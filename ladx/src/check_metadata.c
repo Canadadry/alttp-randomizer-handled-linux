@@ -8,8 +8,6 @@ typedef struct CheckMetadata {
 	const char *area;
 } CheckMetadata;
 
-/* checkMetadata.py's checkMetadataTable at 4325207e, in its order: LADXR's
- * own English names, no ROM byte. */
 static const CheckMetadata table[] = {
 	{"None", "Unset Room", "None"},
 	{"0x1F5", "Boomerang Guy Item", "Toronbo Shores"},
@@ -305,7 +303,6 @@ static const CheckMetadata table[] = {
 
 typedef char none_first_and_288_entries[TABLE_COUNT == 288 ? 1 : -1];
 
-/* checkMetadataTable.get(name_id, checkMetadataTable["None"]). */
 int ladx_check_metadata_find(const char *name_id)
 {
 	int i;

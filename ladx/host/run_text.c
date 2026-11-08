@@ -5,7 +5,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-/* CPython's float_hex (Objects/floatobject.c), for IEEE doubles. */
 void ladx_float_hex(double x, char out[LADX_FLOAT_HEX_SIZE])
 {
 	static const char digits[] = "0123456789abcdef";

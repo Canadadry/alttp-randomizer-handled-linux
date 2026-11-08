@@ -48,7 +48,6 @@ static bool pair_holds(const UiLadxGenerate *state, const LadxSettingPair *pair)
 	return state->settings.value[pair->a] == pair->value_a && state->settings.value[pair->b] == pair->value_b;
 }
 
-/* The pair holding on the shown values that involves id; NULL when none. */
 static const LadxSettingPair *holding_pair(const UiLadxGenerate *state, LadxSettingId id)
 {
 	int i;
@@ -154,7 +153,6 @@ static void move(UiLadxGenerate *state, int delta)
 	state->item = state->rows[index];
 }
 
-/* The first setting shown under category; categories always show one. */
 static int first_of(const UiLadxGenerate *state, int category)
 {
 	int index = index_of(state, UI_LADX_ITEM_HEADING + category);

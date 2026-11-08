@@ -14,7 +14,6 @@
 
 #define UI_GENFLOW_STATUS_MAX 96
 
-/* ALttP reads options and heart_beep, LADX ladx; both read spoiler. */
 typedef struct UiGenRequest {
 	UiGame game;
 	RandoOptions options;

@@ -6,7 +6,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* The longest sequence shuffle, choice weights and choices picks take. */
 #define LADX_RNG_MAX_LIST 256
 
 typedef enum LadxRngGen {
@@ -15,7 +14,6 @@ typedef enum LadxRngGen {
 	LADX_RNG_GEN_COUNT
 } LadxRngGen;
 
-/* LADXR's calling frame, named by ladx_rng_stage_name as its `<module>:<qualname>`. */
 typedef enum LadxRngStage {
 	LADX_STAGE_RANDOMIZER_INIT = 0,
 	LADX_STAGE_WORLD_SETUP_RANDOMIZE,
@@ -46,7 +44,6 @@ typedef enum LadxRngMethod {
 	LADX_RNG_METHOD_COUNT
 } LadxRngMethod;
 
-/* Every non-OK return draws nothing, emits no record and leaves the out-parameters untouched. */
 typedef enum LadxRngStatus {
 	LADX_RNG_OK = 0,
 	LADX_RNG_INDEX_ERROR,
@@ -55,25 +52,21 @@ typedef enum LadxRngStatus {
 	LADX_RNG_OVERFLOW
 } LadxRngStatus;
 
-/*
- * One traced call, as ladx_oracle's TracingRandom records it. Its pointers
- * are valid only while the sink runs. Fields a method does not use are 0.
- */
 typedef struct LadxRngRecord {
 	LadxRngGen gen;
 	LadxRngStage stage;
 	LadxRngMethod method;
-	const uint8_t *seed;	 /* seed */
+	const uint8_t *seed;
 	size_t seed_len;
-	size_t n;		 /* choice, choices, shuffle: the sequence's length */
-	const int *weights;	 /* choices: n weights */
-	size_t k;		 /* choices */
-	int64_t a, b;		 /* randint; randrange's start and stop */
-	size_t index;		 /* choice's result */
-	int64_t value;		 /* randint's and randrange's result */
-	double real;		 /* random's result */
-	const size_t *list;	 /* choices' k picks, shuffle's n-long permutation */
-	uint64_t words;		 /* MT words the call drew */
+	size_t n;
+	const int *weights;
+	size_t k;
+	int64_t a, b;
+	size_t index;
+	int64_t value;
+	double real;
+	const size_t *list;
+	uint64_t words;
 } LadxRngRecord;
 
 typedef void (*LadxRngSink)(void *ctx, const LadxRngRecord *record);
@@ -85,38 +78,27 @@ typedef struct LadxRng {
 	void *ctx;
 } LadxRng;
 
-/* sink may be NULL: nothing is recorded. The generator is unseeded until ladx_rng_seed. */
 void ladx_rng_init(LadxRng *rng, LadxRngGen gen, LadxRngSink sink, void *ctx);
 
 const char *ladx_rng_gen_name(LadxRngGen gen);
 const char *ladx_rng_stage_name(LadxRngStage stage);
 const char *ladx_rng_method_name(LadxRngMethod method);
 
-/* seed may be NULL when size is 0. */
 void ladx_rng_seed(LadxRng *rng, LadxRngStage stage, const uint8_t *seed, size_t size);
 
 double ladx_rng_random(LadxRng *rng, LadxRngStage stage);
 
-/* n == 0: INDEX_ERROR. */
 LadxRngStatus ladx_rng_choice(LadxRng *rng, LadxRngStage stage, size_t n, size_t *index);
 
-/* choices(range(n), weights, k=k) with integer weights; n or k over LADX_RNG_MAX_LIST: OVERFLOW. */
 LadxRngStatus ladx_rng_choices(LadxRng *rng, LadxRngStage stage, const int *weights, size_t n, size_t k,
 			       size_t *out);
 
-/*
- * shuffle(x) on count elements of size bytes, as base[to] = before[perm[to]]
- * with perm shuffled; count over LADX_RNG_MAX_LIST: OVERFLOW.
- */
 LadxRngStatus ladx_rng_shuffle(LadxRng *rng, LadxRngStage stage, void *base, size_t count, size_t size);
 
-/* b < a: VALUE_ERROR; b == INT64_MAX: UNSUPPORTED. */
 LadxRngStatus ladx_rng_randint(LadxRng *rng, LadxRngStage stage, int64_t a, int64_t b, int64_t *out);
 
-/* randrange(start, stop), step 1; stop <= start: VALUE_ERROR. */
 LadxRngStatus ladx_rng_randrange(LadxRng *rng, LadxRngStage stage, int64_t start, int64_t stop, int64_t *out);
 
-/* random.setstate(rnd.getstate()): to's MT state becomes from's, one record each. */
 void ladx_rng_copy_state(LadxRng *to, LadxRng *from, LadxRngStage stage);
 
 #endif

@@ -1,12 +1,9 @@
 #include "dungeon_build.h"
 
-/* logic/dungeonColor.py DungeonColor at 4325207e, line for line. */
-
 #define DUNGEON 0
 
 int ladx_dungeon_color(const LadxDungeonContext *c)
 {
-	/* locations */
 	int entrance = LOC("D0 Entrance");
 	int main_room = LOC("D0 Main Area");
 	int main_room_chest1 = ADD(LOC(NULL), DUNGEON_CHEST, 0x30F);
@@ -32,14 +29,12 @@ int ladx_dungeon_color(const LadxDungeonContext *c)
 	int boss_room = LOC("D0 Boss Room");
 	int fairy_rewards = ADD_INDEX(ADD_INDEX(LOC("D0 Fairy Room"), TUNIC_FAIRY, 0), TUNIC_FAIRY, 1);
 
-	/* owl statues */
 	if (OPTION(OWLSTATUES, "both") || OPTION(OWLSTATUES, "dungeon")) {
 		CONNECT_BACK(main_room, main_room_owl1, I(STONE_BEAK0), NO);
 		CONNECT_BACK(main_room, main_room_owl2, I(STONE_BEAK0), NO);
 		CONNECT_BACK(button_west, west_room_owl3, I(STONE_BEAK0), NO);
 	}
 
-	/* connections */
 	CONNECT_BACK(entrance, main_room, AND(ENEMY(COLOR_GHOUL_GREEN), ENEMY(COLOR_GHOUL_RED)), NO);
 	CONNECT_ALL_BACK(main_room, TARGETS(main_room_chest1, main_room_drop1), R->hit_switch_color, NO);
 	CONNECT_BACK(main_room, main_room_chest2, AND(I(POWER_BRACELET), R->attack_hookshot), NO);

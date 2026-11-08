@@ -1,14 +1,11 @@
 #include "dungeon_build.h"
 
-/* logic/dungeon2.py Dungeon2 at 4325207e, line for line. */
-
 #define DUNGEON 2
 
 int ladx_dungeon2(const LadxDungeonContext *c)
 {
 	int i;
 
-	/* locations */
 	int entrance = LOC("D2 Entrance");
 	int entrance_chest1 = ADD(LOC(NULL), DUNGEON_CHEST, 0x136);
 	int blade_room = LOC("D2 West of Torches");
@@ -55,8 +52,6 @@ int ladx_dungeon2(const LadxDungeonContext *c)
 	int instrument = ADD(LOC("D2 Instrument Room"), INSTRUMENT, 0x12a);
 	int pegs[2];
 
-	/* connections */
-	/* entrance */
 	CONNECT_BACK(entrance, entrance_chest1, I(POWER_BRACELET), NO);
 	CONNECT_BACK(entrance, blade_room, FOUND(KEY2, 5), NO);
 	CONNECT_BACK(blade_room, pitbeetle_room, ENEMY(KEESE), NO);
@@ -77,7 +72,6 @@ int ladx_dungeon2(const LadxDungeonContext *c)
 		     AND(ENEMY(MASKED_MIMIC_GORIYA), I(FEATHER), R->hit_switch), NO);
 	CONNECT(mimic_beetle_room, pushblock_room, FOUND(KEY2, 3));
 	CONNECT(pushblock_room, before_a_passage, NONE);
-	/* main */
 	CONNECT(before_a_passage, after_a_passage, I(FEATHER));
 	CONNECT_BACK(after_a_passage, miniboss_room, NONE, NO);
 	CONNECT_BACK(miniboss_room, entrance, MINIBOSS(1), NO);
@@ -97,7 +91,6 @@ int ladx_dungeon2(const LadxDungeonContext *c)
 		     AND(ENEMY(KEESE), ENEMY(MOBLIN), OR(ENEMY(POLS_VOICE), I(POWER_BRACELET))), NO);
 	CONNECT_ALL_BACK(after_b_passage, TARGETS(vacuum_area, final_switch_west, final_switch_east),
 			 AND(R->hit_switch, I(FEATHER), I(POWER_BRACELET)), NO);
-	/* boss */
 	CONNECT(after_b_passage, pot_pol_room_doorway, FOUND(KEY2, 5));
 	CONNECT(pot_pol_room_doorway, pot_pol_room, I(POWER_BRACELET));
 	CONNECT_BACK(pot_pol_room, before_c_passage, AND(OR(I(POWER_BRACELET), ENEMY(POLS_VOICE)), ENEMY(ZOL)), NONE);
@@ -105,19 +98,16 @@ int ladx_dungeon2(const LadxDungeonContext *c)
 	CONNECT_BACK(pre_boss_room, pre_boss, I(FEATHER), NO);
 	CONNECT_BACK(pre_boss, boss_room, I(NIGHTMARE_KEY2), NO);
 	CONNECT_ALL_BACK(boss_room, TARGETS(boss_room_drop3, instrument), BOSS(1), NO);
-	/* owl statues */
 	if (OPTION(OWLSTATUES, "both") || OPTION(OWLSTATUES, "dungeon")) {
 		CONNECT_BACK(statue_switch_room, statue_switch_room_owl1, I(STONE_BEAK2), NO);
 		CONNECT_BACK(pushblock_room, pushblock_room_owl2, I(STONE_BEAK2), NO);
 		CONNECT_BACK(between_pits, between_pits_owl3, I(STONE_BEAK2), NO);
 	}
-	/* normal */
 	if (!LOGIC_IS("casual")) {
 		CONNECT_BACK(statue_switch_room, statue_switch_room_drop2, R->rear_attack, NO);
 		CONNECT_BACK(pot_pol_room, before_c_passage,
 			     OR(I(POWER_BRACELET), AND(ENEMY(POLS_VOICE), ENEMY(ZOL))), NONE);
 	}
-	/* hard */
 	if (HARD_OR_ABOVE) {
 		CONNECT(before_a_passage, after_a_passage, R->boots_dash_2d);
 		CONNECT_BACK(before_b_passage, vacuum_area, AND(I(POWER_BRACELET), R->corner_walk), NO);
@@ -128,7 +118,6 @@ int ladx_dungeon2(const LadxDungeonContext *c)
 		CONNECT_ALL_BACK(after_b_passage, TARGETS(final_switch_west, final_switch_east),
 				 AND(I(BOOMERANG), I(HOOKSHOT)), NO);
 	}
-	/* glitched */
 	if (GLITCHED_OR_ABOVE) {
 		CONNECT_BACK(boo_room, boo_room_chest8, I(SWORD), NO);
 		CONNECT_BACK(after_miniboss, before_b_passage, R->super_jump_feather, NO);
@@ -139,7 +128,6 @@ int ladx_dungeon2(const LadxDungeonContext *c)
 			     OR(AND(R->hookshot_clip_wall, R->super_jump_feather), R->super_jump_boots), NO);
 		CONNECT_BACK(before_c_passage, pre_boss_room, I(BOMB), NO);
 	}
-	/* hell */
 	if (LOGIC_IS("hell")) {
 		CONNECT_BACK(pitbeetle_room, pitbeetle_room_chest2, R->boots_bonk_pit, NO);
 		CONNECT(pit_peg_room, mimic_beetle_room, OR(R->boots_bonk_pit, R->hookshot_spam_pit));
@@ -161,7 +149,6 @@ int ladx_dungeon2(const LadxDungeonContext *c)
 		CONNECT_BACK(pot_pol_room_doorway, pot_pol_room, AND(R->hookshot_clip_block), NO);
 		CONNECT_BACK(before_c_passage, pre_boss_room, R->boots_jump, NO);
 		CONNECT_BACK(pre_boss_room, pre_boss, OR(R->boots_bonk_pit, R->hookshot_spam_pit), NO);
-		/* connections that require overworld-only replenishable items such as "TOADSTOOL2" and "MEDICINE2" */
 		if (!OPTION(OVERWORLD, "alttp") && !OPTION(OVERWORLD, "dungeondive"))
 			CONNECT(before_a_passage, after_a_passage, R->toadstool_bounce_2d_spikepit);
 	}

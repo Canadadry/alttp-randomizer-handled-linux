@@ -162,11 +162,6 @@ static int same_generators(void)
 	       memcmp(&copy.global.py, &randomizer.global.py, sizeof copy.global.py) == 0;
 }
 
-/*
- * The log's B records resolved against the synthetic ROM into bank 0x02's
- * first 0x120 bytes, *covered counting the bytes they write there, *copied
- * those copied from KS_AT; 0 on a token or offset outside them.
- */
 static int resolve(uint8_t *table, int *covered, int *copied)
 {
 	const char *line = strstr(log_text, "\nG music\n"), *t;

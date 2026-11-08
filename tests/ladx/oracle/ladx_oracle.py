@@ -25,7 +25,6 @@ COVERED = ("seed", "random", "getrandbits", "randrange", "randint", "choice", "c
 
 
 def render(value):
-    """A number as a trace or fixture field: integers in decimal, floats as float.hex."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise OracleError("oracle: cannot render %r" % (value,))
     if isinstance(value, float):
@@ -38,14 +37,12 @@ def render_list(values):
 
 
 def seed_hex(seed):
-    """A byte seed as lower-case hex, "-" when empty."""
     if not isinstance(seed, (bytes, bytearray)):
         raise OracleError("oracle: seed %r is not bytes" % (seed,))
     return seed.hex() or "-"
 
 
 def field(text):
-    """A text field of a fixture: '""' when empty; a tab, a newline or a quote is refused."""
     if any(c in text for c in "\t\n\r\""):
         raise OracleError("oracle: field %r holds a tab, a newline or a quote" % (text,))
     return text or '""'
@@ -58,17 +55,14 @@ def item_name(name):
 
 
 def oracle_env(hashseed, base=None):
-    """The environment of an oracle run: `base` (default os.environ) with PYTHONHASHSEED set and
-    bytecode writing off. Run python3 without -I or -E: both drop PYTHONHASHSEED."""
     env = dict(os.environ if base is None else base)
     env["PYTHONHASHSEED"] = str(hashseed)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     return env
 
 
+# A new empty directory under work_root, so LADXR's stray files never land in the repository.
 def enter_checkout(ladxr_dir, work_root):
-    """Puts the LADXR checkout first on sys.path and chdirs into a new empty directory under
-    work_root, so that LADXR's stray files never land in the repository. Returns that directory."""
     ladxr_dir = os.path.abspath(ladxr_dir)
     if not os.path.isfile(os.path.join(ladxr_dir, "randomizer.py")):
         raise OracleError("oracle: %s is not a LADXR checkout" % ladxr_dir)
@@ -81,9 +75,6 @@ def enter_checkout(ladxr_dir, work_root):
 
 
 class TracingRandom(random.Random):
-    """A random.Random that counts MT words and traces each outermost public call into `tracer`
-    (set by the subclass Tracer makes). Only the methods in COVERED are allowed."""
-
     tracer = None
     gen = "rnd"
     _depth = 0
@@ -183,9 +174,6 @@ class TracingRandom(random.Random):
 
 
 class Tracer:
-    """Collects trace lines `<n> <gen> <stage> <method> <args> -> <result> [<words>]`; <stage> is
-    `<module>:<qualname>` of the nearest calling frame under `root`, else "-"."""
-
     def __init__(self, root):
         self.root = os.path.abspath(root)
         self.lines = []
@@ -193,8 +181,6 @@ class Tracer:
 
     @contextlib.contextmanager
     def installed(self):
-        """Within: random.Random is this tracer's class, and random's module functions are bound
-        to one traced generator whose <gen> is "global"."""
         glob = self.Random.__new__(self.Random)
         glob.gauss_next = None
         glob.gen = "global"
@@ -241,7 +227,6 @@ for _name in dir(random.Random):
 
 
 def setting_kind(default):
-    """A setting's type in settings.txt: bool, str or float, from its default as LADXR types it."""
     for kind in (bool, str, float):
         if isinstance(default, kind):
             return kind.__name__
@@ -249,7 +234,6 @@ def setting_kind(default):
 
 
 def setting_value(value):
-    """A setting's value as a fixture field: 0/1 for a bool, float.hex for a float, else field()."""
     kind = setting_kind(value)
     if kind == "bool":
         return "1" if value else "0"
@@ -261,8 +245,6 @@ def setting_value(value):
 
 
 def settings_lines(settings):
-    """settings.txt's lines for LADXR's Setting objects (or stand-ins with the same attributes):
-    one setting line each, then its option lines, the label's |meta split as toJson does."""
     for s in settings:
         visible = s.visible_if or []
         if any("," in v for v in visible):
@@ -278,7 +260,6 @@ def settings_lines(settings):
 
 
 def setting_values(s):
-    """Every value a setting can take, rendered: its options, 0 1 for a bool, else its default."""
     if s.options:
         return [setting_value(key) for key, _, _ in s.options]
     if setting_kind(s.default) == "bool":
@@ -287,8 +268,6 @@ def setting_values(s):
 
 
 def read_tier1(text, settings):
-    """tier1.txt as [(key, [rendered value, ...])], in file order. Refuses a key or a value that
-    the settings do not define, a setting with free values, a repeat, and an order not LADXR's."""
     order = [s.key for s in settings]
     by_key = {s.key: s for s in settings}
     tier1 = []
@@ -322,11 +301,6 @@ def _python_values(s):
 
 
 def validate_fixture(settings_class):
-    """settings_validate.txt's vectors for LADXR's Settings class (or a stand-in): the keys that
-    validate reads or writes when one setting is set alone (in LADXR's order), and one line
-    `validate <k=v,...> -> <changed k=v,... or => >\t<short string after>` per value of each of
-    them alone, then per pair of values of two of them. validate's prints are dropped. Refuses a
-    pair whose validate touches a key outside the singles' set."""
     touched = set()
 
     class Recording(settings_class):
@@ -390,9 +364,6 @@ AUDIT_VERDICTS = ("patched", "unreached", "order-free", "inert")
 
 
 def audit_sites(root):
-    """Every order-sensitive site and every environment read (subprocess, environment variables,
-    clock, working directory, os.urandom, platform and Python version) of the .py files under root,
-    www/ excepted, as (file, line number, stripped text), in file then line order."""
     sites = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if not (dirpath == root and d in ("www", ".git")))
@@ -408,7 +379,6 @@ def audit_sites(root):
 
 
 def read_audit(text):
-    """order_audit.txt as {(file, stripped text): (verdict, reason)}; "#" lines are comments."""
     table = {}
     for line in text.splitlines():
         if not line or line.startswith("#"):
@@ -425,9 +395,6 @@ def read_audit(text):
 
 
 def audit_order(root, table_text):
-    """Checks the sites under root against the audit table. Returns (ok, report lines): one
-    UNAUDITED line per site without an entry and one STALE line per entry without a site, else
-    the summary line."""
     table = read_audit(table_text)
     sites = audit_sites(root)
     keys = {(rel, text) for rel, _, text in sites}
@@ -439,9 +406,6 @@ def audit_order(root, table_text):
 
 
 def requirement_text(req):
-    """A LADXR requirement as an S-expression keeping its stored order: - (None), T, F, an item,
-    and(...)/or(...) (items, then children), count(ITEM,n), counts(n,A,...), found(ITEM,n). Reads
-    the private attributes of LADXR's classes, matched by class name; another type is refused."""
     if req is None:
         return "-"
     if isinstance(req, bool):
@@ -463,9 +427,6 @@ def requirement_text(req):
 
 
 def graph_lines(logic):
-    """A Logic's canonical text: `loc <i> <dungeon or ->\t<name or ->` in location_list order,
-    `spot <loc> <class> <nameId> <options>\t<metadata name>\t<metadata area>` in iteminfo_list
-    order, then `edge <from> <to> <requirement_text>` in each location's connections order."""
     index = {id(loc): i for i, loc in enumerate(logic.location_list)}
 
     def where(loc):
@@ -488,7 +449,6 @@ def graph_lines(logic):
 
 
 def index_ranges(indexes):
-    """Sorted integers as ranges, `0-2,5,7-8`; - when empty."""
     parts = []
     for i in sorted(indexes):
         if parts and parts[-1][1] == i - 1:
@@ -499,8 +459,6 @@ def index_ranges(indexes):
 
 
 def compare_runs(name, a_text, b_text):
-    """The double run's verdict on one case: `same <name>`, or `DIFFERENT <name>: line <n>: <A line>
-    | <B line>` at the first differing line, `<end of file>` standing for a missing one."""
     a_lines, b_lines = a_text.splitlines(), b_text.splitlines()
     for n in range(max(len(a_lines), len(b_lines))):
         a = a_lines[n] if n < len(a_lines) else "<end of file>"
@@ -510,9 +468,8 @@ def compare_runs(name, a_text, b_text):
     return "same %s" % name
 
 
+# Never a byte value: the files may be ROM-derived.
 def compare_bytes(name, label, a, b):
-    """Two files' bytes: `same <name>`, else `DIFFERENT <name>: <label>: sizes <a> vs <b>` or
-    `... <k> bytes differ, first at 0x<offset>`. Never a byte value: the files may be ROM-derived."""
     if a == b:
         return "same %s" % name
     if len(a) != len(b):
@@ -527,9 +484,6 @@ def _read_bytes(path):
 
 
 def compare_dirs(name, a_dir, b_dir):
-    """Two case directories, meta.txt left out: `only in A|B: <file>` lines, then run.txt through
-    compare_runs, then every other file through compare_bytes, each line `DIFFERENT <name>: ...`;
-    ["same <name>"] when nothing differs."""
     a_files, b_files = (set(os.listdir(d)) - {"meta.txt"} for d in (a_dir, b_dir))
     lines = ["DIFFERENT %s: only in A: %s" % (name, f) for f in sorted(a_files - b_files)]
     lines += ["DIFFERENT %s: only in B: %s" % (name, f) for f in sorted(b_files - a_files)]
@@ -563,9 +517,6 @@ def _outcomes_match(driver, plain):
 
 
 def compare_plain(name, driver_dir, plain_dir):
-    """The driver's case directory (run.txt) against the plain run's (plain.txt): out.gbc and
-    spoiler.json present on both sides or neither, and byte-equal; outcomes ok with ok, error with
-    retry, crash T with crash T. Lines `DIFFERENT <name> (plain): ...`, else ["same <name> (plain)"]."""
     label = "%s (plain)" % name
     lines = []
     for f in ("out.gbc", "spoiler.json"):
@@ -586,7 +537,6 @@ def compare_plain(name, driver_dir, plain_dir):
 
 
 def inside_tmp(path, repo):
-    """Whether path, symlinks and .. resolved, lies strictly below the repository's tmp/."""
     tmp = os.path.realpath(os.path.join(repo, "tmp"))
     return os.path.realpath(path).startswith(tmp + os.sep)
 
@@ -610,9 +560,6 @@ def _ws_list(values, render_one=_ws_scalar):
 
 
 def ws_lines(ws, identity, bingo_table):
-    """The world setup as `ws <field> <value>` lines, in its attribute order: entrance_mapping as
-    `identity` when it equals `identity`, else k=v,...; bingo_goals as indexes into bingo_table;
-    sign_maze as x:y,...;direction,...; lists comma-separated, dicts k=v,..., None as -."""
     for name, value in vars(ws).items():
         if name == "entrance_mapping" and value == identity:
             shown = "identity"
@@ -639,20 +586,16 @@ def ws_lines(ws, identity, bingo_table):
 
 
 def pool_line(tag, pool):
-    """`<tag> <item>=<count> ...` for an item pool dict, in its order, zero counts kept."""
     return " ".join([tag] + ["%s=%s" % (item_name(item), render(count)) for item, count in pool.items()])
 
 
 def place_lines(spots):
-    """`place <i> <class> <nameId> <item or ->` for each spot of LADXR's iteminfo_list."""
     for i, spot in enumerate(spots):
         yield "place %d %s %s %s" % (i, type(spot).__name__, field(spot.nameId),
                                      "-" if spot.item is None else item_name(spot.item))
 
 
 def runs_varied(a_meta, b_meta, describe=False):
-    """Whether the double run's two meta files show another hash("ladxr") and another checkout,
-    and, with describe, another `git describe --tags` answer of the working directory."""
     def read(text):
         return dict(line.split(" ", 1) for line in text.splitlines() if " " in line)
     a, b = read(a_meta), read(b_meta)
@@ -664,10 +607,6 @@ _CASE_LINE = re.compile(r"([A-Za-z0-9_.+-]+) ((?:[0-9a-fA-F]{2})+)((?: [A-Za-z0-
 
 
 def read_cases(text, names=None):
-    """A case list (`<name> <seed hex> <k=v ...>` per line, "#" lines and blank lines skipped) as
-    [(name, seed bytes, [k=v, ...])] in file order, only the named cases when `names` is given.
-    Refuses a malformed line, a seed that is not even-length hex, a repeated name and an unknown
-    name."""
     cases = []
     for line in text.splitlines():
         if not line or line.startswith("#"):

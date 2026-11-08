@@ -13,10 +13,8 @@ typedef enum RandoLastGameStatus {
 	RANDO_LAST_GAME_INVALID,
 } RandoLastGameStatus;
 
-/* Writes {"last_game":"<alttp|ladx>"} through path.tmp; creates no directory. */
 bool rando_last_game_save(const char *path, UiGame game);
 
-/* *game is ALttP unless the status is loaded. */
 RandoLastGameStatus rando_last_game_load(const char *path, UiGame *game);
 
 #endif

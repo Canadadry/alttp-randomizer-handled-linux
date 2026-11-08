@@ -2,8 +2,6 @@
 
 #include <string.h>
 
-/* logic/overworld.py World and EntranceExterior at 4325207e, line for line. */
-
 #define DUNGEON -1
 
 static const char *const entrance_names[LADX_ENTRANCE_COUNT] = {
@@ -44,7 +42,6 @@ static int entrance_find(const char *name)
 	return -1;
 }
 
-/* entrances[name]; NULL (and the logic broken) when absent: LADXR's assert. */
 static LadxEntranceExterior *entrance(LadxLogic *logic, LadxWorld *w, const char *name, bool inside)
 {
 	int k = entrance_find(name);
@@ -65,7 +62,6 @@ static void exterior(LadxEntranceExterior *e, int location, LadxReq requirement)
 	e->one_way_enter = e->one_way_exit = ladx_req_none();
 }
 
-/* World._addEntrance. */
 static void add_entrance(LadxLogic *logic, LadxWorld *w, const char *name, int outside, int inside,
 			 LadxReq requirement)
 {
@@ -79,7 +75,6 @@ static void add_entrance(LadxLogic *logic, LadxWorld *w, const char *name, int o
 	exterior(&w->entrance[2 * k + 1], inside, ladx_req_none());
 }
 
-/* EntranceExterior.addRequirement: OR(requirement, new). */
 static void add_requirement(LadxLogic *logic, LadxWorld *w, const char *name, LadxReq requirement)
 {
 	LadxEntranceExterior *e = entrance(logic, w, name, false);
@@ -88,7 +83,6 @@ static void add_requirement(LadxLogic *logic, LadxWorld *w, const char *name, La
 		e->requirement = LADX_OR(ladx_logic_arena_mut(logic), e->requirement, requirement);
 }
 
-/* addExitRequirement and addEnterRequirement: set when "UNSET", else OR(old, new). */
 static void add_one_way(LadxLogic *logic, LadxReq *slot, bool *set, LadxReq requirement)
 {
 	*slot = *set ? LADX_OR(ladx_logic_arena_mut(logic), *slot, requirement) : requirement;
@@ -124,7 +118,6 @@ void ladx_world_update_indoor(LadxLogic *logic, LadxWorld *w, const char *name, 
 	e->location = location;
 }
 
-/* World._createShopSanity: None when shopsanity is "", the only tier-1 value. */
 static int create_shop_sanity(const LadxDungeonContext *c)
 {
 	if (!OPTION(SHOPSANITY, ""))
@@ -132,7 +125,6 @@ static int create_shop_sanity(const LadxDungeonContext *c)
 	return -1;
 }
 
-/* a.connect(b, req) and a.connect(b, req, back=back) as expressions: connect returns self. */
 static int connected(LadxLogic *logic, int from, int to, LadxReq req, LadxReq back)
 {
 	ladx_logic_connect_back(logic, from, to, req, back);
@@ -147,7 +139,6 @@ static int chain1(LadxLogic *logic, int from, int to, LadxReq req)
 	return connected(logic, from, to, req, req);
 }
 
-/* .add(<Kind>(room, item)): KeyHole's reward, TradeSequenceItem's item. */
 #define ADD_ITEM(loc, kind, room, item) ladx_logic_add_to(L, (loc), LADX_SPOT_##kind, (room), LADX_ITEM_##item)
 #define ENTRANCE(name, outside, inside, req) add_entrance(L, w, (name), (outside), (inside), (req))
 #define ENTRANCE_REQUIREMENT(name, req) add_requirement(L, w, (name), (req))
@@ -249,7 +240,6 @@ void ladx_overworld(const LadxDungeonContext *c, LadxWorld *w)
 	int ghost_hut_inside = CHAIN(LOC("Ghost House"), ADD(LOC(NULL), SEASHELL, 0x1E3), I(POWER_BRACELET));
 	ENTRANCE("ghost_house", ghost_hut_outside, ghost_hut_inside, NONE);
 
-	/* Forest area */
 	int forest = CHAIN(LOC("Forest"), mabe_village, R->bush);
 	CONNECT(ADD(LOC(NULL), CHEST, 0x071), forest, I(POWER_BRACELET));
 	int forest_heartpiece = ADD(LOC("Forest Heart Piece"), HEART_PIECE, 0x044);
@@ -329,7 +319,6 @@ void ladx_overworld(const LadxDungeonContext *c, LadxWorld *w)
 				AND(ENEMY(MOBLIN_SWORD), ENEMY(MOBLIN), MINIBOSS(MINIBOSS_MOBLIN_CAVE)));
 	ENTRANCE("moblin_cave", graveyard, moblin_cave, NONE);
 
-	/* "Ukuku Prairie" */
 	int ukuku_prairie =
 		CHAIN(CHAIN(LOC("Ukuku Prairie"), mabe_village, I(POWER_BRACELET)), graveyard, I(POWER_BRACELET));
 	CONNECT(ukuku_prairie, ADD_ITEM(LOC(NULL), TRADE_SEQUENCE_ITEM, 0x07B, TRADING_ITEM_STICK),
@@ -425,7 +414,6 @@ void ladx_overworld(const LadxDungeonContext *c, LadxWorld *w)
 	int d5_entrance = CHAIN(LOC("Outside D5"), bay_water, I(FLIPPERS));
 	ENTRANCE("d5", d5_entrance, -1, NONE);
 
-	/* Richard */
 	int richard_house = LOC("Richard's Villa");
 	int richard_cave = CHAIN(LOC("Richard's Cave"), richard_house, COUNT(GOLD_LEAF, 5));
 	CONNECT_BACK(richard_cave, richard_house, NONE, NO);
@@ -581,7 +569,6 @@ void ladx_overworld(const LadxDungeonContext *c, LadxWorld *w)
 	ENTRANCE("papahl_entrance", lower_right_taltal, papahl_cave, NONE);
 	ENTRANCE("papahl_exit", papahl, papahl_cave, NONE);
 
-	/* D4 entrance and related things */
 	int below_right_taltal = CHAIN(LOC("Near D4 Keyhole"), windfish_egg, I(POWER_BRACELET));
 	int angler_tunnel_keyhole =
 		CHAIN(LOC("D4 Keyhole"), ADD_ITEM(LOC(NULL), KEY_HOLE, 0x02B, ANGLER_TUNNEL_OPENED), I(ANGLER_KEY));
@@ -607,7 +594,6 @@ void ladx_overworld(const LadxDungeonContext *c, LadxWorld *w)
 	int mambo = CHAIN(ADD(LOC(NULL), SONG, 0x2FD), inside_mambo, AND(I(OCARINA), I(FLIPPERS)));
 	ENTRANCE("mambo", outside_mambo, inside_mambo, NONE);
 
-	/* Raft game. */
 	int raft_house = LOC("Raft House");
 	CONNECT(ADD_KEY(LOC("Raft Purchase"), RAFT), raft_house, FOUND(RUPEES, 500));
 	int raft_return_upper = LOC("Raft Return North");

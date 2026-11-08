@@ -81,10 +81,6 @@ END_OF_DATA = {"text": (0xFE, 0xFF), "data": (0xFF,)}
 
 
 class KnownSource:
-    """The map: `q in ks` for a source offset; `spans` [(start, stop, label)], `failures`
-    [label] of the spans left out, len() the number of offsets; `entries` {(table, key): (start,
-    stop)} of the table entries among the spans (pointer, bank and boss bytes are not entries)."""
-
     def __init__(self, size):
         self.mask = bytearray(size)
         self.spans = []
@@ -93,7 +89,6 @@ class KnownSource:
         self._span_of = None
 
     def add(self, start, stop, label, entry=None):
-        """entry: the (table, key) whose source entry the span is, None for any other span."""
         self.spans.append((start, stop, label))
         self.mask[start:stop] = b"\x01" * (stop - start)
         if entry is not None:
@@ -101,8 +96,6 @@ class KnownSource:
         self._span_of = None
 
     def span_at(self, q):
-        """The (start, stop) of the span holding source offset q with the lowest start (the
-        longest of those), None outside the map."""
         if self._span_of is None:
             self._span_of = {}
             for start, stop, _ in sorted(self.spans, key=lambda s: (s[0], -s[1]), reverse=True):
@@ -118,7 +111,6 @@ class KnownSource:
 
 
 def _entry_end(rom, kind, start, size):
-    """The end of the entry at start, as the table's _readData finds it."""
     p = start
     if kind == "sprite":
         return start + size
@@ -138,7 +130,6 @@ def _entry_end(rom, kind, start, size):
 
 
 def _pointers(rom, info):
-    """[(key, pointer bytes' offset, length, entry bank, raw pointer)] of a table."""
     out = []
     pb, addr = info["pointers_bank"] * BANK, info["pointers_addr"]
     for key, (bank, at) in info.get("alt_pointers", {}).items():
@@ -160,7 +151,6 @@ def _pointers(rom, info):
 
 
 def parse(rom, layout=LAYOUT):
-    """{table: {key: (start, stop) absolute source span, or the integer pointer}}."""
     tables = {}
     for table in layout:
         entries = {}
@@ -177,8 +167,6 @@ def parse(rom, layout=LAYOUT):
 
 
 def fields(kind, data):
-    """The parsed fields of one entry (decimal-sized numbers), None when the entry is not
-    made of whole fields ending at its terminator."""
     try:
         if kind == "sprite":
             return [list(data)]
@@ -223,7 +211,6 @@ def fields(kind, data):
 
 
 def rebuild(kind, parts):
-    """The bytes an entry's fields give back."""
     if kind == "sprite":
         return bytes(parts[0])
     if kind == "data":
@@ -254,7 +241,6 @@ def _known_key(table, key):
 
 
 def build(rom, layout=LAYOUT, bosses=BOSSES):
-    """The KnownSource of a source ROM."""
     ks = KnownSource(len(rom))
     tables = parse(rom, layout)
     for table in layout:
@@ -310,8 +296,6 @@ def summary(ks):
 
 
 def spans(ks):
-    """The span list text: `ladx-ks-spans 1`, `<start> <length> <label>` per span in hex in the
-    build's order, then `failure <label>` per span left out."""
     lines = ["ladx-ks-spans 1"]
     lines += ["%x %x %s" % (start, stop - start, label) for start, stop, label in ks.spans]
     lines += ["failure " + label for label in ks.failures]
@@ -319,8 +303,6 @@ def spans(ks):
 
 
 def check_ladxr(rom_path, ladxr, rom):
-    """MISMATCH lines between this parse and LADXR's, and for every unchanged source room that
-    RoomEditor does not store back byte for byte."""
     sys.path.insert(0, HERE)
     import read_trace
     sys.path.insert(0, os.path.abspath(ladxr))

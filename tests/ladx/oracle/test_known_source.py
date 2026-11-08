@@ -1,7 +1,3 @@
-"""Usage: python3 -I test_known_source.py
-
-Unit tests of known_source.py on a synthetic ROM with a planted table layout, no LADXR, no ROM.
-"""
 
 import importlib.util
 import os
@@ -29,9 +25,6 @@ def at(bank, addr):
 
 
 class Planted:
-    """A 6-bank ROM: rooms (bank 1, an alt room), entities (bank 2, an int pointer), texts
-    (bank 3 pointers and banks, data in bank 4), sprite data (bank 5) and backgrounds (bank 5)."""
-
     def __init__(self):
         rom = bytearray(random.Random(0xB0A7).randbytes(6 * BANK))
         self.rom = rom
@@ -164,8 +157,6 @@ class Build(unittest.TestCase):
 
 
 class Spans(unittest.TestCase):
-    """The span list of the planted layout, written out here from Planted, in build's order."""
-
     def expected(self):
         lines = ["ladx-ks-spans 1"]
 

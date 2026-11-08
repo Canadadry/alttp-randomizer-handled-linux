@@ -26,7 +26,6 @@ typedef struct UiHistoryDate {
 	int year, month, day, hour, minute, second;
 } UiHistoryDate;
 
-/* ALttP reads seed, options and heart_beep; LADX ladx_seed and ladx. */
 typedef struct UiHistoryEntry {
 	UiGame game;
 	RandoName name;

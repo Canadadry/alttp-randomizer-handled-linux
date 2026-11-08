@@ -298,7 +298,6 @@ LOG = "ladx-rom-writes 1\ntables texts\nG fixed\nB 10 =2 00\n"
 
 
 def plant_goldens(root, e, skip=()):
-    """Every case folder's golden files (a spoiler unless race=1), a small valid write log."""
     for sub, entries in (("cases", e.cases), ("combos", e.combos)):
         for name, assignments in entries:
             if name in skip:
@@ -451,8 +450,6 @@ class CommandTest(unittest.TestCase):
 
 
 class Candidates(unittest.TestCase):
-    """Stand-ins for the Nintendo-bytes test and the oracle run of the picker's candidate loop."""
-
     def setUp(self):
         self.root = tempfile.mkdtemp()
         self.addCleanup(lambda: __import__("shutil").rmtree(self.root))
@@ -460,8 +457,6 @@ class Candidates(unittest.TestCase):
         self.name = "goal-maze+race-1"
 
     def stand_ins(self, bad_text, outcomes):
-        """nintendo_ok refuses the seed texts of the candidates in bad_text; run gives outcomes
-        by candidate (ok past the end) and records the candidates it ran."""
         ran = []
         bad = {ladx_cases.derive(self.name, k).hex() + "\n" for k in bad_text}
 

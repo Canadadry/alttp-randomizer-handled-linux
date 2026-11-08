@@ -61,7 +61,6 @@ LadxKsStatus ladx_ks_add_failure(LadxKs *ks, const LadxKsLabel *label)
 	return LADX_KS_OK;
 }
 
-/* Heap sort of n uint32 items by before(a, b), with no allocation. */
 typedef int (*Before)(const LadxKs *ks, uint32_t a, uint32_t b);
 
 static void sift(const LadxKs *ks, uint32_t *v, size_t root, size_t n, Before before)
@@ -216,7 +215,6 @@ int ladx_ks_span_at(const LadxKs *ks, int64_t q, uint32_t *start, uint32_t *stop
 
 	if (!ladx_ks_contains(ks, q))
 		return 0;
-	/* k: the spans by_start[0..k) start at or before q */
 	while (low < high) {
 		uint32_t mid = low + (high - low) / 2;
 
@@ -257,7 +255,6 @@ LadxKsRun ladx_ks_run(const LadxKs *ks, uint32_t i)
 	return i < ladx_ks_run_count(ks) ? ks->run[i] : none;
 }
 
-/* The run holding q; q is in the map. */
 static const LadxKsRun *run_of(const LadxKs *ks, uint32_t q)
 {
 	uint32_t low = 0, high = ks->run_count;
@@ -298,30 +295,27 @@ int64_t ladx_ks_find(const LadxKs *ks, const uint8_t *data, size_t n)
 	return -1;
 }
 
-/* known_source.LAYOUT's KS keys of each table. */
 static int known_key(int table, const LadxRomEntry *e)
 {
 	switch (table) {
-	case 0: /* texts */
+	case 0:
 		return 0;
-	case 1: /* entities */
+	case 1:
 		return !e->alt && e->index < 0x316;
-	case 9: /* background_tiles */
+	case 9:
 		return !e->alt && (e->index == 0x03 || e->index == 0x04 || e->index == 0x0D);
-	case 10: /* background_attributes */
+	case 10:
 		return !e->alt && (e->index == 0x03 || e->index == 0x04);
 	default:
 		return 1;
 	}
 }
 
-/* data[i], -1 past n (Python's IndexError). */
 static int get(const uint8_t *data, size_t n, size_t i)
 {
 	return i < n ? data[i] : -1;
 }
 
-/* The rebuilt bytes, compared with the entry's as they come. */
 typedef struct Rebuilt {
 	const uint8_t *data;
 	size_t n, m;
@@ -335,10 +329,6 @@ static void emit(Rebuilt *r, uint8_t b)
 	r->m++;
 }
 
-/*
- * known_source.fields then rebuild, ported literally: 1 when the fields
- * parse and give data's n bytes back.
- */
 static int rebuilds(LadxRomKind kind, const uint8_t *data, size_t n)
 {
 	Rebuilt out;
@@ -463,7 +453,6 @@ static LadxKsLabel boss_label(LadxKsKind kind, uint32_t index)
 	return label;
 }
 
-/* The pointer bytes _pointers read for e, kept when they rebuild from e. */
 static void add_pointer(LadxKs *ks, const uint8_t *rom, int t, const LadxRomTable *table, const LadxRomEntry *e)
 {
 	uint8_t rebuilt[2];

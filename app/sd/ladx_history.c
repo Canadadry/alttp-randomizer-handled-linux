@@ -37,7 +37,6 @@ bool rando_ladx_history_init(RandoLadxHistory *h, const char *sd_root)
 	return true;
 }
 
-/* <code>.json read into h->record; false when unreadable or not that code's. */
 static bool read_record(RandoLadxHistory *h, const char *code)
 {
 	char path[RANDO_SEED_PATH_MAX], error[RANDO_RECORD_ERROR_MAX];

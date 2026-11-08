@@ -1,8 +1,3 @@
-"""Usage: python3 -I test_inventory_check.py
-
-Unit tests of inventory_check.py on planted LADXR-shaped source trees written to a temporary
-directory, with no LADXR and no ROM.
-"""
 
 import contextlib
 import importlib.util

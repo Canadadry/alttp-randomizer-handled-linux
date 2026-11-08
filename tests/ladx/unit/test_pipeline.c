@@ -96,7 +96,6 @@ static void called(Calls *c, const char *name)
 	snprintf(c->text + len, sizeof c->text - len, "%s%s", len ? " " : "", name);
 }
 
-/* One byte at offset, a literal unlike the source byte when there is one. */
 static int write_byte(LadxEncoder *e, const char *group, uint32_t offset, const LadxPipelineRom *rom)
 {
 	uint8_t v = rom ? (uint8_t)(rom->bytes[offset] ^ 0xffu) : 0xaa;
@@ -155,7 +154,6 @@ static const LadxPipelineGroup planted[] = {
 
 static int rommy_const_mode;
 
-/* rommy: NULL for no constants file. */
 static void open_with(const char *alpha, const char *rommy)
 {
 	LadxTablesFile order, group[2];

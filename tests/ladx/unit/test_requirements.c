@@ -60,7 +60,6 @@ static void append(char *out, size_t cap, const char *s)
 	strcpy(out + len, s);
 }
 
-/* ladx_oracle.requirement_text: items, then children, in stored order. */
 static void render(const LadxReqArena *a, LadxReq r, char *out, size_t cap)
 {
 	int items[64];

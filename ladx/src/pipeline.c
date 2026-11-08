@@ -48,7 +48,6 @@ static int span_is(LadxSpan sp, const char *s)
 	return sp.len == strlen(s) && memcmp(sp.at, s, sp.len) == 0;
 }
 
-/* The unit's entry through the encoder's fixed calls. */
 static LadxEncStatus apply_entry(LadxPipeline *p, LadxEncoder *enc, const LadxTablesStep *step, LadxPipelineError *err)
 {
 	LadxTablesRecords it;
@@ -114,7 +113,6 @@ LadxPipelineStatus ladx_pipeline_run(LadxPipeline *p, LadxEncoder *enc, LadxPipe
 	return st == LADX_ENC_OK ? LADX_PIPELINE_OK : encoder_error(err, st);
 }
 
-/* An entry's atoms as bytes: a literal's byte, else the source byte of a reference. */
 static int resolve(const LadxPipeline *p, const LadxAtom *atoms, size_t n, uint8_t *values, int32_t *origins)
 {
 	size_t i;

@@ -492,7 +492,6 @@ typedef enum UiStrId {
 #define UI_STR_LADX_HELP_LAST UI_STR_LADX_HELP_MUSIC
 
 #define UI_STR_LEN_MAX (UI_GRID_DEFAULT_COLS - 2)
-/* Equals themes/alttp's help line in columns, checked by test_theme. */
 #define UI_STR_HELP_LEN_MAX 58
 
 typedef struct UiStrTable {

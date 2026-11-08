@@ -5,7 +5,6 @@
 
 #define TEXTS 0
 
-/* hints.hint_text_ids. */
 static const unsigned short text_ids[LADX_HINT_TEXT_COUNT] = {
 	0x1B6, 0x1B7, 0x1B9, 0x1BA, 0x1BB, 0x1BC, 0x1BD, 0x1BE, 0x22D, 0x288, 0x280, 0x28A, 0x289,
 	0x281, 0x282, 0x28C, 0x28B, 0x283, 0x28D, 0x284, 0x285, 0x28F, 0x28E, 0x291, 0x290, 0x286,
@@ -46,7 +45,6 @@ static int is_hint_item(int item)
 	return 0;
 }
 
-/* template.format(a, b) for LADXR's templates, whose only fields are {0} and {1}. */
 static int format_template(const char *t, const char *a, const char *b, char *out, size_t *len)
 {
 	size_t at = 0, m;

@@ -20,7 +20,6 @@ static void fail(const char *what)
 	test_fail(TEST, "%s: %s", what, line_now);
 }
 
-/* A line's fields split on single spaces, in place. */
 typedef struct Fields {
 	char *at[MAX_ITEMS];
 	int count;
@@ -221,7 +220,6 @@ static void check_choice(const Fields *f)
 	}
 }
 
-/* Parses "a,b,c" (or "-", the empty list) into out and returns the count. */
 static size_t parse_index_list(char *text, uint64_t *out, size_t max)
 {
 	Fields items;
@@ -237,7 +235,6 @@ static size_t parse_index_list(char *text, uint64_t *out, size_t max)
 	return (size_t)items.count;
 }
 
-/* Shuffles 0..n-1 and compares with the expected list text. */
 static void expect_shuffle(LadxPyRandom *rng, uint64_t n, char *expected)
 {
 	uint32_t list[MAX_ITEMS];
@@ -265,7 +262,6 @@ static void check_shuffle(const Fields *f)
 	expect_shuffle(&rng, parse_u64(f->at[2]), f->at[3]);
 }
 
-/* Parses "w,w,..." weights, decimal or float.hex, and returns the count. */
 static size_t parse_weights(char *text, double *out)
 {
 	Fields items;
@@ -331,7 +327,6 @@ static void expect_none(const char *result)
 		fail("script result of getstate or setstate");
 }
 
-/* Runs one op on rng against its expected result; saved holds getstate's copy. */
 static void run_op(LadxPyRandom *rng, LadxPyRandom *saved, int *have_saved, char *op, char *result)
 {
 	Fields a;

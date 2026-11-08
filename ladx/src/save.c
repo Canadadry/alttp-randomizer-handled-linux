@@ -7,13 +7,13 @@
 #define INDOOR_SPRITES 8
 #define SPRITE_BASE_LOAD 0x0DFAu
 #define LD_HL 0x21
-#define OLD_BASE 0x763B /* ASM("ld hl, $763B"), LADXR's own source */
+#define OLD_BASE 0x763B
 
 typedef struct Save {
 	LadxEncoder *enc;
 	LadxPipeline *p;
 	LadxSpan group;
-	int failed; /* the encoder refused */
+	int failed;
 } Save;
 
 static int write_bytes(Save *s, uint32_t at, const uint8_t *bytes, const int32_t *origins, size_t n)
@@ -32,7 +32,7 @@ static int write_cb(void *ctx, uint8_t bank, uint32_t addr, const uint8_t *bytes
 	uint32_t at = (uint32_t)bank * LADX_ROM_BANK + addr;
 
 	if (n == 0)
-		return 1; /* an empty slice assignment writes nothing */
+		return 1;
 	if (entry >= 0)
 		return write_bytes(s, at, bytes, s->p->save.origins + s->p->save.at[entry], n);
 	return n <= 2 && write_bytes(s, at, bytes, known, n);
@@ -70,7 +70,6 @@ static void info_of(const LadxRomTables *tables, int t, LadxStoreInfo *info)
 	info->expand = table->expand;
 }
 
-/* The parse's spans in its order: alt keys, then index keys; integer pointers add none. */
 static size_t spans_of(const LadxRomTables *tables, int t, LadxStoreSpan *spans)
 {
 	const LadxRomTable *table = &tables->table[t];
@@ -92,7 +91,6 @@ static size_t spans_of(const LadxRomTables *tables, int t, LadxStoreSpan *spans)
 	return n;
 }
 
-/* Every entry's current value from enc into p->save: alt keys, then index keys. 0 on a failure. */
 static int load_entries(LadxEncoder *enc, LadxPipeline *p, int t)
 {
 	const LadxRomTables *tables = p->rom->tables;
@@ -143,7 +141,6 @@ static int raise_error(LadxPipeline *p, const char *type, const char *message)
 	return 0;
 }
 
-/* ROM.patch(0x00, 0x0DFA, ASM("ld hl, $763B"), ASM("ld hl, $<base>")), its old-byte check included. */
 static int patch_base(Save *s, uint32_t base)
 {
 	const uint8_t old[3] = {LD_HL, OLD_BASE & 0xFF, OLD_BASE >> 8};

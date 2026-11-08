@@ -75,8 +75,6 @@ def _offset(n):
 
 
 def _function_keys(path, first_line):
-    """{line number: key text} for the function whose `def` is at or after first_line, the
-    k-th occurrence of a stripped line text keyed `<text> #<k>` for k >= 2."""
     with open(path, "rb") as f:
         lines = f.read().decode("utf-8", "replace").replace("\r", "").split("\n")
     n = first_line - 1
@@ -99,8 +97,6 @@ def _function_keys(path, first_line):
 
 
 class Trace:
-    """The reads and writes recorded since `install`; `uninstall` restores the classes."""
-
     def __init__(self, modules, sections, inventory, roots):
         self._sections = [(f, fn) for f, fn in sections]
         self._inventory = dict(inventory or {})
@@ -133,20 +129,15 @@ class Trace:
         return list(self._writes)
 
     def tables(self):
-        """The parsed tables' attribute names, in ROMWithTables.__init__'s order."""
         return list(self._tables)
 
     def initial(self):
-        """Every parsed entry right after the parse, tables in order then indices then alt keys:
-        (table, key, value, origins) as in events()."""
         return list(self._initial)
 
     def write_events(self, path):
         _save(path, self.event_lines())
 
     def event_lines(self):
-        """The event stream: `ladx-events 1`, `source <sha1>`, `tables <names>`, one `I` line
-        per parsed entry, then one `B` or `T` line per event, tab-separated, site last."""
         source = hashlib.sha1(self._source or b"").hexdigest()
         out = ["ladx-events 1", "source " + source, " ".join(["tables"] + self._tables)]
         for table, key, value, origins in self._initial:
@@ -164,10 +155,6 @@ class Trace:
         return out
 
     def events(self):
-        """Every write in order: ("B", group, site, absolute offset, values, origins) for a run
-        of bank bytes, ("T", group, site, table, key, value, origins) for a table entry, value
-        bytes with a tuple of origins or an int pointer with None. An origin is the source offset
-        of an unchanged copy of a source byte, else KNOWN."""
         return list(self._events)
 
     def write(self, path, raw=False):
@@ -197,8 +184,6 @@ class Trace:
         return out
 
     def write_lines(self):
-        """One line per writing site: group, site, `n=<positions>`, `sha1=<digest>` of the
-        sorted (target, offset or index, last value the site wrote there)."""
         out = []
         for (group, site), net in sorted(self._net.items()):
             digest = hashlib.sha1()
@@ -240,8 +225,6 @@ class Trace:
         return "%s\t%s" % (section, keys.get(frame.f_lineno, "?"))
 
     def _locate(self, depth, in_patch):
-        """(group, site, caller) of the access `depth` frames up; None for a read inside
-        ROM.patch (in_patch False)."""
         site = caller = None
         frame = sys._getframe(depth + 1)
         while frame is not None:
@@ -259,7 +242,6 @@ class Trace:
         return self._inventory.get(site, "-"), site, caller or "-"
 
     def record(self, channel, target, detail, provenance):
-        """provenance: a callable giving the read's provenance field."""
         if not self.active:
             return
         where = self._locate(2, False)
@@ -267,9 +249,6 @@ class Trace:
             self._records.append(where + (channel, target, detail, provenance()))
 
     def record_write(self, target, detail, positions, events=()):
-        """positions: [(offset or index key, value now there)]; events: the write's event
-        payloads, tagged here with group and site; returns the writer's group id for the
-        caller's provenance mask, None when inactive."""
         if not self.active:
             return None
         group, site, caller = self._locate(2, True)
@@ -287,9 +266,6 @@ class Trace:
         return gid
 
     def checked(self, origins, values):
-        """origins as written: one whose recorded byte differs from the value (a change no
-        traced path saw, the buffer protocol) made KNOWN, then every KNOWN byte given a new
-        write identity (`virtual`), so that its unchanged copies keep it."""
         source, written = self._source, self._virtual
         out = []
         for q, v in zip(origins, values):
@@ -304,8 +280,6 @@ class Trace:
         return out
 
     def provenance(self, ids):
-        """`source`, `written:<groups>` or `mixed:<groups>` of a set of group ids, 0 the
-        source."""
         names = sorted({self._group_names[i] for i in ids if i})
         if not names:
             return "source"
@@ -330,13 +304,10 @@ KNOWN = -1
 
 
 def virtual(n):
-    """The origin of the n-th computed byte written (its write identity), below KNOWN."""
     return -2 - n
 
 
 def _origins_of(value):
-    """The per-byte origins of a value assigned to a bank or a table: its own when it carries
-    them, KNOWN for every byte otherwise. value: an int, a bytes-like or a list of ints."""
     origins = getattr(value, "origins", None)
     if origins is not None:
         return list(origins)
@@ -348,7 +319,6 @@ def _origins_of(value):
 
 
 def _assignable(value):
-    """value as bank or entry assignment accepts it, a one-shot iterable made a list."""
     if isinstance(value, (int, bytes, bytearray, memoryview)):
         return value
     return list(value)
@@ -367,9 +337,6 @@ def _oint(value, origin):
 
 
 class OBytes(bytearray):
-    """A bytearray whose `origins` list holds, per byte, its source offset or KNOWN. Slicing,
-    index reads, bytes(), concatenation and every in-place change keep it aligned; any other
-    method returns a plain bytearray (all KNOWN)."""
     __slots__ = ("origins",)
     __hash__ = None
 
@@ -460,10 +427,8 @@ def _obytes(value, origins):
     return result
 
 
+# A slice shares its parent's origins until read, so PointerTable.store's suffix keys stay cheap.
 class OFrozen(bytes):
-    """The bytes() of an origin-carrying value: `origins` as OBytes; a slice shares its parent's
-    list until read, so the suffix keys of PointerTable.store stay cheap."""
-
     @property
     def origins(self):
         return self._parent[self._slice] if self._slice is not None else self._parent
@@ -504,7 +469,6 @@ def _ofrozen(value, origins):
 
 
 def _span(detail):
-    """(low, high) inclusive offsets of a record's detail, None when it names no offset."""
     m = re.fullmatch(r"0x([0-9A-F]+)(?::0x([0-9A-F]+))?", detail)
     if not m:
         return None
@@ -515,8 +479,6 @@ def _span(detail):
 
 
 def origin_text(origins):
-    """Origins as comma-separated runs, hex: `<q>+<n>` for n source offsets from q on, `v<i>+<n>`
-    for n write identities from i on, `k<n>` for n KNOWN bytes; `-` when empty."""
     out, n = [], 0
     while n < len(origins):
         q, m = origins[n], n + 1
@@ -550,7 +512,6 @@ def _value_text(value):
 
 
 def _runs(positions):
-    """The maximal runs of consecutive positions, as ranges, in order."""
     runs, start, last = [], None, None
     for n in positions:
         if start is not None and n == last + 1:
@@ -565,7 +526,6 @@ def _runs(positions):
 
 
 def _key_detail(item, length):
-    """length: a callable, called only for a slice or a negative index."""
     if isinstance(item, slice):
         start, stop, _ = item.indices(length())
         return "%s:%s" % (_offset(start), _offset(stop))
@@ -709,7 +669,6 @@ def _make_bank_class(trace):
 
 
 def _entry(trace, key, value):
-    """(key, value, origins) of a table entry as events() gives it."""
     if isinstance(value, int):
         return key, int(value), None
     data = bytes(memoryview(value)) if isinstance(value, (bytes, bytearray)) else bytes(value)
@@ -717,7 +676,6 @@ def _entry(trace, key, value):
 
 
 def _carrying(value, origins):
-    """value carrying origins: an OBytes or OFrozen updated in place, a plain one copied."""
     if isinstance(value, OBytes):
         value.origins = list(origins)
     elif isinstance(value, OFrozen):
@@ -789,8 +747,6 @@ def _table_class(trace, cls):
 
 
 def install(modules, sections, inventory=None, roots=None):
-    """Instruments modules["ROM"], ["ROMWithTables"] and ["PointerTable"]; returns the Trace.
-    The caller must call `uninstall` before installing another trace."""
     rom_cls, tables_cls, table_cls = (modules["ROM"], modules["ROMWithTables"],
                                       modules["PointerTable"])
     assert issubclass(tables_cls, rom_cls), "ROMWithTables must subclass ROM"
@@ -835,8 +791,6 @@ def install(modules, sections, inventory=None, roots=None):
 
 
 def blind_spots(root):
-    """[(file, stripped line)] of every buffer-protocol candidate line under root, `www/` and
-    hidden folders skipped, files sorted, lines in file order."""
     pattern = re.compile(r"memoryview|unpack_from|pack_into|hashlib|\.write\(|\.tobytes\(")
     found = []
     for folder, dirs, files in os.walk(root):
@@ -1009,8 +963,6 @@ def _synthetic_rom():
 
 
 def self_test(ladxr):
-    """Planted reads and writes through LADXR's real ROM and PointerTable; prints the summary or
-    one `self-test failed` line per mismatch; returns the exit code."""
     sys.dont_write_bytecode = True
     rom_module = _load(os.path.join(ladxr, "rom.py"), "rom")
     table_module = _load(os.path.join(ladxr, "pointerTable.py"), "pointerTable")
@@ -1092,7 +1044,6 @@ def self_test(ladxr):
 
 
 def planted_dir_module(ladxr, rom_module, table_module, old):
-    """A fresh load of the planted module over LADXR's real classes, in its own folder."""
     folder = tempfile.mkdtemp(prefix="read-trace-origins-")
     path = os.path.join(folder, "planted.py")
     with open(path, "w") as f:
@@ -1102,7 +1053,6 @@ def planted_dir_module(ladxr, rom_module, table_module, old):
 
 
 def _origin_expected(data):
-    """The events run_copies must give, without group and site."""
     at = lambda bank, addr: bank * 0x4000 + addr
     src = lambda bank, addr, n: tuple(range(at(bank, addr), at(bank, addr) + n))
     piece = lambda bank, addr, n: data[at(bank, addr):at(bank, addr) + n]
@@ -1120,8 +1070,6 @@ def _origin_expected(data):
 
 
 def _self_test_origins(planted_and_folder, data):
-    """Planted copies (slice, index, concatenation, table entry, store's move and suffix
-    de-duplication) and a computed write through LADXR's real classes: failure lines."""
     planted, folder = planted_and_folder
     try:
         modules = {"ROM": planted.ROM, "ROMWithTables": planted.ROMWithTables,

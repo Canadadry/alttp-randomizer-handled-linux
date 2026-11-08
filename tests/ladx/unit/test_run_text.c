@@ -27,7 +27,6 @@ static void check(int ok, const char *what)
 		test_fail(TEST, "%s", what);
 }
 
-/* The golden's line that starts with prefix, without its newline. */
 static void golden_line(const char *path, const char *prefix, char *out, size_t cap)
 {
 	FILE *f = fopen(path, "r");
@@ -325,7 +324,6 @@ static void test_outcome_lines(void)
 	check(ladx_run_text_outcome_line(line, 5, &o) == 0 && line[0] == '\0', "outcome line over capacity");
 }
 
-/* Every ws line of a golden, rendered from a world setup built by hand. */
 static void check_ws_lines(const char *path, const LadxWorldSetup *ws)
 {
 	static const char *const fields[LADX_RUN_TEXT_WS_LINES] = {
@@ -388,7 +386,6 @@ static void test_ws_lines(void)
 	check(ladx_run_text_ws_line(line, 8, &ws, 1) == 0 && line[0] == '\0', "ws line over capacity");
 }
 
-/* ladx_oracle.place_lines: the class, the nameId as a field, the item or `-`. */
 static void test_place_lines(void)
 {
 	static LadxLogic logic;
@@ -410,7 +407,6 @@ static void test_place_lines(void)
 	check(ladx_run_text_place_line(line, 10, &logic, 0) == 0, "a line past cap");
 }
 
-/* A finished fill, then LADXR's raise in generateRom: the outcome line closes run.txt after the trace. */
 static void test_write_run_raised(void)
 {
 	static const uint8_t seed[16] = {0xe8, 0x51, 0x5e, 0x70, 0x64, 0xfb, 0x5f, 0xd6,

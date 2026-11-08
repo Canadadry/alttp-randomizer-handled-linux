@@ -23,7 +23,6 @@ class CasesError(Exception):
 
 
 def derive(name, k):
-    """Candidate seed k of a case: the first 16 bytes of SHA-256 of `ladx-case <name> <k>`."""
     if not 0 <= k < BOUND:
         raise CasesError("ladx-cases: candidate %r outside 0..%d" % (k, BOUND - 1))
     return hashlib.sha256(("ladx-case %s %d" % (name, k)).encode("utf-8")).digest()[:16]
@@ -38,7 +37,6 @@ def _python_value(kind, text):
 
 
 def read_settings(text):
-    """settings.txt as stand-ins of LADXR's Setting objects (key, default, options), in order."""
     settings = []
     try:
         for line in text.splitlines():
@@ -64,14 +62,10 @@ def read_settings(text):
 
 
 def case_name(assignments):
-    """`<key>-<value>` per assignment joined with +, or baseline when there is none."""
     return "+".join(a.replace("=", "-", 1) for a in assignments) or "baseline"
 
 
 class Validate:
-    """settings_validate.txt: what LADXR's validate changes for one value, or a pair of values,
-    of the keys it reads or writes."""
-
     def __init__(self, text):
         self.keys = None
         self.changes = {}
@@ -90,8 +84,6 @@ class Validate:
             raise CasesError("ladx-cases: settings_validate has no '# keys' line")
 
     def own_changes(self, assignments):
-        """The changes validate makes to the assignments' own keys, from the fixture's single and
-        pair vectors only (a larger set is checked pair by pair)."""
         own = {a.split("=", 1)[0] for a in assignments}
         relevant = [a for a in assignments if a.split("=", 1)[0] in self.keys]
         groups = [[a] for a in relevant] + [[a, b] for i, a in enumerate(relevant)
@@ -115,8 +107,6 @@ class Expected:
 
 
 def expected_list(tier1_text, settings_text, validate_text, spec_text):
-    """The expected cases and combos, each [(name, [k=v, ...])], and the skipped cross cells
-    [(name, [validate's changes])]. Raises CasesError on a malformed or inconsistent input."""
     settings = read_settings(settings_text)
     validate = Validate(validate_text)
     try:
@@ -220,7 +210,6 @@ def config_text(assignments):
 
 
 def write_case(path, assignments, seed):
-    """Creates the case directory <path> with its config.txt and seed; refuses an existing one."""
     os.makedirs(path)
     with open(os.path.join(path, "config.txt"), "w", encoding="utf-8", newline="\n") as f:
         f.write(config_text(assignments))
@@ -229,8 +218,6 @@ def write_case(path, assignments, seed):
 
 
 def refusal(seed, nintendo_ok, run):
-    """Why candidate seed is refused (`nintendo-bytes`, or the run's outcome without `outcome `),
-    or None when it is accepted. nintendo_ok(seed file text) -> bool; run(seed) -> outcome."""
     if not nintendo_ok(seed.hex() + "\n"):
         return "nintendo-bytes"
     outcome = run(seed)
@@ -238,15 +225,11 @@ def refusal(seed, nintendo_ok, run):
 
 
 def refusal_kind(reason):
-    """`nintendo-bytes`, `error` or `crash <exception type>`."""
     words = reason.split(" ")
     return " ".join(words[:2]) if words[0] == "crash" else words[0]
 
 
 def pick_case(path, name, assignments, nintendo_ok, run):
-    """Writes the case directory <path> with the first accepted candidate k < BOUND. Returns
-    (k, [(j, refusal)...]), k None (nothing written) when all are refused. Refuses an existing
-    directory, before running anything."""
     if os.path.lexists(path):
         raise CasesError("ladx-cases: %s exists, not touched (delete it by hand to re-pick)" % path)
     refusals = []
@@ -261,7 +244,6 @@ def pick_case(path, name, assignments, nintendo_ok, run):
 
 
 def seed_index(name, text):
-    """The k whose derive(name, k) the seed file text holds, or None."""
     for k in range(BOUND):
         if text == derive(name, k).hex() + "\n":
             return k
@@ -269,7 +251,6 @@ def seed_index(name, text):
 
 
 def verify_case(path, name, nintendo_ok, run):
-    """(k, problems): every candidate below the stored seed's k must be refused, k accepted."""
     k = seed_index(name, _read(os.path.join(path, "seed")))
     if k is None:
         return None, ["the seed is not derive(%s, k) for any k < %d" % (name, BOUND)]
@@ -284,8 +265,6 @@ def verify_case(path, name, nintendo_ok, run):
 
 
 def verify_refused(name, run):
-    """({refusal kind: count}, problems) over every candidate of a refused single: each run must
-    be not ok (the Nintendo-bytes test plays no part: the refusal is LADXR's)."""
     counts, problems = {}, []
     for k in range(BOUND):
         outcome = run(derive(name, k))
@@ -324,8 +303,6 @@ def _entries(directory):
 
 
 def mismatches(e, root):
-    """One line per difference between the case directories under <root> (cases/, combos/) and
-    the expected list e: MISSING, EXTRA, WRONG, BADSEED, STRAY or BOTH."""
     found = {sub: [n for n in _entries(os.path.join(root, sub))
                    if os.path.isdir(os.path.join(root, sub, n))] for sub in DIRS}
     both = sorted(set(found["cases"]) & set(found["combos"]))
@@ -365,8 +342,6 @@ def _size(path):
 
 
 def golden_lines(e, root, limits=LIMITS):
-    """(problems, summary) of the case folders' golden files: NOGOLDEN, BADGOLDEN and BUDGET
-    lines."""
     write_log = _write_log()
     problems, folders, writes_total, total = [], 0, 0, 0
     for sub, entries in zip(DIRS, (e.cases, e.combos)):
@@ -416,8 +391,6 @@ def _write_log():
 
 
 def report(e, root, goldens=False, limits=LIMITS):
-    """Prints the mismatches and returns 1, or the skips and the summary and returns 0. goldens
-    adds golden_lines' problems, and its summary."""
     lines = mismatches(e, root)
     golden_summary = None
     if goldens:
@@ -440,9 +413,6 @@ def report(e, root, goldens=False, limits=LIMITS):
 
 
 def listing(e, root, names=None):
-    """The case directories under <root> as `<name> <seed hex> <k=v ...>` lines, cases then combos
-    in the expected order (only the named ones when names is given), the format ladx_oracle.py
-    cases prints. Refuses an unknown name; the caller checks the tree first."""
     entries = [("cases", n, a) for n, a in e.cases] + [("combos", n, a) for n, a in e.combos]
     known = {n for _, n, _ in entries}
     for name in names or []:
@@ -469,7 +439,6 @@ def _overwrite(path, text):
 
 
 def _plant_variants():
-    """(name, change to a correct planted tree, the lines the check must print)."""
     combo = "logic-hell+race-1"
 
     def at(root, sub, name, file=None):
@@ -531,8 +500,6 @@ def _plant_goldens(root, e):
 
 
 def self_test():
-    """Plants a correct tree, then each broken variant, and returns the first variant whose check
-    output is not exactly its lines (the correct tree's name is `correct`), or None."""
     import shutil
     import tempfile
     e = expected_list("logic all\nrace all\ngoal all\n", _PLANT_SETTINGS,
@@ -558,11 +525,6 @@ TOP = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 
 
 class Rom:
-    """The ROM-backed side of pick and verify: the ROM at LADX_SHA1, the LADXR checkout at the pin
-    (nintendo_bytes.load_ladxr), the strict Nintendo-bytes test of a seed file and the oracle
-    run of a candidate, as gen_golden.sh runs it, under tmp/ladx-cases/. Raises CasesError with
-    a `setup:` message when an input is missing."""
-
     def __init__(self, rom, ladxr, root):
         import nintendo_bytes
         if sys.version_info < (3, 11):
@@ -584,7 +546,6 @@ class Rom:
         self.work = os.path.join(TOP, "tmp", "ladx-cases")
 
     def nintendo_ok(self, path):
-        """The strict scope whatever the root, so a trial root under tmp/ picks the same seeds."""
         rel = os.path.relpath(os.path.abspath(path), TOP)
         return lambda text: not self.nb.check_blob(rel, text.encode("utf-8"), self.index,
                                                    self.corpus, scope="strict")[0]
@@ -611,7 +572,6 @@ class Rom:
         return one
 
     def validate_changes(self, entries):
-        """{name: [k=v...]}: what the live LADXR validate changes of each case's own values."""
         cwd = os.getcwd()
         work = ladx_oracle.enter_checkout(self.ladxr, os.path.join(self.work, "validate"))
         try:
@@ -636,9 +596,6 @@ class Rom:
 
 
 def _targets(e, root, names, existing):
-    """[(sub, name, assignments)] of the named cases (default: those with (existing) or without
-    a directory), in the expected order; refuses an unknown name. A refused single's name is
-    known and selects nothing."""
     entries = [("cases", n, a) for n, a in e.cases] + [("combos", n, a) for n, a in e.combos]
     refused = {r[0] for r in e.refused}
     for name in names:
@@ -661,7 +618,6 @@ def _validate_refused(rom, targets):
 
 
 def pick(e, rom, names):
-    """Picks every target case's seed; prints one line per case, then the refusal counts."""
     targets = _targets(e, rom.root, names, existing=False)
     refused = _validate_refused(rom, targets)
     if refused:
@@ -690,8 +646,6 @@ def pick(e, rom, names):
 
 
 def verify(e, rom, names):
-    """Re-runs every target case's candidates up to its seed: prints `verified <name> k=<k>` or
-    `UNVERIFIED <name>: <problem>` lines, then the summary."""
     lines = mismatches(e, rom.root)
     if lines:
         print("\n".join(lines))

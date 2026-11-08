@@ -60,7 +60,6 @@ def image(vector):
 
 
 def run_vector(rom_class, vector):
-    """The vector's lines (without V), LADXR's own fixHeader on the vector's image."""
     rom = rom_class(io.BytesIO(image(vector)))
     banks = []
     for n, bank in enumerate(rom.banks):
@@ -137,7 +136,6 @@ def render(rom_class):
 
 
 def parse(text):
-    """[(name, [line])] of a fixture's vectors; FixtureError on a malformed text."""
     lines = [line for line in text.split("\n") if line and not line.startswith("#")]
     if not lines or lines[0] != VERSION_LINE:
         raise FixtureError("no version line")

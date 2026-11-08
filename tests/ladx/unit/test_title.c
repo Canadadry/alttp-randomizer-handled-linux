@@ -195,7 +195,6 @@ static LadxPipelineStatus run(const char *assignment, int with_rom, LadxPipeline
 	return ladx_pipeline_run(&pipeline, &enc, err);
 }
 
-/* A T record's tokens resolved against the synthetic ROM; its byte count, 0 on a bad token. */
 static size_t resolve(const char *tokens, uint8_t *bytes, size_t cap)
 {
 	size_t n = 0;
@@ -226,7 +225,6 @@ static size_t resolve(const char *tokens, uint8_t *bytes, size_t cap)
 	return n;
 }
 
-/* The entry's expected bytes: the synthetic entry decoded, edited and encoded. */
 static size_t expected_entry(int table, uint32_t index, const char *text, uint64_t number, uint8_t *bytes,
 			     size_t cap)
 {

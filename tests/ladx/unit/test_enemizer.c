@@ -109,7 +109,6 @@ static const Planted planted[] = {
 
 #define PLANTED (sizeof planted / sizeof planted[0])
 
-/* Per planted room: whether stored, its draws, its entities' new types. */
 static const struct {
 	int found, draws, types[8];
 } expected_plain[PLANTED] = {
@@ -281,7 +280,6 @@ static void test_room_loop(void)
 	      "rooms 0x10 and 0x20 stored, 0x24 and 0x30 not");
 }
 
-/* A malformed room fails the loop. */
 static void test_malformed_room(void)
 {
 	static const uint8_t bad[] = {0x11, 0x09};

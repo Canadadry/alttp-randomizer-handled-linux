@@ -21,7 +21,6 @@ static void check(int ok, const char *what)
 		test_fail(TEST, "%s", what);
 }
 
-/* The pool as `<ITEM>=<count> ...`, as ladx_oracle.pool_line renders it. */
 static const char *dict_text(const LadxItemPool *pool)
 {
 	static char text[8192];
@@ -42,7 +41,6 @@ static void check_dict(const LadxItemPool *pool, const char *want, const char *w
 		test_fail(TEST, "%s: got \"%s\", want \"%s\"", what, dict_text(pool), want);
 }
 
-/* Python's dict as ItemPool and readItemPool use it. */
 static void test_dict(void)
 {
 	static LadxItemPool p;
@@ -137,7 +135,6 @@ static void test_rupee_redraw(void)
 static char line[TEXT_MAX];
 static long line_no;
 
-/* The next non-comment line, newline stripped; 0 at the end. */
 static int next_line(FILE *f)
 {
 	size_t len;
@@ -171,7 +168,6 @@ static size_t seed_of(const char *hex, uint8_t *seed, size_t cap)
 
 static char got[EXPECT_MAX][TEXT_MAX];
 
-/* The C run's lines in item_pools.txt's form: the pool sections, or the outcome's `crash`/`error` line. */
 static int c_lines(void)
 {
 	const LadxItemPool *pool, *read;
@@ -194,7 +190,6 @@ static int c_lines(void)
 	return n;
 }
 
-/* item_pools.txt: every run's pool sections, or its crash, equal. */
 static void replay_pools(void)
 {
 	static char want[EXPECT_MAX][TEXT_MAX];

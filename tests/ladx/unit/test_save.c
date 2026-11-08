@@ -67,7 +67,6 @@ static LadxWlogKey key(uint32_t index)
 	return k;
 }
 
-/* The synthetic ROM with LADXR's ld hl, $763B at 0x0DFA (or other bytes), parsed; the encoder begun on it. */
 static void begin(const uint8_t *base_load)
 {
 	synth_rom_build(&synth, 0x5A7E01u);
@@ -119,7 +118,6 @@ static void set_entry(int table, uint32_t index, const uint8_t *bytes, size_t n)
 		test_fail(TEST, "a planted entry write");
 }
 
-/* The ROM after the run: every position's current byte. */
 static void build_image(void)
 {
 	uint32_t q;
@@ -143,7 +141,6 @@ static int differs(int t, uint32_t k, const char *why)
 	return 0;
 }
 
-/* Every entry of every table read back from the image equals the encoder's current value; else mismatch says which. */
 static int image_holds_entries(void)
 {
 	static uint8_t v[LADX_WLOG_ATOM_MAX];

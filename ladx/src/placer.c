@@ -41,7 +41,6 @@ static bool has_option(const LadxPlacer *p, int spot, int item)
 	return (p->option_set[spot][item / 32] >> (item % 32)) & 1u;
 }
 
-/* getOptions() into p->options; its length, or -1 (broken) past the cap. */
 static int options_of(LadxPlacer *p, int spot)
 {
 	int n = ladx_logic_spot_options(p->logic, spot, p->options, LADX_PLACER_OPTION_CAP);
@@ -53,7 +52,6 @@ static int options_of(LadxPlacer *p, int spot)
 	return n;
 }
 
-/* item_spot_count, kept for the spot list as it changes: delta per occurrence in getOptions(). */
 static void count_options(LadxPlacer *p, int spot, int delta)
 {
 	int n = options_of(p, spot), i;
@@ -62,10 +60,6 @@ static void count_options(LadxPlacer *p, int spot, int delta)
 		p->item_spot_count[p->options[i]] += delta;
 }
 
-/*
- * Each spot's option set and count, its nameId's rank in byte order (equal
- * names, equal ranks), and item_spot_count for the spot list.
- */
 static bool prepare(LadxPlacer *p)
 {
 	int spots = ladx_logic_spot_count(p->logic), i, j, n;
@@ -193,7 +187,6 @@ static bool logic_still_valid(LadxPlacer *p)
 	return reached == ladx_logic_location_count(logic);
 }
 
-/* removeItem: false with LADXR's KeyError outcome for an absent item. */
 static bool remove_item(LadxPlacer *p, int item, LadxOutcome *outcome)
 {
 	if (!ladx_itempool_contains(&p->pool, item)) {
@@ -204,7 +197,6 @@ static bool remove_item(LadxPlacer *p, int item, LadxOutcome *outcome)
 	return true;
 }
 
-/* removeSpot: the first occurrence, the rest moved up. */
 static void remove_spot(LadxPlacer *p, int spot)
 {
 	int i;
@@ -217,7 +209,6 @@ static void remove_spot(LadxPlacer *p, int spot)
 	count_options(p, spot, -1);
 }
 
-/* The placement of item at spot and its undo when the logic no longer holds. */
 static bool try_place(LadxPlacer *p, int spot, int item, LadxOutcome *outcome, bool *placed)
 {
 	ladx_logic_place(p->logic, spot, item);
@@ -241,7 +232,6 @@ static void index_error(LadxOutcome *outcome)
 	outcome->message = "Cannot choose from an empty sequence";
 }
 
-/* False when the run ends here: an outcome set or the placer broken. */
 static bool place_specific_item(LadxPlacer *p, int item, LadxRng *rnd, LadxOutcome *outcome, bool *placed)
 {
 	int n = 0, i;
@@ -285,7 +275,6 @@ static bool starts_with(int item, const char *prefix)
 	return strncmp(ladx_item_name(item), prefix, strlen(prefix)) == 0;
 }
 
-/* dungeon_keys += [item for item in getItemListWithMultiplicity() if item.startswith(prefix)] */
 static bool gather_keys(LadxPlacer *p, const char *prefix)
 {
 	int i, item, count;

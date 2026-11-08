@@ -20,12 +20,9 @@ typedef struct RandoAppShell {
 	char ladx_settings[RANDO_SEED_PATH_MAX];
 	UiApp app;
 	char last_game[RANDO_SEED_PATH_MAX];
-	/* The game the memory file holds, UI_GAME_COUNT when it is missing, invalid or unwritten. */
 	UiGame remembered;
 } RandoAppShell;
 
-/* unsupported NULL: the library's list; otherwise its unsupported_count pairs, kept by pointer, so
-   they must outlive the shell. */
 bool rando_app_shell_init(RandoAppShell *shell, const char *sd_root, const UiStrTable *strings,
 			  const RandoSettingPair *unsupported, int unsupported_count, int page, int width);
 

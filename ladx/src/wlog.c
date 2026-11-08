@@ -6,7 +6,6 @@
 
 #define OUT_CHUNK 256
 
-/* Buffers the sink's text so a record of any length goes out in pieces. */
 typedef struct Out {
 	LadxWlog *log;
 	char buf[OUT_CHUNK];
@@ -45,7 +44,6 @@ static int name_char(char c)
 	       c == '-';
 }
 
-/* write_log's NAME, copied with its NUL; 0 when malformed or too long. */
 static int copy_name(char *dst, const char *at, size_t len)
 {
 	size_t i;
@@ -132,7 +130,6 @@ static uint32_t literal_value(LadxAtom a)
 	return (uint32_t)(-1 - a);
 }
 
-/* A record's atoms: a bank run (each byte with its own offset) or a table entry's atoms. */
 typedef struct Atoms {
 	const LadxWlogBank *bank;
 	const LadxAtom *atoms;
@@ -144,7 +141,6 @@ static LadxAtom atom_at(const Atoms *r, size_t i)
 	return r->bank ? r->bank[i].atom : r->atoms[i];
 }
 
-/* write_log._tokens, each token preceded by a space; keep tokens for a bank run only. */
 static void out_tokens(Out *o, const Atoms *r)
 {
 	size_t i = 0, j;
@@ -228,7 +224,6 @@ static void close_segment(LadxWlog *log)
 	log->bank_count = log->entry_count = log->atom_count = 0;
 }
 
-/* Opens group's segment, closing another one; BAD_INPUT for a bad name. */
 static LadxWlogStatus open_group(LadxWlog *log, LadxSpan group)
 {
 	char name[LADX_WLOG_NAME_MAX + 1];
@@ -247,7 +242,6 @@ static int atom_ok(LadxAtom a)
 	return a >= LADX_ATOM_LITERAL(255);
 }
 
-/* The first index whose offset is >= offset. */
 static int bank_find(const LadxWlog *log, uint64_t offset)
 {
 	int lo = 0, hi = log->bank_count;
@@ -291,7 +285,6 @@ LadxWlogStatus ladx_wlog_bank(LadxWlog *log, LadxSpan group, uint32_t offset, co
 	return LADX_WLOG_OK;
 }
 
-/* write_log's render order: table, index keys ascending, then alt keys in byte order. */
 static int entry_cmp(const LadxWlogEntry *e, int table, LadxWlogKey key)
 {
 	size_t n;
@@ -310,7 +303,6 @@ static int entry_cmp(const LadxWlogEntry *e, int table, LadxWlogKey key)
 	return e->alt_len < key.alt.len ? -1 : e->alt_len > key.alt.len;
 }
 
-/* Moves the live atoms to the pool's start, in entry order. */
 static void compact_atoms(LadxWlog *log)
 {
 	uint32_t next = 0;
@@ -413,8 +405,6 @@ LadxWlogStatus ladx_wlog_end(LadxWlog *log)
 	return log->failed;
 }
 
-/* Parsing ------------------------------------------------------------------------------------- */
-
 #define EMIT_CHUNK 256
 
 /* Python's str.split(" ") of a line: an empty text is one empty field. */
@@ -482,7 +472,6 @@ static int is_hex_text(LadxSpan s)
 	return 1;
 }
 
-/* The text's lines, each without its '\n'. */
 typedef struct Lines {
 	LadxSpan text;
 	size_t pos;
@@ -504,7 +493,6 @@ static int lines_next(Lines *l, LadxSpan *line)
 	return 1;
 }
 
-/* A T record's key, in write_log's order: table, index keys, then alt keys by bytes. */
 typedef struct Key {
 	int table;
 	int alt;
@@ -530,7 +518,6 @@ static int key_cmp(const Key *a, const Key *b)
 	return a->name.len < b->name.len ? -1 : a->name.len > b->name.len;
 }
 
-/* Where a record's atoms go while projecting: none, the log in bank chunks, or the scratch. */
 typedef struct Emit {
 	LadxWlog *log;
 	LadxSpan group;
@@ -559,11 +546,6 @@ static void emit(Emit *e, LadxAtom a)
 	}
 }
 
-/*
- * A record's tokens, every rule of write_log._parse_tokens: bank (offset
- * given) or table. A table record of a single pointer sets *pointer.
- * Atoms go to e when not NULL.
- */
 static int payload(Fields *f, int bank, uint32_t offset, uint32_t *total, int *pointer, uint32_t *value, Emit *e)
 {
 	enum { NONE, LIT, REF } prev = NONE;
@@ -618,17 +600,14 @@ static int payload(Fields *f, int bank, uint32_t offset, uint32_t *total, int *p
 typedef struct Parse {
 	LadxSpan tables[LADX_WLOG_TABLES_MAX];
 	int table_count;
-	LadxSpan tables_names; /* the tables line after "tables " */
-	/* projection: when log is set, group's records go into it */
+	LadxSpan tables_names;
 	LadxWlog *log;
 	LadxSpan group;
-	/* the groups found, when groups is set */
 	LadxSpan *groups;
 	int cap, count;
 	int overflow;
 } Parse;
 
-/* An I line's target: a record line before it, its tokens literal over each range. */
 static int mark_ok(Fields *f, Lines *cursor, int number, int *last_mark)
 {
 	LadxSpan tok, line = {NULL, 0}, kind, ignore;
@@ -706,7 +685,6 @@ static void found_group(Parse *p, LadxSpan name)
 		p->groups[p->count++] = name;
 }
 
-/* The header lines into p's tables. */
 static LadxWlogStatus parse_header(Parse *p, Lines *l, int *line)
 {
 	LadxSpan text, tok;

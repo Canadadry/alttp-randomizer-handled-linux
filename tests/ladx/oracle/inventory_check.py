@@ -98,8 +98,6 @@ def _indent(line):
 
 
 def _continuations(lines):
-    """Indexes of the lines that continue a statement begun above (multi-line strings,
-    brackets, backslashes); empty when the text does not tokenize."""
     found = set()
     start = None
     skipped = (tokenize.NL, tokenize.COMMENT, tokenize.INDENT, tokenize.DEDENT,
@@ -118,8 +116,6 @@ def _continuations(lines):
 
 
 def _function_body(lines, qualname, continued):
-    """[(index, line, continues)] of the body of the first def whose qualname matches, None when
-    absent; a continuation line never ends the body."""
     stack = []
     for n, line in enumerate(lines):
         text = line.strip()
@@ -142,8 +138,6 @@ def _function_body(lines, qualname, continued):
 
 
 def _scope(body, i):
-    """Texts of the enclosing headers of body[i], with the earlier headers of each elif/else
-    chain."""
     texts = []
     current = _indent(body[i][1])
     for j in range(i - 1, -1, -1):
@@ -183,8 +177,6 @@ def _column(names, whole):
 
 
 class Sources:
-    """LADXR's sources under root, read once each."""
-
     def __init__(self, root):
         self.root = root
         self._lines = {}
@@ -236,8 +228,6 @@ def _reads(texts, line):
 
 
 def extract_section(sources, file, function, start):
-    """[row dict] of one section, in source order; SetupError when the function or the start
-    line is absent."""
     lines = sources.lines(file)
     body = (_function_body(lines, function, sources.continuations(file)) if lines is not None
             else None)
@@ -274,7 +264,6 @@ def extract_section(sources, file, function, start):
 
 
 def extract(root):
-    """[(section name, [row dict])] of every section, in order."""
     sources = Sources(root)
     return [(section_name(f, fn), extract_section(sources, f, fn, start))
             for f, fn, start in SECTIONS]
@@ -298,8 +287,6 @@ def _escape(text):
 
 
 def _tables(text, columns_of):
-    """({heading: [[cell]]}, [BAD lines]) of the first table under each `## <heading>` of
-    columns_of, rows of the wrong width left out."""
     tables, bad = {}, []
     heading = None
     lines = text.replace("\r", "").split("\n")
@@ -335,8 +322,6 @@ def _tables(text, columns_of):
 
 
 def parse_inventory(text):
-    """({section name: [row dict keyed by COLUMNS, plus "key"]}, [BAD lines]) of the tables under
-    a section heading; text elsewhere is free."""
     raw, bad = _tables(text, {section_name(f, fn): COLUMNS for f, fn, _ in SECTIONS})
     tables = {}
     for section, rows in raw.items():
@@ -353,8 +338,6 @@ def parse_inventory(text):
 
 
 def parse_named(text):
-    """({table name: [row dict]}, [BAD lines]) of the Groups, Read coverage and Blind spots
-    tables; a missing one is a BAD line."""
     raw, bad = _tables(text, NAMED_TABLES)
     named = {}
     for name, columns in NAMED_TABLES.items():
@@ -365,14 +348,12 @@ def parse_named(text):
 
 
 def site_groups(text):
-    """{read_trace site: group} of every row of an inventory text's section tables."""
     tables, _ = parse_inventory(text)
     return {"%s\t%s" % (section, row["key"]): row["Group"]
             for section, rows in tables.items() for row in rows}
 
 
 def diff(extracted, tables):
-    """Finding lines of the inventory tables against the extracted sections."""
     findings = []
     for section, rows in extracted:
         inventory = tables.get(section, [])
@@ -410,8 +391,6 @@ def _unquote(cell):
 
 
 def validate(tables, named, blind):
-    """Finding lines of the Groups, Read coverage and Blind spots tables against the
-    section rows and `blind` ([(file, stripped line)] of read_trace.py --blind-spots)."""
     findings = []
     groups = {}
     for row in named["Groups"]:
@@ -483,7 +462,6 @@ def _blind_spots(root):
 
 
 def check(root, text):
-    """Finding lines of an inventory text against the sources under root."""
     tables, bad = parse_inventory(text)
     named, named_bad = parse_named(text)
     return (bad + named_bad + diff(extract(root), tables) +
@@ -491,8 +469,6 @@ def check(root, text):
 
 
 def render(extracted, tables=None):
-    """The extracted sections as Markdown tables, draft columns taken from tables when the row
-    is there, else empty notes, `?` side and group."""
     out = []
     for section, rows in extracted:
         known = {r["key"]: r for r in (tables or {}).get(section, [])}
@@ -658,8 +634,6 @@ SELF_TEST_CASES = [
 
 
 def self_test(out=None):
-    """Runs every planted case; prints the summary or one `self-test failed` line per case to
-    out (default stdout); returns the exit code."""
     out = out or sys.stdout
     failures = []
     with tempfile.TemporaryDirectory(prefix="inventory-check-") as root:

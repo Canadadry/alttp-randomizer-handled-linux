@@ -1,7 +1,3 @@
-"""Usage: python3 -I test_tables.py
-
-Unit tests of tables.py, the patch tables' format (data/ladx/), on planted files and trees.
-"""
 
 import contextlib
 import importlib.util
@@ -43,7 +39,6 @@ section rom.py ROM.save
 
 
 class Format(unittest.TestCase):
-
     def test_parse_then_render_is_the_identity(self):
         for text in (GROUP, ORDER):
             self.assertEqual(tables.render(tables.parse(text)), text)
@@ -122,7 +117,6 @@ C header - rom.fixHeader()
 
 
 class Select(unittest.TestCase):
-
     def setUp(self):
         self.tables = tables.Tables(tables.parse(FUSED_ORDER), {"fixed": tables.parse(GROUP)})
 
@@ -154,14 +148,12 @@ class Select(unittest.TestCase):
             tables.select(self.tables, {"textmode": "fast", "asm:ITEM_DIALOGS": "1"})
 
 
-
 def _table(columns, rows):
     return ("| " + " | ".join(columns) + " |\n|" + "---|" * len(columns) + "\n"
             + "".join("| " + " | ".join(cells) + " |\n" for cells in rows))
 
 
 def _section(name, rows):
-    """An inventory section of rows [(call, settings, side, group)]."""
     return "## %s\n\n%s\n" % (name, _table(
         ["Call", "Settings", "Args", "RNG (grep)", "Reads (grep)", "Reads (trace)", "Notes",
          "Side", "Group"],
@@ -215,7 +207,6 @@ TREE = {"order.txt": FUSED_ORDER.replace(
 
 
 class Check(unittest.TestCase):
-
     def setUp(self):
         self.root = tempfile.mkdtemp()
         for name, text in TREE.items():
@@ -356,9 +347,7 @@ class Check(unittest.TestCase):
             "BADKEY options.txt: unit options.1: component beep is no setting"])
 
 
-
 class Main(unittest.TestCase):
-
     def setUp(self):
         self.dir = tempfile.mkdtemp()
         self.root = os.path.join(self.dir, "ladx")

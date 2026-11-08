@@ -1,8 +1,3 @@
-"""Usage: python3 -I test_read_check.py
-
-Unit tests of read_check.py on planted traces, inventories and LADXR-shaped sources written to a
-temporary directory, with no LADXR and no ROM; and of inventory_trace.sh's setup lines.
-"""
 
 import contextlib
 import importlib.util

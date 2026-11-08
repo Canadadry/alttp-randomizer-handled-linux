@@ -338,13 +338,11 @@ static bool is(const LadxSettings *s, LadxSettingId id, const char *name)
 	return s->value[id] == value_named(id, name);
 }
 
-/* LADXR's req: the setting forced to the value. */
 static void put(LadxSettings *s, LadxSettingId id, const char *name)
 {
 	s->value[id] = (uint8_t)value_named(id, name);
 }
 
-/* LADXR's dis: the value, when set, replaced. */
 static void dis(LadxSettings *s, LadxSettingId id, const char *name, const char *new_name)
 {
 	if (is(s, id, name))
@@ -393,7 +391,6 @@ void ladx_settings_validate(LadxSettings *s)
 		put(s, LADX_SETTING_HEARTPIECE, "1");
 }
 
-/* Appends text at *len, keeping room for the NUL; false when it does not fit. */
 static bool append(char *buf, size_t cap, size_t *len, const char *text)
 {
 	size_t n = strlen(text);
@@ -443,7 +440,6 @@ static const char *const reason_ids[LADX_REASON_COUNT] = {
 	[LADX_REASON_LADXR_REFUSES] = "ladxr-refuses",
 };
 
-/* Every value but the default unsupported. */
 static const LadxReason non_default_reason[LADX_SETTING_COUNT] = {
 	[LADX_SETTING_RANDOMSTARTLOCATION] = LADX_REASON_TIER2_ENTRANCES,
 	[LADX_SETTING_DUNGEONSHUFFLE] = LADX_REASON_TIER2_ENTRANCES,
@@ -469,7 +465,7 @@ static const struct {
 	{LADX_SETTING_MUSIC, "ffa", LADX_REASON_MUSIC_FFA},
 };
 
-/* LADXR fails every seed: D7's Pit Switch unreachable (plan 3 step 2.4). */
+/* LADXR fails every seed: D7's Pit Switch unreachable. */
 static const LadxSettingPair pairs[] = {
 	{LADX_SETTING_BOOMERANG, 0, LADX_SETTING_ACCESSIBILITY, 0, LADX_REASON_LADXR_REFUSES},
 };

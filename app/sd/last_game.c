@@ -51,7 +51,6 @@ static bool take(Cursor *c, char ch)
 	return true;
 }
 
-/* A string without escapes, equal to word. */
 static bool take_string(Cursor *c, const char *word)
 {
 	size_t n = strlen(word);

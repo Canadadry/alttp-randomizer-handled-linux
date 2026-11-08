@@ -7,7 +7,6 @@ typedef struct LadxTextName {
 	const char *key, *value;
 } LadxTextName;
 
-/* utils._NAMES at the pin (gfxmod's setReplacementName is outside tier 1). */
 static const LadxTextName names[] = {
 	{"SWORD", "Sword"},
 	{"BOMB", "Bombs"},
@@ -135,7 +134,6 @@ static const LadxTextName names[] = {
 	{"EAGLE_TOWER_OPENED", "Eagle Tower open"},
 };
 
-/* utils._CHARACTERS, replaced in this order. */
 static const struct {
 	const char *tag;
 	uint8_t code;
@@ -225,7 +223,6 @@ static LadxTextStatus crash(LadxOutcome *raised, const char *type)
 	return LADX_TEXT_RAISED;
 }
 
-/* str.format(**_NAMES) into buf; a missing name raises KeyError. */
 static LadxTextStatus format_names(const char *in, size_t n, char *buf, size_t *len, LadxOutcome *raised)
 {
 	size_t i = 0, k, at = 0, j, m;
@@ -272,7 +269,6 @@ static LadxTextStatus format_names(const char *in, size_t n, char *buf, size_t *
 	return LADX_TEXT_OK;
 }
 
-/* str.encode("ascii"): CPython's error names the run of characters it cannot encode. */
 static LadxTextStatus check_ascii(const char *s, size_t n, LadxOutcome *raised)
 {
 	size_t i, j;
@@ -314,7 +310,6 @@ static size_t replace_characters(char *s, size_t n)
 	return n;
 }
 
-/* padLine of out's bytes from start. */
 static void pad_line(Out *o, size_t start, int center)
 {
 	long padding = 16 - (long)(o->len - start), left;
@@ -351,7 +346,6 @@ LadxTextStatus ladx_format_text(const char *in, size_t n, int center, const char
 	o.over = 0;
 	line_start = 0;
 	for (i = 0; i <= len;) {
-		/* One line of s.split(b'\n'), its words split on b' '. */
 		size_t end = i, rl = 0;
 
 		while (end < len && s[end] != '\n')

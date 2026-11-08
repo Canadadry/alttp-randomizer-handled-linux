@@ -79,8 +79,6 @@ class _Retry(BaseException):
 
 
 def ladxr_args(rom, out_rom, spoiler):
-    """The Namespace LADXR's main.py parser gives with no option but the input ROM, -o,
-    --spoilerformat json and --spoilerfilename (attributes read from main.py at the pin)."""
     return argparse.Namespace(
         input_filename=rom, output_filename=out_rom, dump=None, spoilerformat="json",
         spoiler_filename=spoiler, test=False, romdebugmode=False, exportmap=None, emptyplan=None,
@@ -89,7 +87,6 @@ def ladxr_args(rom, out_rom, spoiler):
 
 
 def describe_cwd():
-    """`git describe --tags` in the working directory, - when it gives nothing."""
     try:
         done = subprocess.run(["git", "describe", "--tags"], stdout=subprocess.PIPE,
                               stderr=subprocess.DEVNULL, check=False)
@@ -99,7 +96,6 @@ def describe_cwd():
 
 
 def file_records(out_rom, spoiler, ok):
-    """The rom_sha1/spoiler_sha1 lines; the two files are removed unless the outcome is ok."""
     lines = []
     for path, tag in ((out_rom, "rom"), (spoiler, "spoiler")):
         if not ok and os.path.exists(path):
@@ -113,9 +109,6 @@ def file_records(out_rom, spoiler, ok):
 
 
 class Driver:
-    """Loads LADXR from a checkout once (chdir into a throwaway directory under tmp/ladx-oracle/),
-    hooks it from outside, and runs cases. close() goes back and removes the directory."""
-
     def __init__(self, ladxr_dir, work_root=WORK_ROOT):
         self.ladxr_dir = os.path.abspath(ladxr_dir)
         self.cwd = os.getcwd()
@@ -181,11 +174,6 @@ class Driver:
 
     def run(self, seed, assignments, pool_only=False, rom=None, case_dir=None, reads=None,
             keys=False, invariant=True):
-        """One case: the output lines (without the trace when pool_only, which stops once
-        readItemPool returned and then has outcome ok). With rom, a full generation writing
-        out.gbc and spoiler.json into case_dir, their SHA-1 lines before the outcome; with
-        reads too ({site: group}), reads.txt, writes.txt and events.txt as well, invariant.txt
-        when invariant, keys.txt when keys."""
         self.case = {"ws": [], "pool": [], "placer_pool": [], "place": [], "pool_only": pool_only}
         del self.tracer.lines[:]
         settings = self.settings.Settings()
@@ -237,7 +225,6 @@ class Driver:
         return lines + [outcome]
 
     def _rerun(self, trace, reads):
-        """invariant_run over the C groups' calls of generateRom (reads: the Reads object)."""
         targets = [(importlib.import_module(module), attr)
                    for module, attr in invariant_run.targets_of(reads.text)]
         return invariant_run.install(trace, targets, invariant_run.sides_of(reads.text),
@@ -267,16 +254,12 @@ class Driver:
 
 
 class Reads(dict):
-    """The inventory's {site: group}, with its text (`text`) for the re-run's groups."""
-
     def __init__(self, text):
         super().__init__(inventory_check.site_groups(text))
         self.text = text
 
 
 def run_plain(ladxr_dir, work_root, rom, case_dir, seed, assignments):
-    """LADXR's own main.main on the case, in a new directory under work_root (removed after),
-    os.urandom handing it the seed once: plain.txt's lines."""
     cwd = os.getcwd()
     work = ladx_oracle.enter_checkout(ladxr_dir, os.path.abspath(work_root))
     try:

@@ -7,7 +7,6 @@
 #define GRAVESTONE 0xC5
 #define ENEMIZER_UNITS 1
 
-/* ENEMY_TYPES as a membership test; the sorted list is 0..255 scanned. */
 static int is_enemy(int type)
 {
 	switch (type) {
@@ -22,7 +21,6 @@ static int is_enemy(int type)
 	}
 }
 
-/* A sprite slot: unset (LADXR's None) or a set of values, possibly empty. */
 typedef struct Slot {
 	int set;
 	uint32_t bits[8];
@@ -37,7 +35,6 @@ static void slot_values(uint32_t bits[8], const LadxSpritePair *pair)
 		bits[pair->values[i] >> 5 & 7] |= 1u << (pair->values[i] & 31);
 }
 
-/* sprite_data[idx] = value if None else sprite_data[idx].intersection(value) */
 static void slot_meet(Slot *s, const LadxSpritePair *pair)
 {
 	uint32_t bits[8];

@@ -165,7 +165,6 @@ static void test_encode(void)
 	check(!ladx_background_set(&bg, LADX_BACKGROUND_ADDR_SPAN, 1), "an address past the span is refused");
 }
 
-/* Decode, encode, decode again: the same tiles; a set overwrites. */
 static void test_round_trip(void)
 {
 	static const uint8_t data[] = {0x98, 0x00, 0x45, 0x7f, 0x98, 0x20, 0x03, 1, 2, 3, 4, 0x98, 0x41, 0x82, 9, 8, 7, 0x00};

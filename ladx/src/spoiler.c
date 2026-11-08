@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #define BANK(b) ((uint32_t)(b) * LADX_ROM_BANK)
 #define RACE_BYTE (BANK(0x00) + 0x0007u)
 #define SEED_AT (BANK(0x3E) + 0x2F00u)
@@ -43,7 +42,6 @@ static const LadxEntrancePos entrance_pos[LADX_ENTRANCE_INFO_COUNT] = {
 	{-1, -1}, {40, 80}, {120, 80}, {40, 80}, {88, 80}, {-1, -1}, {136, 32}, {-1, -1},
 };
 
-/* BOSS_ENTITIES' values in dict order: 0 to 8 (3 and 6 None), then the five nightmares. */
 #define BOSS_VALUES 14
 static const struct {
 	int key; /* -1: None; 9: a nightmare key */
@@ -57,7 +55,6 @@ static const struct {
 
 static const int boss_rooms[9] = {0x106, 0x12b, 0x15a, 0x166, 0x185, 0x1bc, 0x223, 0x234, 0x300};
 
-/* MINIBOSS_ENTITIES' last entity types in dict order: LadxMiniboss's, then the five nightmares. */
 #define MINIBOSS_VALUES (LADX_MINIBOSS_COUNT + 5)
 static const int miniboss_last_type[MINIBOSS_VALUES] = {
 	0x82, 0x89, 0x60, 0x8e, 0x5e, 0x92, 0xbc, 0xbe, 0xf4, 0xf8, 0xe4, 0x88, 0x13, 0x13, 0x13, 0x13, 0x13,
@@ -115,7 +112,6 @@ static int is_dungeon_family(int item)
 	       item == LADX_ITEM_NIGHTMARE_KEY || item == LADX_ITEM_KEY;
 }
 
-/* "%s%d" % (item, dungeon) as an item. */
 static int numbered(int item, int dungeon)
 {
 	char name[32];
@@ -133,7 +129,6 @@ static int spot_dungeon(const LadxSpoiler *sp, const LadxSpot *spot)
 
 typedef enum Lookup { PLAIN, GEL_RULE, FAMILY } Lookup;
 
-/* CHEST_ITEMS' key of the byte at offset, or LADXR's ValueError (what names the class's message). */
 static LadxSpoilerStatus chest_lookup(const LadxSpoiler *sp, const LadxEncoder *enc, const LadxSpot *spot,
 				      uint32_t offset, Lookup rule, const char *what, int *item, LadxOutcome *raised)
 {
@@ -227,7 +222,6 @@ LadxSpoilerStatus ladx_spoiler_read_item(const LadxSpoiler *sp, const LadxEncode
 	case LADX_SPOT_KEY_HOLE:
 		return chest_lookup(sp, enc, spot, OWL_TABLE + room_at, GEL_RULE, "chest", item, raised);
 	case LADX_SPOT_OWL_STATUE:
-		/* OwlStatue's read has no gel rule, only the dungeon families. */
 		st = chest_lookup(sp, enc, spot, OWL_TABLE + room_at, PLAIN, "owl statue", item, raised);
 		if (st != LADX_SPOILER_OK || !is_dungeon_family(*item))
 			return st;
@@ -362,7 +356,6 @@ static const LadxRoomObject *nth_warp(const LadxRoom *r, size_t n)
 	return NULL;
 }
 
-/* The two assignments of readEntrances' inner loop for warp w into mapping[slot]. */
 static void match_warp(const LadxRoomObject *w, const LadxEntranceInfo *info, const LadxEntrancePos *pos,
 		       size_t count, int *slot)
 {
@@ -554,8 +547,6 @@ int ladx_group_spoiler(LadxEncoder *enc, LadxPipeline *p)
 	}
 }
 
-/* --- outputJson ------------------------------------------------------------------------------ */
-
 typedef struct Out {
 	LadxSpoilerSink sink;
 	void *ctx;
@@ -567,7 +558,6 @@ static void put(Out *o, const char *s)
 	o->sink(o->ctx, s, strlen(s));
 }
 
-/* json.dumps' string with ensure_ascii: a non-ASCII byte is refused. */
 static void put_string(Out *o, const char *s)
 {
 	char esc[8];

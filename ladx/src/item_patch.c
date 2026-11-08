@@ -21,15 +21,14 @@
 #define BEACH_ROOM 0xF2
 #define HOOK (BANK(0x02) + 0x2FA9u)
 #define HOOK_TARGET (BANK(0x02) + 0x2FAAu)
-#define HOOK_OPCODE 0xF0 /* ldh: the hook is not installed yet */
-#define KEYHOLE_CODE 12	/* __addKeyholePatch's handler size */
+#define HOOK_OPCODE 0xF0
+#define KEYHOLE_CODE 12
 #define KEYHOLE_SLOT0 (BANK(0x02) + 0x3FEFu)
 #define GEL_DISGUISE_MIN 0x51
 #define GEL_DISGUISE_MAX 0x57
 #define SHOP_PRICE_0 200
 #define SHOP_PRICE_1 980
 
-/* data/ladx/items.txt's units, 0-based (tests/ladx/README.md, "Patch tables"). */
 enum {
 	UNIT_BEACH,
 	UNIT_START,
@@ -38,7 +37,7 @@ enum {
 	UNIT_GIFT,
 	UNIT_HOOK,
 	UNIT_CASTLE,
-	UNIT_KEYHOLE, /* then one per KEYHOLE_ROOMS room */
+	UNIT_KEYHOLE,
 	UNIT_TOTAL = UNIT_KEYHOLE + 5
 };
 
@@ -96,7 +95,6 @@ static const unsigned char chest_ids[LADX_ITEM_COUNT] = {
 	[LADX_ITEM_NIGHTMARE_KEY0] = 1 + 0x4F,
 };
 
-/* The dungeon-item families DroppedKey, DungeonChest and OwlStatue reduce to their generic item. */
 static const int dungeon_families[5] = {LADX_ITEM_KEY, LADX_ITEM_NIGHTMARE_KEY, LADX_ITEM_MAP, LADX_ITEM_COMPASS,
 					LADX_ITEM_STONE_BEAK};
 
@@ -204,7 +202,6 @@ static int put_byte(Run *r, uint32_t offset, int value)
 	return put(r, offset, &v, 1);
 }
 
-/* CHEST_ITEMS[option], LADXR's KeyError when it lacks the item. */
 static int chest_id(Run *r, int item, int *id)
 {
 	*id = ladx_items_chest_id(item);
@@ -226,10 +223,6 @@ static int write_bytes_text(Run *r, unsigned id, const uint8_t *bytes, size_t n)
 	return ladx_enc_table(r->enc, group_name(), TEXTS, key, bytes, r->p->origins, n) == LADX_ENC_OK;
 }
 
-/*
- * rom.texts[id] = formatText(text, ask=ask), text fmt itself for LADX_ITEM_NONE, else fmt % (item's
- * name) or, when price >= 0, fmt % (name, price).
- */
 static int write_text(Run *r, unsigned id, const char *fmt, int item, int price, const char *ask)
 {
 	char text[LADX_TEXT_MAX];
@@ -266,7 +259,6 @@ static int current(Run *r, uint32_t offset, uint8_t *value)
 	return ladx_enc_bank_value(r->enc, offset, value, &origin);
 }
 
-/* rom.patch(bank, addr, old, new) of one byte: written over old, skipped over new, else AssertionError. */
 static int patch_byte(Run *r, uint32_t offset, int old, int value)
 {
 	char arg[48];
@@ -283,7 +275,6 @@ static int patch_byte(Run *r, uint32_t offset, int old, int value)
 	return raise_error(r, "AssertionError", "Patch mismatch:\n%s", arg);
 }
 
-/* A unit's assembled instruction of n bytes at offset with its operand byte (index 1) replaced. */
 static int operand_patch(Run *r, int unit, uint32_t offset, int operand)
 {
 	uint8_t code[2];
@@ -301,7 +292,6 @@ static int dungeon_of(Run *r, const LadxSpot *spot)
 	return loc ? loc->dungeon : -1;
 }
 
-/* Chest.patch, after DungeonChest's reduction. */
 static int chest(Run *r, const LadxSpot *spot, int item)
 {
 	int id;
@@ -320,7 +310,6 @@ static int gel_or_id(Run *r, int room, int item, int *id)
 	return 1;
 }
 
-/* DroppedKey.patch. */
 static int dropped(Run *r, const LadxSpot *spot, int item)
 {
 	int id;
@@ -343,7 +332,6 @@ static int dropped(Run *r, const LadxSpot *spot, int item)
 	}
 }
 
-/* AnglerKey.patch: both item bytes of room 0x0CE copied to 0x1F8, origins carried. */
 static int angler_key(Run *r, const LadxSpot *spot, int item)
 {
 	static const uint32_t tables[2] = {DROP_TABLE, BOSS_ITEM};
@@ -362,7 +350,6 @@ static int angler_key(Run *r, const LadxSpot *spot, int item)
 	return 1;
 }
 
-/* BeachSword.patch: the sword entity made a heart piece, then the like-like patches. */
 static int beach_sword(Run *r, const LadxSpot *spot, int item)
 {
 	LadxRoom *re = &r->p->room;
@@ -375,7 +362,6 @@ static int beach_sword(Run *r, const LadxSpot *spot, int item)
 	       ladx_pipeline_const_units(r->enc, r->p, "items", UNIT_BEACH, 1);
 }
 
-/* StartItem.patch. */
 static int start_item(Run *r, const LadxSpot *spot, int item)
 {
 	if (r->p->settings->value[LADX_SETTING_BOWWOW] != ladx_setting_value_find(LADX_SETTING_BOWWOW, "normal")) {
@@ -388,7 +374,6 @@ static int start_item(Run *r, const LadxSpot *spot, int item)
 	return dropped(r, spot, item);
 }
 
-/* KeyHole.__addKeyholePatch: the room's handler below the hook's target, the target moved down. */
 static int keyhole_handler(Run *r, int unit)
 {
 	uint8_t code[KEYHOLE_CODE], lo, hi, word[2];
@@ -406,7 +391,6 @@ static int keyhole_handler(Run *r, int unit)
 	return put(r, BANK(0x02) + target - 0x4000u, code, sizeof code) && put(r, HOOK_TARGET, word, 2);
 }
 
-/* KeyHole.patch. */
 static int keyhole(Run *r, const LadxSpot *spot, int item)
 {
 	char where[48];
@@ -431,7 +415,6 @@ static int keyhole(Run *r, const LadxSpot *spot, int item)
 	return raise_error(r, "RuntimeError", "Don't know how to patch keyhole at %s", where);
 }
 
-/* OwlStatue.patch. */
 static int owl_statue(Run *r, const LadxSpot *spot, int item)
 {
 	int id;
@@ -440,7 +423,6 @@ static int owl_statue(Run *r, const LadxSpot *spot, int item)
 	       put_byte(r, OWL_TABLE + (uint32_t)spot->room, id);
 }
 
-/* ShopItem.patch without shopsanity (tier 1). */
 static int shop_item(Run *r, const LadxSpot *spot, int item)
 {
 	int id;
@@ -456,7 +438,6 @@ static int shop_item(Run *r, const LadxSpot *spot, int item)
 	return 1;
 }
 
-/* TradeSequenceItem.patch. */
 static int trade_item(Run *r, const LadxSpot *spot, int item)
 {
 	static const uint8_t no_text = 0xFF;
@@ -503,7 +484,6 @@ static int trade_item(Run *r, const LadxSpot *spot, int item)
 	}
 }
 
-/* Witch.patch. */
 static int witch(Run *r, int spot, int item)
 {
 	int options[1], id;
@@ -513,7 +493,6 @@ static int witch(Run *r, int spot, int item)
 	return chest_id(r, item, &id) && patch_byte(r, WITCH_ITEM, 0x09, id);
 }
 
-/* BoomerangGuy.patch. */
 static int boomerang_guy(Run *r, int item)
 {
 	int i, inv, id;

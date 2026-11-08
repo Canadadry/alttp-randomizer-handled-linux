@@ -46,12 +46,10 @@ class SetupError(Exception):
 
 
 def projection_text(lines):
-    """The fill projection of run.txt's lines as text, one line per projected line."""
     return "".join(line + "\n" for _, line in run_e2e.project(lines, "fill"))
 
 
 def outcome_kind(lines):
-    """ok, error or crash, from the run's outcome line."""
     last = lines[-1] if lines else ""
     kind = last.split(" ")[1] if last.startswith("outcome ") else None
     if kind not in ("ok", "error", "crash"):
@@ -72,8 +70,6 @@ def _read(directory, name):
 
 
 def runs(root, inputs):
-    """[(label, k or None, seed bytes, [k=v ...])] in the fixture's order. root holds cases/ and
-    combos/; inputs the four case inputs and determinism_cases.txt."""
     texts = [_read(inputs, name) for name in INPUTS]
     e = ladx_cases.expected_list(*texts)
     problems = ladx_cases.mismatches(e, root)
@@ -98,7 +94,6 @@ def runs(root, inputs):
 
 
 def render(ladxr, root, inputs):
-    """The fixture's text, every run through LADXR."""
     import oracle_run
     plan = runs(root, inputs)
     driver = oracle_run.Driver(ladxr)
@@ -110,8 +105,6 @@ def render(ladxr, root, inputs):
 
 
 def compare(reference, got):
-    """One DIFFERENT line per differing line (named by its first two fields), [] when the two
-    texts are byte-identical."""
     if reference == got:
         return []
     a, b = reference.split("\n"), got.split("\n")
@@ -140,7 +133,6 @@ def check_setup(ladxr):
 
 
 def _worker(ladxr, out, hashseed):
-    """Renders in a child python3 with PYTHONHASHSEED=hashseed."""
     done = subprocess.run([sys.executable, os.path.abspath(__file__), "--render", ladxr, out],
                           env=ladx_oracle.oracle_env(hashseed), stdin=subprocess.DEVNULL, check=False)
     if done.returncode != 0:

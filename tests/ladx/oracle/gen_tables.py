@@ -95,8 +95,6 @@ class TablesPlanError(Exception):
     pass
 
 
-# Units ------------------------------------------------------------------------------------------
-
 def _positions(event):
     if event[0] == "B":
         return [("B", event[3] + i) for i in range(len(event[4]))]
@@ -104,16 +102,10 @@ def _positions(event):
 
 
 class RunTables:
-    """One run's table segments as the goldens encode them (write_log's own encoder): tables, the
-    stream's table order; segments [(group, {position: (atom or atoms, last writing site)})],
-    positions ("B", offset) and ("T", table, key); couplings, as couplings() gives them."""
-
     def __init__(self, tables, segments, couplings):
         self.tables, self.segments, self.couplings = tables, segments, couplings
 
     def entries(self, unit_of):
-        """({unit: its record lines}, SPLIT lines) of the units that write in the run, unit_of
-        {site: unit id}: each unit's net records cut out of its segment."""
         out, seen, problems = {}, set(), []
         for group, writes in self.segments:
             cut = {}
@@ -131,7 +123,6 @@ class RunTables:
 
 
 def encode_run(events, rom, sides, known=()):
-    """The RunTables of an event stream on the source rom."""
     first, found, segments = {}, set(), []
     for event in events.events:
         first.setdefault(event[2], len(first))
@@ -154,15 +145,10 @@ def encode_run(events, rom, sides, known=()):
 
 
 def couplings(events, rom, sides, known=()):
-    """[(row a, row b, `match` or `rewrite`)] of an event stream's table segments, rows as event
-    sites, a before b in the stream, sorted by their first write."""
     return encode_run(events, rom, sides, known).couplings
 
 
 class Row:
-    """An inventory row of side `table` or `C`: site `<section>\\t<call>`, its Settings column's
-    names."""
-
     def __init__(self, site, side, group, settings):
         self.site, self.side, self.group, self.settings = site, side, group, settings
 
@@ -177,9 +163,6 @@ def _call(site):
 
 
 def units(rows, coupled, forced, writing_c):
-    """([Unit] in first-row order, FUSE-ACROSS lines) of the rows (in order) fused by the coupled
-    and forced pairs [(site, site, why)]; writing_c: the sites of the `C` rows that write in some
-    run."""
     index = {r.site: n for n, r in enumerate(rows)}
     parent = {r.site: r.site for r in rows if r.side == "table"}
 
@@ -230,19 +213,11 @@ def units(rows, coupled, forced, writing_c):
     return out, problems
 
 
-# Keys -------------------------------------------------------------------------------------------
-
 COUNT = "count"
 COUNT_GROUP = "frame-counter"
 
 
 class Inventory:
-    """What planning needs of the inventory: rows ([Row] of sides `table` and `C`, in order),
-    group_keys {group: Settings key names}, sides {group: side}, constants {NAME: the settings
-    its `assembler.const` row names}, only for a constant that names one; settings: LADXR's
-    setting keys in order; sections: the inventory's section names in order (default: its
-    rows')."""
-
     def __init__(self, rows, group_keys, sides, constants, settings, const_exprs=None,
                  sections=None):
         self.rows, self.group_keys, self.sides = rows, group_keys, sides
@@ -259,8 +234,6 @@ def _names(cell):
 
 
 def read_inventory(text, settings):
-    """The Inventory of an inventory's text, settings LADXR's setting keys in order;
-    TablesPlanError when it does not parse. const_exprs {NAME: the value's expression}."""
     sections, bad = inventory_check.parse_inventory(text)
     named, named_bad = inventory_check.parse_named(text)
     if bad or named_bad:
@@ -284,7 +257,6 @@ def read_inventory(text, settings):
 
 
 def _hand_lines(text):
-    """[(line number, [tab fields])] of a hand-written input, `#` lines and blank ones left out."""
     return [(n, line.split("\t")) for n, line in enumerate(text.splitlines(), 1)
             if line and not line.startswith("#")]
 
@@ -297,7 +269,6 @@ def _table_site(inventory, call, number):
 
 
 def read_widenings(text, inventory):
-    """table_keys.txt, `<call>\t<component>\t<reason>` lines, as [(site, component, reason)]."""
     out = []
     for number, fields in _hand_lines(text):
         if len(fields) != 3 or not fields[2].strip():
@@ -313,8 +284,6 @@ def read_widenings(text, inventory):
 
 
 def read_fusions(text, inventory):
-    """table_units.txt, `<call>\t<call>\t<reason>` lines, as [(site, site, reason)]: two table
-    rows of one group."""
     out = []
     for number, fields in _hand_lines(text):
         if len(fields) != 3 or not fields[2].strip():
@@ -332,21 +301,11 @@ RANGE = re.compile(r" 0x([0-9A-F]+)\.\.0x([0-9A-F]+)$")
 
 
 class Facts:
-    """What the coverage runs traced, per row site: settings_reads and constant_reads (names),
-    provenance {(writer group, target, (first, last) or None)} of its reads of written bytes,
-    the range read (bank offsets or table indices, None when the trace gives none), carried
-    {writer site} of the write identities its writes carry, targets {target} it wrote
-    (`bank 0x<NN>`, `table <name>`, as read_trace.py names them) and positions {target:
-    {offset in the bank or table key}} of those writes. The add_ methods take one run's
-    files."""
-
     def __init__(self):
         self.settings_reads, self.constant_reads = {}, {}
         self.provenance, self.carried, self.targets, self.positions = {}, {}, {}, {}
 
     def add_events(self, events):
-        """A run's write_log.Events: targets, and carried from each write identity's first
-        writer."""
         writer = {}
         for event in events.events:
             s = event[2]
@@ -368,7 +327,6 @@ class Facts:
                     self.carried.setdefault(s, set()).add(writer[q])
 
     def add_reads(self, text):
-        """A run's aggregated reads.txt (read_trace.py Trace.write): provenance."""
         for line in text.splitlines():
             fields = line.split("\t")
             if len(fields) < 2 or fields[1] == "-":
@@ -383,7 +341,6 @@ class Facts:
                     (g, fields[5], span) for g in groups.split(","))
 
     def add_keys(self, text):
-        """A run's key trace (key_trace.py): settings_reads and constant_reads."""
         try:
             settings, constants = key_trace.parse(text)
         except key_trace.KeyTraceError as e:
@@ -394,8 +351,6 @@ class Facts:
 
 
 def _inside(positions, span):
-    """Whether a write at one of positions (None: unknown) lies in the read span (None: all);
-    an alternate table key (a string) lies in every span."""
     return positions is None or span is None or any(
         isinstance(p, str) or span[0] <= p <= span[1] for p in positions)
 
@@ -407,9 +362,6 @@ def _ordered(components, settings):
 
 
 def unit_keys(unit_list, inventory, facts, widenings, rewrites=()):
-    """({unit id: [component]}, DEPENDS-C lines) of the units; widenings [(site, component,
-    reason)] (table_keys.txt); rewrites [(row a, row b, _)]: b rewrote a byte a wrote in one
-    segment, so a's unit takes b's unit's key."""
     index = {r.site: n for n, r in enumerate(inventory.rows)}
     of_row = {s: u for u in unit_list for s in u.rows}
     direct, deps, problems = {}, {}, set()
@@ -453,16 +405,7 @@ def unit_keys(unit_list, inventory, facts, widenings, rewrites=()):
             sorted(problems))
 
 
-
-# Reachability and coverage runs -----------------------------------------------------------------
-
 class Model:
-    """LADXR's settings as planning sees them, values rendered as in the tables: settings (keys
-    in LADXR's order), defaults {key: value}, domains {key: values} (tier-1 values, else the
-    default alone), validate({key: value} non-defaults) -> {key: value} of every setting,
-    constants {NAME: (the settings it reads, fn(settings) -> value)}, count(settings) -> value
-    or None (no count), count_settings, refused {`k=v`: {key: value} of its companion}."""
-
     def __init__(self, settings, defaults, domains, validate, constants, count, count_settings,
                  refused=None):
         self.settings, self.defaults, self.domains = settings, defaults, domains
@@ -488,12 +431,9 @@ class Model:
         return settings[component]
 
     def key(self, components, assignment):
-        """The tuple the components take under the assignment, validated; None for a count
-        LADXR gives none."""
         return self.key_in(components, self.validated(assignment))
 
     def key_in(self, components, settings):
-        """key's tuple for settings validated() gave (cached by their identity)."""
         cache = (id(settings), tuple(components))
         if cache in self._keys:
             return self._keys[cache]
@@ -520,8 +460,6 @@ class Model:
 
 
 def _combinations(names, model):
-    """Every assignment of the names' domain values, others at their defaults, in LADXR's order
-    with values in domain order, as {key: value} of the non-default ones."""
     out = [{}]
     for name in names:
         out = [dict(a, **({} if v == model.defaults[name] else {name: v}))
@@ -530,7 +468,6 @@ def _combinations(names, model):
 
 
 def reachable(components, model):
-    """([(tuple, witness)] sorted by tuple, [tuple] left without a witness) of the components."""
     image = {}
     for assignment in _combinations(model.underlying(components), model):
         t = model.key(components, assignment)
@@ -551,8 +488,6 @@ def reachable(components, model):
 
 
 class Run:
-    """A coverage run: its assignment {key: value} and the targets (unit, tuple) it covers."""
-
     def __init__(self, assignment, covers):
         self.assignment, self.covers = assignment, covers
 
@@ -562,11 +497,6 @@ def _agree(a, b):
 
 
 def plan_runs(keys, model, done=(), avoid=()):
-    """([Run], UNREACHED lines) covering every reachable tuple of every unit, keys {unit id:
-    [component]}: first the runs of done (assignments already run), then new ones; targets most
-    constrained (largest witness) first, then by unit and tuple. A merged assignment in avoid
-    (runs with no ok seed) is replaced by its first target's witness alone, and a witness in
-    avoid is not planned."""
     targets, missing = [], []
     for unit in sorted(keys):
         found, unreached = reachable(keys[unit], model)
@@ -605,8 +535,6 @@ def plan_runs(keys, model, done=(), avoid=()):
                   if (unit, t) not in covered]
 
 
-# The random sample -------------------------------------------------------------------------------
-
 def _drawn(model, i, suffix):
     out = {}
     for key in model.settings:
@@ -624,10 +552,6 @@ def _refused(model, settings):
 
 
 def sample_lines(model, n):
-    """combos.txt's `sample <nn> k=v ...` lines 1..n: line i takes, for every setting in LADXR's
-    order, its domain value at SHA-256(`ladx-sample <i> <key>`) mod the domain's size, big-endian;
-    validated, its non-default values. A refused value without its companion is redrawn with
-    ` #<j>` appended to every hashed text, the first j that is not."""
     lines = []
     for i in range(1, n + 1):
         j = 0
@@ -642,28 +566,20 @@ def sample_lines(model, n):
 
 
 def with_sample(combos_text, lines):
-    """combos.txt's text with the sample lines appended; refuses a text that has one already
-    (the sample is drawn once)."""
     if any(line.startswith("sample ") for line in combos_text.splitlines()):
         raise TablesPlanError("combos.txt already holds the sample, never re-drawn")
     return combos_text + "".join(line + "\n" for line in lines)
 
 
-# The model from the fixtures and LADXR -----------------------------------------------------------
-
 COUNT_SEED = hashlib.sha256(b"ladx-tables count").digest()[:16]
 
 
 def assignment_lines(assignment):
-    """LADXR's `k=v` set strings of an assignment {key: rendered value}, `""` given as `k=`."""
     return ["%s=%s" % (k, "" if v == '""' else v) for k, v in assignment.items()]
 
 
 def build_model(inventory, tier1_text, settings_text, combos_text, validate_text, validate,
                 count, count_settings):
-    """The Model of the fixtures (tier1.txt, settings.txt, combos.txt's refused values and
-    their first covering combo, settings_validate.txt), the inventory's setting constants
-    (their expressions evaluated on the settings), validate and count (see Model)."""
     try:
         meta = ladx_cases.read_settings(settings_text)
         tier1 = dict(ladx_oracle.read_tier1(tier1_text, meta))
@@ -693,8 +609,6 @@ def build_model(inventory, tier1_text, settings_text, combos_text, validate_text
 
 
 def settings_validate(settings_class):
-    """validate for Model: LADXR's Settings (settings_class) set from the assignment, validated
-    (its prints dropped), every setting rendered."""
     def validate(assignment):
         settings = settings_class()
         for line in assignment_lines(assignment):
@@ -706,9 +620,6 @@ def settings_validate(settings_class):
 
 
 def spot_count(driver, key_location, defaults):
-    """count for Model: the spots of the logic that are not of class key_location, from an
-    oracle_run.Driver's pool-only run on COUNT_SEED (the count is a function of the settings);
-    None when the run does not reach the pool."""
     def count(settings):
         assignment = {k: v for k, v in settings.items() if k in defaults and v != defaults[k]}
         lines = driver.run(COUNT_SEED, assignment_lines(assignment), pool_only=True)
@@ -718,11 +629,7 @@ def spot_count(driver, key_location, defaults):
     return count
 
 
-# C-group constants -------------------------------------------------------------------------------
-
 def _net(events):
-    """{position: value} of writes ("B", offset, bytes) and ("T", table, key, bytes or int),
-    positions ("B", offset) and ("T", table, key), the last write winning."""
     net = {}
     for e in events:
         if e[0] == "B":
@@ -734,7 +641,6 @@ def _net(events):
 
 
 def _const_records(net, rom, known, order):
-    """The record lines of net writes, values encoded by the table rule with no origin."""
     banks, entries, offsets = {}, {}, sorted(p[1] for p in net if p[0] == "B")
     for start, stop in write_log._spans(offsets):
         values = bytes(net[("B", p)] for p in range(start, stop))
@@ -751,8 +657,6 @@ def _const_records(net, rom, known, order):
 
 
 class _IndexedRom(bytes):
-    """The ROM whose find of a MIN_MATCH-byte needle absent from it returns -1 at once."""
-
     def __new__(cls, data):
         self = super().__new__(cls, data)
         n = write_log.MIN_MATCH
@@ -766,13 +670,6 @@ class _IndexedRom(bytes):
 
 
 def const_group(group, order, components, runs, own, rom, known, variants=False):
-    """The text of a C group's constants file (tables.py's group format): runs [(key tuple,
-    [write])], one per reachable tuple of components, each the writes of the group's call in
-    order; own [("T", table, key) or ("B", offset)], the writes C makes itself, left out and
-    required in every run. The writes equal in every run form unit <group>.1 (no component), the
-    others <group>.2 keyed by components; either is omitted when empty. With variants (no
-    component), each run's other writes are instead their own unit <group>.<k+2>, in run order.
-    TablesPlanError on an own write a run misses, or a position both units write."""
     kept = []
     for values, events in runs:
         for o in own:
@@ -812,8 +709,6 @@ def const_group(group, order, components, runs, own, rom, known, variants=False)
 
 
 def _kept(group, k, events, keep):
-    """events' bank writes inside keep [(absolute offset, length)], each range required whole;
-    TablesPlanError on a write straddling a range's edge or a range not written whole."""
     kept = []
     for start, n in keep:
         inside = [e for e in events if e[0] == "B" and start <= e[1] and e[1] + len(e[2]) <= start + n]
@@ -827,8 +722,6 @@ def _kept(group, k, events, keep):
 
 
 def _drop_bytes(group, k, events, offsets):
-    """events with the bank bytes at offsets removed from every write covering them, each write
-    split around them; TablesPlanError on an offset no write covers."""
     def covers(e, o):
         return e[0] == "B" and e[1] <= o < e[1] + len(e[2])
     for o in sorted(offsets):
@@ -853,13 +746,6 @@ def _drop_bytes(group, k, events, offsets):
 
 
 def calls_group(group, order, runs, owns, rom, known, keeps=None):
-    """The text of a C group's constants file in calls mode: runs [[write]], one per call in
-    order, owns [[("T", table, key), ("B", offset) or ("byte", offset)]] each call's writes C
-    makes itself, left out and required (a "byte" one byte cut out of the write covering it,
-    _drop_bytes); keeps, per call, None or [(absolute offset, length)], the only bank ranges
-    its unit keeps (_kept). Each call's other writes form its own unit <group>.<k+1>, no
-    component, one entry (`nothing` when empty); there is no fixed unit. TablesPlanError on an
-    own write a call misses."""
     rom = _IndexedRom(rom)
     units = []
     keeps = keeps or [None] * len(runs)
@@ -882,21 +768,12 @@ def calls_group(group, order, runs, owns, rom, known, keeps=None):
 
 
 class ConstSpec:
-    """A C group whose call writes settings-only bytes C cannot compute (LADXR's assembler, or
-    LADXR's files): call, its text evaluated in generator.py's namespace with the seed-dependent
-    arguments None; components, ordered as a unit's; own, the writes C makes itself; variants,
-    the dotted name of the module whose one choice the call draws (no component), or None;
-    calls, a list of (call, own) or (call, own, keep) run once each with no component
-    (calls_group), call and own then unused."""
-
     def __init__(self, call, components, own, variants=None, calls=None):
         self.call, self.components, self.own, self.variants = call, components, own, variants
         self.calls = calls
 
 
 def _specific_lists():
-    """setSpecificInstruments' sorted lists, one per non-empty subset of 1..8, by mask 1..255
-    (bit i-1 for instrument i)."""
     return [[i for i in range(1, 9) if mask >> (i - 1) & 1] for mask in range(1, 256)]
 
 
@@ -905,9 +782,6 @@ _MAZE_ROOM6 = [("T", "entities", 6), ("T", "rooms_overworld_top", 6), ("B", 0x26
 
 
 def _items_calls():
-    """items' calls (patches of locations/ on a fresh parse) and the positions C writes itself:
-    the beach sword's, the start item's, chest 0x1B6's, the boomerang trade's and gift's, the
-    keyhole hook, the castle keyhole's, then each other keyhole's handler at slot 0."""
     bank = BANK_SIZE
 
     def loc(module, expr):
@@ -940,8 +814,6 @@ def _items_calls():
 
 
 def _bosses_calls():
-    """bosses' calls: changeMiniBosses' fixed patches; changeBosses' genie patch and eagle check
-    (identity); its fish and eagle flags and facade patches (a mapping placing all three)."""
     bank = BANK_SIZE
     return [
         ("patches.enemies.changeMiniBosses(rom, {})", []),
@@ -954,16 +826,11 @@ def _bosses_calls():
 
 
 def _warp_home_calls():
-    """warp-home's call: warpHome on a fresh parse less the five `ld a, $NN` operands of its
-    handler (bank 1 0x3E39 + 5k: type, map, room, x, y) and background 0x0D's tiles, C's own."""
     operands = [("byte", 1 * BANK_SIZE + 0x3E39 + 5 * k) for k in range(5)]
     return [("patches.core.warpHome(rom)", operands + [("T", "background_tiles", 0x0D)])]
 
 
 def variant_runs(module, call):
-    """[call()'s result], one per element of the sequence call draws from module.choice, the
-    k-th with that choice returning the k-th element; module.choice restored after.
-    TablesPlanError when a run does not draw exactly once."""
     def pinned(k):
         seen = []
 
@@ -1015,7 +882,6 @@ BANK_SIZE = 0x4000
 
 
 def _const_statements(inventory_text):
-    """generateRom's asm-consts rows (resetConsts and every assembler.const), in order."""
     sections, bad = inventory_check.parse_inventory(inventory_text)
     if bad:
         raise TablesPlanError("the inventory does not parse: %s" % bad[0])
@@ -1024,8 +890,6 @@ def _const_statements(inventory_text):
 
 
 def _recorded(rom, table_names, events):
-    """rom with every bank byte and table entry it is given recorded into events, as
-    ("B", absolute offset, bytes) and ("T", table, key, bytes or int)."""
     class Bank(bytearray):
         def __setitem__(self, key, value):
             if isinstance(key, slice):
@@ -1053,11 +917,6 @@ def _recorded(rom, table_names, events):
 
 
 def const_runs(spec, model, statements, rom_path, table_names):
-    """[(tuple, writes)] of spec's call, one per reachable tuple of its components, each on a
-    fresh parse of the ROM after generateRom's asm-consts statements on the tuple's witness
-    (validated by LADXR); run inside the LADXR checkout. Every rom.patch's old bytes must
-    match: a patch LADXR skips as already applied is refused. With spec.variants, one run per
-    element its call draws, in order (variant_runs)."""
     import assembler
     import generator
     import romTables
@@ -1114,7 +973,6 @@ def const_runs(spec, model, statements, rom_path, table_names):
 
 
 def const_files(model, inventory_text, rom_path, rom, known, table_names):
-    """{<group>.txt: text} of CONST_GROUPS, inside the LADXR checkout."""
     statements = _const_statements(inventory_text)
     files = {}
     for group, spec in sorted(CONST_GROUPS.items()):
@@ -1130,10 +988,7 @@ def const_files(model, inventory_text, rom_path, rom, known, table_names):
     return files
 
 
-# Building ----------------------------------------------------------------------------------------
-
 def _plan_state(inventory, done, facts, widenings, fusions):
-    """(units, {site: unit id}, keys, FUSE-ACROSS and DEPENDS-C lines) of the runs done."""
     coupled = sorted({c for _, run in done for c in run.couplings})
     c_rows = {r.site for r in inventory.rows if r.side == "C"}
     unit_list, problems = units(inventory.rows, [c for c in coupled if c[2] == "match"],
@@ -1148,11 +1003,6 @@ def _key_line(kind, unit, values):
 
 
 def generate(inventory, model, widenings, fusions, runner, rom, known=()):
-    """(files {name: text}, problem lines): data/ladx/'s files built from coverage runs, planned
-    (plan_runs) on the keys the runs done so far give, until a plan asks for no new run.
-    runner(name, assignment) runs one (names run-00, run-01, ... in order) and gives (Events,
-    reads.txt's text, the key trace's text), or None when no seed is ok. Problems: FUSE-ACROSS,
-    DEPENDS-C, SPLIT, CONFLICT and UNREACHED lines, sorted."""
     done, failed, facts = [], [], Facts()
     while True:
         unit_list, unit_of, keys, problems = _plan_state(inventory, done, facts, widenings,
@@ -1208,8 +1058,6 @@ def generate(inventory, model, widenings, fusions, runner, rom, known=()):
     return files, sorted(set(problems))
 
 
-# The command line --------------------------------------------------------------------------------
-
 TOP = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 
 
@@ -1219,8 +1067,6 @@ def _text(path):
 
 
 def oracle_runner(ladxr, rom, inventory_path, runs_dir, work):
-    """runner for generate: oracle_run.py on the run's first ok candidate seed
-    derive("ladx-tables <run>", k), its outputs kept in <runs_dir>/<run>/."""
     import shutil
     import subprocess
 
@@ -1300,7 +1146,6 @@ def build(args):
 
 
 def const(args):
-    """Writes CONST_GROUPS' files into <out>, replacing only them."""
     import time
     start = time.time()
     sys.path.insert(0, HERE)
@@ -1339,8 +1184,6 @@ SAMPLE_SIZE = 12
 
 
 def sample(args):
-    """Appends the SAMPLE_SIZE sample lines to <inputs>/combos.txt, validated by LADXR's live
-    Settings.validate; prints them."""
     path = os.path.join(args.inputs, "combos.txt")
     combos_text = _text(path)
     inputs = lambda name: _text(os.path.join(args.inputs, name))

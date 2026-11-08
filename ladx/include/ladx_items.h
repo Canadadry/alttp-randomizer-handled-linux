@@ -1,9 +1,6 @@
 #ifndef LADX_ITEMS_H
 #define LADX_ITEMS_H
 
-/* LADXR's item names at 4325207e: locations/items.py in its order, the
- * names only logic/ uses, in first-use order, then the n = 9 names
- * ItemInfo.configure's range(10) appends. No "<item>_USED" name. */
 typedef enum LadxItem {
 	LADX_ITEM_POWER_BRACELET,
 	LADX_ITEM_SHIELD,
@@ -177,9 +174,7 @@ typedef enum LadxItem {
 
 #define LADX_ITEM_NONE (-1)
 
-/* NULL for LADX_ITEM_NONE or an id outside the table. */
 const char *ladx_item_name(int item);
-/* LADX_ITEM_NONE when the name is unknown. */
 int ladx_item_find(const char *name);
 
 #endif

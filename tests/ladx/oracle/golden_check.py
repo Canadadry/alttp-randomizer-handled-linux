@@ -65,7 +65,6 @@ def _read(path, binary=False):
 
 
 def _independence(text):
-    """Problems of the projections' independence from other groups' records."""
     tables, segments = write_log.parse(text)
     base = write_log.projections(text)
     problems = []
@@ -101,11 +100,6 @@ def _independence(text):
 
 def check_case(folder, events, rom, sides, known, nintendo, scramble_known=None,
                invariant=None):
-    """[(check, detail)] of one case folder against its event stream (write_log.Events) on the
-    source rom; sides {group: side}; known the C-knowable map; nintendo(name, data, scope) ->
-    [literal run description]. scramble_known (default known): the map the scramble keeps.
-    invariant: the oracle's re-run flags (write_log.parse_invariant), which the `I` lines must
-    match."""
     problems = []
     text = _read(os.path.join(folder, "rom_writes.txt"))
     run = _read(os.path.join(folder, "run.txt"))
@@ -145,8 +139,6 @@ def check_case(folder, events, rom, sides, known, nintendo, scramble_known=None,
 
 
 def fragment_details(text, rom, known):
-    """`<group> <n> fragments, <b> bytes, first at line <l>` per group of the log holding a
-    fragment (write_log.fragments), in first-fragment order."""
     found = {}
     for group, line, _, n in write_log.fragments(text, rom, known):
         count = found.setdefault(group, [0, 0, line])
@@ -157,7 +149,6 @@ def fragment_details(text, rom, known):
 
 
 def union_problems(found, sides):
-    """[detail] of the union of the goldens' groups against the inventory's writing groups."""
     want = {g for g, side in sides.items() if side in SIDES} - set(NO_ROM_WRITES)
     return (["no golden writes %s" % g for g in sorted(want - found)]
             + ["%s writes but is not a writing group" % g for g in sorted(found - want)])

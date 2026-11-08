@@ -63,8 +63,6 @@ class Compare(unittest.TestCase):
 
 
 class CommittedFixture(unittest.TestCase):
-    """The committed fixture runs exactly the plan the case tree and the inputs give."""
-
     def test_rows_follow_the_plan(self):
         with open(g.FIXTURE, encoding="utf-8") as f:
             rows = [line.split(" ") for line in f.read().splitlines() if not line.startswith("#")]

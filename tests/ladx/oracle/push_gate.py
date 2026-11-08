@@ -62,13 +62,11 @@ _spec.loader.exec_module(nintendo_bytes)
 
 
 def _git(top, *args, env=None, data=None):
-    """Bytes of git's stdout, run in top; raises on failure."""
     return subprocess.run(["git", *args], cwd=top, env=env, input=data, check=True,
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
 
 
 def _link_commits(top, sha, link):
-    """Commits (full sha, in log order) under which `git log -p --text` of sha holds link."""
     found = []
     current = None
     proc = subprocess.Popen(["git", "log", "-p", "--text", "--format=fuller", sha], cwd=top,
@@ -85,7 +83,6 @@ def _link_commits(top, sha, link):
 
 
 def _pushed_blobs(top, sha):
-    """[(blob sha, path)] of every blob reachable from sha that no remote ref has."""
     listing = _git(top, "rev-list", "--objects", sha, "--not", "--remotes").decode()
     paths = {}
     for line in listing.splitlines():
@@ -104,15 +101,12 @@ def _blob(top, obj):
 
 
 def _untracked(top):
-    """Paths of the untracked, non-ignored files of the working tree."""
     out = _git(top, "status", "--porcelain", "-z", "--untracked-files=all")
     return [entry[3:].decode("utf-8", "surrogateescape")
             for entry in out.split(b"\0") if entry.startswith(b"?? ")]
 
 
 def check_push(top, ref_lines, link, rom, corpus):
-    """(findings, summary): refusal lines for a push of ref_lines from top, and the success
-    line used when there are none. link and rom are bytes, corpus a nintendo_bytes.Corpus."""
     findings = []
     index = nintendo_bytes.RomIndex(rom)
     cleared = {category: 0 for category in nintendo_bytes.CLEARANCES}
@@ -158,7 +152,6 @@ def check_push(top, ref_lines, link, rom, corpus):
 
 
 def hook(top, ref_lines, environ):
-    """Exit status of the gate for a push; prints its verdict on stderr."""
     link = environ.get("LADX_ROM_URL", "")
     if len(link) < MIN_LINK:
         print("push-gate: setup: LADX_ROM_URL is not set, push refused", file=sys.stderr)
@@ -197,8 +190,6 @@ def _read(path):
 
 
 def install_chain(top):
-    """Writes the chained pre-push hook for the repository at top; returns (status, message).
-    Never touches another hook."""
     path = _pre_push(top)
     existing = _read(path)
     if existing not in (None, PLAIN_HOOK) and MARKER not in existing:
@@ -212,8 +203,6 @@ def install_chain(top):
 
 
 def uninstall_chain(top):
-    """Removes the chained hook of the repository at top, then reinstalls no_claude_branch.sh's
-    own; returns (status, message)."""
     path = _pre_push(top)
     existing = _read(path)
     removed = existing is not None and MARKER in existing
@@ -244,13 +233,6 @@ def planted_text(rom):
 
 
 class PlantedRepo:
-    """A bare remote and a clone in base, with copies of the gate, nintendo_bytes.py (and the
-    CHECK_MODULES it loads), a planted inventory and no_claude_branch.sh at their repository paths, the gate's ROM SHA-1 constant rewritten to rom's,
-    rom at tmp/ladx/base.gbc, a planted LADXR checkout (git-ignored, one text file holding
-    planted_text(rom)[20:70]) with the copy's LADXR pin rewritten to its commit, a planted
-    prepare-commit-msg hook and the chain installed through the copy's install_chain. Branch main
-    is pushed; every case branches from it."""
-
     def __init__(self, base, rom):
         self.rom = rom
         self.remote = os.path.join(base, "remote.git")
@@ -326,7 +308,6 @@ class PlantedRepo:
         self.git("commit", "-q", "--allow-empty", "-m", message)
 
     def push(self, branch, setup, unset_link=False):
-        """(exit status, output) of pushing a new branch made from main by setup(self)."""
         self.git("checkout", "-q", "-b", branch, "main")
         try:
             setup(self)
@@ -342,19 +323,15 @@ class PlantedRepo:
 
 
 def _planted_log(group, data):
-    """A write log of one segment of group writing data as one literal token at offset 0x10."""
     return ("ladx-rom-writes 1\ntables texts\nG %s\nB 10 %s\n" % (group, data.hex())).encode()
 
 
 def _planted_table(data_hex):
-    """A patch table of group maker: one unit keyed by race whose entry writes data_hex as one
-    literal token at offset 0x10."""
     return ("ladx-tables 1\ngroup maker\ntables texts\nunit maker.1 race\nE 0\nB 10 %s\n"
             % data_hex).encode()
 
 
 def _cases(rom):
-    """[(name, setup, unset_link, expected substring or None for a pass)]."""
     link = PLANTED_LINK.encode()
     text = planted_text(rom)
     bytelist = ", ".join("0x%02X" % b for b in rom[6000:6008])
@@ -419,7 +396,6 @@ def _cases(rom):
 
 
 def self_test():
-    """[] when every planted push behaves as expected, else one line per failing case."""
     failures = []
     rom = planted_rom()
     with tempfile.TemporaryDirectory() as base:

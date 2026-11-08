@@ -55,9 +55,6 @@ class FixtureError(Exception):
 
 
 class Vector:
-    """A named stream: sides {group: side} in first-write order, ks [(start, stop, label, entry)]
-    or None, initial [(table, key, value, origins or None)], events as write_log.Events'."""
-
     def __init__(self, name, sides, ks, initial, events):
         self.name, self.sides, self.ks, self.initial, self.events = name, sides, ks, initial, events
 
@@ -85,7 +82,6 @@ def entry_label(table, key):
 
 
 def span(start, stop, table="entities", key=0, kind="pointer"):
-    """A KS span: an entry span of (table, key) when kind is None, else `<table> <kind> <key>`."""
     if kind is None:
         return (start, stop, entry_label(table, key), (table, key))
     return (start, stop, "%s %s %s" % (table, kind, _key_text(key)), None)
@@ -115,11 +111,8 @@ def entry(group, table, key, value, origins=None):
 
 
 def absent(rom, low, high):
-    """A byte value that occurs nowhere in rom[low:high]."""
     return next(b for b in range(256) if b not in rom[low:high])
 
-
-# Hand-written vectors ------------------------------------------------------------------------
 
 def hand_vectors(rom):
     k = KNOWN
@@ -196,8 +189,6 @@ def hand_vectors(rom):
          entry("ca", "texts", 2, rom[0x344:0x346], ids(40, 2))])
     return out
 
-
-# Random vectors ------------------------------------------------------------------------------
 
 def random_vector(r, rom, n):
     groups = ["tg", "ca", "cb"]
@@ -290,10 +281,7 @@ def vectors(rom):
     return hand_vectors(rom) + [random_vector(r, rom, n) for n in range(RANDOM_VECTORS)]
 
 
-# Rendering and parsing -----------------------------------------------------------------------
-
 def stream_text(rom, tables, initial, events):
-    """The ladx-events 1 stream of a vector."""
     lines = [write_log.EVENTS_LINE, "source " + hashlib.sha1(rom).hexdigest(), " ".join(["tables"] + tables)]
     return "".join(line + "\n" for line in lines + event_lines(initial, events))
 
@@ -316,7 +304,6 @@ def event_lines(initial, events):
 
 
 def encode(rom, vector):
-    """write_log.encode's log text of a vector."""
     events = write_log.parse_events(stream_text(rom, TABLES, vector.initial, vector.events))
     return write_log.encode(events, rom, vector.sides, known(rom, vector.ks))
 
@@ -342,7 +329,6 @@ def render(rom, vs):
 
 
 def _entry_of(label):
-    """(table, key) of an entry label `<table> <key>`, None for any other label."""
     fields = label.split(" ")
     if len(fields) == 2 and fields[0] in TABLES:
         return (fields[0], write_log._key(fields[1]))
@@ -350,7 +336,6 @@ def _entry_of(label):
 
 
 def parse(text):
-    """(rom, [(Vector, log text)]) of a fixture's text; FixtureError on a malformed one."""
     lines = [line for line in text.split("\n")[:-1] if not line.startswith("#")]
     pos = 0
 
@@ -397,7 +382,6 @@ def parse(text):
 
 
 def compare(committed, rendered):
-    """DIFFERENT lines between the committed and the rendered text."""
     a, b = committed.split("\n"), rendered.split("\n")
     out = []
     for n in range(max(len(a), len(b))):

@@ -31,7 +31,6 @@ static char out[OUT_MAX];
 static size_t out_len;
 static int checks;
 
-/* The rows warpHome reads, each ROW_LEN tiles from column 0. */
 static const uint32_t rows[ROW_COUNT] = {0x98E0, 0x9940, 0x9960, 0x9980};
 
 static void check(int ok, const char *what)
@@ -65,7 +64,6 @@ static uint8_t tile(int row, uint32_t n)
 	return (uint8_t)(0x21 + 0x17 * row + 3 * n);
 }
 
-/* The planted background's runs: rows 0..rows_n-1, ROW_LEN tiles each, then the terminator. */
 static size_t planted_background(uint8_t *raw, int rows_n)
 {
 	size_t len = 0;

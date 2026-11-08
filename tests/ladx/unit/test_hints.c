@@ -133,7 +133,6 @@ static const char *const order_text = "ladx-tables-order 1\n"
 static const uint8_t baseline_seed[16] = {0xe8, 0x51, 0x5e, 0x70, 0x64, 0xfb, 0x5f, 0xd6,
 					  0x45, 0x8e, 0x72, 0xd5, 0x61, 0x22, 0x67, 0x3b};
 
-/* The pipeline with no ROM on the baseline seed's default run. */
 static LadxPipelineStatus run(int with_rngs, LadxPipelineError *err)
 {
 	static LadxSettings settings;
@@ -166,7 +165,6 @@ static LadxPipelineStatus run(int with_rngs, LadxPipelineError *err)
 	return ladx_pipeline_run(&pipeline, &enc, err);
 }
 
-/* The hex of the log's T texts record for key, "" when absent. */
 static const char *record(unsigned key, char *buf, size_t cap)
 {
 	char head[32];
@@ -186,7 +184,6 @@ typedef struct Expected {
 	int count, mismatches;
 } Expected;
 
-/* Each text the hints function writes for the copy, against the log's record of the same id. */
 static int expect_write(void *ctx, unsigned text_id, const uint8_t *bytes, size_t n)
 {
 	static char want[2 * 2048 + 1], got[2 * 2048 + 1];

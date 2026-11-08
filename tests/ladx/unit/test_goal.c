@@ -129,7 +129,6 @@ static void plant_files(void)
 			      UNIT_BASE + 4u * (unsigned)k, k);
 }
 
-/* The planted tables, goal.txt cut to its first units units. */
 static void open_tables(int units)
 {
 	static char text[65536];
@@ -190,7 +189,6 @@ static LadxPipelineStatus run(LadxPipelineError *err)
 	return ladx_pipeline_run(&pipeline, &enc, err);
 }
 
-/* The model's goal segment: net bank atoms and entries, rendered by a LadxWlog. */
 static LadxAtom net_bank[SYNTH_ROM_SIZE];
 static uint8_t net_set[SYNTH_ROM_SIZE];
 static struct {
@@ -256,7 +254,6 @@ static void model_unit(int k)
 	model_literal(UNIT_BASE + 4u * (unsigned)k + 1, k & 0xFF);
 }
 
-/* Renders the model and the run's goal projection; they must be equal. */
 static void compare(const char *what)
 {
 	static Buffer wb = {want, &want_len}, gb = {got, &got_len};
@@ -434,7 +431,6 @@ static void model_room(int room, const LadxRoomEntity *entities, size_t count)
 		   80);
 }
 
-/* The planted entities of room as a list, with what earlier signs of the model inserted. */
 static LadxRoomEntity maze_entities[0x100][16];
 static size_t maze_counts[0x100];
 

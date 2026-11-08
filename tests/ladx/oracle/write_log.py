@@ -94,9 +94,6 @@ class WriteLogError(Exception):
 
 
 class Events:
-    """An event stream: table order, parsed entries (table, key, value, origins) and events as
-    read_trace.Trace.events() gives them."""
-
     def __init__(self, tables, initial, events, source=None):
         self.tables, self.initial, self.events, self.source = tables, initial, events, source
 
@@ -114,8 +111,6 @@ def _value(atom, rom):
 def _knowable(atom, known):
     return atom < 0 or atom in known
 
-
-# Event stream ----------------------------------------------------------------------------------
 
 def _hex_int(text, what):
     if not HEX.fullmatch(text):
@@ -156,7 +151,6 @@ def _payload(value_text, origin_text):
 
 
 def parse_events(text):
-    """The Events of an event stream's text; WriteLogError on a malformed one."""
     lines = text.split("\n")
     if lines and lines[-1] == "":
         lines.pop()
@@ -187,8 +181,6 @@ INVARIANT_LINE = "ladx-invariant-events 1"
 
 
 def parse_invariant(text):
-    """{event index: per-byte flags} of the oracle's re-run record (invariant.txt: the
-    INVARIANT_LINE, then `<event index> <0 or 1 per byte>`, indices increasing, hex)."""
     lines = text.split("\n")
     if lines and lines[-1] == "":
         lines.pop()
@@ -205,16 +197,11 @@ def parse_invariant(text):
 
 
 def invariant_lines(flags):
-    """parse_invariant's text, as lines, for {event index: per-byte flags}."""
     return [INVARIANT_LINE] + ["%x %s" % (n, "".join("1" if f else "0" for f in flags[n]))
                                for n in sorted(flags)]
 
 
-# Encoding --------------------------------------------------------------------------------------
-
 def _longest_match(rom, data, start, stop):
-    """(offset, length) of the longest match in rom of data[start:stop]'s prefix, at least
-    MIN_MATCH bytes, at its lowest offset; None when there is none."""
     room = stop - start
     if room < MIN_MATCH or rom.find(data[start:start + MIN_MATCH]) < 0:
         return None
@@ -235,9 +222,6 @@ def _longest_match(rom, data, start, stop):
 
 
 def _table_atoms(rom, values, origins, offset=None, matches=None):
-    """A table group's atoms for a run of net bytes (at offset when they are bank bytes);
-    origins: per byte a source offset, an atom from a write identity, or None; matches, when
-    given, gets the (index, n) of every run the longest-match rule chose."""
     atoms = [None] * len(values)
     for i, v in enumerate(values):
         if offset is not None and offset + i < len(rom) and rom[offset + i] == v:
@@ -267,11 +251,6 @@ def _table_atoms(rom, values, origins, offset=None, matches=None):
 
 
 def _fragment_atoms(rom, known, where, atoms):
-    """atoms with the fragment rule applied: within the source bytes each literal replaces (a
-    table entry's KS entry at where = (table, key); for bank bytes at offset where, the
-    lowest-start KS span of each offset, runs cut where it changes), each maximal literal run
-    walked left to right, the longest prefix of at least 1 byte occurring there a copy of its
-    lowest offset there; atoms itself when known has no `entries` and `span_at`."""
     entries, span_at = getattr(known, "entries", None), getattr(known, "span_at", None)
     if entries is None or span_at is None or isinstance(atoms, int):
         return atoms
@@ -306,9 +285,6 @@ def _fragment_atoms(rom, known, where, atoms):
 
 
 class _KnownRuns:
-    """The C-knowable source map as maximal runs of contiguous offsets: `match` finds the
-    longest run of at least MIN_MATCH bytes inside one of them, at its lowest offset."""
-
     def __init__(self, rom, known):
         mask = getattr(known, "mask", None)
         offsets = ([q for q in range(len(rom)) if q < len(mask) and mask[q] == 1]
@@ -324,7 +300,6 @@ class _KnownRuns:
         self.joined = b"".join(pieces)
 
     def find(self, data):
-        """The lowest source offset of data inside one run, -1 when there is none."""
         pos = self.joined.find(data)
         while pos >= 0:
             i = bisect.bisect_right(self.bases, pos) - 1
@@ -335,8 +310,6 @@ class _KnownRuns:
         return -1
 
     def match(self, data, start, stop):
-        """(offset, length) of the longest match of data[start:stop]'s prefix, None when it is
-        under MIN_MATCH bytes."""
         if stop - start < MIN_MATCH or self.find(data[start:start + MIN_MATCH]) < 0:
             return None
         low, high = MIN_MATCH, stop - start + 1
@@ -349,8 +322,6 @@ class _KnownRuns:
         return self.find(data[start:start + low]), low
 
     def atoms(self, atoms):
-        """atoms with every run of at least MIN_MATCH literals that matches the map made copies,
-        greedily left to right, longest first."""
         out, i = list(atoms), 0
         while i < len(out):
             if out[i] >= 0:
@@ -373,11 +344,7 @@ class _KnownRuns:
 
 
 class _Encoder:
-    """The running state: every ROM position's atom, every table entry's atoms (or int
-    pointer), and the atom each write identity got when its byte was first written."""
-
     def __init__(self, events, rom, sides, known, fixed=None):
-        """fixed: the table groups' encodings of an earlier run, reused segment by segment."""
         self.rom, self.sides, self.known = rom, sides, known
         self._known_runs = None
         self._windows = None
@@ -393,14 +360,11 @@ class _Encoder:
                 q if q >= 0 else _lit(v) for q, v in zip(origins, value)]
 
     def carried(self, origin):
-        """The atom an origin gives by itself: a source reference, or the atom of the write it
-        names; None for KNOWN and for a write identity not met yet."""
         if origin >= 0:
             return origin
         return self.written.get(origin)
 
     def name(self, origins, atoms):
-        """Records the atoms of the bytes whose write identity is met for the first time."""
         for q, atom in zip(origins, atoms):
             if q < KNOWN and q not in self.written:
                 self.written[q] = atom
@@ -416,10 +380,8 @@ class _Encoder:
     def bank_atom(self, p):
         return self.state.get(p, p)
 
+    # The common prefix and suffix stop at an old byte C cannot know, so where they stop never depends on the ROM.
     def inherited(self, new, old, origins):
-        """A C group's atoms for a table entry's new value replacing the atoms old (None when
-        unknown): carried origins, then the common prefix and suffix, which stop at an old byte
-        C cannot know so that where they stop never depends on the ROM; else literals."""
         old = old or []
         rom = self.rom
         same = lambda i, j: self.knowable(old[j]) and new[i] == _value(old[j], rom)
@@ -441,9 +403,6 @@ class _Encoder:
         return [_lit(v) if atom is None else atom for v, atom in zip(new, atoms)]
 
     def _inherit_middle(self, new, old, atoms, start, stop):
-        """Fills atoms[start:stop] left to right: where no atom is set, the longest run of at
-        least MIN_MATCH new bytes, none with an atom, equal to knowable old bytes, at its lowest
-        old index, inherits their encoding."""
         rom = self.rom
         values = [_value(a, rom) if self.knowable(a) else None for a in old]
         i = start
@@ -463,8 +422,6 @@ class _Encoder:
                 i += 1
 
     def segment(self, group, events, flags=None):
-        """(lines, marks) of one segment; flags: per event, the re-run's per-byte flags or
-        None; marks: {index in lines: [(start, n)]} of the `I` ranges."""
         side = self.sides.get(group)
         if side not in ("table", "C"):
             raise WriteLogError("group %r writes but its side is %r, not table or C" % (group,
@@ -516,8 +473,6 @@ class _Encoder:
         return lines, marks
 
     def _marks(self, row):
-        """[(start, n)] of a record's maximal runs of invariant literal atoms, at least MIN_MATCH
-        long, that hold a MIN_MATCH-byte window of the source ROM; row: [(atom, flag)]."""
         out, i = [], 0
         while i < len(row):
             if not (row[i][0] < 0 and row[i][1]):
@@ -541,8 +496,6 @@ class _Encoder:
         return self._windows
 
     def _match_known(self, banks, tables, named):
-        """A C segment's net literal runs matching the C-knowable map become copies (bank runs
-        by contiguous offsets, entries each alone); the writes they name follow."""
         if not any(a < 0 for a in banks.values()) and not any(
                 isinstance(v, list) and any(a < 0 for a in v) for v in tables.values()):
             return
@@ -563,8 +516,6 @@ class _Encoder:
                     self._rename(named[("T", table, key)], new)
 
     def _match_fragments(self, banks, tables, named):
-        """A C segment's net literal pieces of the source bytes they replace become copies (the
-        fragment rule, _fragment_atoms); the writes they name follow."""
         for start, stop in _spans(sorted(banks)):
             old = [banks[p] for p in range(start, stop)]
             new = _fragment_atoms(self.rom, self.known, start, old)
@@ -590,8 +541,6 @@ class _Encoder:
             raise WriteLogError("table %r is not in the stream's table order" % table)
 
     def _table_segment(self, group, events):
-        """A table group's net bytes and entries, encoded once its segment ends (or taken from
-        the fixed encoding)."""
         net, entries = {}, {}
         for event in events:
             if event[0] == "B":
@@ -632,7 +581,6 @@ class _Encoder:
 
 
 def _spans(positions):
-    """[(start, stop)] of the maximal runs of sorted positions."""
     spans = []
     for p in positions:
         if spans and spans[-1][1] == p:
@@ -648,7 +596,6 @@ def _key_order(tables):
 
 
 def _tokens(atoms, offset=None):
-    """Canonical tokens of atoms, keep tokens only when offset is given."""
     out, i = [], 0
     while i < len(atoms):
         a = atoms[i]
@@ -673,8 +620,6 @@ def _key_text(key):
 
 
 def _records(group, banks, tables, order):
-    """The lines of a segment from its net bank atoms {offset: atom} and table entries
-    {(table, key): atoms or int pointer}."""
     lines = ["G " + group]
     for start, stop in _spans(sorted(banks)):
         lines.append("B %x %s" % (start, " ".join(_tokens([banks[p] for p in range(start, stop)],
@@ -691,21 +636,14 @@ def _header(tables):
 
 
 def encode(events, rom, sides, known, invariant=None):
-    """rom_writes.txt's text for Events on the source rom; sides {group: side}; known: the
-    C-knowable source offsets (any container); invariant: {event index: per-byte flags} of the
-    oracle's re-run (read_invariant), which gives the `I` lines, none when None."""
     return _encode(events, rom, sides, known, invariant=invariant)[0]
 
 
 def table_segments(events, rom, sides, known):
-    """The table groups' segments of encode's run, in order: (group, the segment's events, net
-    bank atoms {offset: atom}, net entries {(table, key): atoms or int}, [(offset, n)] of the bank
-    runs the longest-match rule chose)."""
     return _encode(events, rom, sides, known)[2]
 
 
 def _encode(events, rom, sides, known, fixed=None, invariant=None):
-    """(text, the table groups' encodings segment by segment, table_segments' details)."""
     encoder = _Encoder(events, rom, sides, known, fixed)
     lines = _header(events.tables)
     marks = []
@@ -728,10 +666,7 @@ def _mark_line(line, ranges):
     return " ".join(["I %x" % line] + ["%x+%x" % r for r in ranges])
 
 
-# Parsing, decode, projection -------------------------------------------------------------------
-
 def _parse_tokens(fields, offset, number):
-    """[atom or int pointer] of a record's tokens; offset None for a table record."""
     atoms, previous = [], None
     for token in fields:
         kind = token[:1]
@@ -771,13 +706,10 @@ def _parse_tokens(fields, offset, number):
 
 
 def parse(text):
-    """(tables, [(group, {offset: atom}, {(table, key): atoms or int})]) of a log's text, every
-    rule of the format checked; WriteLogError names the first broken one."""
     return _parse(text)[:2]
 
 
 def invariants(text):
-    """{line number: [(start, n)]} of a log's `I` lines, the log checked as parse does."""
     return _parse(text)[2]
 
 
@@ -785,7 +717,6 @@ _MARK_RANGE = re.compile(r"([0-9a-f]+)\+([0-9a-f]+)")
 
 
 def _parse_mark(fields, number, records):
-    """(line, [(start, n)]) of an `I` line's fields, checked against records {line: atoms}."""
     if len(fields) < 3:
         raise WriteLogError("line %d: an I line without a range" % number)
     line = _hex_int(fields[1], "line")
@@ -808,7 +739,6 @@ def _parse_mark(fields, number, records):
 
 
 def _parse(text):
-    """parse's (tables, segments) and invariants' marks."""
     lines = text.split("\n")
     if not lines or lines[-1] != "":
         raise WriteLogError("the log does not end with a newline")
@@ -877,7 +807,6 @@ def _parse(text):
 
 
 def decode(text, rom):
-    """The ROM the log's bank records give when replayed in order onto the source rom."""
     _, segments = parse(text)
     out = bytearray(rom)
     for group, banks, _ in segments:
@@ -889,7 +818,6 @@ def decode(text, rom):
 
 
 def render(tables, segments):
-    """The log text of parse's (tables, segments)."""
     lines = _header(tables)
     for group, banks, entries in segments:
         lines += _records(group, banks, entries, tables)
@@ -897,7 +825,6 @@ def render(tables, segments):
 
 
 def projections(text):
-    """{group: project(text, group)} for every group of the log, from one parse."""
     tables, segments = parse(text)
     net = {}
     for name, seg_banks, seg_entries in segments:
@@ -909,13 +836,10 @@ def projections(text):
 
 
 def project(text, group):
-    """One group's projection of a log: its segments replayed in order, as a log of at most one
-    segment."""
     return projections(text).get(group) or render(parse(text)[0], [])
 
 
 def groups(text):
-    """The groups of a log's segments, each once, in first-write order."""
     seen = []
     for name, _, _ in parse(text)[1]:
         if name not in seen:
@@ -923,11 +847,7 @@ def groups(text):
     return seen
 
 
-# Fragments -------------------------------------------------------------------------------------
-
 def parse_record(line):
-    """(where, atoms or int pointer) of one `B` or `T` record line: where its offset, or its
-    (table, key); WriteLogError on any other line."""
     fields = line.split(" ")
     if fields[0] == "B" and len(fields) >= 3:
         offset = _hex_int(fields[1], "offset")
@@ -938,9 +858,6 @@ def parse_record(line):
 
 
 def _reference_cuts(where, length, known):
-    """[(start, stop, source start, source stop)]: a record's indices start..stop and the source
-    bytes they replace, for a table entry its KS entry, for bank bytes the lowest-start KS span
-    holding each offset (indices outside KS have none)."""
     entries, span_at = getattr(known, "entries", None), getattr(known, "span_at", None)
     if entries is None or span_at is None:
         return []
@@ -960,9 +877,6 @@ def _reference_cuts(where, length, known):
 
 
 def record_fragments(where, atoms, rom, known):
-    """[(start, n)] of one record's fragments: within each cut of its indices (_reference_cuts),
-    each maximal literal run walked left to right, a piece the longest prefix of at least 1 byte
-    occurring in the cut's source bytes, the walk moving on one byte where none does."""
     if isinstance(atoms, int):
         return []
     out = []
@@ -992,9 +906,6 @@ def record_fragments(where, atoms, rom, known):
 
 
 def fragments(text, rom, known):
-    """[(group, line number, start, n)] of every fragment (record_fragments) of a log's `B` and
-    `T` records, the log checked as parse does; none when known has no `entries` and
-    `span_at`."""
     parse(text)
     out, group = [], None
     for number, line in enumerate(text.split("\n"), 1):
@@ -1007,22 +918,15 @@ def fragments(text, rom, known):
     return out
 
 
-# Scrambled-ROM comparison ----------------------------------------------------------------------
-
 def scramble(rom, known):
-    """rom with every byte outside known changed (xor a position-dependent nonzero mask)."""
     return bytes(b if p in known else b ^ (1 + p * 7 % 255) for p, b in enumerate(rom))
 
 
 def compare_scrambled(events, rom, sides, known, scramble_known=None):
-    """One `SCRAMBLED <group>` line per C group whose projection differs when the stream is
-    re-encoded on rom with every byte outside scramble_known (default known) scrambled. The
-    table groups keep their encoding from rom: C copies it from step 6's tables."""
     return encode_scrambled(events, rom, sides, known, scramble_known)[1]
 
 
 def encode_scrambled(events, rom, sides, known, scramble_known=None, invariant=None):
-    """(encode's text, compare_scrambled's lines) from one encoding on the real rom."""
     real, fixed, _ = _encode(events, rom, sides, known, invariant=invariant)
     other = _encode(events, scramble(rom, known if scramble_known is None else scramble_known),
                     sides, known, fixed)[0]
@@ -1040,10 +944,7 @@ def encode_scrambled(events, rom, sides, known, scramble_known=None, invariant=N
     return real, lines
 
 
-# Command line ----------------------------------------------------------------------------------
-
 def sides_of(inventory_text):
-    """{group: side} of an inventory's Groups table."""
     sys.path.insert(0, HERE)
     import inventory_check
     named, bad = inventory_check.parse_named(inventory_text)
@@ -1070,7 +971,6 @@ def _inputs(args):
 
 
 def self_test():
-    """A synthetic stream through encode, decode, projection and the scramble; failure lines."""
     rom = random.Random(0x1ADE).randbytes(0x800)
     events = Events(["texts"], [("texts", 0, rom[0x100:0x104], tuple(range(0x100, 0x104)))], [
         ("B", "fix", "-", 0x10, rom[0x300:0x308], (KNOWN,) * 8),

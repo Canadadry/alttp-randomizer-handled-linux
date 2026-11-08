@@ -42,7 +42,6 @@ int ladx_inputs_seed_hex(const char *text, size_t len, uint8_t seed[LADX_INPUTS_
 	return 1;
 }
 
-/* 32 lowercase hex digits, one optional newline. */
 static int read_seed(const char *prog, const char *case_dir, uint8_t seed[LADX_INPUTS_SEED_BYTES])
 {
 	char path[MAX_PATH], text[2 * LADX_INPUTS_SEED_BYTES + 3];
@@ -68,7 +67,6 @@ static int read_seed(const char *prog, const char *case_dir, uint8_t seed[LADX_I
 	return 1;
 }
 
-/* One key=value per line, as ladx_settings_set takes it; then validated. */
 static int read_config(const char *prog, const char *case_dir, LadxSettings *settings)
 {
 	char path[MAX_PATH], line[MAX_CONFIG_LINE];
@@ -123,7 +121,6 @@ int ladx_inputs_case(const char *prog, const char *dir, LadxSettings *settings,
 	return 1;
 }
 
-/* The file's text appended to d->text; 0 when unreadable or too large. */
 static int read_tables_file(const char *prog, const char *dir, const char *name, LadxTablesDir *d,
 			    LadxTablesFile *file)
 {

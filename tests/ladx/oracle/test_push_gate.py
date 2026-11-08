@@ -1,8 +1,3 @@
-"""Usage: python3 -I test_push_gate.py
-
-Unit tests of push_gate.py: real git pushes through the installed chain in planted repositories,
-with a planted synthetic ROM and a planted link; never the real repository's hooks.
-"""
 
 import contextlib
 import importlib.util

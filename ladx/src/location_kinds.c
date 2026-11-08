@@ -6,12 +6,8 @@
 
 #include <stdio.h>
 
-/* locations/'s ItemInfo classes at 4325207e: __init__, nameId, OPTIONS and
- * configure; patch and read belong to the ROM steps. */
-
 #define I(name) LADX_ITEM_##name
 
-/* Chest */
 static const int chest_options[] = {
 	I(POWER_BRACELET), I(SHIELD), I(BOW), I(HOOKSHOT), I(MAGIC_ROD), I(PEGASUS_BOOTS), I(OCARINA),
 	I(FEATHER), I(SHOVEL), I(MAGIC_POWDER), I(BOMB), I(SWORD), I(FLIPPERS), I(MAGNIFYING_LENS),
@@ -30,7 +26,6 @@ static const int chest_options[] = {
 	I(CASTLE_GATE_OPENED), I(EAGLE_TOWER_OPENED),
 };
 
-/* DroppedKey, KeyHole */
 static const int dropped_key_options[] = {
 	I(POWER_BRACELET), I(SHIELD), I(BOW), I(HOOKSHOT), I(MAGIC_ROD), I(PEGASUS_BOOTS), I(OCARINA),
 	I(FEATHER), I(SHOVEL), I(MAGIC_POWDER), I(BOMB), I(SWORD), I(FLIPPERS), I(MAGNIFYING_LENS),
@@ -49,7 +44,6 @@ static const int dropped_key_options[] = {
 	I(CASTLE_GATE_OPENED), I(EAGLE_TOWER_OPENED),
 };
 
-/* MadBatter, TunicFairy, Witch, OwlStatue, SeashellMansionBonus */
 static const int mad_batter_options[] = {
 	I(POWER_BRACELET), I(SHIELD), I(BOW), I(HOOKSHOT), I(MAGIC_ROD), I(PEGASUS_BOOTS), I(OCARINA),
 	I(FEATHER), I(SHOVEL), I(MAGIC_POWDER), I(BOMB), I(SWORD), I(FLIPPERS), I(MAGNIFYING_LENS),
@@ -68,7 +62,6 @@ static const int mad_batter_options[] = {
 	I(CASTLE_GATE_OPENED), I(EAGLE_TOWER_OPENED),
 };
 
-/* ShopItem, TradeSequenceItem */
 static const int shop_item_options[] = {
 	I(POWER_BRACELET), I(SHIELD), I(BOW), I(HOOKSHOT), I(MAGIC_ROD), I(PEGASUS_BOOTS), I(OCARINA),
 	I(FEATHER), I(SHOVEL), I(MAGIC_POWDER), I(BOMB), I(SWORD), I(FLIPPERS), I(MAGNIFYING_LENS),
@@ -87,12 +80,10 @@ static const int shop_item_options[] = {
 	I(CASTLE_GATE_OPENED), I(EAGLE_TOWER_OPENED),
 };
 
-/* BoomerangGuy */
 static const int boomerang_guy_options[] = {
 	I(BOOMERANG), I(HOOKSHOT), I(MAGIC_ROD), I(PEGASUS_BOOTS), I(FEATHER), I(SHOVEL),
 };
 
-/* BoomerangGuy.configure, boomerang gift */
 static const int boomerang_guy_gift_options[] = {
 	I(POWER_BRACELET), I(SHIELD), I(BOW), I(HOOKSHOT), I(MAGIC_ROD), I(PEGASUS_BOOTS), I(OCARINA),
 	I(FEATHER), I(SHOVEL), I(MAGIC_POWDER), I(BOMB), I(SWORD), I(FLIPPERS), I(MAGNIFYING_LENS),
@@ -103,7 +94,6 @@ static const int boomerang_guy_gift_options[] = {
 	I(HEART_CONTAINER), I(BAD_HEART_CONTAINER), I(TOADSTOOL),
 };
 
-/* StartItem */
 static const int start_item_options[] = {
 	I(SWORD), I(SHIELD), I(POWER_BRACELET), I(OCARINA), I(FEATHER), I(BOOMERANG), I(MAGIC_ROD),
 	I(TAIL_KEY), I(SHOVEL), I(HOOKSHOT), I(PEGASUS_BOOTS), I(MAGIC_POWDER), I(BOMB),
@@ -111,7 +101,6 @@ static const int start_item_options[] = {
 
 #define T10(n) (n), (n) + 1, (n) + 2, (n) + 3, (n) + 4, (n) + 5, (n) + 6, (n) + 7, (n) + 8, (n) + 9
 
-/* item_ids[i] is i: one-item option lists ([HEART_PIECE], KeyLocation's [key]). */
 static const int item_ids[] = {
 	T10(0), T10(10), T10(20), T10(30), T10(40), T10(50), T10(60), T10(70), T10(80),
 	T10(90), T10(100), T10(110), T10(120), T10(130), T10(140), T10(150), T10(160),
@@ -119,7 +108,6 @@ static const int item_ids[] = {
 
 typedef char item_ids_cover_the_items[sizeof item_ids / sizeof item_ids[0] >= LADX_ITEM_COUNT ? 1 : -1];
 
-/* f"KEY{n}" and its families, n from 0 to 9. */
 static const int key_items[10] = {
 	I(KEY0), I(KEY1), I(KEY2), I(KEY3), I(KEY4), I(KEY5), I(KEY6), I(KEY7), I(KEY8), I(KEY9),
 };
@@ -138,7 +126,6 @@ static const int compass_items[10] = {
 	I(COMPASS0), I(COMPASS1), I(COMPASS2), I(COMPASS3), I(COMPASS4),
 	I(COMPASS5), I(COMPASS6), I(COMPASS7), I(COMPASS8), I(COMPASS9),
 };
-/* "INSTRUMENT%d": no INSTRUMENT0. */
 static const int instrument_items[9] = {
 	LADX_ITEM_NONE, I(INSTRUMENT1), I(INSTRUMENT2), I(INSTRUMENT3), I(INSTRUMENT4),
 	I(INSTRUMENT5), I(INSTRUMENT6), I(INSTRUMENT7), I(INSTRUMENT8),
@@ -150,10 +137,10 @@ enum { ROOM_REQUIRED, ROOM_NONE };
 typedef struct KindInfo {
 	const int *options;
 	int option_count;
-	int own_room; /* the room __init__ passes; -1 when the caller gives it */
+	int own_room;
 	int room_rule;
 	int arg;
-	const char *name_suffix; /* nameId's "0x%03X<suffix>" */
+	const char *name_suffix;
 } KindInfo;
 
 #define OPTS(list) list, (int)(sizeof list / sizeof list[0])
@@ -180,7 +167,6 @@ static const KindInfo kinds[LADX_SPOT_KIND_COUNT] = {
 	[LADX_SPOT_SEASHELL] = {OPTS(dropped_key_options), -1, ROOM_REQUIRED, ARG_NONE, ""},
 	[LADX_SPOT_SEASHELL_MANSION] = {OPTS(dropped_key_options), -1, ROOM_REQUIRED, ARG_NONE, ""},
 	[LADX_SPOT_SEASHELL_MANSION_BONUS] = {OPTS(mad_batter_options), 0x2E9, ROOM_NONE, ARG_INDEX, ""},
-	/* room=0x2A1 is a default: ShopItem(0, room=room) passes another. */
 	[LADX_SPOT_SHOP_ITEM] = {OPTS(shop_item_options), 0x2A1, ROOM_REQUIRED, ARG_INDEX, ""},
 	[LADX_SPOT_SLIME_KEY] = {OPTS(dropped_key_options), 0x0C6, ROOM_NONE, ARG_NONE, ""},
 	[LADX_SPOT_SONG] = {OPTS(dropped_key_options), -1, ROOM_REQUIRED, ARG_NONE, ""},
@@ -221,7 +207,6 @@ int ladx_logic_add_item_info(LadxLogic *logic, int location, LadxSpotKind kind, 
 	if ((k->arg == ARG_NONE && arg != -1) || (k->arg == ARG_ITEM && !is_item(arg)) ||
 	    (k->arg == ARG_INDEX && (arg < 0 || arg > 9)))
 		return broken(logic);
-	/* shop.py __init__: price [200, 980][index], room asserted in underworld 2. */
 	if (kind == LADX_SPOT_SHOP_ITEM && (arg > 1 || room < 0x200 || room >= 0x2FF))
 		return broken(logic);
 	if (kind == LADX_SPOT_KEY_LOCATION)
@@ -252,7 +237,6 @@ static void replace(LadxSpot *spot, int item)
 	spot->base_option_count = 1;
 }
 
-/* itemInfo.py ItemInfo.configure: the copy, then the appends. */
 static void item_info_configure(LadxLogic *logic, int s, const LadxSettings *settings)
 {
 	bool keys = ladx_setting_is(settings, LADX_SETTING_DUNGEON_KEYS, "keysanity");
@@ -304,7 +288,7 @@ static void configure_spot(LadxLogic *logic, int s, const LadxSettings *settings
 			replace(spot, LADX_ITEM_SWORD);
 		else if (ladx_setting_on(settings, LADX_SETTING_RANDOMSTARTLOCATION) &&
 			 !ladx_setting_is(settings, LADX_SETTING_ENTRANCESHUFFLE, "none"))
-			logic->broken = true; /* its append to the class list is not ported */
+			logic->broken = true;
 		return;
 	case LADX_SPOT_BOOMERANG_GUY:
 		if (ladx_setting_is(settings, LADX_SETTING_BOOMERANG, "gift")) {
@@ -355,7 +339,7 @@ static void configure_spot(LadxLogic *logic, int s, const LadxSettings *settings
 	case LADX_SPOT_SHOP_ITEM:
 		item_info_configure(logic, s, settings);
 		if (!ladx_setting_is(settings, LADX_SETTING_SHOPSANITY, ""))
-			logic->broken = true; /* shopsanity is not ported */
+			logic->broken = true;
 		return;
 	case LADX_SPOT_OWL_STATUE:
 		item_info_configure(logic, s, settings);
@@ -363,7 +347,7 @@ static void configure_spot(LadxLogic *logic, int s, const LadxSettings *settings
 		    (ladx_setting_is(settings, LADX_SETTING_OWLSTATUES, "dungeon") && spot->room >= 0x100) ||
 		    (ladx_setting_is(settings, LADX_SETTING_OWLSTATUES, "overworld") && spot->room < 0x100))
 			return;
-		logic->broken = true; /* "Tried to configure an owlstatue that was not enabled" */
+		logic->broken = true;
 		return;
 	case LADX_SPOT_TOADSTOOL:
 		if (ladx_setting_on(settings, LADX_SETTING_WITCH))

@@ -160,7 +160,6 @@ LadxRngStatus ladx_rng_shuffle(LadxRng *rng, LadxRngStage stage, void *base, siz
 
 		if (perm[i] == i)
 			continue;
-		/* Each cycle is walked once, from its smallest index. */
 		for (from = perm[i]; from != i; from = perm[from])
 			if (from < i)
 				break;

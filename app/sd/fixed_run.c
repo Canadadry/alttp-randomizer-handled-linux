@@ -128,7 +128,6 @@ static int hex_digit(char c)
 	return -1;
 }
 
-/* Exactly 2 * n hex digits of either case; out unchanged on failure. */
 static bool parse_hex(const char *s, uint8_t *out, int n)
 {
 	uint8_t bytes[RANDO_LADX_SEED_BYTES > RANDO_MD5_SIZE ? RANDO_LADX_SEED_BYTES : RANDO_MD5_SIZE];
@@ -178,7 +177,6 @@ static bool parse_date(const char *s, RandoRecordDate *out)
 	return true;
 }
 
-/* <setting>=<value> in s[0..len), both library names; false on anything else. */
 static bool parse_setting(const char *s, size_t len, RandoSettingId *id, int *value)
 {
 	char buf[RANDO_FIXED_TOKEN_MAX + 1];

@@ -35,7 +35,6 @@ class PackageError(Exception):
 
 
 def theme_sources(theme_dir):
-    """{entry name: (source path, mode)} for every file of theme_dir, refused unless the folder is a flat theme."""
     if not os.path.isdir(theme_dir):
         raise PackageError("theme folder not found: %s" % theme_dir)
     files = {}
@@ -55,8 +54,6 @@ def theme_sources(theme_dir):
 
 
 def tables_sources(tables_dir):
-    """{entry name: (source path, mode)} for every patch table of tables_dir, refused unless the folder holds
-    only regular .txt files (the app's reader takes every .txt of its folder) and order.txt."""
     if not os.path.isdir(tables_dir):
         raise PackageError("tables folder not found: %s" % tables_dir)
     files = {}
@@ -78,7 +75,6 @@ def tables_sources(tables_dir):
 
 
 def sources(binary, package_dir, data_dir, theme_dir):
-    """{entry name: (source path, mode)} for every file entry."""
     files = {"zrando": (binary, EXEC_MODE)}
     for name, mode in (("launch.sh", EXEC_MODE), ("config.json", FILE_MODE), ("icon.png", FILE_MODE)):
         files[name] = (os.path.join(package_dir, name), mode)

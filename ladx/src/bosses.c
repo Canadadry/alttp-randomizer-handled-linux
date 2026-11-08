@@ -32,7 +32,6 @@ static const uint32_t facade_at[3] = {BANK(0x04) + 0x121Du, BANK(0x04) + 0x1226u
 
 static const int boss_rooms[LADX_BOSS_ROOM_COUNT] = {0x106, 0x12b, 0x15a, 0x166, 0x185, 0x1bc, 0x223, 0x234, 0x300};
 
-/* BOSS_ENTITIES[target] (x, y, type); the fish and the eagle have none. */
 static const LadxRoomEntity boss_entities[LADX_BOSS_ROOM_COUNT] = {
 	{3, 2, 0x59}, {4, 2, 0x5C}, {4, 3, 0x5B}, {0, 0, -1}, {4, 3, 0x5D},
 	{4, 3, 0x5A}, {0, 0, -1},   {4, 3, 0x62}, {5, 2, 0xF9},
@@ -41,7 +40,6 @@ static const LadxRoomEntity boss_entities[LADX_BOSS_ROOM_COUNT] = {
 static const int miniboss_rooms[LADX_MINIBOSS_KEY_COUNT] = {0x111, 0x128, 0x145, 0x164, 0x193, 0x1C5,
 							   0x228, 0x23F, 0x30C, 0x303, 0x2E1, 0x27F};
 
-/* MINIBOSS_ENTITIES in LadxMiniboss order, at most two each (n). */
 static const struct {
 	int n;
 	LadxRoomEntity e[2];
@@ -154,13 +152,11 @@ static int map_of(int dungeon)
 	return dungeon < 8 ? dungeon : 0xFF;
 }
 
-/* getBossRoomStatusFlagLocation */
 static int status_flag(int dungeon)
 {
 	return boss_rooms[dungeon] >= 0x300 ? 0xDDE0 - 0x300 + boss_rooms[dungeon] : 0xD800 + boss_rooms[dungeon];
 }
 
-/* fixDungeonItem; *out the item id, *same 1 when it is item_chest_id itself. */
 static LadxBossesStatus fix_dungeon_item(Run *r, int item_chest_id, int dungeon, int *out, int *same)
 {
 	static const int families[5] = {LADX_ITEM_MAP, LADX_ITEM_COMPASS, LADX_ITEM_KEY, LADX_ITEM_NIGHTMARE_KEY,
@@ -186,7 +182,6 @@ static LadxBossesStatus fix_dungeon_item(Run *r, int item_chest_id, int dungeon,
 	return LADX_BOSSES_OK;
 }
 
-/* The boss room's two item bytes, fixed for its dungeon, copied to room slot `to` of both tables. */
 static LadxBossesStatus copy_items(Run *r, int dungeon, int to)
 {
 	static const uint32_t tables[2] = {DROP_TABLE, BOSS_ITEM};
@@ -209,7 +204,6 @@ static LadxBossesStatus copy_items(Run *r, int dungeon, int to)
 	return LADX_BOSSES_OK;
 }
 
-/* An ld hl, nn instruction with its operand made value. */
 static LadxBossesStatus put_ld_hl(Run *r, uint32_t offset, const uint8_t *code, int value)
 {
 	uint8_t b[3];
@@ -249,7 +243,6 @@ static LadxBossesStatus d7_adjust(Run *r)
 	return store(r);
 }
 
-/* getCleanBossRoom(rom, dungeon) into r->room. */
 static LadxBossesStatus clean_room(Run *r, int dungeon)
 {
 	static const int d4_objects[4][2] = {{1, 1}, {8, 1}, {1, 6}, {8, 6}};
@@ -294,7 +287,6 @@ static LadxBossesStatus clean_room(Run *r, int dungeon)
 	return LADX_BOSSES_OK;
 }
 
-/* The fish's room 0x1EF or the eagle's 0x2F8 given a warp back to the boss room. */
 static LadxBossesStatus warp_back(Run *r, int room, int dungeon, int target_room, int x, int y)
 {
 	LadxBossesStatus st;
@@ -446,7 +438,6 @@ LadxBossesStatus ladx_bosses_change(LadxEncoder *enc, LadxSpan group, LadxRoom *
 	return LADX_BOSSES_OK;
 }
 
-/* Blaino's warp to its dungeon's entrance, the start house by default. */
 static LadxRoomObject blaino_warp(int room)
 {
 	static const struct {

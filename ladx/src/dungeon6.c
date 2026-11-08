@@ -1,16 +1,12 @@
 #include "dungeon_build.h"
 
-/* logic/dungeon6.py Dungeon6 at 4325207e, line for line. */
-
 #define DUNGEON 6
 
 int ladx_dungeon6(const LadxDungeonContext *c)
 {
-	/* Logic passes no raft_game_chest outside overworld=alttp. */
 	const bool raft_game_chest = true;
 	int i, loop[5];
 
-	/* locations */
 	int entrance = LOC("D6 Entrance");
 	int entrance_owl1 = ADD(LOC(NULL), OWL_STATUE, 0x1BB);
 	int entrance_switch = ADD_KEY(LOC("D6 Entrance Switch"), SWITCH6A);
@@ -82,14 +78,11 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 	int boss_room_drop3 = ADD(LOC(NULL), HEART_CONTAINER, 0x1BC);
 	int instrument = ADD(LOC("D6 Instrument Room"), INSTRUMENT, 0x1b5);
 
-	/* back exit */
 	if (raft_game_chest) {
 		int rapids_island_chest11 = ADD(LOC_OUTSIDE(NULL), CHEST, 0x06C);
 		CONNECT_BACK(rapids_island, rapids_island_chest11, NONE, NO);
 	}
 
-	/* connections */
-	/* entrance */
 	CONNECT_BACK(entrance, entrance_switch, R->hit_switch, NO);
 	CONNECT_BACK(entrance, entrance_switch_range, I(BOMB), NO);
 	CONNECT_BACK(entrance, first_elephant_room, ENEMY(WIZROBE), NONE);
@@ -104,7 +97,6 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 	CONNECT_BACK(pre_bracelet_room, bracelet_room, AND(ENEMY(MINI_MOLDORM), ENEMY(WIZROBE)), NO);
 	CONNECT_BACK(bracelet_room, bracelet_room_chest3, NONE, NO);
 	CONNECT_BACK(bracelet_room, entrance, COUNT(POWER_BRACELET, 2), NO);
-	/* west */
 	CONNECT_BACK(entrance, after_potbutton_door, I(POWER_BRACELET), NONE);
 	CONNECT_ALL_BACK(entrance, TARGETS(fenced_walkway_switched, potbutton_area_switched), I(SWITCH6A_RANGE), NO);
 	CONNECT_BACK(fenced_walkway_switched, potbutton_area_switched, I(POWER_BRACELET), NO);
@@ -128,7 +120,6 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 	for (i = 0; i < 2; i++)
 		CONNECT_BACK(loop[i], after_potbutton_door_chest4, I(D6_THREE_WIZROBE_CLEAR), NO);
 	CONNECT_BACK(three_wizrobe_area_switched, star_area_switched, I(POWER_BRACELET), NONE);
-	/* northwest */
 	CONNECT_BACK(star_area, three_wizrobe_area, NONE, NO);
 	loop[0] = star_area;
 	loop[1] = star_area_switched;
@@ -143,20 +134,17 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 	CONNECT_BACK(top_left_room, top_left_room_switch, R->hit_switch, NO);
 	CONNECT(top_left_room, top_left_exit, NONE);
 	CONNECT(top_left_exit, rapids_island, NONE);
-	/* miniboss */
 	CONNECT(entrance, before_miniboss, FOUND(KEY6, 1));
 	CONNECT(before_miniboss, miniboss_room, I(BOMB));
 	CONNECT_BACK(miniboss_room, entrance, MINIBOSS(5), NO);
 	CONNECT_BACK(miniboss_room, after_miniboss, MINIBOSS(5), COUNT(POWER_BRACELET, 2));
 	CONNECT_BACK(after_miniboss, before_b_passage, COUNT(POWER_BRACELET, 2), NONE);
 	CONNECT_BACK(after_miniboss, before_miniboss, FOUND(KEY6, 3), NO);
-	/* center */
 	CONNECT(before_b_passage, after_b_passage, I(FEATHER));
 	CONNECT_BACK(after_b_passage, after_b_passage_drop2, NONE, NO);
 	CONNECT(after_b_passage, flying_bomb_room, FOUND(KEY6, 2));
 	CONNECT_BACK(flying_bomb_room, before_c_passage, COUNT(POWER_BRACELET, 2), I(POWER_BRACELET));
 	CONNECT(before_c_passage, after_c_passage, I(PEGASUS_BOOTS));
-	/* southeast */
 	CONNECT_BACK(entrance, four_wizrobe_room, COUNT(POWER_BRACELET, 2), NO);
 	CONNECT_ALL_BACK(four_wizrobe_room, TARGETS(entrance, blade_trap_room, south_waterway), ENEMY(WIZROBE), NO);
 	CONNECT(south_waterway, north_waterway, OR(ENEMY(TEKTITE), I(FEATHER)));
@@ -169,7 +157,6 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 	loop[1] = north_waterway_east_ledge;
 	for (i = 0; i < 2; i++)
 		CONNECT_BACK(loop[i], north_waterway, NONE, NO);
-	/* northeast */
 	CONNECT_BACK(after_c_passage, south_spark_pot_maze, ENEMY(POLS_VOICE), NONE);
 	CONNECT_BACK(after_c_passage, dodongo_room, ENEMY(POLS_VOICE), OR(I(FEATHER), MINIBOSS_NAMED(DODONGO)));
 	CONNECT_BACK(south_spark_pot_maze, north_spark_pot_maze,
@@ -185,7 +172,6 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 	CONNECT_BACK(north_waterway_west_ledge, pot_area, I(POWER_BRACELET), NO);
 	CONNECT_BACK(pot_area, pot_area_chest11, I(POWER_BRACELET), NO);
 	CONNECT_BACK(pot_area, pot_area_switch, R->hit_switch, NO);
-	/* boss */
 	CONNECT_BACK(after_b_passage, vacuum_room, NONE, NO);
 	CONNECT_BACK(vacuum_room, entrance, I(FEATHER), NO);
 	CONNECT_BACK(vacuum_room, laser_turret_room, NONE, NO);
@@ -193,7 +179,6 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 		     AND(I(FEATHER), OR(I(SWORD), I(SHIELD), I(HOOKSHOT), I(BOOMERANG), ENEMY(WIZROBE))), NO);
 	CONNECT_BACK(pre_boss_room, boss_room, I(NIGHTMARE_KEY6), NO);
 	CONNECT_ALL_BACK(boss_room, TARGETS(boss_room_drop3, instrument), BOSS(5), NO);
-	/* owl statues */
 	if (OPTION(OWLSTATUES, "both") || OPTION(OWLSTATUES, "dungeon")) {
 		loop[0] = entrance;
 		loop[1] = fenced_walkway_switched;
@@ -205,10 +190,8 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 			CONNECT_BACK(blade_trap_room, blade_trap_room_owl2, AND(I(POWER_BRACELET), I(STONE_BEAK6)), NO);
 		CONNECT_BACK(pot_area, pot_area_owl3, I(STONE_BEAK6), NO);
 	}
-	/* normal */
 	if (!LOGIC_IS("casual"))
 		CONNECT(entrance, entrance_switch_range, OR(I(BOMB), I(BOOMERANG)));
-	/* hard */
 	if (HARD_OR_ABOVE) {
 		CONNECT_BACK(entrance, entrance_switch, AND(R->stun_mask_mimic, R->throw_enemy), NO);
 		CONNECT(before_a_passage, after_a_passage, NONE);
@@ -236,7 +219,6 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 			     NO);
 		CONNECT_BACK(pot_area, pot_area_switch, R->throw_pot, NO);
 	}
-	/* glitched */
 	if (GLITCHED_OR_ABOVE) {
 		CONNECT_BACK(first_elephant_room, second_elephant_room, AND(ENEMY(MINI_MOLDORM), R->bomb_trigger), NO);
 		CONNECT(potbutton_area_switched, fenced_walkway_switched, AND(I(POWER_BRACELET), R->shaq_jump));
@@ -252,7 +234,6 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 		CONNECT_BACK(north_waterway, north_waterway_east_ledge, R->super_jump, NO);
 		CONNECT_BACK(north_waterway, north_waterway_west_ledge, R->super_jump_feather, NO);
 	}
-	/* hell */
 	if (LOGIC_IS("hell")) {
 		CONNECT_BACK(entrance, second_elephant_room,
 			     AND(OR(R->super_jump_feather, R->boots_superhop), OR(I(SWORD), I(HOOKSHOT), I(POWER_BRACELET), I(SHOVEL)),
@@ -273,7 +254,6 @@ int ladx_dungeon6(const LadxDungeonContext *c)
 		CONNECT_BACK(north_waterway, north_waterway_east_ledge, R->super_jump_feather, NO);
 		CONNECT_BACK(dodongo_room, after_c_passage, R->boots_bonk, NO);
 		CONNECT_BACK(vacuum_room, entrance, NONE, NO);
-		/* connections that require overworld-only replenishable items */
 		if (!OPTION(OVERWORLD, "alttp") && !OPTION(OVERWORLD, "dungeondive")) {
 			CONNECT_BACK(entrance, second_elephant_room,
 				     AND(OR(R->super_jump_feather, R->boots_superhop), I(TOADSTOOL2),

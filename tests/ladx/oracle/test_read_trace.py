@@ -1,8 +1,3 @@
-"""Usage: python3 -I test_read_trace.py
-
-Unit tests of read_trace.py on stand-in ROM, ROMWithTables and PointerTable classes written to a
-temporary directory, with no LADXR and no ROM.
-"""
 
 import hashlib
 import importlib.util
@@ -233,7 +228,6 @@ class Fixture(unittest.TestCase):
         return trace
 
     def generated(self, trace):
-        """Records made inside the planted `generate` section, the parse's left out."""
         return [r for r in trace.records() if r[1].startswith("planted.py generate\t")]
 
 

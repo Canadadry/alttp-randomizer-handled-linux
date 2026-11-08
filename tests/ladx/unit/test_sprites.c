@@ -285,7 +285,6 @@ static void plant_key(int table, uint32_t index, const uint8_t *bytes, size_t n)
 		test_fail(TEST, "planting an entry");
 }
 
-/* The objects table and key of an index room, as RoomEditor reads it. */
 static void objects_key(int nr, int *table, uint32_t *index)
 {
 	if (nr < 0x80) {
@@ -397,7 +396,6 @@ static LadxPipelineStatus run_pipeline(const char *assignment, LadxPipelineError
 	return ladx_pipeline_run(&pipeline, &enc, err);
 }
 
-/* The current entry of room nr's sprite data equals a, b, c, d. */
 static int sprite_entry_is(int nr, int a, int b, int c, int d)
 {
 	uint8_t v[16];

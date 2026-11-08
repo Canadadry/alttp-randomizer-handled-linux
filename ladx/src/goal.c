@@ -13,7 +13,6 @@
 #define SIGN_DATA (0x0Cu * LADX_ROM_BANK + 0x3800u)
 #define SIGN_NUMBER (0x0Cu * LADX_ROM_BANK + 0x3900u)
 
-/* data/ladx/goal.txt's units, 0-based: the maze's, the counts -1..7, then each specific list by mask 1..255. */
 #define UNIT_MAZE 0
 #define UNIT_COUNT 1
 #define UNIT_SPECIFIC 10
@@ -43,7 +42,6 @@ static int write_text(LadxEncoder *enc, LadxPipeline *p, const char *text)
 	return ladx_enc_table(enc, group_name(), TEXTS, key, p->values, p->origins, n) == LADX_ENC_OK;
 }
 
-/* setRequiredInstrumentCount(rom, count). */
 static int instrument_count(LadxEncoder *enc, LadxPipeline *p, int count)
 {
 	char text[48];
@@ -56,7 +54,6 @@ static int instrument_count(LadxEncoder *enc, LadxPipeline *p, int count)
 	return ladx_pipeline_const_units(enc, p, "goal", UNIT_COUNT + 1 + (count < 0 ? -1 : count), 1);
 }
 
-/* setSpecificInstruments(rom, digits): the text in the drawn order, the code by the sorted set. */
 static int specific_instruments(LadxEncoder *enc, LadxPipeline *p, const char *digits)
 {
 	char text[16 + 8 * 16];
@@ -83,10 +80,7 @@ static int put_byte(LadxEncoder *enc, uint32_t offset, int value)
 	return value >= 0 && value <= 0xFF && ladx_enc_bank(enc, group_name(), offset, &v, &origin, 1) == LADX_ENC_OK;
 }
 
-/*
- * patchMaze(rom, signs, directions). LADXR zeroes the sign tables, places the signs, stores room 6,
- * then patches; the unit holds the zeroes and the patches, which share no position with the rest.
- */
+/* The unit holds LADXR's zeroes and patches together: they share no position with the signs and room 6. */
 static int sign_maze(LadxEncoder *enc, LadxPipeline *p, const LadxWorldSetup *ws, LadxRoom *re)
 {
 	int idx;
@@ -127,7 +121,7 @@ int ladx_group_goal(LadxEncoder *enc, LadxPipeline *p)
 	case LADX_GOAL_OPEN:
 		return instrument_count(enc, p, -1);
 	case LADX_GOAL_SEASHELLS:
-		return 1; /* the goal-fixed table row */
+		return 1;
 	case LADX_GOAL_VANILLA:
 	case LADX_GOAL_INSTRUMENTS:
 		return instrument_count(enc, p, ws->goal_count);

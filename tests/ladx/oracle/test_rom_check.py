@@ -1,5 +1,3 @@
-"""Unit tests of rom_check.py, the full-ROM check driver, on synthetic ROMs, planted case trees and
-fake generators, with no ROM and no LADXR."""
 
 import contextlib
 import io

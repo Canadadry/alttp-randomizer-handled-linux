@@ -33,7 +33,6 @@ typedef void (*UiHistoryScanFn)(void *ctx, UiHistoryList *out);
 
 typedef void (*UiAppRememberFn)(void *ctx, UiGame game);
 
-/* LADX's tabs; every function is required. */
 typedef struct UiAppLadxInit {
 	UiLadxGenerateInit generate;
 	UiGenRunFn run;
@@ -44,7 +43,6 @@ typedef struct UiAppLadxInit {
 	void *history_ctx;
 } UiAppLadxInit;
 
-/* One game's History tab and runner. */
 typedef struct UiAppSide {
 	UiHistory history;
 	UiHistoryList list;
@@ -66,7 +64,6 @@ typedef struct UiAppInit {
 	UiHistoryDeleteFn delete_fn;
 	void *history_ctx;
 	UiGame game;
-	/* NULL: nothing is remembered. Called with the game the player opens, before it opens. */
 	UiAppRememberFn remember;
 	void *remember_ctx;
 	UiAppLadxInit ladx;
@@ -99,7 +96,6 @@ void ui_app_run(UiApp *app);
 
 void ui_app_screen(UiApp *app, UiScreen *out);
 
-/* ALttP's tab, whichever view is shown. */
 UiAppTab ui_app_tab(const UiApp *app);
 
 UiAppView ui_app_view(const UiApp *app);

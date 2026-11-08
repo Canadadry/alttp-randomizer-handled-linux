@@ -115,7 +115,6 @@ static bool literal(Parser *p, const char *word)
 	return true;
 }
 
-/* Ends a member: true with *more when a ',' or the closing '}' follows. */
 static bool next_member(Parser *p, const char *what, bool *more)
 {
 	char c = peek(p);

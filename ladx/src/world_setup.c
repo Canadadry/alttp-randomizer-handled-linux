@@ -11,7 +11,6 @@ static const char *const miniboss_keys[LADX_MINIBOSS_KEY_COUNT] = {
 	"0", "1", "2", "3", "4", "5", "6", "7", "c1", "c2", "moblin_cave", "armos_temple",
 };
 
-/* LADX_GOAL_SPECIFIC has no name: LADXR stores "=<digits>". */
 static const char *const goal_names[LADX_GOAL_COUNT] = {
 	"vanilla", "instruments", "open", "seashells", "maze", NULL,
 };

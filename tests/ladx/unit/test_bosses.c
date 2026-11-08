@@ -238,7 +238,6 @@ static LadxBossesStatus change(const int *mapping)
 	return ladx_bosses_change(&enc, span("bosses"), &room, &code, mapping, &raised);
 }
 
-/* The cleaned room: no warp, stairs or lava; pits and doors changed; the rest kept in order. */
 static int cleaned(const LadxRoom *r)
 {
 	return has_object(r, 3, 1, 0x01) && has_object(r, 4, 1, 0xaf) && has_object(r, 5, 1, 0xb0) &&

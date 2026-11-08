@@ -572,3 +572,7 @@ The README covers both games. A table gives each base ROM's place: ALttP's heade
 - ALttP e2e: 50 cases and 23 combos;
 - LADX e2e: 88 cases and 40 combos, projections equal;
 - `e2e-synthetic`: 128 equal.
+
+### Step 4.7
+
+`rework-comments` ran as a catch-up pass over `ladx/`, `tests/ladx/` (generated data left out) and the `app/` files plan 3 touched: 247 files, 192 changed. The comment ratio went from 6.0% to 1.8%; `ladx/include` from 39.7% to 0%, `ladx/src` from 3.0% to 0.2%. Headers carry no comment; their contracts are in `tests/ladx/README.md` or pinned by tests. C bodies keep 40 one-sentence traps. Tests keep the provenance of expected values. Script module docstrings and shell usage blocks stay whole as the tools' usage text. Gate: comment-stripped C (`gcc -fpreprocessed`), docstring-stripped Python ASTs and comment-stripped shell are identical before and after, and no assert was added. `make -k check`, `e2e-rom`, `rom-check` (128 ok) and `sdl-pc` (18 goldens) are green, with 0 literal runs.

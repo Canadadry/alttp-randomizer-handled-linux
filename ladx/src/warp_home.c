@@ -69,7 +69,6 @@ LadxWarpHomeStatus ladx_warp_home_target(const LadxRoom *r, int force_inside, ui
 	return LADX_WARP_HOME_OK;
 }
 
-/* tiles[to] = tiles[from]; KeyError on an absent from. */
 static int move(LadxBackground *bg, uint32_t to, uint32_t from, LadxOutcome *raised)
 {
 	char key[16];

@@ -1,9 +1,3 @@
-"""Usage: python3 -I test_invariant_run.py
-
-Unit tests of invariant_run.py: planted C-group and table-group calls through read_trace.py's
-instrumentation of stand-in ROM, ROMWithTables and PointerTable classes, with no LADXR and no
-ROM.
-"""
 
 import importlib.util
 import io
@@ -139,8 +133,6 @@ SIDES.update(tg="table", tg2="table")
 
 
 class Planted:
-    """The planted run: real ROM bytes out, the event stream and the re-run's flags."""
-
     def __init__(self, rerun=True):
         self.dir = tempfile.mkdtemp(prefix="invariant-run-")
         try:
@@ -180,7 +172,6 @@ class Planted:
         self.tables, self.initial = trace.tables(), trace.initial()
 
     def flags(self, group):
-        """[(event kind, offset or key, flags)] of group's events."""
         return [(e[0], e[3] if e[0] == "B" else e[4], self.rerun.flags.get(n))
                 for n, e in enumerate(self.events) if e[1] == group]
 

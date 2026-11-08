@@ -45,28 +45,19 @@ typedef struct RandoFixedRun {
 
 const char *rando_fixed_key_name(UiButton button);
 
-/* <key> or <key>*<n>; on failure keys is unchanged. */
 RandoFixedKeyStatus rando_fixed_keys_add(RandoFixedKeys *keys, const char *token);
 
-/* Whitespace-separated tokens up to EOF; on failure bad holds the offending token, cut to
-   RANDO_FIXED_TOKEN_MAX characters, and the keys before it stay added. */
 RandoFixedKeyStatus rando_fixed_keys_read(RandoFixedKeys *keys, FILE *in, char bad[RANDO_FIXED_TOKEN_MAX + 1]);
 
-/* A positional key argument: "-" reads in, anything else is one token. On failure *bad points
-   to arg itself or, for a token read from in, to buf. */
 RandoFixedKeyStatus rando_fixed_keys_arg(RandoFixedKeys *keys, const char *arg, FILE *in,
 					 char buf[RANDO_FIXED_TOKEN_MAX + 1], const char **bad);
 
 bool rando_fixed_run_takes(const char *option);
 
-/* option must be one rando_fixed_run_takes accepts; false on a bad value, run unchanged. */
 bool rando_fixed_run_option(RandoFixedRun *run, const char *option, const char *value);
 
-/* The --unsupported pair, a test-only override of the library's list; NULL when not given. It points
-   into run, so run must outlive the shell it is handed to. */
 const RandoSettingPair *rando_fixed_run_unsupported(const RandoFixedRun *run);
 
-/* The fixed seeds and date live in this module's statics: one fixed run per process. */
 void rando_fixed_run_apply(const RandoFixedRun *run, RandoAppShell *shell);
 
 #endif

@@ -108,7 +108,6 @@ class Extractor:
         shutil.rmtree(self.work, ignore_errors=True)
 
     def build(self, assignments):
-        """(settings, world setup lines, logic, generator after randomize) for one configuration."""
         settings = self.settings.Settings()
         for assignment in assignments:
             settings.set(assignment)
@@ -164,7 +163,6 @@ def read_tier1(extractor):
 
 
 def parse_config(name):
-    """A config name's assignments: logic=<v>/baseline or logic=<v>/<k>=<v>[,<k>=<v>...]."""
     logic, _, rest = name.partition("/")
     if not logic.startswith("logic=") or not rest:
         raise ladx_oracle.OracleError("oracle: config %r is not logic=<v>/baseline or logic=<v>/<k>=<v>,..."

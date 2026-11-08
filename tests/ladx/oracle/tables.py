@@ -51,7 +51,6 @@ _SIBLINGS = {}
 
 
 def _sibling(name):
-    """The module name.py next to this file, loaded once."""
     if name not in _SIBLINGS:
         spec = importlib.util.spec_from_file_location("tables_" + name,
                                                       os.path.join(HERE, name + ".py"))
@@ -66,9 +65,6 @@ def _sibling(name):
 
 
 class Entry:
-    """values: one per component; lines: its record lines (empty: writes nothing); banks
-    {offset: atom} and entries {(table, key): atoms or int}, as write_log.parse gives them."""
-
     def __init__(self, values, lines, banks, entries):
         self.values, self.lines, self.banks, self.entries = values, lines, banks, entries
 
@@ -89,8 +85,6 @@ class Row:
 
 
 class Order:
-    """sections: the section names in order; rows: [Row]."""
-
     def __init__(self, sections, rows):
         self.sections, self.rows = sections, rows
 
@@ -103,8 +97,6 @@ def _lines(text):
 
 
 def parse(text):
-    """The Order or Group of a file's text, by its version line; TablesError names the first
-    broken rule."""
     lines = _lines(text)
     if lines and lines[0] == ORDER_VERSION:
         return _parse_order(lines)
@@ -118,7 +110,6 @@ UNIT_ID = re.compile(r"([A-Za-z0-9_-]+)\.([1-9][0-9]*)")
 
 
 def _unit_number(unit, group):
-    """n of a unit id <group>.<n>, or None when unit is not one of group's ids."""
     m = UNIT_ID.fullmatch(unit)
     return int(m.group(2)) if m and m.group(1) == group else None
 
@@ -154,8 +145,6 @@ def _value_ok(value):
 
 
 def _records(name, table_names, lines, first):
-    """(banks, entries) of an entry's record lines, starting at line number first, checked by
-    write_log.parse as one segment of group name."""
     write_log = _sibling("write_log")
     text = "".join(l + "\n" for l in [write_log.VERSION_LINE, " ".join(["tables"] + table_names),
                                      "G " + name] + lines)
@@ -218,7 +207,6 @@ def _parse_group(lines):
 
 
 def render(parsed):
-    """The canonical text of an Order or a Group."""
     if isinstance(parsed, Order):
         lines = [ORDER_VERSION]
         for section in parsed.sections:
@@ -236,16 +224,11 @@ def render(parsed):
 
 
 class Tables:
-    """order: the Order of order.txt; groups: {group: Group} of the group files."""
-
     def __init__(self, order, groups):
         self.order, self.groups = order, groups
 
 
 def select(tables, values):
-    """The walk of order.txt for one key: [(row, entry)] in order, a `C` row with entry None, a
-    unit at its first row with the Entry its components' values pick ({component: value},
-    rendered as in the files); TablesError on a missing unit, component or entry."""
     steps, seen = [], set()
     for row in tables.order.rows:
         if row.side == "C":
@@ -274,8 +257,6 @@ COUNT = re.compile(r"0|[1-9][0-9]*")
 
 
 def _inventory(inventory_text):
-    """(the expected section names, [(section, key, side, group)] of the `table` and `C` rows,
-    the `table` groups, the `C` groups) of an inventory; TablesError when it does not parse."""
     check = _sibling("inventory_check")
     sections, bad = check.parse_inventory(inventory_text)
     named, named_bad = check.parse_named(inventory_text)
@@ -291,8 +272,6 @@ def _inventory(inventory_text):
 
 
 def _domains(tier1_text, settings_text):
-    """{setting: (its values, whether it is tier 1)}: tier1.txt's values for a tier-1 setting,
-    else its default alone."""
     oracle = _sibling("ladx_oracle")
     try:
         settings = _sibling("ladx_cases").read_settings(settings_text)
@@ -324,7 +303,6 @@ def _row_lines(order, names, rows):
 
 
 def _unit_lines(order, groups):
-    """The BADROW lines of the rows' units against the parsed group files {group: Group}."""
     lines = []
     used, split, last_unit, last_number = set(), set(), None, {}
     for row in order.rows:
@@ -390,8 +368,6 @@ def _entry_lines(name, group, domains):
 
 
 def check(root, inventory_text, tier1_text, settings_text):
-    """(problem lines, summary line) of the tables under root against the inventory, tier1.txt
-    and settings.txt; TablesError when an input does not parse."""
     names, rows, table_groups, c_groups = _inventory(inventory_text)
     domains = _domains(tier1_text, settings_text)
     expected = [ORDER_FILE] + ["%s.txt" % g for g in table_groups]
@@ -437,7 +413,6 @@ def _plant_table(columns, rows):
 
 
 def _plant_inventory():
-    """An inventory of two table groups, fixed (rows a, c, d) and opts (row e), and C rows b, f."""
     check = _sibling("inventory_check")
     rows = [("a(rom)", "table", "fixed"), ("b(rom)", "C", "items"), ("c(rom)", "table", "fixed"),
             ("d(rom)", "table", "fixed"), ("e(rom)", "table", "opts"), ("f(rom)", "C", "items")]
@@ -468,7 +443,6 @@ _PLANT_TREE = {
 
 
 def _plant_variants():
-    """(name, {file: text or None}, the lines the check must print)."""
     order, fixed, opts, items = (_PLANT_TREE[f] for f in ("order.txt", "fixed.txt", "opts.txt",
                                                           "items.txt"))
     return [
@@ -498,8 +472,6 @@ def _plant_variants():
 
 
 def self_test():
-    """Plants a correct tree, then each broken variant, and returns the first variant whose check
-    output is not exactly its lines (the correct tree's name is `correct`), or None."""
     import shutil
     import tempfile
     inventory = _plant_inventory()

@@ -314,7 +314,6 @@ static void test_boomerang_pair(void)
 
 static const char *const kind_names[] = {"unfinished", "ok", "error", "crash"};
 
-/* The C run's fill projection written to a temporary file: its line count and digest. */
 static void c_projection(const LadxSettings *s, const uint8_t *seed, size_t seed_len, const char *label,
 			 long *lines, char digest_hex[DIGEST_HEX + 1])
 {
@@ -363,7 +362,6 @@ static size_t parse_seed(const char *hex, uint8_t *seed, const char *label)
 	return n;
 }
 
-/* fill_outcomes.txt: every run's outcome kind, fill projection line count and digest equal. */
 static void replay_outcomes(void)
 {
 	static char line[FIXTURE_LINE];

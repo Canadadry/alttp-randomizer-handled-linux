@@ -18,7 +18,7 @@ typedef struct Layout {
 	int alt_count;
 	const char *alt[ALT_MAX];
 	uint32_t alt_bank[ALT_MAX], alt_addr[ALT_MAX];
-	uint32_t place_addr, place_end; /* where this builder puts the entries in data_bank */
+	uint32_t place_addr, place_end;
 } Layout;
 
 const char *const synth_table_names[SYNTH_TABLES] = {
@@ -56,7 +56,7 @@ static const uint32_t text_banks[3] = { 0x1D, 0x1E, 0x1F };
 typedef struct Builder {
 	SynthRom *s;
 	uint32_t state;
-	uint32_t cursor[0x40]; /* next free address per data bank */
+	uint32_t cursor[0x40];
 } Builder;
 
 static uint32_t next(Builder *b)
@@ -82,7 +82,6 @@ static uint8_t byte_not(Builder *b, uint8_t x, uint8_t y)
 	return v;
 }
 
-/* An entry's bytes for kind; returns its length. rebuilds: 0 when planted not to rebuild. */
 static size_t entry_bytes(Builder *b, int kind, uint8_t *out, int plant)
 {
 	size_t n = 0;
@@ -140,7 +139,7 @@ static size_t entry_bytes(Builder *b, int kind, uint8_t *out, int plant)
 		}
 		out[n++] = 0xFE;
 		return n;
-	default: /* BACKGROUND */
+	default:
 		objects = 1 + (int)(next(b) % 4);
 		while (objects-- > 0) {
 			uint8_t flags = (uint8_t)((byte(b) & 0xC0) | (next(b) % 8));
@@ -193,7 +192,6 @@ static SynthEntry *add(SynthRom *s, int table)
 	return e;
 }
 
-/* Writes an entry's bytes at the next free address of bank; returns its absolute start. */
 static uint32_t place(Builder *b, const Layout *l, uint32_t bank, const uint8_t *bytes, size_t n)
 {
 	uint32_t addr = b->cursor[bank], at = bank * SYNTH_ROM_BANK + addr;

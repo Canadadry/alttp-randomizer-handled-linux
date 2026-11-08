@@ -155,7 +155,6 @@ static void test_discovery(void)
 		    "edges renumbered in location_list order");
 }
 
-/* ladx_oracle.graph_lines: dungeons, unnamed locations, options, "" fields. */
 static void test_renderer(void)
 {
 	int a, b, c, s;
@@ -382,12 +381,10 @@ static void test_world_setup(void)
 		expect(ladx_miniboss_find(ladx_miniboss_name(i)) == i, "miniboss names round-trip");
 }
 
-
 #define GRAPHS "oracle/logic_graphs.txt"
 
 static LfGraph graph;
 
-/* The options' names joined by commas, "-" when none: graph_lines' form. */
 static void options_text(int spot, char *out, size_t cap)
 {
 	int opts[256], n, i;
@@ -458,13 +455,6 @@ static void constructor_args(int kind, const char *name_id, const char *options,
 #define GRAPH_SPOT_MAX 512
 #define GRAPH_LOC_MAX 1024
 
-/*
- * Each spot line of a baseline rebuilt from its class and name id (a chain
- * of the graph's locations with their dungeons, so discovery keeps the
- * order), configured under the baseline's settings: its name id, its
- * checkMetadata entry (KeyLocation's "Unset Room" included) and its options
- * equal the line's.
- */
 static int replay_graph_spots(const LfGraph *g)
 {
 	static char want[GRAPH_SPOT_MAX][1280];
@@ -543,12 +533,6 @@ static void test_graph_spots(void)
 #define DUNGEON_FIRST 0
 #define DUNGEON_LAST 8
 
-/*
- * Each dungeon built alone (ladx_logic_build_dungeon) under each
- * baseline's settings and WorldSetup()'s defaults, which every baseline's
- * ws lines equal (checked with --fixtures), equal to the dungeon in the
- * fixture's whole graph: lf_dungeon_compare's walk from "D<n> Entrance".
- */
 static void test_dungeons(void)
 {
 	FILE *f = lf_graphs_open(TEST, GRAPHS);
@@ -594,7 +578,6 @@ static void settings_from(const char *text, LadxSettings *settings)
 
 #define MISMATCH_DIR "build/logic"
 
-/* C's canonical text of a graph that differs, for a diff against LADXR's. */
 static void write_mismatch(const char *name, const char *got, size_t len, char *path, size_t cap)
 {
 	FILE *f;
@@ -609,13 +592,6 @@ static void write_mismatch(const char *name, const char *got, size_t len, char *
 		test_fail(TEST, "cannot write %s", path);
 }
 
-/*
- * ladx_logic_build (main.py Logic.__init__: World, the nine dungeons, the
- * entrance loop on the identity mapping, the egg, the removed dungeon
- * items, discovery, configure) under each baseline's settings and
- * WorldSetup()'s defaults: its canonical text equal to the fixture's, line
- * for line.
- */
 static void test_baselines(void)
 {
 	FILE *f = lf_graphs_open(TEST, GRAPHS);
@@ -650,7 +626,6 @@ static void test_baselines(void)
 	       GRAPHS, lines);
 }
 
-/* The world's named locations and the build's refusals. */
 static void test_build(void)
 {
 	LadxSettings settings;
@@ -745,7 +720,6 @@ static void expect_configure_breaks(LadxSpotKind kind, int room, int arg, int du
 	"BOWWOW,ARROWS_10,SINGLE_ARROW,MAX_POWDER_UPGRADE,MAX_BOMBS_UPGRADE,MAX_ARROWS_UPGRADE,RED_TUNIC,"      \
 	"BLUE_TUNIC,HEART_CONTAINER,BAD_HEART_CONTAINER,TOADSTOOL"
 
-/* Each class's configure, as locations/ writes it (file and lines cited). */
 static int location_named(const char *name)
 {
 	int i;
@@ -757,7 +731,6 @@ static int location_named(const char *name)
 	return -1;
 }
 
-/* The requirement text of from's connection to to. */
 static void edge_text(const char *from, const char *to, char *out, size_t cap)
 {
 	const LadxLocation *loc = ladx_logic_location(&logic, location_named(from));
@@ -781,7 +754,6 @@ static LadxLogicStatus build_dungeon(const char *settings_text, const LadxWorldS
 	return ladx_logic_build_dungeon(&logic, &settings, ws, n);
 }
 
-/* The name ids of D3's spots with a forced item, each KEY3. */
 static void forced_text(char *out, size_t cap)
 {
 	int i;
@@ -797,7 +769,6 @@ static void forced_text(char *out, size_t cap)
 	}
 }
 
-/* The requirement text of from's only edge. */
 static void only_edge_text(const char *from, char *out, size_t cap)
 {
 	const LadxLocation *loc = ladx_logic_location(&logic, location_named(from));
@@ -808,8 +779,6 @@ static void only_edge_text(const char *from, char *out, size_t cap)
 	lf_requirement_text(TEST, ladx_logic_arena(&logic), ladx_logic_edge(&logic, loc->edge_first)->req, out, cap);
 }
 
-/* "<location name or ->:<class> <name id>" of the spots outside any
- * dungeon, in iteminfo_list order, and the names of the locations outside. */
 static void outside_text(char *out, size_t cap)
 {
 	int i;
@@ -1000,7 +969,6 @@ static void test_configure(void)
 			 "never changed");
 }
 
-/* locations/'s constructors: nameId, metadata, data, and refused arguments. */
 static void test_item_info(void)
 {
 	const LadxSpot *sp;
@@ -1079,7 +1047,6 @@ static void test_item_info(void)
 
 static LfConfig config;
 
-/* Each k=v of the config line holds after validate; "" is the empty value. */
 static void expect_settings_kept(const LfConfig *c)
 {
 	char buf[LF_SETTINGS_MAX];
@@ -1106,7 +1073,6 @@ static void expect_settings_kept(const LfConfig *c)
 	}
 }
 
-/* The fields the logic reads equal WorldSetup()'s. */
 static bool ws_logic_defaults(const LadxWorldSetup *ws)
 {
 	LadxWorldSetup d;
@@ -1122,7 +1088,6 @@ static bool ws_logic_defaults(const LadxWorldSetup *ws)
 	return ws->goal == d.goal && ws->goal_count == d.goal_count;
 }
 
-/* The largest counts any configuration reached, against the capacities. */
 typedef struct Maxima {
 	int locations, edges, spots, options, suffix, spot_options, nodes, terms, todo;
 } Maxima;
@@ -1166,7 +1131,6 @@ static const char *sha512_hex(const char *bytes, size_t len, char hex[129])
 	return hex;
 }
 
-/* The graph of a configuration: built, rendered, its SHA-512 the fixture's. */
 static void replay_graph(const LfConfig *c)
 {
 	char path[LF_NAME_MAX + 32], hex[129];
@@ -1188,13 +1152,11 @@ static void replay_graph(const LfConfig *c)
 
 static LfExplore explore;
 
-/* Python's sorted() on the item names. */
 static int name_cmp(const void *x, const void *y)
 {
 	return strcmp(*(const char *const *)x, *(const char *const *)y);
 }
 
-/* "BOW,SWORD", "-" when empty; the k-th name in names[k]. */
 static int split_names(char *list, const char **names, int cap)
 {
 	int n = 0;
@@ -1215,8 +1177,6 @@ static int split_names(char *list, const char **names, int cap)
 	}
 }
 
-/* explore line k: a new Explorer, the inventory added in order, then
- * visit(start); the reached ranges and the sorted required items. */
 static void replay_explore(const LfConfig *c, int k)
 {
 	static bool want[LADX_LOGIC_LOCATION_CAP], got[LADX_LOGIC_LOCATION_CAP];
@@ -1258,9 +1218,6 @@ static void replay_explore(const LfConfig *c, int k)
 	}
 }
 
-/* logic_vectors.txt: every configuration's settings parsed, validated and
- * supported, its ws lines read into LadxWorldSetup and rendered back, its
- * graph's SHA-512 and its explore vectors LADXR's. */
 static void replay_vectors(void)
 {
 	FILE *f = lf_vectors_open(TEST, VECTORS);
@@ -1285,7 +1242,6 @@ static void replay_vectors(void)
 				test_fail(TEST, "config %s: refused as %s", config.name, ladx_reason_id(finding.reason));
 			pairs++;
 		}
-		/* test_dungeons builds the baselines under WorldSetup()'s defaults. */
 		if (strstr(config.name, "/baseline") && !ws_logic_defaults(&config.ws))
 			test_fail(TEST, "config %s: a baseline's world setup is not WorldSetup()'s", config.name);
 		baselines += strstr(config.name, "/baseline") != NULL;

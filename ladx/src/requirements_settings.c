@@ -1,7 +1,5 @@
 #include "logic_internal.h"
 
-/* logic/requirements.py RequirementsSettings.__init__ at 4325207e, line for line. */
-
 #define A arena
 #define I(name) ladx_req_item(LADX_ITEM_##name)
 #define AND(...) LADX_AND(A, __VA_ARGS__)
@@ -179,7 +177,6 @@ void ladx_requirements_settings(LadxRequirementsSettings *r, LadxLogic *logic, c
 	r->hookshot_wrap = I(HOOKSHOT);
 	r->bookshot = AND(I(FEATHER), I(HOOKSHOT));
 	r->bomb_trigger = I(BOMB);
-	/* False & options.nagmessages */
 	r->text_clip = B(false);
 	r->zoomerang = AND(I(PEGASUS_BOOTS), I(FEATHER), I(BOOMERANG));
 	r->zoomerang_shovel = AND(I(PEGASUS_BOOTS), I(FEATHER), I(BOOMERANG), I(SHOVEL));

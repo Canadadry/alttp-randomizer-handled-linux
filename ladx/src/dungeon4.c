@@ -1,14 +1,11 @@
 #include "dungeon_build.h"
 
-/* logic/dungeon4.py Dungeon4 at 4325207e, line for line. */
-
 #define DUNGEON 4
 
 int ladx_dungeon4(const LadxDungeonContext *c)
 {
 	int i, loop[2];
 
-	/* locations */
 	int entrance = LOC("D4 Entrance");
 	int entrance_chest1 = ADD(LOC(NULL), DUNGEON_CHEST, 0x179);
 	int entrance_chest2 = ADD(LOC(NULL), DUNGEON_CHEST, 0x16A);
@@ -54,14 +51,11 @@ int ladx_dungeon4(const LadxDungeonContext *c)
 	int boss_room_drop2 = ADD_KEY(ADD(LOC(NULL), HEART_CONTAINER, 0x166), D4_BOSS_CLEAR);
 	int instrument = ADD(LOC("D4 Instrument Room"), INSTRUMENT, 0x162);
 
-	/* connections */
-	/* entrance */
 	CONNECT_ALL_BACK(entrance, TARGETS(entrance_chest1, entrance_chest2), NONE, NO);
 	CONNECT(entrance, spark_beetle_room, AND(ENEMY(SPIKED_BEETLE), ENEMY(ZOL)));
 	CONNECT_BACK(spark_beetle_room, spark_beetle_room_chest3, NONE, NO);
 	CONNECT_BACK(spark_beetle_room, crystal_room, AND(ENEMY(SPIKED_BEETLE), ENEMY(ZOL)), NO);
 	CONNECT_BACK(crystal_room, crystal_room_chest4, I(SWORD), NO);
-	/* crossroads */
 	CONNECT(entrance, east_crossroads, AND(I(FEATHER), I(PEGASUS_BOOTS)));
 	CONNECT_BACK(east_crossroads, east_crossroads_chest5, I(BOMB), NO);
 	CONNECT_BACK(east_crossroads, east_crossroads_chest6, OR(I(BOMB), I(FLIPPERS)), NO);
@@ -71,7 +65,6 @@ int ladx_dungeon4(const LadxDungeonContext *c)
 	CONNECT_BACK(south_crossroads, south_crossroads_chest7, I(FLIPPERS), NO);
 	CONNECT(south_crossroads, north_crossroads, AND(I(FEATHER), I(PEGASUS_BOOTS)));
 	CONNECT(north_crossroads, before_miniboss, FOUND(KEY4, 3));
-	/* miniboss */
 	CONNECT_BACK(before_miniboss, before_miniboss_zol_clear, ENEMY(ZOL), NO);
 	CONNECT_BACK(before_miniboss, outside_b_passage_shallows,
 		     OR(I(FLIPPERS), I(HOOKSHOT), AND(I(FEATHER), I(PEGASUS_BOOTS))),
@@ -90,7 +83,6 @@ int ladx_dungeon4(const LadxDungeonContext *c)
 	CONNECT_ALL_BACK(flippers_room, TARGETS(after_miniboss, north_tile_puzzle), ENEMY(ZOL), NO);
 	CONNECT_BACK(flippers_room, flippers_room_chest11, NONE, NO);
 	CONNECT_ALL_BACK(north_tile_puzzle, TARGETS(tile_puzzle_clue, flippers_room, south_tile_puzzle), NONE, NO);
-	/* west */
 	CONNECT_ALL_BACK(south_tile_puzzle, TARGETS(south_tile_puzzle_chest9, south_tile_puzzle_chest10), NONE, NO);
 	CONNECT_BACK(south_tile_puzzle, before_a_passage,
 		     AND(I(D4_PUZZLE_CLUE), OR(AND(I(FEATHER), I(PEGASUS_BOOTS)), I(FLIPPERS))), NO);
@@ -100,21 +92,17 @@ int ladx_dungeon4(const LadxDungeonContext *c)
 	CONNECT(outside_b_passage_keyblock, before_b_passage, FOUND(KEY4, 5));
 	CONNECT(before_b_passage, after_b_passage,
 		AND(I(FLIPPERS), AND(ENEMY(CHEEP_CHEEP_HORIZONTAL), ENEMY(CHEEP_CHEEP_VERTICAL))));
-	/* boss */
 	CONNECT_BACK(after_b_passage, pre_boss, I(NIGHTMARE_KEY4), NONE);
 	CONNECT(pre_boss, boss_room, NONE);
 	CONNECT_BACK(boss_room, boss_room_drop2, BOSS(3), NO);
 	CONNECT_BACK(pre_boss, instrument, I(D4_BOSS_CLEAR), NO);
-	/* owl statues */
 	if (OPTION(OWLSTATUES, "both") || OPTION(OWLSTATUES, "dungeon"))
 		CONNECT(before_miniboss, before_miniboss_owl1, I(STONE_BEAK4));
-	/* normal */
 	if (!LOGIC_IS("casual")) {
 		CONNECT_ALL_BACK(after_miniboss, TARGETS(miniboss_room, flippers_room), NONE, NO);
 		CONNECT(before_b_passage, after_b_passage, I(FLIPPERS));
 		CONNECT_BACK(south_tile_puzzle, before_a_passage, OR(AND(I(FEATHER), I(PEGASUS_BOOTS)), I(FLIPPERS)), NO);
 	}
-	/* hard */
 	if (HARD_OR_ABOVE) {
 		loop[0] = entrance;
 		loop[1] = east_crossroads;
@@ -133,7 +121,6 @@ int ladx_dungeon4(const LadxDungeonContext *c)
 		CONNECT(south_tile_puzzle, after_b_passage, R->tight_jump);
 		CONNECT_BACK(after_a_passage, before_a_passage, NONE, NO);
 	}
-	/* glitched */
 	if (GLITCHED_OR_ABOVE) {
 		CONNECT_BACK(entrance, west_statue_room, R->super_jump_feather, NO);
 		CONNECT_BACK(east_crossroads, east_crossroads_chest5, AND(R->sideways_block_push, I(FLIPPERS)), NO);
@@ -146,7 +133,6 @@ int ladx_dungeon4(const LadxDungeonContext *c)
 		CONNECT_BACK(outside_b_passage_shallows, before_b_passage, R->shaq_jump,
 			     AND(R->hookshot_clip_wall, R->super_jump_feather));
 	}
-	/* hell */
 	if (LOGIC_IS("hell")) {
 		CONNECT_BACK(entrance, after_a_passage, R->super_bump, NO);
 		loop[0] = south_tile_puzzle;

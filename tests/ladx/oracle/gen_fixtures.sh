@@ -37,7 +37,7 @@ if [ -n "$out" ]; then
 	out="$(cd "$out" && pwd)"
 fi
 
-# render <ladxr dir> <hash seed> <out dir>: python3 without -I or -E, which would drop PYTHONHASHSEED.
+# python3 without -I or -E, which would drop PYTHONHASHSEED.
 render() {
 	mkdir -p "$3" "$work_root"
 	work="$(mktemp -d "$work_root/run.XXXXXX")"

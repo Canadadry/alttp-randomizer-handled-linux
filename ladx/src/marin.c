@@ -34,7 +34,6 @@ static int append(Str *s, const char *bytes, size_t n)
 	return 1;
 }
 
-/* bytes.strip() then decode("unicode_escape"): the simple escapes only. */
 static LadxTextStatus decode(const char *line, size_t n, Str *s)
 {
 	static const char simple[] = "\\\\''\"\"a\ab\bf\fn\nr\rt\tv\v";
@@ -95,7 +94,6 @@ static LadxTextStatus replace_amount(Str *s)
 	return LADX_TEXT_OK;
 }
 
-/* -?\d+ at *i: 1 with *value and *i past it; 0 for no match; -1 over DIGITS_MAX digits. */
 static int number(const Str *s, size_t *i, long long *value)
 {
 	size_t at = *i, digits = 0;
@@ -118,7 +116,6 @@ static int number(const Str *s, size_t *i, long long *value)
 	return 1;
 }
 
-/* <kind(?:(-?\d+),)?(-?\d+)> at i: 1 with its bounds and end, 0 for none, -1 unsupported. */
 static int placeholder(const Str *s, size_t i, const char *kind, long long *lo, long long *hi, size_t *end)
 {
 	size_t k = strlen(kind), at = i + k;
@@ -147,7 +144,6 @@ static int placeholder(const Str *s, size_t i, const char *kind, long long *lo, 
 	return 0;
 }
 
-/* re.sub of the <rnd...> or <ord...> pattern, each match utils.randomNumber or randomOrdinal(min, max + 1). */
 static LadxTextStatus substitute(Str *s, const char *kind, int ordinal, LadxRng *global)
 {
 	char text[32];
@@ -236,7 +232,6 @@ static LadxWlogKey index_key(uint32_t index)
 	return k;
 }
 
-/* reduceMessageLengths after text 0x01, in its order; a NULL text is a copy of copy_of's current value. */
 static const struct {
 	uint16_t index;
 	const char *text;
@@ -315,7 +310,6 @@ static int write_text(LadxEncoder *enc, LadxPipeline *p, uint32_t index, size_t 
 	return ladx_enc_table(enc, group_name(), TEXTS, index_key(index), p->values, p->origins, n) == LADX_ENC_OK;
 }
 
-/* A raised text ends the group with LADXR's outcome; any other failure is C's. */
 static int formatted(LadxTextStatus st, LadxPipeline *p, const LadxOutcome *raised)
 {
 	if (st == LADX_TEXT_RAISED) {

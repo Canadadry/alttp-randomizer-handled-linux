@@ -38,8 +38,6 @@ case "$#:${1-}:${2-}" in
 esac
 names_given="$*"
 
-# expect <what> <expected output> <command...>: fails the self-proof unless the command exits
-# non-zero with exactly that output (exit 0 when the expected output is a `same` line).
 expect() {
 	what="$1" want="$2"
 	shift 2
@@ -51,8 +49,6 @@ expect() {
 	fi
 }
 
-# plant <dir> <outcome> [<file>=<size>:<flip offset or ->...]: a planted case directory, with
-# run.txt (or plain.txt for a `plain` dir) ending in the outcome and synthetic binary files.
 plant() {
 	python3 -I - "$@" <<'EOF'
 import os, sys
@@ -173,8 +169,7 @@ EOF
 	exit 0
 fi
 
-# run <ladxr dir> <hash seed> <out dir> <case> <seed> <settings...>: python3 without -I or -E,
-# which would drop PYTHONHASHSEED.
+# python3 without -I or -E, which would drop PYTHONHASHSEED.
 run() {
 	ladxr="$1" hashseed="$2" dir="$3" name="$4" seed="$5"
 	shift 5

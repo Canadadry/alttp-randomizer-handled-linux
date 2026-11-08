@@ -83,9 +83,6 @@ class Read:
 
 
 class Run:
-    """One traced run: case, seed folder, outcome word, [Read], [(group, site, n, sha1)]; a site
-    is (section, key) or None."""
-
     def __init__(self, case, seed, outcome, reads, writes):
         self.case, self.seed, self.outcome = case, seed, outcome
         self.reads, self.writes = reads, writes
@@ -113,8 +110,6 @@ def _lines(path):
 
 
 def read_run(case, seed, folder):
-    """The Run of one seed folder; SetupError when reads.txt or writes.txt is missing or
-    malformed."""
     reads, writes = [], []
     for name in ("reads.txt", "writes.txt"):
         if not os.path.isfile(os.path.join(folder, name)):
@@ -145,7 +140,6 @@ def read_run(case, seed, folder):
 
 
 def read_traces(root):
-    """[Run] of every `<case>/seed-<k>/` under root, sorted; SetupError when there is none."""
     runs = []
     if os.path.isdir(root):
         for case in sorted(os.listdir(root)):
@@ -161,8 +155,6 @@ def read_traces(root):
 
 
 class Resolver:
-    """Keys a traced site (section, key) to an inventory row's (section, key), or None."""
-
     def __init__(self, root, rows):
         self._sources = inventory_check.Sources(root)
         self._rows = rows
@@ -221,7 +213,6 @@ class Resolver:
 
 
 def _writers(prov):
-    """The groups of a provenance field, [] for `source`."""
     kind, _, names = prov.partition(":")
     return [] if kind == "source" else names.split(",")
 
@@ -231,7 +222,6 @@ def _range(lo, hi):
 
 
 def reads_cell(reads):
-    """The Reads (trace) cell of a row's [Read]."""
     acc = {}
     for r in reads:
         entry = acc.setdefault((r.target, r.prov), [None, None, False])
@@ -265,7 +255,6 @@ def reads_cell(reads):
 
 
 def scope_cut_ids(text):
-    """The first word of every heading and list item of the scope-cuts note."""
     ids = set()
     for line in (text or "").split("\n"):
         m = re.match(r"\s*(?:#{1,6}|[-*])\s+(\S+)", line)
@@ -279,9 +268,6 @@ def _row_text(site):
 
 
 class Checker:
-    """The traces against one inventory text: `findings`, `infos`, `cells` ({row site: Reads
-    (trace) cell}) and `depends` ({group: Depends on cell})."""
-
     def __init__(self, ladxr, text, runs, cuts_text):
         tables, bad = inventory_check.parse_inventory(text)
         named, named_bad = inventory_check.parse_named(text)
@@ -489,8 +475,6 @@ class Checker:
             len({run.case for run in self.runs}), self.total, covered)
 
     def refreshed(self, text):
-        """The inventory text with the Reads (trace) cells and the Depends on column of the
-        traces."""
         sections = {inventory_check.section_name(f, fn) for f, fn, _ in inventory_check.SECTIONS}
         out, heading = [], None
         for line in text.split("\n"):
@@ -518,7 +502,6 @@ class Checker:
 
 
 def check(ladxr, text, traces, cuts_text):
-    """The Checker of an inventory text against the traces under the folder `traces`."""
     return Checker(ladxr, text, read_traces(traces), cuts_text)
 
 
@@ -592,7 +575,6 @@ PLANTED_CUTS = "# Scope cuts\n\n## no-x\n\nSetting x=1 is cut.\n"
 
 
 def planted_inventory(rows=None, groups=None, coverage=None):
-    """A planted inventory text; rows, groups and coverage default to the PLANTED_ ones."""
     by_section = {}
     for section, key, side, group, cell in PLANTED_ROWS if rows is None else rows:
         m = re.fullmatch(r"(.*) #(\d+)", key)
@@ -626,7 +608,6 @@ def write_line(group, section, key, n, sha1):
 
 
 def planted_run(seed_index, outcome="ok"):
-    """(reads lines, writes lines, outcome) of one planted clean run."""
     reads = [
         read_line("parse", GEN, PLANTED_ROWS[0][1], "bank 0x3F", "source", "n=1 0x0147..0x0147",
                   channel="index"),
@@ -660,7 +641,6 @@ def planted_run(seed_index, outcome="ok"):
 
 
 def write_traces(root, runs):
-    """Writes {(case, seed folder): (reads lines, writes lines, outcome)} under root."""
     for (case, seed), (reads, writes, outcome) in runs.items():
         folder = os.path.join(root, case, seed)
         os.makedirs(folder, exist_ok=True)
@@ -777,8 +757,6 @@ def _run_planted(root, runs_mutation, rows_mutation, coverage_mutation, groups_m
 
 
 def self_test(out=None):
-    """Runs every planted case; prints the summary or one `self-test failed` line per case to
-    out (default stdout); returns the exit code."""
     out = out or sys.stdout
     failures = []
     with tempfile.TemporaryDirectory(prefix="read-check-") as root:

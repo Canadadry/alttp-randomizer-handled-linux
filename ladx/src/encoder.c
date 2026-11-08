@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define MIN_MATCH 4
-#define UNSET INT32_MIN /* no atom yet */
+#define UNSET INT32_MIN
 #define SIDE_C 1
 #define SIDE_TABLE 2
 
@@ -21,8 +21,6 @@ static LadxEncStatus wlog_status(LadxEncoder *enc, LadxWlogStatus st)
 	return enc->failed = LADX_ENC_OVERFLOW;
 }
 
-/* Atoms and origins ---------------------------------------------------------------------------- */
-
 static int knowable(const LadxEncoder *enc, LadxAtom a)
 {
 	return a < 0 || (enc->ks && ladx_ks_contains(enc->ks, a));
@@ -39,7 +37,6 @@ static int origin_ok(int32_t q)
 	return q >= LADX_ENC_KNOWN || -2 - (int64_t)q < LADX_ENC_IDENTITY_MAX;
 }
 
-/* The atom an origin gives by itself; UNSET for KNOWN and an identity not met yet. */
 static LadxAtom carried(const LadxEncoder *enc, int32_t q)
 {
 	if (q >= 0)
@@ -67,7 +64,6 @@ static void rename_to(LadxEncoder *enc, int32_t q, LadxAtom a)
 		enc->written[-2 - q] = a;
 }
 
-/* origins with every KNOWN byte given a write identity of its own, into out; 0 on overflow. */
 static int own_identities(LadxEncoder *enc, const int32_t *origins, int32_t *out, size_t n)
 {
 	size_t i;
@@ -106,8 +102,6 @@ int32_t ladx_enc_fresh(LadxEncoder *enc, uint32_t n)
 	return first;
 }
 
-/* Entries -------------------------------------------------------------------------------------- */
-
 static uint32_t key_hash(int table, LadxWlogKey key)
 {
 	uint32_t h = 2166136261u ^ (uint32_t)table;
@@ -125,7 +119,6 @@ static int entry_is(const LadxEncEntry *e, int table, LadxWlogKey key)
 	       (key.alt.len ? memcmp(e->alt, key.alt.at, key.alt.len) == 0 : e->index == key.index);
 }
 
-/* The entry's slot: its index there, or -1 - the empty slot it would take. */
 static int32_t find_slot(const LadxEncoder *enc, int table, LadxWlogKey key)
 {
 	uint32_t mask = 2 * LADX_ENC_ENTRY_MAX - 1, s = key_hash(table, key) & mask;
@@ -305,8 +298,6 @@ LadxEncStatus ladx_enc_init(LadxEncoder *enc, const uint8_t *rom, size_t rom_len
 	return tables ? initial_tables(enc, tables) : LADX_ENC_OK;
 }
 
-/* Queries -------------------------------------------------------------------------------------- */
-
 int32_t ladx_enc_bank_origin(const LadxEncoder *enc, uint32_t offset)
 {
 	return offset < enc->positions ? enc->origin[offset] : (int32_t)offset;
@@ -370,8 +361,6 @@ int ladx_enc_entry_pointer(const LadxEncoder *enc, int table, LadxWlogKey key, u
 	return 1;
 }
 
-/* Segment state -------------------------------------------------------------------------------- */
-
 static void touch(LadxEncoder *enc, uint32_t p)
 {
 	if (enc->touched[p >> 3] & (1u << (p & 7)))
@@ -384,7 +373,6 @@ static void touch(LadxEncoder *enc, uint32_t p)
 	enc->touched_count++;
 }
 
-/* The segment's bank positions into enc->sorted, ascending, their marks cleared. */
 static uint32_t take_touched(LadxEncoder *enc)
 {
 	uint32_t n = 0, p;
@@ -408,9 +396,6 @@ static void touch_entry(LadxEncoder *enc, LadxEncEntry *e)
 	enc->seg_entry[enc->seg_entry_count++] = (uint32_t)(e - enc->entry);
 }
 
-/* KS-match: _KnownRuns.match and .atoms ----------------------------------------------------------- */
-
-/* The longest prefix of data[0..room) of at least MIN_MATCH bytes inside one KS run: its length, 0 for none. */
 static size_t ks_match(const LadxKs *ks, const uint8_t *data, size_t room, int64_t *at)
 {
 	size_t low = MIN_MATCH, high = room + 1;
@@ -429,7 +414,6 @@ static size_t ks_match(const LadxKs *ks, const uint8_t *data, size_t room, int64
 	return low;
 }
 
-/* Every run of literals matching KS made copies, greedily left to right, longest first. */
 static void ks_atoms(LadxEncoder *enc, LadxAtom *a, size_t n)
 {
 	size_t i = 0;
@@ -463,8 +447,6 @@ static void ks_atoms(LadxEncoder *enc, LadxAtom *a, size_t n)
 	}
 }
 
-/* The fragment rule: _fragment_atoms ------------------------------------------------------------- */
-
 static int literal_at(const LadxEncoder *enc, const LadxAtom *a, size_t n, uint32_t q)
 {
 	size_t k;
@@ -475,7 +457,6 @@ static int literal_at(const LadxEncoder *enc, const LadxAtom *a, size_t n, uint3
 	return 1;
 }
 
-/* a[start..stop) walked against the source bytes low..high. */
 static void fragment_piece(const LadxEncoder *enc, LadxAtom *a, size_t start, size_t stop, uint32_t low,
 			   uint32_t high)
 {
@@ -522,8 +503,6 @@ static void fragment_bank(const LadxEncoder *enc, LadxAtom *a, size_t n, uint32_
 		i = stop;
 	}
 }
-
-/* Segment ends --------------------------------------------------------------------------------- */
 
 static LadxEncStatus render(LadxEncoder *enc, uint32_t count)
 {
@@ -581,7 +560,6 @@ static void frag_entry(LadxEncoder *enc, LadxAtom *a, size_t n, const LadxEncEnt
 		fragment_piece(enc, a, 0, n, low, high);
 }
 
-/* One end-of-segment rule on the net literals; the identities a changed byte names follow it. */
 static void apply_rule(LadxEncoder *enc, uint32_t count, BankRule bank, EntryRule entry)
 {
 	uint32_t i = 0, k;
@@ -691,8 +669,6 @@ LadxEncStatus ladx_enc_end(LadxEncoder *enc)
 	return wlog_status(enc, ladx_wlog_end(enc->log));
 }
 
-/* C groups' writes ------------------------------------------------------------------------------ */
-
 static int bank_ok(const LadxEncoder *enc, uint32_t offset, size_t n)
 {
 	return n > 0 && (uint64_t)offset + n <= enc->positions && n <= LADX_WLOG_BANK_MAX;
@@ -734,7 +710,6 @@ static int same(const LadxEncoder *enc, const uint8_t *nv, size_t i, const LadxA
 	return knowable(enc, old[j]) && nv[i] == atom_value(enc, old[j]);
 }
 
-/* atoms[start..stop): the longest knowable run of old, at least MIN_MATCH, at its lowest index, left to right. */
 static void inherit_middle(const LadxEncoder *enc, const uint8_t *nv, const LadxAtom *old, size_t m, LadxAtom *atoms,
 			   size_t start, size_t stop)
 {
@@ -762,7 +737,6 @@ static void inherit_middle(const LadxEncoder *enc, const uint8_t *nv, const Ladx
 	}
 }
 
-/* write_log's inherited: carried origins, then the common prefix and suffix, then the middle. */
 static void inherited(const LadxEncoder *enc, const uint8_t *nv, const int32_t *origins, size_t n, const LadxAtom *old,
 		      size_t m, LadxAtom *atoms)
 {
@@ -844,8 +818,6 @@ LadxEncStatus ladx_enc_pointer(LadxEncoder *enc, LadxSpan group, int table, Ladx
 {
 	return put_pointer(enc, group, table, key, value, SIDE_C);
 }
-
-/* Table groups' writes -------------------------------------------------------------------------- */
 
 static int atoms_ok(const LadxAtom *atoms, size_t n)
 {

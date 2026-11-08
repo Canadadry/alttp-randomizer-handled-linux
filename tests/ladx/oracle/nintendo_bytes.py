@@ -61,8 +61,6 @@ THRESHOLDS = {
 
 
 class RomIndex:
-    """The ROM's n-byte windows, each length's set built on first use."""
-
     def __init__(self, rom_bytes):
         self.rom = rom_bytes
         self._windows = {}
@@ -80,9 +78,6 @@ CASE_FILE_SCOPES = {"run.txt": "general", "spoiler.json": "general", "rom_writes
 
 
 def scope_of(path):
-    """The policy of a repository-relative path: 'tables' under TABLES_PREFIX, 'writes' or
-    'general' for a case folder's golden files (CASE_FILE_SCOPES), else 'strict' under
-    STRICT_PREFIXES, else 'general'."""
     path = path.replace(os.sep, "/")
     if path.startswith(TABLES_PREFIX):
         return "tables"
@@ -93,7 +88,6 @@ def scope_of(path):
 
 
 def _merged_hits(data, windows, n):
-    """[(offset, length)] of the n-byte window hits in data, overlapping or touching hits merged."""
     merged = []
     for i in range(len(data) - n + 1):
         if data[i:i + n] not in windows:
@@ -112,8 +106,6 @@ def _raw_runs(data, index, n):
 
 
 def _hex_decodings(data, min_digits):
-    """[(offset, bytes)] that each maximal run of min_digits hex digits or more of data decodes
-    to, at nibble alignments 0 and 1; offsets in data's characters."""
     found = []
     for match in re.finditer(rb"[0-9A-Fa-f]{%d,}" % min_digits, data):
         digits = match.group()
@@ -126,8 +118,6 @@ def _hex_decodings(data, min_digits):
 
 
 def _hex_runs(data, index, n):
-    """[(offset, run bytes)] found in the bytes data's hex-digit runs decode to; offsets in data's
-    characters."""
     found = []
     for start, decoded in _hex_decodings(data, 2 * n):
         for off, length in _merged_hits(decoded, index.windows(n), n):
@@ -140,8 +130,6 @@ _TOKEN_LIST = re.compile(rb"%s(?:[\s,]+%s)*" % (_TOKEN, _TOKEN))
 
 
 def _bytelist_runs(data, index, n):
-    """[(offset, run bytes)] found in the bytes of every list of 0xNN or $NN tokens separated by
-    commas and whitespace; offsets in data's characters, of the run's first token."""
     found = []
     for match in _TOKEN_LIST.finditer(data):
         tokens = list(re.finditer(_TOKEN, match.group()))
@@ -159,9 +147,6 @@ WRITES_MIN = 4
 
 
 def _clearance(run, scope, corpus, padded_min=None):
-    """The clearance category of a run's bytes, or None when the run is a literal. padded_min,
-    the threshold of the general scope's raw view and given only there, also clears a run whose
-    ASCII spaces stripped at both ends leave a run of LADXR's corpus or one under padded_min."""
     step = (run[1] - run[0]) % 256 if len(run) > 1 else 0
     if all((b - a) % 256 == step for a, b in zip(run, run[1:])):
         return "trivial"
@@ -180,7 +165,6 @@ _SIBLINGS = {}
 
 
 def _sibling(name):
-    """The module name.py next to this file, loaded once."""
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), name + ".py")
     if path not in _SIBLINGS:
         spec = importlib.util.spec_from_file_location("nintendo_bytes_" + name, path)
@@ -200,17 +184,6 @@ BANK = 0x4000
 
 
 class ReadSets:
-    """The source bytes each inventory group reads, for the `computed` clearance: the Reads
-    (trace) entries of the group's rows (bank ranges as source bytes, table ranges as their
-    entries' source spans, `written:` and `mixed:` ones also followed to the writer groups' sets,
-    transitively; `mixed:` ones also as source), less the reads of rows a `computed` Read
-    coverage entry names. `(group, run) in reads`: run occurs whole in them. inventory: the
-    inventory's text, or a callable returning it on first use; tables(rom) -> {table: {key:
-    (start, stop) or int}} (default known_source.parse). Raises SetupError on first use when the
-    inventory cannot be read or parsed. `knows(run)`, for the `invariant` clearance: run occurs
-    whole inside the C-knowable source map, known(rom) (default known_source.build) taken as
-    its maximal runs of contiguous offsets."""
-
     def __init__(self, inventory, rom, tables=None, known=None):
         self._inventory, self.rom, self._tables = inventory, rom, tables
         self._known = known
@@ -275,7 +248,6 @@ class ReadSets:
         return [entries[k] for k in keys if isinstance(entries[k], tuple)]
 
     def spans(self, group):
-        """[(start, stop)] of the source bytes group reads, merged, sorted."""
         reads = self._parse()
         parsed = []
 
@@ -305,7 +277,6 @@ class ReadSets:
         return [tuple(s) for s in merged]
 
     def __contains__(self, item):
-        """(group, run): whether run occurs whole in the source bytes group reads."""
         group, run = item
         if group not in self._pieces:
             self._pieces[group] = [self.rom[a:b] for a, b in self.spans(group)]
@@ -316,9 +287,6 @@ _LITERAL_TOKEN = re.compile(rb"(?:[0-9a-f]{2})+")
 
 
 def _write_tokens(data):
-    """([(offset, group, bytes, invariant flags)] of a write log's literal tokens, [(offset,
-    bytes)] of the text around them), offsets in data's characters, a flag per byte for its `I`
-    ranges; None when data is not a valid write log."""
     write_log = _sibling("write_log")
     try:
         marks = write_log.invariants(data.decode("ascii"))
@@ -352,7 +320,6 @@ def _write_tokens(data):
 
 
 def _token_length(field):
-    """The number of bytes a valid write-log token stands for."""
     if field[:1] == b"=":
         return int(field[1:], 16)
     if field[:1] == b"@":
@@ -366,8 +333,6 @@ _TABLE_RECORDS = {b"B": 2, b"T": 3}
 
 
 def _table_tokens(data):
-    """_write_tokens' shape for a patch-table file (tables.py), with no group and no invariant
-    flag; None when tables.py's parser refuses data."""
     tables = _sibling("tables")
     try:
         tables.parse(data.decode("ascii"))
@@ -394,10 +359,6 @@ def _table_tokens(data):
 
 
 def _check_tokens(view, data, index, corpus, min_len, reads):
-    """(literals, cleared) of a write log (view `writes`) or a patch-table file (view `tables`):
-    its literal tokens at their byte alignment at WRITES_MIN, the text around them at the general
-    thresholds; one `unparsed` literal for the whole file when it does not parse. reads (writes
-    only) enables the `computed` and `invariant` clearances."""
     parsed = (_write_tokens if view == "writes" else _table_tokens)(data)
     if parsed is None:
         return [(view, 0, len(data), "unparsed")], []
@@ -439,11 +400,6 @@ def _check_tokens(view, data, index, corpus, min_len, reads):
 
 
 def check_blob(path, data, index, corpus, scope=None, min_len=None, reads=None):
-    """(literals, cleared) for the blob data at the repository-relative path: literals as
-    [(view, offset, length, scope)], cleared as [(view, offset, length, category)], both sorted by
-    offset. scope ('strict', 'general' or 'writes') overrides the path's; min_len overrides every
-    threshold; reads, a ReadSets, enables the `computed` and `invariant` clearances of the writes
-    view (never of the tables view)."""
     scope = scope or scope_of(path)
     assert scope in ("strict", "general", "writes", "tables"), scope
     key = lambda run: (run[1], run[0], run[2])
@@ -475,11 +431,7 @@ def _is_text(data):
 
 
 class Corpus:
-    """The bytes LADXR already publishes: each text file's (valid UTF-8, no NUL) raw bytes and the
-    bytes its hex-digit runs decode to at both alignments. Binary files are left out."""
-
     def __init__(self, files, commit=""):
-        """files: [(name, bytes)]; commit: the checkout's commit, for the summary."""
         self.commit = commit
         pieces = []
         for _, data in files:
@@ -495,7 +447,6 @@ class Corpus:
             start += len(piece)
 
     def __contains__(self, run):
-        """Whether run lies whole inside one piece, never across two."""
         pos = self._joined.find(run)
         while pos != -1:
             i = bisect.bisect_right(self._starts, pos) - 1
@@ -511,7 +462,6 @@ class SetupError(Exception):
 
 
 def _ladxr_git(directory, *args, data=None):
-    """Bytes of git's stdout in the checkout directory, or None when git fails."""
     # A pre-push hook runs with GIT_DIR set, which would point git at the pushing repository.
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     result = subprocess.run(["git", *args], cwd=directory, env=env, input=data,
@@ -520,8 +470,6 @@ def _ladxr_git(directory, *args, data=None):
 
 
 def load_ladxr(directory):
-    """The Corpus of the files tracked at LADXR_PIN by the git checkout in directory, which must
-    be checked out at the pin; raises SetupError otherwise."""
     missing = f"no LADXR checkout in {directory} (run tests/ladx/oracle/setup.sh)"
     if not os.path.isdir(directory):
         raise SetupError(missing)
@@ -558,7 +506,6 @@ def load_ladxr(directory):
 
 
 def read_inventory(path):
-    """The inventory's text; SetupError when it cannot be read."""
     try:
         with open(path, "rb") as f:
             return f.read().decode("utf-8")
@@ -567,7 +514,6 @@ def read_inventory(path):
 
 
 def files_under(paths):
-    """Every file of paths, directories walked in sorted order with .git skipped."""
     files = []
     for path in paths:
         if os.path.isfile(path):
@@ -590,8 +536,6 @@ PLANTED_PADDED = {0x2400: b"      The Wind Fish dreams      ",
 
 
 def planted_rom():
-    """A 16 KiB synthetic ROM: random bytes, then a zero run, a counting run, a three-value run,
-    an English line and PLANTED_PADDED's labels padded with spaces."""
     rng = random.Random(0x1ADC)
     rom = bytearray(rng.getrandbits(8) for _ in range(16384))
     rom[0x2000:0x2040] = bytes(64)
@@ -604,8 +548,6 @@ def planted_rom():
 
 
 def _planted_cases(rom):
-    """[(name, path, data, literals as [(view, length)], cleared as [(view, length, category)])]:
-    one planted file per scope, view and clearance, and the corpus's edges."""
     encode = {
         "raw": lambda run: b"<" + run + b">",
         "hex": lambda run: b"x = 7" + run.hex().upper().encode() + b";\n",
@@ -652,9 +594,6 @@ def _planted_cases(rom):
 
 
 def _planted_tables(rom):
-    """The planted files of the patch tables' policy: literal tokens at 4 bytes at their byte
-    alignment with no `computed` clearance, record syntax and other text at the general
-    thresholds, a file tables.py refuses one literal."""
     path = "data/ladx/maker.txt"
 
     def table(*records):
@@ -680,8 +619,6 @@ def _planted_tables(rom):
 
 
 def planted_inventory(rows, coverage=()):
-    """An inventory text of one section table of rows [(call, Reads (trace) cell, group)] and a
-    Read coverage table of entries [(group, row, target, kind)]."""
     def table(columns, lines):
         return ("| " + " | ".join(columns) + " |\n|" + "---|" * len(columns) + "\n"
                 + "".join("| " + " | ".join(cells) + " |\n" for cells in lines))
@@ -701,10 +638,6 @@ def planted_inventory(rows, coverage=()):
 
 
 def planted_reads(rom):
-    """The ReadSets of the planted case folder: `reader` reads bank 0x00 0x0400..0x04FF and text
-    entry 1 (0x0500..0x051F), `maker` reads nothing, `follower` reads what `reader` wrote, and
-    `summer` reads 0x0400..0x04FF only through a `computed` coverage row; the C-knowable map is
-    0x04C0..0x04CF."""
     text = planted_inventory([
         ("reader(rom)", "bank 0x00 source 0x0400..0x04FF; table texts source 0x0001..0x0001",
          "reader"),
@@ -717,9 +650,6 @@ def planted_reads(rom):
 
 
 def _planted_case_folder(rom):
-    """The planted files of the case folders' policy: run.txt and spoiler.json general, the
-    seed strict, rom_writes.txt's literal tokens at 4 bytes and its other text general, and the
-    `computed` clearance against planted_reads."""
     folder = "tests/ladx/cases/planted/"
     writes = folder + "rom_writes.txt"
 
@@ -763,8 +693,6 @@ def _planted_case_folder(rom):
 
 
 def planted_corpus(rom):
-    """A Corpus of one text file (an English line of rom, rom[3000:3024] in hex) and one binary
-    file (rom[4000:4040]), which it must leave out."""
     text = rom[0x2300:0x2300 + len(PLANTED_TEXT)]
     return Corpus([
         ("names.py", b"NAME = '" + text[20:70] + b"'\nPATCH = '" + rom[3000:3024].hex().encode()
@@ -774,7 +702,6 @@ def planted_corpus(rom):
 
 
 def self_test():
-    """None when the check finds exactly the planted runs, else the name of the case that failed."""
     rom = planted_rom()
     index = RomIndex(rom)
     corpus = planted_corpus(rom)

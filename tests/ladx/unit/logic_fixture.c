@@ -83,7 +83,6 @@ void lf_requirement_text(const char *test, const LadxReqArena *a, LadxReq r, cha
 	test_fail(test, "unknown requirement node kind %d", (int)kind);
 }
 
-/* ladx_oracle.field: "" for an empty text. */
 static const char *field(const char *s)
 {
 	return s[0] ? s : "\"\"";
@@ -197,7 +196,6 @@ static const char *const ws_fields[13] = {
 	"one_on_one",
 };
 
-/* A decimal int, sign allowed, nothing else; 0 when malformed. */
 static int parse_int(const char *s, int *out)
 {
 	char *end;
@@ -389,7 +387,6 @@ static char vline[LF_EXPLORE_MAX + 64];
 static long vline_no;
 static const char *vfile = "";
 
-/* The next non-comment line, newline stripped; 0 at the end. */
 static int next_line(const char *test, FILE *f)
 {
 	size_t len;
@@ -575,7 +572,6 @@ FILE *lf_graphs_open(const char *test, const char *path)
 	return f;
 }
 
-/* The settings are the name's part before its last '/' ("logic=hard"). */
 int lf_graphs_next(const char *test, FILE *f, LfGraph *g)
 {
 	char settings[LF_SETTINGS_MAX];
@@ -612,8 +608,6 @@ int lf_graphs_next(const char *test, FILE *f, LfGraph *g)
 #define WALK_SPOT_MAX 512
 #define WALK_EDGE_MAX 2048
 
-/* A canonical text cut into its lines' fields, edges and spots chained per
- * location in text order. */
 typedef struct WalkGraph {
 	char text[LF_GRAPH_TEXT_MAX + 1];
 	int locs, spots, edges;
@@ -689,7 +683,6 @@ static void walk_parse(const char *test, const char *what, WalkGraph *g, const c
 	}
 }
 
-/* Logic.__recursiveFindAll's preorder, restricted to dungeon n. */
 static void walk_from(WalkGraph *g, int loc, int n)
 {
 	int e;
@@ -716,7 +709,6 @@ static void walk_dungeon(const char *test, const char *what, WalkGraph *g, int n
 	test_fail(test, "%s: no location %s", what, entrance);
 }
 
-/* The next in-dungeon edge from e on; -1 at the end. */
 static int next_inside(const WalkGraph *g, int e, int n)
 {
 	while (e >= 0 && g->dungeon[g->edge_to[e]] != n)

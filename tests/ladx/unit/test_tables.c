@@ -103,7 +103,6 @@ static void defaults(LadxSettings *s)
 	ladx_settings_validate(s);
 }
 
-/* The walk's steps as "<group> <unit or -> <first record line, nothing, or a C row's call>|...". */
 static void walk_text(const LadxSettings *s, int count, char *buf, size_t cap)
 {
 	LadxTablesWalk w;
@@ -248,7 +247,6 @@ static void test_asm_constants(void)
 
 static char mutated[3][4096];
 
-/* The synthetic file which (0 order, 1 alpha, 2 gamma) with its first `from` replaced by `to`. */
 static void expect_error(int which, const char *from, const char *to, LadxTablesStatus status, const char *file,
 			 int line)
 {
@@ -336,7 +334,6 @@ static void test_capacity(void)
 	      "one unit over capacity");
 }
 
-/* The first entry the walk of s selects for unit, with its records iterator. */
 static void records_of(const LadxSettings *s, const char *unit, LadxTablesRecords *it)
 {
 	LadxTablesWalk w;
@@ -488,7 +485,6 @@ static char data[DATA_MAX];
 static size_t data_len;
 static char file_names[LADX_TABLES_GROUP_MAX][64];
 
-/* The file's text, appended to data; its span. */
 static LadxSpan read_file(const char *path)
 {
 	FILE *f = fopen(path, "rb");
@@ -549,7 +545,6 @@ static void open_real(void)
 
 static int units_selected;
 
-/* Every unit without a count component selects an entry for the folder's validated settings. */
 static int check_case(const char *dir, const char *name)
 {
 	char path[1024], line[1024];

@@ -3,7 +3,6 @@
 #include <stdarg.h>
 #include <stddef.h>
 
-/* n (slot, value) pairs, in LADXR's order. */
 static LadxSpriteKind set(LadxSpriteData *o, int n, ...)
 {
 	va_list ap;
@@ -21,7 +20,6 @@ static LadxSpriteKind set(LadxSpriteData *o, int n, ...)
 	return LADX_SPRITE_DATA;
 }
 
-/* One slot accepting either of two values. */
 static LadxSpriteKind either(LadxSpriteData *o, int slot, int a, int b)
 {
 	o->count = 1;
@@ -49,7 +47,6 @@ static int in_caves_b(int room)
 	return 0;
 }
 
-/* _moblinSpriteData. */
 static LadxSpriteKind moblin(LadxSpriteData *o, int room)
 {
 	int x = room & 0x0F, y = (room >> 4) & 0x0F;

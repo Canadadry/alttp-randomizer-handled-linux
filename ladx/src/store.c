@@ -5,7 +5,6 @@
 
 #define BANK_SIZE 0x4000
 
-/* _addStorage: the first region of the bank it touches or holds absorbs it, else a new one. */
 static LadxStoreStatus add(LadxStoreRegions *r, uint8_t bank, int32_t start, int32_t end)
 {
 	int n;
@@ -35,7 +34,6 @@ static LadxStoreStatus add(LadxStoreRegions *r, uint8_t bank, int32_t start, int
 	return LADX_STORE_OK;
 }
 
-/* __mergeStorage: one merge (n absorbs m when m.start - 1 <= n.end <= m.end); 0 when none. */
 static int merge_one(LadxStoreRegions *r)
 {
 	int n, m;
@@ -118,7 +116,6 @@ LadxStoreStatus ladx_store_add_storage(LadxStoreRegions *r, const LadxStoreRegio
 	return LADX_STORE_OK;
 }
 
-/* First fit: the first region of bank with len bytes left, its start moved past them; -1 for none. */
 static int32_t place(LadxStoreRegions *s, uint8_t bank, uint32_t len)
 {
 	int i;
@@ -134,11 +131,6 @@ static int32_t place(LadxStoreRegions *s, uint8_t bank, uint32_t len)
 	return -1;
 }
 
-/*
- * The done dict's lookup: the newest stored entry of bank that registered
- * e's bytes (a non-empty tail of it, or for sprite data, or an empty e, the
- * whole of it); its pointer, -1 for none.
- */
 static int32_t done_lookup(const LadxStoreInfo *info, const LadxStoreEntry *entries, const LadxStoreDone *done,
 			   const LadxStoreEntry *e)
 {
@@ -183,7 +175,6 @@ static int pointer16(LadxStoreWrite write, void *ctx, uint8_t bank, uint32_t add
 	return write(ctx, bank, addr, &lo, 1, -1) && write(ctx, bank, addr + 1, &hi, 1, -1);
 }
 
-/* Python's floor division and modulo. */
 static int32_t floor_div(int32_t a, int32_t b)
 {
 	int32_t q = a / b;
@@ -265,7 +256,6 @@ LadxStoreStatus ladx_store_table(const LadxStoreInfo *info, const LadxStoreRegio
 	return LADX_STORE_OK;
 }
 
-/* Appends to buf within cap, counting the full length. */
 typedef struct Text {
 	char *buf;
 	size_t cap, len;

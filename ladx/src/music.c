@@ -5,18 +5,12 @@
 #define BANK2 (0x02u * 0x4000u)
 #define SLOTS_AT 0x100u
 
-/* _LOOPING_MUSIC as runs of consecutive tracks, first and last. */
 static const uint8_t track_runs[][2] = {
 	{0x01, 0x0E}, {0x11, 0x19}, {0x1C, 0x1D}, {0x1F, 0x1F}, {0x21, 0x27}, {0x2F, 0x2F},
 	{0x31, 0x33}, {0x37, 0x37}, {0x39, 0x3A}, {0x3C, 0x3C}, {0x3E, 0x3E}, {0x40, 0x40},
 	{0x48, 0x4B}, {0x4E, 0x4E}, {0x50, 0x50}, {0x53, 0x55}, {0x57, 0x61},
 };
 
-/*
- * _OVERWORLD_MUSIC_REGIONS as rectangles of the 16x16 overworld (room
- * 16y + x): region, x, y, width, height, each region's in order, the
- * regions in LADXR's order (Turtle Rock first, Yarna Desert last).
- */
 static const uint8_t region_rects[][5] = {
 	{0, 0, 0, 3, 2},
 	{1, 3, 0, 3, 2},
@@ -47,7 +41,6 @@ static const uint8_t region_rects[][5] = {
 
 #define COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
-/* _LOOPING_MUSIC[index]; index < LADX_MUSIC_TRACK_COUNT. */
 static uint8_t track(size_t index)
 {
 	size_t r;

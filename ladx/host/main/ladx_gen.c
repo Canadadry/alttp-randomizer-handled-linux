@@ -87,8 +87,6 @@ static LadxRomTables rom_tables;
 static LadxKs ks;
 static LadxPipelineRom rom;
 
-/* The pipeline's walk into the open log: table entries and the ported C groups (with --rom, every one). */
-/* 1 when it ran, 2 when LADXR raised (pipeline.raised), 0 on a failure. */
 static int run_pipeline(const LadxSettings *settings, LadxRandomizer *r, const LadxPipelineRom *given)
 {
 	LadxPipelineError err;
@@ -128,10 +126,6 @@ static int run_pipeline(const LadxSettings *settings, LadxRandomizer *r, const L
 	}
 }
 
-/*
- * <out_dir>/rom_writes.txt: 0 on an I/O failure (1), -1 on a tables error
- * (2), 2 when LADXR raised (no file: LADXR writes no ROM).
- */
 static int write_rom_writes(const char *out_dir, const LadxSettings *settings, LadxRandomizer *r,
 			    const LadxPipelineRom *given)
 {
@@ -163,7 +157,6 @@ static int write_rom_writes(const char *out_dir, const LadxSettings *settings, L
 	return 1;
 }
 
-/* <out_dir>/spoiler.json, the spoiler group's JSON: 0 on an I/O failure or a name it refuses. */
 static int write_spoiler(const char *out_dir, const LadxSpoiler *spoiler)
 {
 	char path[MAX_PATH];
@@ -187,7 +180,6 @@ static int write_spoiler(const char *out_dir, const LadxSpoiler *spoiler)
 	return 1;
 }
 
-/* The ROM at path into rom_bytes, checked, parsed and its KS built: 0, else the exit code (3 for another ROM). */
 static int read_rom(const char *path)
 {
 	uint8_t digest[LADX_SHA1_SIZE], buf[4096];
@@ -233,7 +225,6 @@ static int read_rom(const char *path)
 	return 0;
 }
 
-/* C's KS span list (tests/ladx/README.md, "KS span list") into out. */
 static int write_ks_spans(const char *rom_path, const char *out_path)
 {
 	FileSink sink;
@@ -258,7 +249,6 @@ static int write_ks_spans(const char *rom_path, const char *out_path)
 static LadxAssembler assembler;
 static uint8_t image[LADX_ROM_SIZE];
 
-/* The pipeline's failure on stderr: 2, or 0 when LADXR raised (run.txt then ends with its outcome). */
 static int pipeline_failure(const LadxPipelineError *err)
 {
 	switch (err->status) {
@@ -280,11 +270,6 @@ static int pipeline_failure(const LadxPipelineError *err)
 	}
 }
 
-/*
- * ladx_assemble on the ROM at rom_path, its log into <out_dir>/rom_writes.txt
- * (removed unless OK): 0 with *r and *raised set for run.txt (raised NULL
- * unless a group raised), else the exit code.
- */
 static int assemble(const Case *c, const char *out_dir, const char *rom_path, LadxRunTextTrace *trace,
 		    const LadxRandomizer **r, const LadxOutcome **raised, int *written)
 {
@@ -454,7 +439,6 @@ static int time_run(const char *case_dir)
 
 static char log_text[LOG_TEXT_MAX];
 
-/* <out_dir>/<group>.txt, write_log.py project's text, for every group of the log. */
 static int project_log(const char *log_path, const char *out_dir)
 {
 	LadxSpan text, groups[LOG_GROUPS_MAX];

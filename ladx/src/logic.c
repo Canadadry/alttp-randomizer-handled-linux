@@ -259,8 +259,6 @@ int ladx_logic_add_spot(LadxLogic *logic, int location, LadxSpotKind kind, const
 	return s;
 }
 
-/* Appends the location to location_list, its spots to iteminfo_list and its
- * edges, targets still creation ids. */
 static void discover(LadxLogic *logic, int b)
 {
 	LadxBuildLocation *bl = &logic->build_location[b];
@@ -291,8 +289,7 @@ static int order_of(const LadxLogic *logic, int b)
 	return is_location(logic, b) ? logic->build_location[b].order : -1;
 }
 
-/* Logic.__recursiveFindAll's preorder, on an explicit stack of (location,
- * next edge) frames: the device's stack is never at stake. */
+/* An explicit stack, not recursion: the device's stack is never at stake. */
 bool ladx_logic_finish(LadxLogic *logic, int start)
 {
 	int depth = 0, i;
@@ -374,7 +371,7 @@ void ladx_logic_force_first_item(LadxLogic *logic, int location, int item)
 	}
 	s = logic->build_location[location].spot_head;
 	if (s < 0) {
-		fail(logic); /* items[0] of an empty list: IndexError */
+		fail(logic);
 		return;
 	}
 	logic->build_spot[s].forced_item = item;
