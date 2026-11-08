@@ -145,7 +145,7 @@
     - [x] Step 3.6.15 warp-home
     - [x] Step 3.6.16 sprites
     - [x] Step 3.6.17 save
-    - [ ] Step 3.6.18 header
+    - [x] Step 3.6.18 header
     - [ ] Step 3.6.19 spoiler
   - [ ] Step 3.7 Assembly pipeline
   - [ ] Step 3.8 LADX-aware debugging skills

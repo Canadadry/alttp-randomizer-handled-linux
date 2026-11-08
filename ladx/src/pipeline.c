@@ -19,6 +19,7 @@ static const LadxPipelineGroup groups[] = {
 	{"endscreen", 1, ladx_group_endscreen, ladx_group_endscreen_draws},
 	{"sprites", 1, ladx_group_sprites, NULL},
 	{"save", 1, ladx_group_save, NULL},
+	{"header", 1, ladx_group_header, NULL},
 };
 
 const LadxPipelineGroup *ladx_pipeline_groups(int *count)

@@ -544,7 +544,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_store`, `test_save`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`, `test_store`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_store`, `test_save`, `test_header`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`, `test_store`, `test_header`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -556,7 +556,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_save`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_save`, `test_header`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -806,7 +806,7 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   reads a unit's resolved bank bytes (keep, copy and literal; inside a
   record) and gives 0 for bytes it does not all write, a unit or a group
   out of range; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites` then `save`,
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites`, `save` then `header`,
   `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
@@ -1082,6 +1082,23 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   `sprites`, ROM, no draw) and no ROM failing. It prints `test_save:
   ROMWithTables.save's stores on a synthetic ROM, read back (<c>
   checks)`.
+  `test_header` checks `ladx_header_fix` through a test-owned I/O over a
+  1 MiB image: the write sequence (the 15-byte name, then 0x14D, 0x14E
+  and 0x14F zeroed, 0x14E and 0x14F) on a zero image, no name keeping
+  the title, a name cut and padded, both checksums over the bytes as they
+  stand (the name just written, the new 0x14D, the old 0x14E..0x14F not
+  counted, a length that is not a multiple of the read chunk), a short
+  length and each failing read or write; then `ladx_group_header` on the
+  synthetic ROM after a planted table group writing inside and outside
+  the header: the encoder's bytes at 0x134..0x14F equal the function run
+  on the image with those writes, the log holds a `header` segment, the
+  group skipped without the ROM; the registry (last, after `save`, ROM,
+  no draw) and no ROM failing. It prints `test_header: ROM.fixHeader's
+  name and checksums, alone and as the group on a synthetic ROM (<c>
+  checks)`; with `--fixtures` it replays every vector of
+  `oracle/header_vectors.txt` ("Header fixture") write for write,
+  printing `test_header: <n> vectors of oracle/header_vectors.txt
+  replayed write for write`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1330,7 +1347,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites` and `save`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites`, `save` and `header`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1784,6 +1801,20 @@ byte at 0x2F20 and its bytes from 0x2F21 (over 255 bytes fails, as
 LADXR's `to_bytes` raises). LADXR writes the texts first; the order does
 not matter, since no two writes of the call share a position.
 
+**`header`** (`ROM.fixHeader(name="LADXR")`, `ladx_group_header`), at
+`order.txt`'s first `C header` row, after `save`: `ladx_header_fix` (a
+pure function over a caller's read and write callbacks, so step 7 can
+run it on its own image) writes the name `LADXR` zero-padded to 15
+bytes at 0x134 as one write, then 0x14D (minus the sum of each byte of
+0x134..0x14C plus one), 0x14E and 0x14F zeroed, then the 16-bit sum of
+every byte of the ROM's length at 0x14E (high) and 0x14F, each a
+one-byte write in LADXR's order, so the encoder's rules give the
+golden's records. The group reads the encoder's current bytes
+(`ladx_enc_bank_value`, references resolved through the user's ROM) and
+writes through `ladx_enc_bank` with no origin. It needs the ROM
+(`rom-group header`, claimed whole, checksums included), draws nothing
+and has no `draw`; without the ROM it is skipped.
+
 ## Room editor
 
 `ladx/include/ladx_room.h`: `roomEditor.py`'s `RoomEditor` at the pin,
@@ -1961,7 +1992,11 @@ repeated or `spoiler` group, a group both `group` and `rom-group`, a
 Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
 `goal-fixed`, `music-fixed` and `options` (the five table groups) and
 `hints`; `rom-group bank3e`, `rom-group endscreen`, `rom-group marin`,
-`rom-group music`, `rom-group notext`, `rom-group goal` and `rom-group title`.
+`rom-group music`, `rom-group notext`, `rom-group goal`, `rom-group items`,
+`rom-group entrances`, `rom-group bosses`, `rom-group enemizer`,
+`rom-group warp-home`, `rom-group title`, `rom-group sprites`,
+`rom-group save` and `rom-group header` (its whole projection, the
+checksum bytes 0x14D..0x14F included).
 
 A claimed `C` group that draws also claims its `trace` lines: those of
 `run.txt` whose stage (the 4th field) is one of its LADXR frames
@@ -2319,6 +2354,51 @@ reports 0 literal runs.
   60 random ones, each error vector's raise, more than 40 random vectors
   ending ok, the pinned merge, chain and integer lines).
 - C side: `test_store --fixtures` ("Unit tests and lint", `make logic`
+  and `make unit-arm`) replays every vector write for write.
+
+## Header fixture
+
+`tests/ladx/oracle/header_vectors.txt` holds LADXR's own `ROM.fixHeader`
+(`rom.py` at the pin) on synthetic banks, the reference `ladx_header_fix`
+replays. Nothing in it comes from a ROM: each vector's image is 64 zero
+banks of 0x4000 bytes with fills and plants, hand-written or drawn from
+`random.Random(0x4EAD5E7)`. LADXR's `ROM` reads the image from a byte
+stream, its banks are swapped for banks recording every assignment, and
+`fixHeader(name=...)` runs with a `str` name or `None`. The format, after
+a `#` header documenting it (hex lowercase, offsets into the image):
+
+    ladx-header-vectors 1
+    V <name>                     hand-written ones, then random-<nn>
+    F <offset> <length> <byte>   a fill of the zero image, in order
+    P <offset> <hex>             planted bytes, after the fills
+    name <hex> | name -          the name's UTF-8 bytes, or None
+    W <offset> <hex>             each assignment fixHeader made, in order
+    end
+
+Vectors: 10 hand-written ones (`zero`, `no-name`, `empty-name`,
+`long-name` (cut to 15), `utf8-cut` (a two-byte character cut after its
+first byte), `all-ff` (the sum wraps), `old-checksums`, `header-wraps`,
+`last-byte`, `sum-wraps`), then 40 random ones; 50 vectors, about 10 KB;
+`nintendo_bytes.py` on it (general scope) reports 0 literal runs.
+
+- `python3 tests/ladx/oracle/gen_header_vectors.py [--ladxr <dir>]
+  [--out <file>]` (the LADXR checkout at the pin, else `setup:
+  header-vectors: ...`, exit 2; no ROM, no network) writes the fixture
+  (default `tests/ladx/oracle/header_vectors.txt`) and prints
+  `header-vectors: <n> vectors written to <file>`; about a second.
+- `gen_header_vectors.py --check` renders it again in memory and prints
+  one `DIFFERENT line <n>` line per differing line (the first 20) and
+  `header-vectors: <k> lines differ from <file>` (exit 1), `MISSING
+  <file>` (exit 1), else `header-vectors: <n> vectors byte-identical to
+  <file>`.
+- `test_gen_header_vectors.py` (`make test-ladx-oracle`, no LADXR): a
+  planted parse, a truncated vector, a stray line and a missing or
+  repeated `name` line refused, the image builder, and the committed
+  fixture's shape (under 64 KB, its header, the hand-written names then
+  the 40 random ones, every vector's write offsets in LADXR's order, the
+  `zero`, `utf8-cut` and `empty-name` names, `all-ff`'s checksums
+  computed independently).
+- C side: `test_header --fixtures` ("Unit tests and lint", `make logic`
   and `make unit-arm`) replays every vector write for write.
 
 ## Measure

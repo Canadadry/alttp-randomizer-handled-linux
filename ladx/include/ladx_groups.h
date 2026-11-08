@@ -365,4 +365,30 @@ LadxSpritesStatus ladx_sprites_room(const LadxRoom *r, int evilshop, uint8_t out
  */
 int ladx_group_save(LadxEncoder *enc, LadxPipeline *p);
 
+/* rom.py ROM.fixHeader's reads and writes, through the caller. */
+typedef struct LadxHeaderIo {
+	int (*read)(void *ctx, uint32_t offset, uint8_t *out, size_t n);	   /* the bytes now there; 0 fails */
+	int (*write)(void *ctx, uint32_t offset, const uint8_t *bytes, size_t n); /* 0 fails */
+	void *ctx;
+} LadxHeaderIo;
+
+#define LADX_HEADER_NAME_LEN 15
+
+/*
+ * ROM.fixHeader(name=...) on a ROM of len bytes: name's n bytes (NULL:
+ * None, the title kept) cut or zero-padded to 15 at 0x134; 0x14D minus the
+ * sum of each byte of 0x134..0x14C plus one; 0x14E and 0x14F zeroed; then
+ * the 16-bit sum of bytes 0..len-1 at 0x14E (high) and 0x14F. Each byte of
+ * 0x14D..0x14F is its own write, in LADXR's order. 0 when len < 0x150 or a
+ * read or a write fails, nothing written after it.
+ */
+int ladx_header_fix(const LadxHeaderIo *io, size_t len, const uint8_t *name, size_t n);
+
+/*
+ * The header group (rom.py ROM.fixHeader(name="LADXR"), randomizer.py's
+ * rom.save): ladx_header_fix over the encoder's current bytes, each byte
+ * written with no origin. Needs p->rom; draws nothing.
+ */
+int ladx_group_header(LadxEncoder *enc, LadxPipeline *p);
+
 #endif

@@ -311,9 +311,10 @@ static void test_registry(void)
 	int count;
 
 	groups = ladx_pipeline_groups(&count);
-	check(count > 1 && strcmp(groups[count - 1].name, "save") == 0 && strcmp(groups[count - 2].name, "sprites") == 0,
-	      "save registered last, after sprites");
-	check(groups[count - 1].needs_rom && groups[count - 1].draw == NULL, "a rom-group with no draw");
+	check(count > 2 && strcmp(groups[count - 2].name, "save") == 0 && strcmp(groups[count - 3].name, "sprites") == 0 &&
+		      strcmp(groups[count - 1].name, "header") == 0,
+	      "save registered after sprites, before header");
+	check(groups[count - 2].needs_rom && groups[count - 2].draw == NULL, "a rom-group with no draw");
 	memset(&pipeline, 0, sizeof pipeline);
 	check(!ladx_group_save(&enc, &pipeline), "no ROM: the group fails");
 }
