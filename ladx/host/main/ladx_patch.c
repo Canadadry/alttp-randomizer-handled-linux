@@ -1,9 +1,13 @@
+#define _XOPEN_SOURCE 700
+
 #include "ladx_assemble.h"
 #include "ladx_inputs.h"
 #include "ladx_settings.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <time.h>
 
 #ifndef LADX_TABLES_DEFAULT
 #define LADX_TABLES_DEFAULT "data/ladx"
@@ -13,12 +17,20 @@
 #define MAX_PATH 4096
 
 static const char usage[] =
-	"usage: ladx_patch --base <file> --out <file> [--seed <32 lowercase hex>] [--tables <dir>] [<key>=<value> ...]\n";
+	"usage: ladx_patch --base <file> --out <file> [--seed <32 lowercase hex>] [--tables <dir>] [--time] [<key>=<value> ...]\n";
 
 static LadxAssembler assembler;
 static LadxTablesDir tables;
 static uint8_t base[LADX_ROM_SIZE];
 static uint8_t image[LADX_ROM_SIZE];
+
+static long elapsed_us(const struct timespec *start)
+{
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return (long)((now.tv_sec - start->tv_sec) * 1000000L + (now.tv_nsec - start->tv_nsec) / 1000L);
+}
 
 static void print_hex(FILE *f, const uint8_t *bytes, size_t n)
 {
@@ -101,11 +113,19 @@ int main(int argc, char **argv)
 	LadxSettingPair finding;
 	LadxAssembleInput in;
 	LadxAssembleStatus st;
+	struct timespec start, assemble_start;
+	long assemble_us;
+	int timed = 0, rc;
 	size_t n;
 	int i;
 
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	ladx_settings_defaults(&settings);
 	for (i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "--time") == 0) {
+			timed = 1;
+			continue;
+		}
 		const char **opt = strcmp(argv[i], "--base") == 0     ? &base_path
 				   : strcmp(argv[i], "--out") == 0    ? &out_path
 				   : strcmp(argv[i], "--seed") == 0   ? &seed_text
@@ -164,7 +184,9 @@ int main(int argc, char **argv)
 	in.settings = &settings;
 	in.seed = seed;
 	in.seed_len = sizeof seed;
+	clock_gettime(CLOCK_MONOTONIC, &assemble_start);
 	st = ladx_assemble(&assembler, &in, image);
+	assemble_us = elapsed_us(&assemble_start);
 	if (st == LADX_ASSEMBLE_WRONG_BASE) {
 		fprintf(stderr, PROG ": --base: not the LADX English 1.0 ROM (SHA-1 ");
 		print_hex(stderr, assembler.base_digest, LADX_SHA1_SIZE);
@@ -173,5 +195,13 @@ int main(int argc, char **argv)
 	}
 	if (st != LADX_ASSEMBLE_OK)
 		return generation_failed(st);
-	return write_out(out_path);
+	rc = write_out(out_path);
+	if (rc == 0 && timed) {
+		struct rusage usage;
+
+		printf("time.assemble %ld us\ntime.total %ld us\n", assemble_us, elapsed_us(&start));
+		if (getrusage(RUSAGE_SELF, &usage) == 0)
+			printf("maxrss %ld KiB\n", (long)usage.ru_maxrss);
+	}
+	return rc;
 }

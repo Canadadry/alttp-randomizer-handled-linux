@@ -1,4 +1,4 @@
-.PHONY: help test lint logic unit-arm selftest e2e e2e-combos e2e-rom e2e-synthetic synthetic-refs measure rom-check rom-check-selftest
+.PHONY: help test lint logic unit-arm selftest e2e e2e-combos e2e-rom e2e-synthetic synthetic-refs measure measure-arm rom-check rom-check-selftest
 
 CC ?= gcc
 # -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
@@ -60,7 +60,8 @@ help:
 	@echo "make e2e               build/ladx_gen --project's projection of every golden rom_writes.txt of cases/ compared with write_log.py's, then build/ladx_gen on every case of cases/ (or CASES=\"a b\"), its run.txt's stage projection and claimed groups' rom_writes.txt projections (tables TABLES, default data/ladx) diffed against the golden's per claims.txt"
 	@echo "make e2e-combos        the same on every case of combos/"
 	@echo "make e2e-rom           with LADX_ROM (default tmp/ladx/base.gbc): C's KS span list compared with known_source.build's, then build/ladx_gen --rom on every case of cases/ and combos/, every group and rom-group of claims.txt claimed; work in tmp/ladx-e2e-rom/; outside the net"
-	@echo "make measure           build/ladx_gen --time (the run stopped after the fill) 3 times on every case and combo, the minimum kept, projected onto the Cortex-A7; report in build/measure/report.txt; outside the net"
+	@echo "make measure           build/ladx_gen --time (the run stopped after the fill) and, when LADX_ROM exists, build/ladx_patch --time (the whole pipeline) 3 times on every case and combo, the minimum kept, projected onto the Cortex-A7; report in build/measure/report.txt; outside the net"
+	@echo "make measure-arm       make measure with the ROM, plus ladx_patch built by Onion's toolchain timed once per case under qemu-arm (needs docker, qemu-user, the ROM); outside the net"
 	@echo "make e2e-synthetic     build/synthetic_refs: its self-test, then C's outputs (write log, ROM, spoiler) on a synthetic base, every case and combo, against synthetic_refs.txt; in the net"
 	@echo "make synthetic-refs    rewrites synthetic_refs.txt, each case's skipped groups found anew; only after e2e-rom and rom-check are green with the ROM, in its own commit; outside the net"
 	@echo "make rom-check          builds build/ladx_patch, then the generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
@@ -83,8 +84,19 @@ e2e-rom: $(GEN)
 	@cd $(TOP) && python3 -I -B tests/ladx/run_e2e.py --rom $(LADX_ROM) --cases tests/ladx/cases --gen tests/ladx/$(GEN) --tables data/ladx
 	@cd $(TOP) && python3 -I -B tests/ladx/run_e2e.py --rom $(LADX_ROM) --no-ks --cases tests/ladx/combos --gen tests/ladx/$(GEN) --tables data/ladx
 
-measure: $(GEN)
-	@CC='$(CC)' ./measure.sh $(GEN) $(BUILD)/measure
+ARM_PATCH := $(BUILD)/arm/ladx_patch
+
+measure: $(GEN) $(PATCH)
+	@if [ -f $(TOP)/$(LADX_ROM) ]; then CC='$(CC)' ./measure.sh --rom $(TOP)/$(LADX_ROM) --patch $(PATCH) $(GEN) $(BUILD)/measure; \
+	else echo "measure: no ROM at $(LADX_ROM), the whole pipeline not timed"; CC='$(CC)' ./measure.sh $(GEN) $(BUILD)/measure; fi
+
+# _FILE_OFFSET_BITS=64 as unit-arm's.
+measure-arm: $(GEN) $(PATCH)
+	@[ -f $(TOP)/$(LADX_ROM) ] || { echo "setup: measure-arm: no ROM at $(LADX_ROM)" >&2; exit 2; }
+	@mkdir -p $(BUILD)/arm
+	@$(TOOLCHAIN) sh -c '"$${CROSS_COMPILE}gcc" $(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include -I$(LADX)/host -o $(ARM_PATCH) $(LADX)/host/main/ladx_patch.c $(LADX_SRC) $(HOST_SRC) -lm'
+	@file $(ARM_PATCH) | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_PATCH); echo "measure-arm: $(ARM_PATCH) is not a 32-bit ARM EABI executable" >&2; exit 1; }
+	@CC='$(CC)' ./measure.sh --rom $(TOP)/$(LADX_ROM) --patch $(PATCH) --qemu $(ARM_PATCH) $(GEN) $(BUILD)/measure
 
 e2e-synthetic: $(SYNTH_REFS)
 	@./$(SYNTH_REFS) --self-test

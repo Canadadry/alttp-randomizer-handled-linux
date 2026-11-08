@@ -2114,7 +2114,7 @@ names each status.
 `tests/ladx/build/ladx_patch` (`make -C tests/ladx build/ladx_patch`, and
 by `rom-check`), the generator of the "Full-ROM check" contract:
 `ladx_patch --base <file> --out <file> [--seed <32 lowercase hex>]
-[--tables <dir>] [<key>=<value> ...]`.
+[--tables <dir>] [--time] [<key>=<value> ...]` (`--time`: "Measure").
 
 - The settings are applied over the defaults in order
   (`ladx_settings_set`), validated, and refused when unsupported. The
@@ -2637,11 +2637,17 @@ first byte), `all-ff` (the sum wraps), `old-checksums`, `header-wraps`,
 
 ## Measure
 
-`make -C tests/ladx measure` (outside the net; `tests/ladx/measure.sh`)
-builds `build/ladx_gen` `-O2`, runs `ladx_gen --time` (the run stopped
-after the fill, no sink) 3 times on every case and combo, one after the
-other, keeps each case's minimum, and writes `build/measure/report.txt`,
-also printed:
+`make -C tests/ladx measure [LADX_ROM=<file>]` (outside the net;
+`tests/ladx/measure.sh [--rom <rom> --patch <ladx_patch> [--qemu <arm
+ladx_patch>]] <ladx_gen> <out dir>`) builds `build/ladx_gen` and
+`build/ladx_patch` `-O2`, runs `ladx_gen --time` (the run stopped after
+the fill, no sink) 3 times on every case and combo, one after the other,
+and, when `LADX_ROM` (default `tmp/ladx/base.gbc`) exists, `ladx_patch
+--time` 3 times on each too (the whole pipeline: `ladx_assemble`, the base
+checked and parsed, KS, the fill, every group, save, spoiler and header;
+the tables `data/ladx`), each output's SHA-1 checked against `run.txt`'s
+`rom_sha1` and deleted. It keeps each case's minimum and writes
+`build/measure/report.txt`, also printed:
 
 - `fill.time <case> <us> us`, per case, `cases/` then `combos/`;
 - `fill.time.cases <n> (each the minimum of 3 runs of ladx_gen --time,
@@ -2656,9 +2662,36 @@ also printed:
   file), the same stated assumptions until a device timing replaces them;
   ` over` when the high end passes the 10 s line.
 
+With the ROM, then:
+
+- `pipeline.time <case> <us> us` per case (`ladx_assemble`'s time);
+- `pipeline.time.cases <n> (...)`, `pipeline.time.median|max|total`
+  as `fill.time`'s, and `pipeline.process.median|max|total`, the whole
+  process (reading the base and the tables, writing the output);
+- `pipeline.maxrss.max <KiB> KiB <case>`, the largest peak RSS of a run;
+- `pipeline.state.bytes <n> (sizeof LadxAssembler)`;
+- `miyoo.pipeline.projected <lo>..<hi> ms (host x 20..50) budget
+  10000[ over]`, from the slowest process.
+
+Without the ROM it prints `measure: no ROM at <path>, the whole pipeline
+not timed` and only the fill's lines.
+
+`make -C tests/ladx measure-arm` (the ROM, docker and qemu-user, else a
+`setup:` line) also builds `build/arm/ladx_patch` with Onion's toolchain
+(static, the `unit-arm` flags) and runs it once per case under `qemu-arm`,
+its output's SHA-1 checked too: `qemu.time.median|max|total`,
+`qemu.process.median|max|total`, `qemu.maxrss.max <KiB> KiB <case>
+(qemu-arm's own RSS included)` and `qemu.ratio <r>` (the slowest process
+under qemu over the slowest on the host), a cross-check of the ARM build,
+not a device timing.
+
+`ladx_patch --time` prints, after the output is written, `time.assemble
+<us> us`, `time.total <us> us` (since `main`) and `maxrss <KiB> KiB`
+(`getrusage`) on stdout.
+
 Exit 0 whatever the figures; 1 when a measurement cannot be taken (no
-generator, a failing or silent `--time` run, the factors not found, the
-probe not built); 2 on a usage error.
+generator or ROM, a failing or silent `--time` run, an output unlike its
+golden, the factors not found, the probe not built); 2 on a usage error.
 
 ## Full-ROM check
 

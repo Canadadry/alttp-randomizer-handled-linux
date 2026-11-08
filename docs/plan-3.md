@@ -521,3 +521,15 @@ The ranker prints a `TOP` block and a `REPRO` single-case command. Each skill al
 - `rank_e2e.py`: no failure;
 - `rom-check`: 128 ok of 88 cases and 40 combos;
 - `e2e-synthetic`: 128 equal to `synthetic_refs.txt`.
+
+### Step 3.10
+
+`make -C tests/ladx measure` with the real ROM now also times the whole pipeline: `ladx_patch --time`, minimum of 3 at -O2, every output's SHA-1 checked against its golden. Results:
+- `ladx_assemble`: median 51 ms, max 63 ms (`goalcount-2`).
+- Whole process: median 58 ms, max 71 ms.
+- Cortex-A7 projection: 1.4–3.7 s against the 10 s line, so no profile or fix was needed.
+- Fill alone: median 8 ms, projected 0.2–0.5 s.
+- Peak RSS: 20.7 MiB, for a 23.7 MB `LadxAssembler` state.
+- New `measure-arm` (Onion's toolchain under qemu-arm): median 0.44 s, max 0.53 s, all 128 ARM outputs byte-identical to the goldens. That is ×8.3 over the host, which is emulation overhead, so it neither confirms nor rules out the ×20–50 assumption.
+
+`ladx_patch` gained `--time`. The README's "Measure" contract covers both modes.

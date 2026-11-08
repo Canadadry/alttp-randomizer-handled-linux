@@ -252,9 +252,11 @@ in `docs/`, then `README.md`.
   `rom_writes.txt` projection; `ladx_gen --tables data/ladx` writes C's),
   contract in `tests/ladx/README.md`, "Stage projection" and
   "E2E driver and claims";
-  `unit-arm`, `measure` (the run stopped after the fill timed on every
-  case, projected onto the Cortex-A7; contract in `tests/ladx/README.md`,
-  "Measure"), `rom-check`, `rom-check-selftest`, `e2e-rom`,
+  `unit-arm`, `measure` (the run stopped after the fill and, with the
+  ROM, the whole pipeline timed on every case, projected onto the
+  Cortex-A7), `measure-arm` (the same, plus Onion's `ladx_patch` under
+  `qemu-arm`; contract of both in `tests/ladx/README.md`, "Measure"),
+  `rom-check`, `rom-check-selftest`, `e2e-rom`,
   `synthetic-refs`, outside the net; `e2e-synthetic`, in the net); Phase 3
   adds its targets there. `tests/ladx/oracle/fill_outcomes.txt`, LADXR's
   fill outcomes on seeds that are not case seeds, is written only by
