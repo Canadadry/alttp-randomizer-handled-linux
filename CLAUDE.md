@@ -143,12 +143,20 @@ in `docs/`, then `README.md`.
   (`record.c`, `seed_save.c`); its paths live in `rando_seed_save.h`: the
   last game opened in `App/ZeldaRando/settings.json` (`last_game.c`), and
   per game ALttP's `base.sfc`, `base.bps`, `history/` and `settings.json` in
-  `App/ZeldaRando/alttp/`, its ROMs in `Roms/SFC/ZeldaRando/`.
+  `App/ZeldaRando/alttp/`, its ROMs in `Roms/SFC/ZeldaRando/`; LADX's
+  `base.gbc`, patch tables `tables/` (`data/ladx/`), `history/` (records
+  `<code>.json`, spoilers `<code>.spoiler.json`) and `settings.json` in
+  `App/ZeldaRando/ladx/`, its ROMs in `Roms/GBC/ZeldaRando/`, its saves under
+  `Gambatte`. LADX's side: `ladx_gen.c` (base check and runner, its ~25 MiB
+  work area allocated per generation and freed), `ladx_name.c`
+  (`<Logic>-<Goal>-<CODE>.gbc`), `ladx_record.c`, `ladx_history.c`; both
+  games delete through `seed_files.c`.
   `app/sdl/` is the SDL 1.2 renderer and input layer (key map, grid view,
   theme renderer `sdl_render.c`, frame loop). `app/core` uses the library;
-  `app/sd` the library, `alttp/host` and `app/core` (it hands the core its
-  runners and stores); `app/sdl` the library, `app/core` and `app/theme`;
-  nothing in `alttp/` includes `app/`. Its tests live
+  `app/sd` both libraries, `alttp/host`, `ladx/host` and `app/core` (it
+  hands the core its runners and stores; `tests/alttp` builds `ladx/` into
+  every app link, `-ffp-contract=off` kept); `app/sdl` the library, `app/core` and `app/theme`;
+  nothing in `alttp/` or `ladx/` includes `app/`. Its tests live
   in `tests/alttp/unit/`, the SDL ones in `tests/alttp/sdl/`.
   `app/theme/` is the theme loader (`theme.ini` into a `Theme` struct):
   pure C99, no SDL, built with only itself on the include path.

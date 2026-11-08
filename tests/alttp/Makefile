@@ -4,9 +4,9 @@ RANDO := ../../alttp
 APP := ../../app
 BUILD := build
 
-UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_last_game test_ui_input test_ui_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme
+UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_last_game test_ui_input test_ui_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme test_ladx_name test_ladx_record test_ladx_gen test_ladx_history
 # No fixture mode: test_prng already replays its vectors in `test`, the others have no fixture.
-LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_last_game test_ui_input test_ui_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme,$(UNIT_TESTS))
+LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_last_game test_ui_input test_ui_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme test_ladx_name test_ladx_record test_ladx_gen test_ladx_history,$(UNIT_TESTS))
 
 RANDO_SRC := $(wildcard $(RANDO)/src/*.c $(RANDO)/src/*/*.c)
 RANDO_HDR := $(wildcard $(RANDO)/include/*.h $(RANDO)/src/*.h)
@@ -17,6 +17,18 @@ HOST_HDR := $(wildcard $(RANDO)/host/*.h)
 HOST_OBJ := $(patsubst $(RANDO)/host/%.c,$(BUILD)/host/%.o,$(HOST_SRC))
 HOST_LIB := $(BUILD)/librando_host.a
 INCLUDES := -I$(RANDO)/include -I$(RANDO)/host
+# The LADX library and its host layer, for app/sd (no mains), built as tests/ladx builds them.
+LADX := ../../ladx
+LADX_CFLAGS = $(CFLAGS) -ffp-contract=off
+LADX_SRC := $(wildcard $(LADX)/src/*.c)
+LADX_HDR := $(wildcard $(LADX)/include/*.h $(LADX)/src/*.h $(LADX)/host/*.h)
+LADX_OBJ := $(patsubst $(LADX)/src/%.c,$(BUILD)/ladx/obj/%.o,$(LADX_SRC))
+LADX_HOST_SRC := $(wildcard $(LADX)/host/*.c)
+LADX_HOST_OBJ := $(patsubst $(LADX)/host/%.c,$(BUILD)/ladx/host/%.o,$(LADX_HOST_SRC))
+LADX_LIB := $(BUILD)/libladx.a
+LADX_HOST_LIB := $(BUILD)/libladx_host.a
+LADX_LIBS := $(LADX_HOST_LIB) $(LADX_LIB)
+LADX_INCLUDES := -I$(LADX)/include -I$(LADX)/host
 APP_CORE_SRC := $(wildcard $(APP)/core/*.c)
 APP_SD_SRC := $(wildcard $(APP)/sd/*.c)
 APP_THEME_SRC := $(wildcard $(APP)/theme/*.c)
@@ -28,7 +40,7 @@ APP_LIB := $(BUILD)/librando_app.a
 CORE_INCLUDES := -I$(RANDO)/include -I$(APP)/core
 # app/theme sees only itself.
 THEME_INCLUDES := -I$(APP)/theme
-TEST_INCLUDES := $(INCLUDES) -I$(APP)/core -I$(APP)/sd -I$(APP)/theme
+TEST_INCLUDES := $(INCLUDES) $(LADX_INCLUDES) -I$(APP)/core -I$(APP)/sd -I$(APP)/theme
 SUPPORT_OBJ := $(BUILD)/support.o $(BUILD)/synthetic_base.o
 UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
 GEN := $(BUILD)/rando_gen
@@ -216,6 +228,7 @@ sdl-arm:
 		for s in $(SDL_SRC); do "$$cc" $$f -pedantic-errors $(CORE_INCLUDES) $(THEME_INCLUDES) -c -o $$o/sdl_$$(basename $$s .c).o $$s; done; \
 		"$$cc" $$f -pedantic-errors $(TEST_INCLUDES) -I$(APP)/sdl -c -o $$o/main.o $(SDL_MAIN); \
 		for s in $(APP_SRC) $(HOST_SRC) $(RANDO_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f $(TEST_INCLUDES) -c -o $$o/\$$(basename {} .c).o {}"; \
+		for s in $(LADX_SRC) $(LADX_HOST_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f -ffp-contract=off $(TEST_INCLUDES) -c -o $$o/ladx_\$$(basename {} .c).o {}"; \
 		"$$cc" $$f -o $(ARM_SDL_APP) $$o/*.o -lSDL -lSDL_ttf -lSDL_image'
 	@file $(ARM_SDL_APP) | grep 'ELF 32-bit LSB executable, ARM, EABI5' | grep -q 'dynamically linked' || { file $(ARM_SDL_APP); echo "sdl-arm: $(ARM_SDL_APP) is not a dynamically linked 32-bit ARM EABI executable" >&2; exit 1; }
 	@file $(ARM_SDL_APP)
@@ -252,6 +265,7 @@ unit-arm:
 	@echo "unit-arm: building $(words $(UNIT_TESTS)) unit tests in $(ARM_UNIT_DIR) with Onion's toolchain"
 	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 $(TEST_INCLUDES)"; \
 		for s in $(ARM_UNIT_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f -c -o $(ARM_UNIT_DIR)/obj/\$$(basename {} .c).o {}"; \
+		for s in $(LADX_SRC) $(LADX_HOST_SRC); do echo "$$s"; done | xargs -P 4 -I{} sh -c "\"$$cc\" $$f -ffp-contract=off -c -o $(ARM_UNIT_DIR)/obj/ladx_\$$(basename {} .c).o {}"; \
 		for t in $(UNIT_TESTS); do "$$cc" $$f -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o; done'
 	@file $(ARM_UNIT_DIR)/test_prng | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_UNIT_DIR)/test_prng; echo "unit-arm: $(ARM_UNIT_DIR)/test_prng is not a 32-bit ARM EABI executable" >&2; exit 1; }
 	@qemu-arm --version | head -n 1
@@ -276,11 +290,27 @@ $(HOST_LIB): $(HOST_OBJ)
 	@rm -f $@
 	ar rcs $@ $^
 
+$(BUILD)/ladx/obj/%.o: $(LADX)/src/%.c $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(LADX_CFLAGS) -I$(LADX)/include -c -o $@ $<
+
+$(BUILD)/ladx/host/%.o: $(LADX)/host/%.c $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(LADX_CFLAGS) $(LADX_INCLUDES) -c -o $@ $<
+
+$(LADX_LIB): $(LADX_OBJ)
+	@rm -f $@
+	ar rcs $@ $^
+
+$(LADX_HOST_LIB): $(LADX_HOST_OBJ)
+	@rm -f $@
+	ar rcs $@ $^
+
 $(BUILD)/app/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CORE_INCLUDES) -c -o $@ $<
 
-$(BUILD)/app/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
+$(BUILD)/app/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR) $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(TEST_INCLUDES) -c -o $@ $<
 
@@ -298,14 +328,14 @@ $(BUILD)/support.o: unit/support.c unit/support.h $(RANDO_HDR) | $(BUILD)
 $(BUILD)/synthetic_base.o: unit/synthetic_base.c unit/synthetic_base.h unit/support.h $(RANDO_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(RANDO)/include -c -o $@ $<
 
-$(BUILD)/test_%: unit/test_%.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
-	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
+$(BUILD)/test_%: unit/test_%.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS)
 
-$(UI_CLI): $(APP)/main/ui_cli.c $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
-	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
+$(UI_CLI): $(APP)/main/ui_cli.c $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS)
 
-$(SMOKE): unit/smoke_ui_cli.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
-	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB)
+$(SMOKE): unit/smoke_ui_cli.c unit/support.h unit/synthetic_base.h $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS) $(RANDO_HDR) $(HOST_HDR) $(APP_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -o $@ $< $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS)
 
 $(SD_FIXTURE): sdl/sd_fixture.c unit/synthetic_base.h $(SUPPORT_OBJ) $(RANDO_LIB) $(APP_HDR) $(RANDO_HDR) | $(BUILD)
 	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -Iunit -o $@ $< $(SUPPORT_OBJ) $(RANDO_LIB)
@@ -314,13 +344,13 @@ $(SDL_DIR)/obj/%.o: $(APP)/sdl/%.c $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) $(THEME_INCLUDES) $(SDL_CFLAGS) -c -o $@ $<
 
-$(SDL_DIR)/test_%: sdl/test_%.c unit/support.h $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
+$(SDL_DIR)/test_%: sdl/test_%.c unit/support.h $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS) $(SDL_HDR) $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $(TEST_INCLUDES) -I$(APP)/sdl -Iunit $(SDL_CFLAGS) -o $@ $< $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_LIBS)
+	$(CC) $(CFLAGS) $(TEST_INCLUDES) -I$(APP)/sdl -Iunit $(SDL_CFLAGS) -o $@ $< $(SDL_OBJ) $(SUPPORT_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS) $(SDL_LIBS)
 
-$(SDL_APP): $(SDL_MAIN) $(SDL_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_HDR) $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
+$(SDL_APP): $(SDL_MAIN) $(SDL_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS) $(SDL_HDR) $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -I$(APP)/sdl $(SDL_CFLAGS) -o $@ $< $(SDL_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(SDL_LIBS)
+	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -I$(APP)/sdl $(SDL_CFLAGS) -o $@ $< $(SDL_OBJ) $(APP_LIB) $(HOST_LIB) $(RANDO_LIB) $(LADX_LIBS) $(SDL_LIBS)
 
 $(LINT_DIR)/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
@@ -330,7 +360,7 @@ $(LINT_APP_DIR)/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) -c -o $@ $<
 
-$(LINT_APP_DIR)/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR)
+$(LINT_APP_DIR)/sd/%.o: $(APP)/sd/%.c $(APP_HDR) $(HOST_HDR) $(RANDO_HDR) $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors $(TEST_INCLUDES) -c -o $@ $<
 

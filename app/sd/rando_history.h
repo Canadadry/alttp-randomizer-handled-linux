@@ -2,6 +2,7 @@
 #define RANDO_HISTORY_H
 
 #include "rando_record.h"
+#include "rando_seed_files.h"
 #include "rando_seed_save.h"
 #include "ui_history.h"
 
@@ -22,14 +23,6 @@ bool rando_history_init(RandoHistory *h, const char *sd_root);
 void rando_history_scan(RandoHistory *h, UiHistoryList *out);
 
 bool rando_history_spoiler(void *ctx, const UiHistoryEntry *entry, UiHistorySpoiler *out);
-
-typedef enum RandoHistoryDeleteStatus {
-	RANDO_HISTORY_DELETE_OK,
-	RANDO_HISTORY_DELETE_ROM,
-	RANDO_HISTORY_DELETE_FILES,
-	RANDO_HISTORY_DELETE_RECORD,
-	RANDO_HISTORY_DELETE_STATUS_COUNT,
-} RandoHistoryDeleteStatus;
 
 UiStrId rando_history_delete_text(RandoHistoryDeleteStatus status);
 

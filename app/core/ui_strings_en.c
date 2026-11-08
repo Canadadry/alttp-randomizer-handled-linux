@@ -232,6 +232,12 @@ static const UiStrTable english = { {
 	[UI_STR_GAME_ALTTP] = "A Link to the Past",
 	[UI_STR_GAME_LADX] = "Link's Awakening DX",
 	[UI_STR_GAME_UNAVAILABLE] = "Not available yet",
+	[UI_STR_LADX_ADVICE_BASE] = "Needs App/ZeldaRando/ladx/base.gbc",
+	[UI_STR_LADX_BASE_SHA1] = "Base ROM is not LADX English 1.0",
+	[UI_STR_LADX_TABLES] = "Patch tables missing or damaged",
+	[UI_STR_LADX_MEMORY] = "Not enough memory to generate",
+	[UI_STR_LADX_SEED] = "No random seed available",
+	[UI_STR_LADX_BROKEN] = "Generator failed: program bug",
 } };
 
 const UiStrTable *ui_str_english(void)
