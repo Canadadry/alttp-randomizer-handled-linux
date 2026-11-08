@@ -112,7 +112,7 @@
     - [x] Chunk 2: tables reader, walk, applier and spot count
     - [x] Chunk 3: driver group claims and self-test
     - [x] Chunk 4: ladx_gen writes the table groups
-  - [ ] Step 3.6 Seed-dependent writes
+  - [x] Step 3.6 Seed-dependent writes
     - [x] Owner decision: ROM-content extractions removed
     - [x] Plan reworked: ROM-read groups claimed with the ROM
     - [x] Step 3.6.1 ROM-free proof of save's packing

@@ -476,3 +476,7 @@ Encoder change found here: the oracle gives each written KNOWN byte of a C group
 ### Step 3.6.19
 
 `spoiler` is ported (`ladx/src/spoiler.c`, `SpoilerLog` read back from the finished ROM: `readHexSeed`, `loadFromRom`'s entrances and boss mappings, every location kind's `read`, the sphere loop, `json.dumps(indent="  ")`). It is claimed by a new `spoiler` line, `e2e-rom` only: C's `spoiler.json` equals the golden's SHA-1 on all 88 cases and 40 combos, and no file is written on `race`. `ladx_gen --rom` writes it. It runs at its `order.txt` row after `save` and before `header`, which is equivalent because it reads no header byte. LADXR's read-back entrance dict equals the identity on all 128 goldens, only in another key order, so C refuses (FAILED) any read-back mapping that is not the identity as a dict. Outside tier 1, a nightmare boss or a dungeon-only overworld is refused too. `test_spoiler` checks the rendering and spheres against digests from LADXR's own `outputJson` on 5 synthetic placements. Fifteen planted mutations are caught, four after tests were added for them, and two judged equivalent. `make unit-arm`: 40 LADX unit tests and 6 fixture replays.
+
+### Step 3.6
+
+Closed: sub-steps 6.1 to 6.19 each have their note. Every `C` group is ported and claimed: `hints` without the ROM under `make check`, the others as rom-groups under `e2e-rom`, along with the spoiler. `e2e-rom` passes 88 cases and 40 combos with every group, checksums and `spoiler.json` included.
