@@ -576,3 +576,14 @@ The README covers both games. A table gives each base ROM's place: ALttP's heade
 ### Step 4.7
 
 `rework-comments` ran as a catch-up pass over `ladx/`, `tests/ladx/` (generated data left out) and the `app/` files plan 3 touched: 247 files, 192 changed. The comment ratio went from 6.0% to 1.8%; `ladx/include` from 39.7% to 0%, `ladx/src` from 3.0% to 0.2%. Headers carry no comment; their contracts are in `tests/ladx/README.md` or pinned by tests. C bodies keep 40 one-sentence traps. Tests keep the provenance of expected values. Script module docstrings and shell usage blocks stay whole as the tools' usage text. Gate: comment-stripped C (`gcc -fpreprocessed`), docstring-stripped Python ASTs and comment-stripped shell are identical before and after, and no assert was added. `make -k check`, `e2e-rom`, `rom-check` (128 ok) and `sdl-pc` (18 goldens) are green, with 0 literal runs.
+
+End of Phase 4's code steps, reviewed before step 8 so that any fix could still run with the ROM. `warn-review` flagged:
+- helpers duplicated across `app/sd`: path joins, dates, folders, the record JSON parser copied into `ladx_record.c`, history helpers;
+- paths and extensions written inline outside `rando_seed_save.h`;
+- `UiAppInit`'s asymmetry and the merged `UiHistoryEntry` and `UiGenRequest` structs with game branches;
+- `ui_ladx_generate.c` repeating `ui_generate.c`'s cursor logic;
+- a mutable static for the fixed LADX seed;
+- a Makefile comment explaining why;
+- `ui_app_tab` always returning ALttP's tab.
+
+`plan-review` found no method change for step 8. `ui_app_tab` was a test-only accessor, not a behaviour bug, since every screen goes through `shown_side`. It now reads the shown game's tab, and `test_ui_app`'s expectation after R1 on LADX is corrected to History. The Makefile comment is cut. The other warnings stay open for the PR; they are ROM-free code, snapshot-covered.

@@ -161,4 +161,5 @@
   - [x] Step 4.5 README and screenshots
   - [x] Step 4.6 check-net
   - [x] Step 4.7 rework-comments
+    - [x] Fix: ui_app_tab reads the shown game's tab
   - [ ] Step 4.8 Close the ROM window

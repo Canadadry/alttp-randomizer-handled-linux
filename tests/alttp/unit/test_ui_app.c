@@ -625,7 +625,7 @@ static void test_ladx_tabs(void)
 	CHECK(ui_screen_valid(&screen));
 	test_snapshot(TEST, SNAPSHOTS "ladx_generate_initial.txt", render());
 	keys(UI_BUTTON_R1, 1);
-	CHECK(ui_app_tab(&app) == UI_APP_TAB_GENERATE);
+	CHECK(ui_app_tab(&app) == UI_APP_TAB_HISTORY);
 	test_snapshot(TEST, SNAPSHOTS "app_ladx_history.txt", render());
 	keys(UI_BUTTON_A, 1);
 	CHECK(fake.spoiler_calls == 1);

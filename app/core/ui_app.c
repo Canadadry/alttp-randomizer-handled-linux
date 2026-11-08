@@ -205,7 +205,7 @@ void ui_app_screen(UiApp *app, UiScreen *out)
 
 UiAppTab ui_app_tab(const UiApp *app)
 {
-	return app->sides[UI_GAME_ALTTP].tab;
+	return app->sides[app->view == UI_APP_VIEW_LADX ? UI_GAME_LADX : UI_GAME_ALTTP].tab;
 }
 
 UiAppView ui_app_view(const UiApp *app)

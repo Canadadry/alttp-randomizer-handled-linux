@@ -89,7 +89,7 @@ ARM_PATCH := $(BUILD)/arm/ladx_patch
 ARM_GEN := $(BUILD)/arm/ladx_gen
 ARM_GEN_WRAPPER := $(BUILD)/arm/ladx_gen_qemu
 
-# _FILE_OFFSET_BITS=64 as unit-arm's. The wrapper exists because run_e2e.py runs --gen as one path.
+# _FILE_OFFSET_BITS=64 as unit-arm's.
 e2e-arm:
 	@command -v qemu-arm >/dev/null 2>&1 || { echo "setup: qemu-arm not found on PATH (install qemu-user)" >&2; exit 1; }
 	@mkdir -p $(BUILD)/arm
