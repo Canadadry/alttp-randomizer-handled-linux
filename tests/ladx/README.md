@@ -1346,6 +1346,16 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   <n> LADX unit tests and <m> fixture replays passed under qemu-arm`; any
   failure exits
   non-zero.
+- `make -C tests/ladx e2e-arm` (run by the root `make e2e-arm`, after
+  `tests/alttp`'s; outside the net): the same `setup:` lines as `unit-arm`.
+  Else it prints `e2e-arm: building build/arm/ladx_gen with Onion's
+  toolchain`, builds `ladx_gen` from `ladx/src`, `ladx/host` and its main
+  with `unit-arm`'s flags, checks and prints `file`'s line (a 32-bit ARM
+  EABI5 executable) and `qemu-arm --version`'s first line, writes the
+  wrapper `build/arm/ladx_gen_qemu` (`exec qemu-arm <ladx_gen> "$@"`), then
+  runs `make e2e`'s two runs with it as `--gen` (the projections of every
+  golden of `cases/`, then every case, or `CASES`), with their lines and
+  exit codes.
 
 ## KS span list
 

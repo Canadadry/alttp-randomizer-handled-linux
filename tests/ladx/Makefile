@@ -1,4 +1,4 @@
-.PHONY: help test lint logic unit-arm selftest e2e e2e-combos e2e-rom e2e-synthetic synthetic-refs measure measure-arm rom-check rom-check-selftest
+.PHONY: help test lint logic unit-arm selftest e2e e2e-arm e2e-combos e2e-rom e2e-synthetic synthetic-refs measure measure-arm rom-check rom-check-selftest
 
 CC ?= gcc
 # -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
@@ -59,6 +59,7 @@ help:
 	@echo "make selftest          the e2e driver run_e2e.py's self-test on planted runs and fake generators"
 	@echo "make e2e               build/ladx_gen --project's projection of every golden rom_writes.txt of cases/ compared with write_log.py's, then build/ladx_gen on every case of cases/ (or CASES=\"a b\"), its run.txt's stage projection and claimed groups' rom_writes.txt projections (tables TABLES, default data/ladx) diffed against the golden's per claims.txt"
 	@echo "make e2e-combos        the same on every case of combos/"
+	@echo "make e2e-arm           make e2e's two runs on build/arm/ladx_gen, built by Onion's toolchain (-ffp-contract=off kept) and run under qemu-arm (needs docker, qemu-user); outside the net"
 	@echo "make e2e-rom           with LADX_ROM (default tmp/ladx/base.gbc): C's KS span list compared with known_source.build's, then build/ladx_gen --rom on every case of cases/ and combos/, every group and rom-group of claims.txt claimed; work in tmp/ladx-e2e-rom/; outside the net"
 	@echo "make measure           build/ladx_gen --time (the run stopped after the fill) and, when LADX_ROM exists, build/ladx_patch --time (the whole pipeline) 3 times on every case and combo, the minimum kept, projected onto the Cortex-A7; report in build/measure/report.txt; outside the net"
 	@echo "make measure-arm       make measure with the ROM, plus ladx_patch built by Onion's toolchain timed once per case under qemu-arm (needs docker, qemu-user, the ROM); outside the net"
@@ -85,6 +86,22 @@ e2e-rom: $(GEN)
 	@cd $(TOP) && python3 -I -B tests/ladx/run_e2e.py --rom $(LADX_ROM) --no-ks --cases tests/ladx/combos --gen tests/ladx/$(GEN) --tables data/ladx
 
 ARM_PATCH := $(BUILD)/arm/ladx_patch
+ARM_GEN := $(BUILD)/arm/ladx_gen
+ARM_GEN_WRAPPER := $(BUILD)/arm/ladx_gen_qemu
+
+# _FILE_OFFSET_BITS=64 as unit-arm's. The wrapper exists because run_e2e.py runs --gen as one path.
+e2e-arm:
+	@command -v qemu-arm >/dev/null 2>&1 || { echo "setup: qemu-arm not found on PATH (install qemu-user)" >&2; exit 1; }
+	@mkdir -p $(BUILD)/arm
+	@echo "e2e-arm: building $(ARM_GEN) with Onion's toolchain"
+	@$(TOOLCHAIN) sh -c '"$${CROSS_COMPILE}gcc" $(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include -I$(LADX)/host -o $(ARM_GEN) $(LADX)/host/main/ladx_gen.c $(LADX_SRC) $(HOST_SRC) -lm'
+	@file $(ARM_GEN) | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_GEN); echo "e2e-arm: $(ARM_GEN) is not a 32-bit ARM EABI executable" >&2; exit 1; }
+	@file $(ARM_GEN)
+	@qemu-arm --version | head -n 1
+	@printf '#!/bin/sh\nexec qemu-arm "%s" "$$@"\n' "$(abspath $(ARM_GEN))" > $(ARM_GEN_WRAPPER)
+	@chmod +x $(ARM_GEN_WRAPPER)
+	@python3 -I -B run_e2e.py --projections --cases cases --gen $(ARM_GEN_WRAPPER) $(CASES)
+	@python3 -I -B run_e2e.py --cases cases --gen $(ARM_GEN_WRAPPER) --tables $(TABLES) $(CASES)
 
 measure: $(GEN) $(PATCH)
 	@if [ -f $(TOP)/$(LADX_ROM) ]; then CC='$(CC)' ./measure.sh --rom $(TOP)/$(LADX_ROM) --patch $(PATCH) $(GEN) $(BUILD)/measure; \

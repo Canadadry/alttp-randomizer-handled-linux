@@ -17,7 +17,7 @@ help:
 	@echo "make e2e            every case of tests/alttp/cases, then tests/ladx/cases, diffed against its golden"
 	@echo "make e2e-combos     every case of tests/alttp/combos, then tests/ladx/combos, diffed against its golden, kept out of e2e"
 	@echo "make e2e-synthetic  LADX's ROM-free regression reference: C's outputs on a synthetic base against tests/ladx/synthetic_refs.txt, run by make check"
-	@echo "make e2e-arm        the e2e cases on the Onion cross build under qemu-arm (needs docker, qemu-user)"
+	@echo "make e2e-arm        the e2e cases of both games (tests/alttp, then tests/ladx with its projections) on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make unit-arm       every unit test of both games (tests/alttp, tests/ladx) on the Onion cross build under qemu-arm (needs docker, qemu-user)"
 	@echo "make sdl            sdl-pc then sdl-arm, kept out of check"
 	@echo "make sdl-pc         the SDL PC build, its SDL tests, headless smoke test and golden comparison (needs libsdl1.2-dev, libsdl-ttf2.0-dev, libsdl-image1.2-dev)"
@@ -29,7 +29,7 @@ help:
 	@echo "make theme-art      the art of themes/alttp re-rendered from design/mockups/ by Chromium and compared pixel by pixel (THEME=<dir>; needs node and Playwright's Chromium)"
 	@echo "make theme-art-write the art rendered twice, refused unless byte-identical, written into themes/alttp (THEME=<dir>; needs node and Playwright's Chromium)"
 	@echo "make sdl-arm        the SDL app compiled and linked by Onion's toolchain, run nowhere (needs docker)"
-	@echo "make package        the release zip tests/alttp/build/package/ZeldaRando.zip: sdl-arm stripped, ABI-checked, with app/package/, data/base.bps and themes/alttp as themes/default (needs docker)"
+	@echo "make package        the release zip tests/alttp/build/package/ZeldaRando.zip: sdl-arm stripped, ABI-checked, with app/package/, data/base.bps, data/ladx/ as ladx/tables/ and themes/alttp as themes/default (needs docker)"
 	@echo "make patch-header   the base patch checked like make test checks data/base.bps (BPS=<file>, default data/base.bps), kept out of check"
 	@echo "make measure-compare the generator timed against a worktree of 40314c3, interleaved, +-10% verdicts, kept out of check"
 	@echo "make mac            macOS: the SDL app and the fake SD card tmp/sd (targets/mac), kept out of check"
@@ -98,6 +98,7 @@ e2e-synthetic:
 # Outside the net: needs docker and qemu-user.
 e2e-arm:
 	$(MAKE) -C tests/alttp e2e-arm
+	$(MAKE) -C tests/ladx e2e-arm
 
 # Outside the net: needs docker and qemu-user.
 unit-arm:

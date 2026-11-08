@@ -111,7 +111,7 @@ ARM_SDL_DIR := $(ARM_DIR)/sdl
 ARM_SDL_APP := $(ARM_SDL_DIR)/zrando
 ARM_UNIT_SRC := $(RANDO_SRC) $(HOST_SRC) $(APP_SRC) unit/support.c unit/synthetic_base.c
 
-# package: sdl-arm's binary stripped, checked and zipped with app/package/, data/'s base.bps and PKG_THEME as themes/default.
+# package: sdl-arm's binary stripped, checked and zipped with app/package/, data/'s base.bps, data/ladx/ as ladx/tables/ and PKG_THEME as themes/default.
 PKG_DIR := $(BUILD)/package
 PKG_BIN := $(PKG_DIR)/zrando
 PKG_ZIP := $(PKG_DIR)/ZeldaRando.zip

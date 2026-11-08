@@ -549,3 +549,13 @@ Step 4.2's push was refused by the gate: 34 general-scope runs of UI text coinci
 ### Step 4.3
 
 Four LADX states join `sdl/golden_states.txt`, each on a fresh `good` fixture: the grid's first page, a greyed single value (Random Start), the greyed pair (Boomerang Trade with Accessibility 100%) and base missing. `make sdl-goldens-add` wrote only their goldens, each rendered twice byte-identical. The 14 existing goldens and `environment.txt` are unchanged. LADX History empty is the same screen as ALttP's `history_empty`. Generating, ready and History with a seed need a real base, so they stay covered by step 4.2's snapshots and its ROM-present runs. `make sdl-pc`: 18 states pixel-identical, 18 drawn with `alttp`. `make sdl-arm` builds. The new PNGs have 0 literal runs.
+
+### Step 4.4
+
+`make package` ships `data/ladx/`'s 14 tables in `App/ZeldaRando/ladx/tables/`, the path `RANDO_SD_LADX_TABLES_DIR` names (asserted by the real-package test). The zip is 718,000 bytes with 44 entries, byte-identical on two builds. The tables are 1.39 MB raw, about 208 KB deflated. The tables folder is refused unless it is flat, holds only `.txt` files and includes `order.txt`. `make e2e-arm` now runs LADX's e2e under qemu-arm with an Onion-toolchain `ladx_gen`: projections 88 equal, `e2e: 88 pass`. `make unit-arm`: 56 ALttP and 41 LADX unit tests.
+
+Peak RSS of one generation through `ui_cli` (`ru_maxrss`; idle is the same binary generating nothing):
+- LADX: host 20.3 MiB against 12.8 MiB idle; qemu-arm 31.0 MiB, qemu's own overhead included.
+- ALttP: host 12.8 MiB; qemu-arm 14.6 MiB.
+
+LADX was measured with the real ROM and the zip's tables, and the output matches the golden SHA-1 on host and ARM alike. ALttP was measured on the synthetic `good` SD, because its real base ROM is not available here. Pages allocated but never touched do not count, so LADX stays well under its 25 MiB work area.

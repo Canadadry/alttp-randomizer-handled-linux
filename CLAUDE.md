@@ -831,7 +831,9 @@ in `docs/`, then `README.md`.
   line.
 - `make e2e-arm`, outside the net, builds the generator with Onion's pinned
   toolchain (`onion-toolchain.sh`, `docs/toolchain.md`) and runs the e2e
-  cases on it under `qemu-arm`. `make unit-arm`, outside the net too, builds
+  cases on it under `qemu-arm`, then LADX's (`make -C tests/ladx e2e-arm`:
+  `ladx_gen` built the same way, `make e2e`'s projections and cases run on
+  it; contract in `tests/ladx/README.md`, "Unit tests and lint"). `make unit-arm`, outside the net too, builds
   every unit test the same way and runs it under `qemu-arm` from
   `tests/alttp`, `--fixtures` included for `LOGIC_TESTS`, then LADX's
   (`make -C tests/ladx unit-arm`, contract in `tests/ladx/README.md`, "Unit
@@ -943,9 +945,11 @@ in `docs/`, then `README.md`.
   `tests/alttp/build/package/ZeldaRando.zip`, whose only top-level folder is
   `App/ZeldaRando/` (binary `zrando`, label "Zelda Randomizer"), with the
   theme folder `PKG_THEME` (`themes/alttp`) shipped as
-  `App/ZeldaRando/themes/default/` and the base patch as
-  `App/ZeldaRando/alttp/base.bps`; the same commit gives the same
-  zip bytes.
+  `App/ZeldaRando/themes/default/`, the base patch as
+  `App/ZeldaRando/alttp/base.bps` and every `.txt` of `data/ladx/` as
+  `App/ZeldaRando/ladx/tables/` (the folder the app reads; anything but
+  regular `.txt` files, or no `order.txt`, refused); the same commit gives
+  the same zip bytes.
 - `make mac`, `mac-rom ROM=<file>`, `mac-run`, `mac-clean`, outside the
   net, macOS only (`targets/mac/`): the SDL app on sdl12-compat with a
   locally built SDL_ttf and SDL_image, and a fake SD card in `tmp/sd`; the owner runs

@@ -29,6 +29,7 @@ build_zip = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(build_zip)
 
 THEME = "App/ZeldaRando/themes/default/"
+TABLES = "App/ZeldaRando/ladx/tables/"
 EXPECTED = [
     "App/",
     "App/ZeldaRando/",
@@ -36,6 +37,10 @@ EXPECTED = [
     "App/ZeldaRando/alttp/base.bps",
     "App/ZeldaRando/config.json",
     "App/ZeldaRando/icon.png",
+    "App/ZeldaRando/ladx/",
+    TABLES,
+    TABLES + "goal.txt",
+    TABLES + "order.txt",
     "App/ZeldaRando/launch.sh",
     "App/ZeldaRando/themes/",
     THEME,
@@ -48,6 +53,8 @@ EXPECTED = [
 PACKAGE_FILES = ("launch.sh", "config.json", "icon.png")
 DATA_FILES = ("base.bps",)
 THEME_FILES = ("theme.ini", "mono.ttf", "background.png", "Mono-LICENSE.txt")
+TABLE_FILES = ("order.txt", "goal.txt")
+SD_HEADER = os.path.join(HERE, "..", "..", "app", "sd", "rando_seed_save.h")
 
 
 def write(path, data):
@@ -68,6 +75,20 @@ def pkg_theme(makefile=MAKEFILE):
     if len(values) != 1:
         raise AssertionError("%s: %d PKG_THEME := lines, want 1" % (makefile, len(values)))
     return os.path.join(HERE, values[0])
+
+
+def sd_path(name, header=SD_HEADER):
+    """The string a `#define NAME "a" OTHER "b"` macro of the app's SD header expands to."""
+    defines = {}
+    with open(header) as f:
+        for line in f:
+            m = re.match(r'#define (\w+) (.*)$', line.strip())
+            if m:
+                defines[m.group(1)] = m.group(2)
+    out = ""
+    for token in re.findall(r'"[^"]*"|\w+', defines[name]):
+        out += token[1:-1] if token.startswith('"') else sd_path(token, header)
+    return out
 
 
 def run_builder(*args):
@@ -98,7 +119,10 @@ class Builder(unittest.TestCase):
         os.mkdir(self.package)
         os.mkdir(self.data)
         os.mkdir(self.theme)
-        for d, names in ((self.package, PACKAGE_FILES), (self.data, DATA_FILES), (self.theme, THEME_FILES)):
+        self.tables = os.path.join(self.data, "ladx")
+        os.mkdir(self.tables)
+        for d, names in ((self.package, PACKAGE_FILES), (self.data, DATA_FILES), (self.theme, THEME_FILES),
+                         (self.tables, TABLE_FILES)):
             for name in names:
                 write(os.path.join(d, name), ("fake %s\n" % name).encode())
         self.zip = os.path.join(self.tmp, "out", "ZeldaRando.zip")
@@ -126,6 +150,8 @@ class Builder(unittest.TestCase):
                 self.assertEqual(z.read("App/ZeldaRando/alttp/" + name), read(os.path.join(self.data, name)), name)
             for name in THEME_FILES:
                 self.assertEqual(z.read(THEME + name), read(os.path.join(self.theme, name)), name)
+            for name in TABLE_FILES:
+                self.assertEqual(z.read(TABLES + name), read(os.path.join(self.tables, name)), name)
 
     def test_modes_timestamps_and_compression(self):
         self.build()
@@ -204,6 +230,44 @@ class Builder(unittest.TestCase):
     def test_a_hidden_theme_file_is_refused(self):
         write(os.path.join(self.theme, ".DS_Store"), b"junk")
         self.assert_refused(os.path.join(self.theme, ".DS_Store"))
+
+    def test_a_missing_tables_dir_is_refused(self):
+        shutil.rmtree(self.tables)
+        self.assert_refused(self.tables)
+
+    def test_tables_without_order_txt_are_refused(self):
+        os.remove(os.path.join(self.tables, "order.txt"))
+        self.assert_refused(os.path.join(self.tables, "order.txt"))
+
+    def test_a_tables_subdirectory_is_refused(self):
+        os.mkdir(os.path.join(self.tables, "old"))
+        self.assert_refused(os.path.join(self.tables, "old"))
+
+    def test_a_tables_symlink_is_refused(self):
+        os.symlink(os.path.join(self.tables, "goal.txt"), os.path.join(self.tables, "link.txt"))
+        self.assert_refused(os.path.join(self.tables, "link.txt"))
+
+    def test_a_hidden_tables_file_is_refused(self):
+        write(os.path.join(self.tables, ".goal.txt.swp"), b"junk")
+        self.assert_refused(os.path.join(self.tables, ".goal.txt.swp"))
+
+    def test_a_tables_file_that_is_not_txt_is_refused(self):
+        write(os.path.join(self.tables, "goal.txt.orig"), b"old table")
+        self.assert_refused(os.path.join(self.tables, "goal.txt.orig"))
+
+    def test_check_refuses_a_changed_table(self):
+        self.build()
+        write(os.path.join(self.tables, "goal.txt"), b"another table")
+        r = self.run_builder("--check")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn(TABLES + "goal.txt", r.stderr)
+
+    def test_check_refuses_a_new_table(self):
+        self.build()
+        write(os.path.join(self.tables, "music.txt"), b"a new group")
+        r = self.run_builder("--check")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn(TABLES + "music.txt", r.stderr)
 
     def test_check_refuses_a_changed_theme_file(self):
         self.build()
@@ -303,6 +367,7 @@ class RealPackage(unittest.TestCase):
             cls.config = json.loads(z.read("App/ZeldaRando/config.json"))
             cls.icon = z.read("App/ZeldaRando/icon.png")
             cls.theme = {n[len(THEME):]: z.read(n) for n in cls.entries if n.startswith(THEME) and n != THEME}
+            cls.tables = {n[len(TABLES):]: z.read(n) for n in cls.entries if n.startswith(TABLES) and n != TABLES}
 
     @classmethod
     def tearDownClass(cls):
@@ -322,6 +387,18 @@ class RealPackage(unittest.TestCase):
         self.assertEqual(sorted(self.theme), names)
         for name in names:
             self.assertEqual(self.theme[name], read(os.path.join(self.default, name)), name)
+
+    def test_tables_ship_where_the_app_reads_them(self):
+        self.assertEqual(TABLES, sd_path("RANDO_SD_LADX_TABLES_DIR") + "/")
+        self.assertEqual(build_zip.TABLES, TABLES)
+
+    def test_tables_are_data_ladx_byte_for_byte(self):
+        source = os.path.join(DATA, "ladx")
+        names = sorted(n for n in os.listdir(source) if n.endswith(".txt"))
+        self.assertIn("order.txt", names)
+        self.assertEqual(sorted(self.tables), names)
+        for name in names:
+            self.assertEqual(self.tables[name], read(os.path.join(source, name)), name)
 
     def test_no_font_sits_loose_in_the_app_folder(self):
         loose = [n for n in self.entries if n.startswith("App/ZeldaRando/") and "/" not in n[len("App/ZeldaRando/"):]]
