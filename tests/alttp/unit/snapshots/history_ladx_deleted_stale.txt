@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Generated Seeds                        |
+ | No seeds yet                           |
+ | Make one in the Generate tab           |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+i| Seed deleted: refresh the GBC list     |
+ |                                        |
+ +----------------------------------------+

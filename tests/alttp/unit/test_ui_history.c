@@ -119,10 +119,12 @@ static void many_seeds(int count)
 	list.count = count;
 }
 
-static void start(void)
+static void start_game(UiGame game)
 {
 	UiHistoryInit init;
 
+	memset(&init, 0, sizeof init);
+	init.game = game;
 	memset(&fake, 0, sizeof fake);
 	fake.outline = outline;
 	fake.reply.ok = true;
@@ -135,6 +137,11 @@ static void start(void)
 	init.delete_fn = fake_delete;
 	init.ctx = &fake;
 	ui_history_init(&history, &init);
+}
+
+static void start(void)
+{
+	start_game(UI_GAME_ALTTP);
 }
 
 /* The text form of the tab's screen at 40 x 15; a History screen never carries help. */
@@ -634,6 +641,46 @@ static void test_strings(void)
 	CHECK(ui_strings_check(ui_str_english(), true, &bad, &fault));
 }
 
+/* A LADX seed: its 32-digit seed, the settings Generate shows (Goal Count with the instruments goal). */
+static void test_ladx(void)
+{
+	static char trace[32 * 1024];
+	UiHistoryEntry *e;
+	int i;
+
+	memset(&list, 0, sizeof list);
+	e = &list.entries[0];
+	e->game = UI_GAME_LADX;
+	snprintf(e->name.code, sizeof e->name.code, "%s", "3E4F50");
+	snprintf(e->name.rom, sizeof e->name.rom, "%s", "Hard-Instruments-3E4F50.gbc");
+	e->date.year = 2026;
+	e->date.month = 11;
+	e->date.day = 7;
+	e->date.hour = 18;
+	e->date.minute = 5;
+	snprintf(e->ladx_seed, sizeof e->ladx_seed, "%s", "00112233445566778899aabbccddeeff");
+	ladx_settings_defaults(&e->ladx);
+	e->ladx.value[LADX_SETTING_LOGIC] = 2;
+	e->ladx.value[LADX_SETTING_GOAL] = (uint8_t)ladx_setting_value_find(LADX_SETTING_GOAL, "instruments");
+	e->has_spoiler = true;
+	list.count = 1;
+	start_game(UI_GAME_LADX);
+	CHECK(ui_history_key(&history, UI_BUTTON_A) == UI_HISTORY_NONE);
+	trace[0] = '\0';
+	for (i = 0; i < 6; i++) {
+		size_t used = strlen(trace);
+
+		snprintf(trace + used, sizeof trace - used, "@ page %d\n%s", i, render());
+		CHECK(ui_history_key(&history, UI_BUTTON_R2) == UI_HISTORY_NONE);
+	}
+	test_snapshot(TEST, SNAPSHOTS "history_ladx_detail.txt", trace);
+	fake.reply.list_stale = true;
+	CHECK(ui_history_key(&history, UI_BUTTON_X) == UI_HISTORY_NONE);
+	CHECK(ui_history_key(&history, UI_BUTTON_A) == UI_HISTORY_NONE);
+	CHECK(fake.delete_calls == 1 && strcmp(fake.deleted_rom, "Hard-Instruments-3E4F50.gbc") == 0);
+	snapshot("history_ladx_deleted_stale.txt");
+}
+
 int main(void)
 {
 	test_list();
@@ -653,6 +700,7 @@ int main(void)
 	test_strings();
 	test_hints();
 	test_styles();
+	test_ladx();
 	printf(TEST ": passed\n");
 	return 0;
 }

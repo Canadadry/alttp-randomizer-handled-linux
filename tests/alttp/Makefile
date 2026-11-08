@@ -4,9 +4,9 @@ RANDO := ../../alttp
 APP := ../../app
 BUILD := build
 
-UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_last_game test_ui_input test_ui_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme test_ladx_name test_ladx_record test_ladx_gen test_ladx_history
+UNIT_TESTS := test_prng test_items test_bosses test_world test_regions test_options test_case_reader test_pool test_prepare test_generate test_spoiler_json test_filler test_playthrough test_postfill test_rom test_rom_items test_rom_settings test_rom_credits test_rom_text test_rom_sram test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_assemble test_patch_cli test_out test_name test_record test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ladx_last_settings test_last_game test_ui_input test_ui_generate test_ui_ladx_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme test_ladx_name test_ladx_record test_ladx_gen test_ladx_history
 # No fixture mode: test_prng already replays its vectors in `test`, the others have no fixture.
-LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_last_game test_ui_input test_ui_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme test_ladx_name test_ladx_record test_ladx_gen test_ladx_history,$(UNIT_TESTS))
+LOGIC_TESTS := $(filter-out test_prng test_options test_case_reader test_pool test_spoiler_json test_filler test_playthrough test_rom test_rom_items test_rom_settings test_rom_checksum test_rom_cosmetics test_crc32 test_bps test_md5 test_patch_header test_patch_cli test_out test_name test_seed_save test_ui_screen test_ui_grid test_ui_strings test_settings test_last_settings test_ladx_last_settings test_last_game test_ui_input test_ui_generate test_ui_ladx_generate test_ui_genflow test_ui_history test_ui_games test_history test_app_gen test_app_flow test_ui_app test_app_shell test_fixed_run test_theme test_ladx_name test_ladx_record test_ladx_gen test_ladx_history,$(UNIT_TESTS))
 
 RANDO_SRC := $(wildcard $(RANDO)/src/*.c $(RANDO)/src/*/*.c)
 RANDO_HDR := $(wildcard $(RANDO)/include/*.h $(RANDO)/src/*.h)
@@ -36,8 +36,8 @@ APP_SRC := $(APP_CORE_SRC) $(APP_SD_SRC) $(APP_THEME_SRC)
 APP_HDR := $(wildcard $(APP)/core/*.h $(APP)/sd/*.h $(APP)/theme/*.h)
 APP_OBJ := $(patsubst $(APP)/%.c,$(BUILD)/app/%.o,$(APP_SRC))
 APP_LIB := $(BUILD)/librando_app.a
-# app/core sees only the library and itself, so an include of app/sd or alttp/host fails to build.
-CORE_INCLUDES := -I$(RANDO)/include -I$(APP)/core
+# app/core sees only the libraries' headers and itself, so an include of app/sd, alttp/host or ladx/host fails to build.
+CORE_INCLUDES := -I$(RANDO)/include -I$(LADX)/include -I$(APP)/core
 # app/theme sees only itself.
 THEME_INCLUDES := -I$(APP)/theme
 TEST_INCLUDES := $(INCLUDES) $(LADX_INCLUDES) -I$(APP)/core -I$(APP)/sd -I$(APP)/theme
@@ -306,7 +306,7 @@ $(LADX_HOST_LIB): $(LADX_HOST_OBJ)
 	@rm -f $@
 	ar rcs $@ $^
 
-$(BUILD)/app/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
+$(BUILD)/app/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR) $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CORE_INCLUDES) -c -o $@ $<
 
@@ -356,7 +356,7 @@ $(LINT_DIR)/%.o: $(RANDO)/src/%.c $(RANDO_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors -I$(RANDO)/include -c -o $@ $<
 
-$(LINT_APP_DIR)/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR)
+$(LINT_APP_DIR)/core/%.o: $(APP)/core/%.c $(APP_HDR) $(RANDO_HDR) $(LADX_HDR)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -pedantic-errors $(CORE_INCLUDES) -c -o $@ $<
 

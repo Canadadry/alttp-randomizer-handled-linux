@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Generation Failed                      |
+ | Needs App/ZeldaRando/ladx/base.gbc     |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+E| Base ROM not found                     |
+_| A Back                                 |
+ +----------------------------------------+

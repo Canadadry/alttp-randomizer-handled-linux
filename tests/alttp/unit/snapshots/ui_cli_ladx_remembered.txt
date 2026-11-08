@@ -18,21 +18,21 @@ _| A Open  B Quit                         |
  +----------------------------------------+
 @ a
  +----------------------------------------+
-=|[Generate]                              |
+=|[Generate]  History                     |
 #| Link's Awakening DX                    |
- | Not available yet                      |
- |                                        |
- |                                        |
- |                                        |
- |                                        |
- |                                        |
- |                                        |
- |                                        |
- |                                        |
- |                                        |
- |                                        |
- |                                        |
-_| B Back                                 |
+ | Main                                   |
+>| Logic                       < Normal > |
+ | Accessibility         100% Locations   |
+ | Race Mode                        Off   |
+ | Items                                  |
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On  v|
+h| Which tricks the logic may expect of ~ |
+_| </> Change  Y Default  START Generate  |
  +----------------------------------------+
 @ b
  +----------------------------------------+

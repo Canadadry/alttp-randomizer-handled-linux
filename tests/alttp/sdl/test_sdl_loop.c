@@ -167,6 +167,13 @@ static void start_games(void)
 	init.game = UI_GAME_ALTTP;
 	init.remember = NULL;
 	init.remember_ctx = NULL;
+	ui_ladx_generate_init_defaults(&init.ladx.generate, ui_str_english(), PAGE);
+	init.ladx.run = fake_run;
+	init.ladx.run_ctx = &fake;
+	init.ladx.scan = fake_scan;
+	init.ladx.spoiler_fn = fake_spoiler;
+	init.ladx.delete_fn = fake_delete;
+	init.ladx.history_ctx = &fake;
 	ui_app_init(&app, &init);
 	CHECK(ui_grid_init(&grid, UI_GRID_DEFAULT_COLS, UI_GRID_DEFAULT_LINES));
 	frame_count = 0;

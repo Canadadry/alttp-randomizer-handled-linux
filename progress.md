@@ -153,7 +153,8 @@
   - [x] Step 3.10 Measure
 - [ ] Phase 4 — LADX in the app
   - [x] Step 4.1 LADX SD side
-  - [ ] Step 4.2 LADX Generate tab
+  - [x] Step 4.2 LADX Generate tab
+    - [x] Fix: UI text coinciding with ROM text
   - [ ] Step 4.3 SDL
   - [ ] Step 4.4 Package
   - [ ] Step 4.5 README and screenshots

@@ -5,6 +5,7 @@
 #include "ui_games.h"
 #include "ui_genflow.h"
 #include "ui_history.h"
+#include "ui_ladx_generate.h"
 #include "ui_input.h"
 #include "ui_screen.h"
 #include "ui_strings.h"
@@ -32,6 +33,28 @@ typedef void (*UiHistoryScanFn)(void *ctx, UiHistoryList *out);
 
 typedef void (*UiAppRememberFn)(void *ctx, UiGame game);
 
+/* LADX's tabs; every function is required. */
+typedef struct UiAppLadxInit {
+	UiLadxGenerateInit generate;
+	UiGenRunFn run;
+	void *run_ctx;
+	UiHistoryScanFn scan;
+	UiHistorySpoilerFn spoiler_fn;
+	UiHistoryDeleteFn delete_fn;
+	void *history_ctx;
+} UiAppLadxInit;
+
+/* One game's History tab and runner. */
+typedef struct UiAppSide {
+	UiHistory history;
+	UiHistoryList list;
+	UiHistoryInit history_init;
+	UiHistoryScanFn scan;
+	UiGenRunFn run;
+	void *run_ctx;
+	UiAppTab tab;
+} UiAppSide;
+
 typedef struct UiAppInit {
 	const UiStrTable *strings;
 	int page, width;
@@ -46,21 +69,17 @@ typedef struct UiAppInit {
 	/* NULL: nothing is remembered. Called with the game the player opens, before it opens. */
 	UiAppRememberFn remember;
 	void *remember_ctx;
+	UiAppLadxInit ladx;
 } UiAppInit;
 
 typedef struct UiApp {
 	const UiStrTable *strings;
 	UiInput input;
 	UiGenerate generate;
+	UiLadxGenerate ladx_generate;
 	UiGenFlow flow;
-	UiHistory history;
-	UiHistoryList list;
-	UiGenRunFn run;
-	void *run_ctx;
+	UiAppSide sides[UI_GAME_COUNT];
 	bool generated;
-	UiHistoryInit history_init;
-	UiHistoryScanFn scan;
-	UiAppTab tab;
 	UiGames games;
 	UiAppView view;
 	UiAppRememberFn remember;

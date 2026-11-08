@@ -135,11 +135,16 @@ in `docs/`, then `README.md`.
   [settings]` (`rom-check`'s generator; contract in
   `tests/ladx/README.md`, "Generator `ladx_patch`").
 - `app/` is the Onion app's own code. `app/core/` is the UI core: pure C99
-  like the library, built with only `alttp/include` and itself on the include
-  path, no SDL; the app opens on its game-choice screen (`ui_games.c`), A
-  opens a game (ALttP's Generate and History tabs, or LADX's placeholder),
-  B goes back to it, and B there quits, so every key sequence of a test
-  that means ALttP starts with `a`. `app/sd/` is the SD-card layer
+  like the library, built with only `alttp/include`, `ladx/include` and
+  itself on the include path, no SDL; the app opens on its game-choice
+  screen (`ui_games.c`), A opens a game (its Generate and History tabs:
+  ALttP's `ui_generate.c`, LADX's `ui_ladx_generate.c`, its rows from the
+  library's settings table under category headings, unsupported values
+  greyed with their reason, L2/R2 jumping categories, labels in
+  `ui_ladx_settings.c`; one flow `ui_genflow.c` and one `ui_history.c` for
+  both), B goes back to it, and B there quits, so every key sequence of a
+  test that means ALttP starts with `a` (LADX: `down a`, or `a` once LADX
+  is remembered). `app/sd/` is the SD-card layer
   (`record.c`, `seed_save.c`); its paths live in `rando_seed_save.h`: the
   last game opened in `App/ZeldaRando/settings.json` (`last_game.c`), and
   per game ALttP's `base.sfc`, `base.bps`, `history/` and `settings.json` in
@@ -149,10 +154,13 @@ in `docs/`, then `README.md`.
   `App/ZeldaRando/ladx/`, its ROMs in `Roms/GBC/ZeldaRando/`, its saves under
   `Gambatte`. LADX's side: `ladx_gen.c` (base check and runner, its ~25 MiB
   work area allocated per generation and freed), `ladx_name.c`
-  (`<Logic>-<Goal>-<CODE>.gbc`), `ladx_record.c`, `ladx_history.c`; both
-  games delete through `seed_files.c`.
+  (`<Logic>-<Goal>-<CODE>.gbc`), `ladx_record.c`, `ladx_history.c`,
+  `ladx_last_settings.c` (the last LADX settings, saved at each
+  generation); both games delete through `seed_files.c`; `app_shell.c`
+  hands the core both games' runners and History stores.
   `app/sdl/` is the SDL 1.2 renderer and input layer (key map, grid view,
   theme renderer `sdl_render.c`, frame loop). `app/core` uses the library;
+  `app/core` also reads `ladx/include`'s settings table;
   `app/sd` both libraries, `alttp/host`, `ladx/host` and `app/core` (it
   hands the core its runners and stores; `tests/alttp` builds `ladx/` into
   every app link, `-ffp-contract=off` kept); `app/sdl` the library, `app/core` and `app/theme`;
@@ -553,7 +561,7 @@ in `docs/`, then `README.md`.
   <dir>] [--inventory <file>] [--scope strict|general|writes|tables] [--min <n>]
   [--verbose] <file-or-dir>...` proves itself first on planted files against
   a planted synthetic ROM, corpus and inventory, one per scope, view and
-  clearance (`nintendo-bytes: self-test, 58 planted files as expected`, else
+  clearance (`nintendo-bytes: self-test, 62 planted files as expected`, else
   `self-test failed: <case>`, exit 1). Then
   it prints one `LITERAL <path> <view> @<offset> <length> bytes <scope>`
   line per uncleared run of a file that also occurs in the ROM (`--rom`,
@@ -590,7 +598,15 @@ in `docs/`, then `README.md`.
   (at most 3 distinct values, general scope only), `ladxr-public` (the
   whole run occurs in a text file, valid UTF-8 without NUL, tracked by the
   LADXR checkout at `4325207e`, or in its decoded hex-digit runs; binary
-  files left out), `computed` (view `writes` only: the run occurs nowhere
+  files left out; in the general scope's raw view only, also a run whose
+  ASCII spaces stripped at both ends leave a run occurring whole in those
+  files or one shorter than the raw threshold, 16; a deliberate change of
+  plan 3 step 4.2, same reasoning as step 2.1's scope split: the UI
+  snapshots pad LADXR's own public setting labels with the grid's spaces,
+  which carry no ROM information; never in the strict, `writes` or
+  `tables` scope; the self-test plants a padded public label (cleared), a
+  padded short word (cleared), a padded non-public ROM run of 33 bytes and
+  the padded label under a strict path (both refused)), `computed` (view `writes` only: the run occurs nowhere
   whole in the source bytes its token's group reads, from the inventory's
   `Reads (trace)` ranges, `--inventory`, default `notes/ladx-inventory.md`,
   `written:`/`mixed:` followed to the writers, `computed` coverage rows
@@ -641,7 +657,7 @@ in `docs/`, then `README.md`.
   it is armed,
   every push needs `LADX_ROM_URL` exported in the same shell command as
   `git push`, the ROM and the pinned LADXR checkout; a refusal for one of
-  them is a setup problem, not a bug. `--self-test` makes 21 planted pushes
+  them is a setup problem, not a bug. `--self-test` makes 23 planted pushes
   through the installed chain in a planted clone with a planted ROM, link
   and LADXR checkout (among them a 4-byte ROM run under a strict path, a
   16-byte one and an 8-byte `bytelist` under general paths, refused; a
@@ -649,8 +665,10 @@ in `docs/`, then `README.md`.
   a case folder's `run.txt` under the general scope and a `computed` run of
   its `rom_writes.txt`, passing, a literal token in the group's read set and
   an unparseable log, refused; a 4-byte literal token of a patch table
-  under `data/ladx/`, refused in the `tables` scope;
-  `push-gate: self-test, 21 planted pushes as expected`, else one
+  under `data/ladx/`, refused in the `tables` scope; a LADXR label padded
+  with spaces under a general path, passing, and a padded ROM run of 33
+  bytes, refused;
+  `push-gate: self-test, 23 planted pushes as expected`, else one
   `self-test failed: <case>` line each); `--install` runs it, then writes
   the chain into the common hooks directory only over no hook,
   `no_claude_branch.sh`'s own or the chain (else `the gate is NOT armed`,
@@ -768,7 +786,8 @@ in `docs/`, then `README.md`.
 - `make ui-cli` builds `ui_cli` alone; look at the app with
   `tests/alttp/build/ui_cli --sd <dir> --every <keys>` (`ui_cli` with no
   argument prints its usage). `--seed`, `--date`, `--source-md5` and
-  `--base-md5` fix a run; `--unsupported <setting>=<value>,...` is a
+  `--base-md5` fix a run (`--ladx-seed <32 hex>` and `--date` a LADX
+  one); `--unsupported <setting>=<value>,...` is a
   test-only override of the library's unsupported pairs. The SDL app
   `zrando` takes the same keys and flags (one shared module,
   `app/sd/rando_fixed_run.c`), plus `--shot-text <file>`; with keys, its run

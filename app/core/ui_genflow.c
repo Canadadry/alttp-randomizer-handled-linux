@@ -102,11 +102,15 @@ void ui_genflow_screen(const UiGenFlow *flow, UiScreen *out)
 	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_A, UI_STR_HINT_BACK, false));
 	if (o->ok) {
 		out->title = ui_str(t, UI_STR_GENFLOW_READY_TITLE);
-		add_text(out, ui_str(t, UI_STR_GENFLOW_SAVED_IN), false);
+		add_text(out, ui_str(t, flow->request.game == UI_GAME_LADX ? UI_STR_GENFLOW_SAVED_IN_GBC : UI_STR_GENFLOW_SAVED_IN),
+			 false);
 		add_text(out, o->rom, true);
 		add_text(out, ui_str(t, o->spoiler ? UI_STR_GENFLOW_SPOILER_KEPT : UI_STR_GENFLOW_SPOILER_NOT_KEPT), false);
 		out->message_kind = UI_MESSAGE_INFO;
-		out->message = ui_str(t, o->list_stale ? UI_STR_GENFLOW_REFRESH : UI_STR_GENFLOW_PLAY);
+		if (flow->request.game == UI_GAME_LADX)
+			out->message = ui_str(t, o->list_stale ? UI_STR_GENFLOW_REFRESH_GBC : UI_STR_GENFLOW_PLAY_GBC);
+		else
+			out->message = ui_str(t, o->list_stale ? UI_STR_GENFLOW_REFRESH : UI_STR_GENFLOW_PLAY);
 		return;
 	}
 	out->title = ui_str(t, UI_STR_GENFLOW_FAILED_TITLE);

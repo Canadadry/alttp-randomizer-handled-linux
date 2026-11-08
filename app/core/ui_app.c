@@ -3,43 +3,60 @@
 #include <assert.h>
 #include <string.h>
 
-static void scan_history(UiApp *app)
+static void scan_history(UiAppSide *side)
 {
-	memset(&app->list, 0, sizeof app->list);
-	app->scan(app->history_init.ctx, &app->list);
-	ui_history_init(&app->history, &app->history_init);
+	memset(&side->list, 0, sizeof side->list);
+	side->scan(side->history_init.ctx, &side->list);
+	ui_history_init(&side->history, &side->history_init);
 }
 
 static void run_and_note(void *ctx, const UiGenRequest *request, UiGenOutcome *outcome)
 {
 	UiApp *app = ctx;
+	UiAppSide *side = &app->sides[request->game];
 
-	app->run(app->run_ctx, request, outcome);
+	side->run(side->run_ctx, request, outcome);
 	app->generated = outcome->ok;
+}
+
+static void init_side(UiAppSide *side, const UiAppInit *init, UiGame game, UiGenRunFn run, void *run_ctx,
+		      UiHistoryScanFn scan, UiHistorySpoilerFn spoiler_fn, UiHistoryDeleteFn delete_fn,
+		      void *history_ctx)
+{
+	assert(run != NULL && scan != NULL);
+	side->run = run;
+	side->run_ctx = run_ctx;
+	side->history_init.strings = init->strings;
+	side->history_init.game = game;
+	side->history_init.page = init->page;
+	side->history_init.width = init->width;
+	side->history_init.list = &side->list;
+	side->history_init.spoiler_fn = spoiler_fn;
+	side->history_init.delete_fn = delete_fn;
+	side->history_init.ctx = history_ctx;
+	side->scan = scan;
+	scan_history(side);
+	side->tab = UI_APP_TAB_GENERATE;
 }
 
 void ui_app_init(UiApp *app, const UiAppInit *init)
 {
 	UiGenerateInit generate = init->generate;
+	UiLadxGenerateInit ladx_generate = init->ladx.generate;
+	const UiAppLadxInit *ladx = &init->ladx;
 
-	assert(init->run != NULL && init->scan != NULL);
 	ui_input_init(&app->input);
 	generate.strings = init->strings;
 	generate.page = init->page;
 	ui_generate_init(&app->generate, &generate);
-	app->run = init->run;
-	app->run_ctx = init->run_ctx;
+	ladx_generate.strings = init->strings;
+	ladx_generate.page = init->page;
+	ui_ladx_generate_init(&app->ladx_generate, &ladx_generate);
 	ui_genflow_init(&app->flow, init->strings, run_and_note, app);
-	app->history_init.strings = init->strings;
-	app->history_init.page = init->page;
-	app->history_init.width = init->width;
-	app->history_init.list = &app->list;
-	app->history_init.spoiler_fn = init->spoiler_fn;
-	app->history_init.delete_fn = init->delete_fn;
-	app->history_init.ctx = init->history_ctx;
-	app->scan = init->scan;
-	scan_history(app);
-	app->tab = UI_APP_TAB_GENERATE;
+	init_side(&app->sides[UI_GAME_ALTTP], init, UI_GAME_ALTTP, init->run, init->run_ctx, init->scan,
+		  init->spoiler_fn, init->delete_fn, init->history_ctx);
+	init_side(&app->sides[UI_GAME_LADX], init, UI_GAME_LADX, ladx->run, ladx->run_ctx, ladx->scan,
+		  ladx->spoiler_fn, ladx->delete_fn, ladx->history_ctx);
 	ui_games_init(&app->games, init->strings, init->game);
 	app->view = UI_APP_VIEW_GAMES;
 	app->remember = init->remember;
@@ -48,25 +65,49 @@ void ui_app_init(UiApp *app, const UiAppInit *init)
 	app->quit = false;
 }
 
+static UiGame shown_game(const UiApp *app)
+{
+	assert(app->view != UI_APP_VIEW_GAMES);
+	return app->view == UI_APP_VIEW_LADX ? UI_GAME_LADX : UI_GAME_ALTTP;
+}
+
+static UiAppSide *shown_side(UiApp *app)
+{
+	return &app->sides[shown_game(app)];
+}
+
 static UiAppEvent quit(UiApp *app)
 {
 	app->quit = true;
 	return UI_APP_QUIT;
 }
 
+static UiGenerateEvent generate_input(UiApp *app, UiButton button, UiGenRequest *request)
+{
+	UiGenerateEvent event;
+
+	memset(request, 0, sizeof *request);
+	request->game = shown_game(app);
+	if (request->game == UI_GAME_LADX) {
+		event = ui_ladx_generate_key(&app->ladx_generate, button);
+		ui_ladx_generate_settings(&app->ladx_generate, &request->ladx, &request->spoiler);
+	} else {
+		event = ui_generate_key(&app->generate, button);
+		ui_generate_settings(&app->generate, &request->options, &request->heart_beep, &request->spoiler);
+	}
+	return event;
+}
+
 static UiAppEvent generate_key(UiApp *app, UiButton button)
 {
 	UiGenRequest request;
 
-	switch (ui_generate_key(&app->generate, button)) {
-	case UI_GENERATE_GENERATE:
-		ui_generate_settings(&app->generate, &request.options, &request.heart_beep, &request.spoiler);
-		ui_genflow_start(&app->flow, &request);
-		break;
+	switch (generate_input(app, button, &request)) {
+	case UI_GENERATE_GENERATE: ui_genflow_start(&app->flow, &request); break;
 	case UI_GENERATE_BACK: app->view = UI_APP_VIEW_GAMES; break;
 	case UI_GENERATE_QUIT: return quit(app);
 	case UI_GENERATE_TAB_NEXT:
-	case UI_GENERATE_TAB_PREV: app->tab = UI_APP_TAB_HISTORY; break;
+	case UI_GENERATE_TAB_PREV: shown_side(app)->tab = UI_APP_TAB_HISTORY; break;
 	case UI_GENERATE_NONE: break;
 	}
 	return UI_APP_NONE;
@@ -74,11 +115,13 @@ static UiAppEvent generate_key(UiApp *app, UiButton button)
 
 static UiAppEvent history_key(UiApp *app, UiButton button)
 {
-	switch (ui_history_key(&app->history, button)) {
+	UiAppSide *side = shown_side(app);
+
+	switch (ui_history_key(&side->history, button)) {
 	case UI_HISTORY_BACK: app->view = UI_APP_VIEW_GAMES; break;
 	case UI_HISTORY_QUIT: return quit(app);
 	case UI_HISTORY_TAB_NEXT:
-	case UI_HISTORY_TAB_PREV: app->tab = UI_APP_TAB_GENERATE; break;
+	case UI_HISTORY_TAB_PREV: side->tab = UI_APP_TAB_GENERATE; break;
 	case UI_HISTORY_NONE: break;
 	}
 	return UI_APP_NONE;
@@ -90,12 +133,8 @@ static void open_game(UiApp *app)
 
 	if (app->remember != NULL)
 		app->remember(app->remember_ctx, game);
-	if (game == UI_GAME_ALTTP) {
-		app->view = UI_APP_VIEW_ALTTP;
-		app->tab = UI_APP_TAB_GENERATE;
-	} else {
-		app->view = UI_APP_VIEW_LADX;
-	}
+	app->view = game == UI_GAME_LADX ? UI_APP_VIEW_LADX : UI_APP_VIEW_ALTTP;
+	app->sides[game].tab = UI_APP_TAB_GENERATE;
 }
 
 static UiAppEvent games_key(UiApp *app, UiButton button)
@@ -105,15 +144,6 @@ static UiAppEvent games_key(UiApp *app, UiButton button)
 	case UI_GAMES_QUIT: return quit(app);
 	case UI_GAMES_NONE: break;
 	}
-	return UI_APP_NONE;
-}
-
-static UiAppEvent ladx_key(UiApp *app, UiButton button)
-{
-	if (button == UI_BUTTON_MENU)
-		return quit(app);
-	if (button == UI_BUTTON_B)
-		app->view = UI_APP_VIEW_GAMES;
 	return UI_APP_NONE;
 }
 
@@ -129,9 +159,7 @@ UiAppEvent ui_app_key(UiApp *app, UiButton button)
 	}
 	if (app->view == UI_APP_VIEW_GAMES)
 		return games_key(app, button);
-	if (app->view == UI_APP_VIEW_LADX)
-		return ladx_key(app, button);
-	if (app->tab == UI_APP_TAB_HISTORY)
+	if (shown_side(app)->tab == UI_APP_TAB_HISTORY)
 		return history_key(app, button);
 	return generate_key(app, button);
 }
@@ -158,23 +186,7 @@ void ui_app_run(UiApp *app)
 	app->generated = false;
 	ui_genflow_run(&app->flow);
 	if (app->generated)
-		scan_history(app);
-}
-
-/* TODO: Phase 4 replaces this placeholder with LADX's real tabs. */
-static void ladx_screen(const UiStrTable *t, UiScreen *out)
-{
-	UiRow notice = {UI_ROW_TEXT, NULL, NULL, false, false};
-
-	ui_screen_init(out);
-	out->tabs[0] = ui_str(t, UI_STR_TAB_GENERATE);
-	out->tab_count = 1;
-	out->active_tab = 0;
-	out->title = ui_str(t, UI_STR_GAME_LADX);
-	out->body_kind = UI_BODY_NOTICE;
-	notice.label = ui_str(t, UI_STR_GAME_UNAVAILABLE);
-	ui_screen_add_row(out, notice);
-	ui_screen_add_hint(out, ui_str_hint(t, UI_HINT_B, UI_STR_HINT_BACK, false));
+		scan_history(&app->sides[app->flow.request.game]);
 }
 
 void ui_app_screen(UiApp *app, UiScreen *out)
@@ -183,17 +195,17 @@ void ui_app_screen(UiApp *app, UiScreen *out)
 		ui_genflow_screen(&app->flow, out);
 	else if (app->view == UI_APP_VIEW_GAMES)
 		ui_games_screen(&app->games, out);
+	else if (shown_side(app)->tab == UI_APP_TAB_HISTORY)
+		ui_history_screen(&shown_side(app)->history, out);
 	else if (app->view == UI_APP_VIEW_LADX)
-		ladx_screen(app->strings, out);
-	else if (app->tab == UI_APP_TAB_HISTORY)
-		ui_history_screen(&app->history, out);
+		ui_ladx_generate_screen(&app->ladx_generate, out);
 	else
 		ui_generate_screen(&app->generate, out);
 }
 
 UiAppTab ui_app_tab(const UiApp *app)
 {
-	return app->tab;
+	return app->sides[UI_GAME_ALTTP].tab;
 }
 
 UiAppView ui_app_view(const UiApp *app)

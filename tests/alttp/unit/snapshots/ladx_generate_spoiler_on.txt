@@ -1,0 +1,18 @@
+@ left
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | User Options                          ^|
+ | Quickswap                   Disabled   |
+ | Text Mode                       Fast   |
+ | Low HP Beeps                    Slow   |
+ | No Flashing                       On   |
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal   |
+ | Music                        Default   |
+>| Spoiler in History              < On >v|
+h| The spoiler is kept and shown in this~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

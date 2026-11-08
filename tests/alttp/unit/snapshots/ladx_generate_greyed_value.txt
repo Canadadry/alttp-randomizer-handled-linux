@@ -1,0 +1,72 @@
+@ init
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Rooster                           On  ^|
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+ | Random Start                     Off   |
+ | Dungeon Shuffle                  Off   |
+>| Entrance Shuffle           < Default >v|
+h| Randomizes where overworld entrances ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ right
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Rooster                           On  ^|
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+ | Random Start                     Off   |
+ | Dungeon Shuffle                  Off   |
+X| Entrance Shuffle              Simple  v|
+i| Entrance options are not supported yet |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ start
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Rooster                           On  ^|
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+ | Random Start                     Off   |
+ | Dungeon Shuffle                  Off   |
+X| Entrance Shuffle              Simple  v|
+E| Entrance options are not supported yet |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ left
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Rooster                           On  ^|
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+ | Random Start                     Off   |
+ | Dungeon Shuffle                  Off   |
+>| Entrance Shuffle           < Default >v|
+h| Randomizes where overworld entrances ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

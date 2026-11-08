@@ -5,11 +5,28 @@
 #include <stdlib.h>
 #include <string.h>
 
+static bool write_members(FILE *out, const LadxSettings *settings, int indent)
+{
+	int k;
+
+	for (k = 0; k < LADX_SETTING_COUNT; k++)
+		if (fprintf(out, "%*s\"%s\": \"%s\"%s\n", indent, "", ladx_setting_key((LadxSettingId)k),
+			    ladx_setting_value_name((LadxSettingId)k, settings->value[k]),
+			    k + 1 < LADX_SETTING_COUNT ? "," : "") < 0)
+			return false;
+	return true;
+}
+
+bool rando_ladx_settings_write(FILE *out, const LadxSettings *settings)
+{
+	return fputs("{\n", out) != EOF && write_members(out, settings, 4) && fputs("}\n", out) != EOF &&
+	       !ferror(out);
+}
+
 bool rando_ladx_record_write(FILE *out, const RandoLadxRecord *record)
 {
 	const RandoRecordDate *d = &record->date;
 	bool ok;
-	int k;
 
 	assert(rando_record_date_valid(d));
 	assert(strlen(record->seed) == RANDO_LADX_SEED_HEX);
@@ -23,12 +40,8 @@ bool rando_ladx_record_write(FILE *out, const RandoLadxRecord *record)
 		     "    \"settings\": {\n",
 		     record->name.code, d->year, d->month, d->day, d->hour, d->minute, d->second,
 		     RANDO_LADX_RECORD_FORMAT, record->name.rom, record->seed) >= 0;
-	for (k = 0; k < LADX_SETTING_COUNT; k++)
-		if (fprintf(out, "        \"%s\": \"%s\"%s\n", ladx_setting_key((LadxSettingId)k),
-			    ladx_setting_value_name((LadxSettingId)k, record->settings.value[k]),
-			    k + 1 < LADX_SETTING_COUNT ? "," : "") < 0)
-			ok = false;
-	if (fprintf(out, "    },\n    \"spoiler\": %s\n}\n", record->has_spoiler ? "true" : "false") < 0)
+	if (!write_members(out, &record->settings, 8) ||
+	    fprintf(out, "    },\n    \"spoiler\": %s\n}\n", record->has_spoiler ? "true" : "false") < 0)
 		ok = false;
 	return ok && !ferror(out);
 }
@@ -295,4 +308,19 @@ bool rando_ladx_record_parse(const char *text, size_t len, RandoLadxRecord *out,
 		if (!seen[key])
 			return fail(p, "missing key \"%s\"", top_keys[key]);
 	return check_rom(p, out, rom);
+}
+
+bool rando_ladx_settings_parse(const char *text, size_t len, LadxSettings *out, char error[RANDO_RECORD_ERROR_MAX])
+{
+	Parser parser = {text, len, 0, error};
+	LadxSettings parsed;
+
+	if (len == 0)
+		return fail(&parser, "empty text");
+	if (!parse_settings(&parser, &parsed))
+		return false;
+	if (peek(&parser) != '\0')
+		return fail(&parser, "trailing text after the settings at byte %lu", (unsigned long)parser.pos);
+	*out = parsed;
+	return true;
 }

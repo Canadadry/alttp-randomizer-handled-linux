@@ -1,6 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "rando_app_shell.h"
+#include "ladx_assemble.h"
+#include "ladx_inputs.h"
+#include "rando_ladx_last_settings.h"
 #include "rando_last_game.h"
 #include "rando_last_settings.h"
 #include "rando_name.h"
@@ -425,6 +428,77 @@ static void test_generate_then_history(void)
 	CHECK(exists(RANDO_SD_SETTINGS_FILE));
 }
 
+static uint8_t ladx_base[LADX_ROM_SIZE];
+
+static bool ladx_seed(uint8_t seed[RANDO_LADX_SEED_BYTES])
+{
+	memset(seed, 0xAB, RANDO_LADX_SEED_BYTES);
+	return true;
+}
+
+static LadxAssembleStatus ladx_assemble_fake(LadxAssembler *a, const LadxAssembleInput *in, uint8_t *out)
+{
+	CHECK(in->settings->value[LADX_SETTING_LOGIC] == 2);
+	memset(out, 0x11, LADX_ROM_SIZE);
+	a->spoiler.built = 1;
+	return LADX_ASSEMBLE_OK;
+}
+
+static bool ladx_spoiler_fake(const LadxAssembler *a, FILE *out)
+{
+	(void)a;
+	return fputs("{\"Bosses\": {\"D1\": \"Moldorm\"}}\n", out) != EOF;
+}
+
+/* LADX through the shell: settings restored, a run with a fake assembler, its seed in LADX's History. */
+static void test_ladx(void)
+{
+	LadxSettings settings;
+	char cwd[512];
+
+	make_root();
+	ladx_settings_defaults(&settings);
+	settings.value[LADX_SETTING_LOGIC] = 2;
+	make_dir(RANDO_SD_LADX_DIR);
+	CHECK(rando_ladx_last_settings_save(at(RANDO_SD_LADX_SETTINGS_FILE), &settings));
+	CHECK(getcwd(cwd, sizeof cwd) != NULL);
+	snprintf(text, sizeof text, "%s/../../data/ladx", cwd);
+	CHECK(symlink(text, at(RANDO_SD_LADX_TABLES_DIR)) == 0);
+	memset(ladx_base, 0x5A, sizeof ladx_base);
+	write_bytes(RANDO_SD_LADX_BASE_FILE, ladx_base, sizeof ladx_base);
+	start();
+	ladx_sha1(ladx_base, sizeof ladx_base, shell.ladx_gen.base_sha1);
+	shell.ladx_gen.seed = ladx_seed;
+	shell.ladx_gen.date = fixed_date;
+	shell.ladx_gen.assemble = ladx_assemble_fake;
+	shell.ladx_gen.spoiler = ladx_spoiler_fake;
+	key(UI_BUTTON_DOWN);
+	key(UI_BUTTON_A);
+	CHECK(ui_app_view(&shell.app) == UI_APP_VIEW_LADX);
+	CHECK(strstr(render(), "< Hard >") != NULL);
+	key(UI_BUTTON_R2);
+	key(UI_BUTTON_R2);
+	key(UI_BUTTON_R2);
+	key(UI_BUTTON_R2);
+	key(UI_BUTTON_R2);
+	key(UI_BUTTON_R2);
+	key(UI_BUTTON_R2);
+	key(UI_BUTTON_RIGHT);
+	key(UI_BUTTON_START);
+	ui_app_run(&shell.app);
+	test_snapshot(TEST, SNAPSHOTS "app_shell_ladx_generated.txt", render());
+	key(UI_BUTTON_A);
+	key(UI_BUTTON_R1);
+	key(UI_BUTTON_A);
+	test_snapshot(TEST, SNAPSHOTS "app_shell_ladx_history.txt", render());
+	CHECK(rando_ladx_last_settings_load(at(RANDO_SD_LADX_SETTINGS_FILE), &settings) == RANDO_LAST_SETTINGS_LOADED);
+	CHECK(settings.value[LADX_SETTING_LOGIC] == 2);
+	key(UI_BUTTON_X);
+	key(UI_BUTTON_A);
+	CHECK(strstr(render(), "No seeds yet") != NULL);
+	CHECK(remove(at(RANDO_SD_LADX_TABLES_DIR)) == 0);
+}
+
 int main(int argc, char **argv)
 {
 	(void)test_fixtures_mode(TEST, argc, argv);
@@ -440,6 +514,7 @@ int main(int argc, char **argv)
 	test_failed_memory_write();
 	test_alttp_settings_untouched();
 	test_generate_then_history();
+	test_ladx();
 	printf(TEST ": passed\n");
 	return EXIT_SUCCESS;
 }

@@ -23,7 +23,9 @@ general thresholds. Scope `tables` likewise: the file must parse with tables.py,
 with neither the `computed` nor the `invariant` clearance; the rest at the general thresholds. Clearances, counted: `trivial` (an arithmetic progression mod 256),
 `low-info` (at most 3 distinct values, general only), `ladxr-public` (the whole run occurs in the
 text files of the LADXR checkout --ladxr, default LADXR_DIR or tests/ladx/oracle/ladxr, at
-LADXR_PIN, or in their decoded hex-digit runs; else a `setup:` line), `computed` (view `writes`
+LADXR_PIN, or in their decoded hex-digit runs; else a `setup:` line; in the general scope's raw
+view only, also a run whose ASCII spaces stripped at both ends leave such a run or one under the
+raw threshold: the UI grid's padding around LADXR's public labels), `computed` (view `writes`
 only: the run occurs nowhere whole in the source bytes its token's group reads, ReadSets from
 --inventory, default notes/ladx-inventory.md; read only when a writes run needs it, else a
 `setup:` line), `invariant` (view `writes` only: every byte of the run lies in its record's
@@ -156,8 +158,10 @@ VIEWS = (("raw", _raw_runs), ("hex", _hex_runs), ("bytelist", _bytelist_runs))
 WRITES_MIN = 4
 
 
-def _clearance(run, scope, corpus):
-    """The clearance category of a run's bytes, or None when the run is a literal."""
+def _clearance(run, scope, corpus, padded_min=None):
+    """The clearance category of a run's bytes, or None when the run is a literal. padded_min,
+    the threshold of the general scope's raw view and given only there, also clears a run whose
+    ASCII spaces stripped at both ends leave a run of LADXR's corpus or one under padded_min."""
     step = (run[1] - run[0]) % 256 if len(run) > 1 else 0
     if all((b - a) % 256 == step for a, b in zip(run, run[1:])):
         return "trivial"
@@ -165,6 +169,10 @@ def _clearance(run, scope, corpus):
         return "low-info"
     if run in corpus:
         return "ladxr-public"
+    if padded_min is not None:
+        label = run.strip(b" ")
+        if len(label) < padded_min or label in corpus:
+            return "ladxr-public"
     return None
 
 
@@ -447,7 +455,8 @@ def check_blob(path, data, index, corpus, scope=None, min_len=None, reads=None):
     for view, runs in VIEWS:
         n = min_len or THRESHOLDS[(scope, view)]
         for off, run in runs(data, index, n):
-            category = _clearance(run, scope, corpus)
+            category = _clearance(run, scope, corpus,
+                                  n if (scope, view) == ("general", "raw") else None)
             if category:
                 cleared.append((view, off, len(run), category))
             else:
@@ -575,15 +584,22 @@ def files_under(paths):
 PLANTED_TEXT = b"Hey! You're finally awake! The Wind Fish dreams on Koholint, so be quiet here."
 
 
+PLANTED_PADDED = {0x2400: b"      The Wind Fish dreams      ",
+                  0x2440: b"        Marin        ",
+                  0x2480: b"   Secret map of the Egg tower   "}
+
+
 def planted_rom():
-    """A 16 KiB synthetic ROM: random bytes, then a zero run, a counting run, a three-value run and
-    an English line."""
+    """A 16 KiB synthetic ROM: random bytes, then a zero run, a counting run, a three-value run,
+    an English line and PLANTED_PADDED's labels padded with spaces."""
     rng = random.Random(0x1ADC)
     rom = bytearray(rng.getrandbits(8) for _ in range(16384))
     rom[0x2000:0x2040] = bytes(64)
     rom[0x2100:0x2140] = bytes(range(0x40))
     rom[0x2200:0x2240] = bytes(rng.choice(b"\x11\x5a\xc3") for _ in range(64))
     rom[0x2300:0x2300 + len(PLANTED_TEXT)] = PLANTED_TEXT
+    for at, padded in PLANTED_PADDED.items():
+        rom[at:at + len(padded)] = padded
     return bytes(rom)
 
 
@@ -622,6 +638,13 @@ def _planted_cases(rom):
          [("raw", 50, "ladxr-public")]),
         ("general-partly-public", general, text[10:70], [("raw", 60)], []),
         ("general-binary-corpus", general, rom[4000:4040], [("raw", 40)], []),
+        ("general-padded-label", general, b"|" + rom[0x2400:0x2420] + b"|", [],
+         [("raw", 32, "ladxr-public")]),
+        ("general-padded-short", general, b"|" + rom[0x2440:0x2455] + b"|", [],
+         [("raw", 21, "ladxr-public")]),
+        ("general-padded-rom", general, b"|" + rom[0x2480:0x24A1] + b"|", [("raw", 33)], []),
+        ("strict-padded-label", paths["strict"], b"|" + rom[0x2400:0x2420] + b"|",
+         [("raw", 32)], []),
     ]
     cases += _planted_case_folder(rom)
     cases += _planted_tables(rom)

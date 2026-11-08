@@ -347,7 +347,7 @@ static void test_classic_markers_and_buttons(void)
 	EDIT_FAILS("list", "cursor =", "cursor = sprite:.a.png", FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
 	EDIT_FAILS("list", "cursor =", "cursor = sprite:a.ttf", FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
 	EDIT_FAILS("list", "cursor =",
-		   "cursor = sprite:abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh.png",
+		   "cursor = sprite:abcdefghijklmnopqrstuvwxyz0123456789_-_-_-_-_-_-_-_-_-_-_-_-.png",
 		   FILE_NAME ":%d: list.cursor: " MARKER_PROBLEM);
 	EDIT_FAILS("tabs", "active_before", "active_before = Sprite:a.png", FILE_NAME ":%d: tabs.active_before: " MARKER_PROBLEM);
 	EDIT_FAILS("screen", "cut", "cut = sprite:cut.png", FILE_NAME ":%d: screen.cut: not a marker (none, text:<chars>)");
@@ -698,8 +698,8 @@ static void test_file_values(void)
 	FAILS(SCREEN_WITH("image = my frame.png"), FILE_NAME ":2: screen.image: not a file name (.png)");
 	FAILS(SCREEN_WITH("image = Frame"), FILE_NAME ":2: screen.image: not a file name (.png)");
 	OK("[screen]\ncolour = #000000\nimage = "
-	   "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefg.png\ncut = none\n" FONT_MONO);
-	FAILS(SCREEN_WITH("image = abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh.png"),
+	   "abcdefghijklmnopqrstuvwxyz0123456789_-_-_-_-_-_-_-_-_-_-_-_.png\ncut = none\n" FONT_MONO);
+	FAILS(SCREEN_WITH("image = abcdefghijklmnopqrstuvwxyz0123456789_-_-_-_-_-_-_-_-_-_-_-_-.png"),
 	      FILE_NAME ":2: screen.image: not a file name (.png)");
 	FAILS(FONT_WITH("file = mono.png"), FILE_NAME ":6: font.mono.file: not a file name (.ttf)");
 	FAILS(FONT_WITH("file = ../mono.ttf"), FILE_NAME ":6: font.mono.file: not a file name (.ttf)");
@@ -964,8 +964,9 @@ static void test_alttp_loads_within_the_app_ranges(void)
 	if (help != UI_STR_HELP_LEN_MAX)
 		test_fail(TEST, "alttp help line of %d characters, the core's help bound is %d", help,
 			  UI_STR_HELP_LEN_MAX);
-	for (id = UI_STR_HELP_FIRST; id <= UI_STR_HELP_LAST; id++)
-		if ((int)strlen(ui_str(ui_str_english(), (UiStrId)id)) > help)
+	for (id = UI_STR_HELP_FIRST; id <= UI_STR_LADX_HELP_LAST; id++)
+		if (ui_str_len_max((UiStrId)id) == UI_STR_HELP_LEN_MAX &&
+		    (int)strlen(ui_str(ui_str_english(), (UiStrId)id)) > help)
 			test_fail(TEST, "help %d \"%s\" is longer than alttp's %d-character help line", id,
 				  ui_str(ui_str_english(), (UiStrId)id), help);
 }

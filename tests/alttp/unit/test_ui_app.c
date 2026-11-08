@@ -27,6 +27,9 @@ typedef struct Fake {
 	UiGenRequest request;
 	UiGenOutcome reply;
 	UiHistoryList scans[2];
+	int ladx_run_calls, ladx_scan_calls;
+	UiGenRequest ladx_request;
+	UiHistoryList ladx_scans[2];
 } Fake;
 
 static UiApp app;
@@ -51,6 +54,23 @@ static void fake_scan(void *ctx, UiHistoryList *out)
 
 	*out = f->scans[f->scan_calls < 2 ? f->scan_calls : 1];
 	f->scan_calls++;
+}
+
+static void fake_ladx_run(void *ctx, const UiGenRequest *request, UiGenOutcome *outcome)
+{
+	Fake *f = ctx;
+
+	f->ladx_run_calls++;
+	f->ladx_request = *request;
+	*outcome = f->reply;
+}
+
+static void fake_ladx_scan(void *ctx, UiHistoryList *out)
+{
+	Fake *f = ctx;
+
+	*out = f->ladx_scans[f->ladx_scan_calls < 2 ? f->ladx_scan_calls : 1];
+	f->ladx_scan_calls++;
 }
 
 static bool fake_spoiler(void *ctx, const UiHistoryEntry *entry, UiHistorySpoiler *out)
@@ -108,9 +128,37 @@ static UiHistoryEntry entry_of(const char *code, const char *rom, int day, int h
 	return e;
 }
 
-/* Scan 0: two seeds on the card at start; scan 1: a new seed on top of them. */
+static UiHistoryEntry ladx_entry_of(const char *code, const char *rom, const char *seed, bool spoiler)
+{
+	UiHistoryEntry e;
+
+	memset(&e, 0, sizeof e);
+	e.game = UI_GAME_LADX;
+	snprintf(e.name.code, sizeof e.name.code, "%s", code);
+	snprintf(e.name.rom, sizeof e.name.rom, "%s", rom);
+	e.date.year = 2026;
+	e.date.month = 11;
+	e.date.day = 7;
+	e.date.hour = 18;
+	e.date.minute = 5;
+	snprintf(e.ladx_seed, sizeof e.ladx_seed, "%s", seed);
+	ladx_settings_defaults(&e.ladx);
+	e.ladx.value[LADX_SETTING_GOAL] = (uint8_t)ladx_setting_value_find(LADX_SETTING_GOAL, "instruments");
+	e.has_spoiler = spoiler;
+	return e;
+}
+
+/* Scan 0: two seeds on the card at start; scan 1: a new seed on top of them. LADX: one, then two. */
 static void script_scans(void)
 {
+	fake.ladx_scans[0].entries[0] =
+		ladx_entry_of("3E4F50", "Normal-Instruments-3E4F50.gbc", "00112233445566778899aabbccddeeff", true);
+	fake.ladx_scans[0].count = 1;
+	fake.ladx_scans[1].entries[0] =
+		ladx_entry_of("0A1B2C", "Hard-Instruments-0A1B2C.gbc", "ffeeddccbbaa99887766554433221100", false);
+	fake.ladx_scans[1].entries[1] = fake.ladx_scans[0].entries[0];
+	fake.ladx_scans[1].count = 2;
+
 	UiHistoryList *first = &fake.scans[0], *second = &fake.scans[1];
 
 	first->entries[0] = entry_of("2B3C4D", "Open-Ganon-2B3C4D.sfc", 30, 9, 41, 7);
@@ -166,6 +214,13 @@ static void start(void)
 	init.game = UI_GAME_ALTTP;
 	init.remember = fake_remember;
 	init.remember_ctx = &fake;
+	ui_ladx_generate_init_defaults(&init.ladx.generate, ui_str_english(), PAGE);
+	init.ladx.run = fake_ladx_run;
+	init.ladx.run_ctx = &fake;
+	init.ladx.scan = fake_ladx_scan;
+	init.ladx.spoiler_fn = fake_spoiler;
+	init.ladx.delete_fn = fake_delete;
+	init.ladx.history_ctx = &fake;
 	ui_app_init(&app, &init);
 }
 
@@ -215,6 +270,20 @@ static const char *render(void)
 
 	ui_app_screen(&app, &screen);
 	return render_screen(&screen, text, sizeof text);
+}
+
+static char trace[64 * 1024];
+
+static void trace_reset(void)
+{
+	trace[0] = '\0';
+}
+
+static void trace_screen(const char *header)
+{
+	size_t used = strlen(trace);
+
+	snprintf(trace + used, sizeof trace - used, "@ %s\n%s", header, render());
 }
 
 static bool shows_ref_generate(void)
@@ -358,6 +427,7 @@ static void test_generation(void)
 	UiGenRequest expected;
 	UiButton b;
 
+	memset(&expected, 0, sizeof expected);
 	start_alttp();
 	start_refs(0);
 	keys(UI_BUTTON_DOWN, 1);
@@ -536,29 +606,37 @@ static void test_history_fresh_after_round_trip(void)
 	CHECK(fake.scan_calls == 2);
 }
 
-static void test_ladx_placeholder(void)
+static void start_ladx(void)
 {
-	static const UiButton ignored[] = {UI_BUTTON_UP, UI_BUTTON_DOWN, UI_BUTTON_LEFT, UI_BUTTON_RIGHT,
-					   UI_BUTTON_A, UI_BUTTON_X, UI_BUTTON_Y, UI_BUTTON_L1, UI_BUTTON_R1,
-					   UI_BUTTON_L2, UI_BUTTON_R2, UI_BUTTON_SELECT, UI_BUTTON_START};
-	static UiScreen screen;
-	size_t i;
-
 	start();
 	keys(UI_BUTTON_DOWN, 1);
 	keys(UI_BUTTON_A, 1);
 	CHECK(ui_app_view(&app) == UI_APP_VIEW_LADX);
 	CHECK(fake.remember_calls == 1 && fake.remembered == UI_GAME_LADX);
+}
+
+static void test_ladx_tabs(void)
+{
+	static UiScreen screen;
+
+	start_ladx();
+	CHECK(fake.scan_calls == 1 && fake.ladx_scan_calls == 1);
 	ui_app_screen(&app, &screen);
 	CHECK(ui_screen_valid(&screen));
-	test_snapshot(TEST, SNAPSHOTS "app_ladx_unavailable.txt", render());
-	for (i = 0; i < sizeof ignored / sizeof ignored[0]; i++) {
-		keys(ignored[i], 1);
-		CHECK(ui_app_view(&app) == UI_APP_VIEW_LADX);
-	}
-	test_snapshot(TEST, SNAPSHOTS "app_ladx_unavailable.txt", render());
-	CHECK(!ui_app_pending(&app));
-	CHECK(fake.run_calls == 0 && fake.remember_calls == 1);
+	test_snapshot(TEST, SNAPSHOTS "ladx_generate_initial.txt", render());
+	keys(UI_BUTTON_R1, 1);
+	CHECK(ui_app_tab(&app) == UI_APP_TAB_GENERATE);
+	test_snapshot(TEST, SNAPSHOTS "app_ladx_history.txt", render());
+	keys(UI_BUTTON_A, 1);
+	CHECK(fake.spoiler_calls == 1);
+	trace_reset();
+	trace_screen("a");
+	keys(UI_BUTTON_R2, 4);
+	trace_screen("r2*4");
+	test_snapshot(TEST, SNAPSHOTS "app_ladx_history_detail.txt", trace);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_L1, 1);
+	test_snapshot(TEST, SNAPSHOTS "ladx_generate_initial.txt", render());
 	keys(UI_BUTTON_B, 1);
 	CHECK(ui_app_view(&app) == UI_APP_VIEW_GAMES);
 	test_snapshot(TEST, SNAPSHOTS "games_ladx_remembered.txt", render());
@@ -567,6 +645,83 @@ static void test_ladx_placeholder(void)
 	CHECK(ui_app_view(&app) == UI_APP_VIEW_ALTTP);
 	CHECK(ui_app_tab(&app) == UI_APP_TAB_GENERATE);
 	CHECK(fake.remember_calls == 2 && fake.remembered == UI_GAME_ALTTP);
+	CHECK(key(UI_BUTTON_B) == UI_APP_NONE);
+	keys(UI_BUTTON_DOWN, 1);
+	keys(UI_BUTTON_A, 1);
+	CHECK(key(UI_BUTTON_MENU) == UI_APP_QUIT);
+}
+
+static void test_ladx_generation(void)
+{
+	start_ladx();
+	keys(UI_BUTTON_RIGHT, 1);
+	remember();
+	snprintf(fake.reply.rom, sizeof fake.reply.rom, "%s", "Hard-Vanilla-0A1B2C.gbc");
+	keys(UI_BUTTON_START, 1);
+	CHECK(ui_app_pending(&app));
+	test_snapshot(TEST, SNAPSHOTS "genflow_generating.txt", render());
+	ui_app_run(&app);
+	CHECK(fake.ladx_run_calls == 1 && fake.run_calls == 0);
+	CHECK(fake.ladx_request.game == UI_GAME_LADX && !fake.ladx_request.spoiler);
+	CHECK(fake.ladx_request.ladx.value[LADX_SETTING_LOGIC] == 2);
+	CHECK(fake.ladx_scan_calls == 2 && fake.scan_calls == 1);
+	test_snapshot(TEST, SNAPSHOTS "genflow_ladx_ready.txt", render());
+	keys(UI_BUTTON_A, 1);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_LADX);
+	CHECK(unchanged());
+	keys(UI_BUTTON_R1, 1);
+	test_snapshot(TEST, SNAPSHOTS "app_ladx_history_rescanned.txt", render());
+	start_ladx();
+	fake.reply.list_stale = true;
+	snprintf(fake.reply.rom, sizeof fake.reply.rom, "%s", "Normal-Vanilla-0A1B2C.gbc");
+	keys(UI_BUTTON_START, 1);
+	ui_app_run(&app);
+	trace_reset();
+	trace_screen("start");
+	test_snapshot(TEST, SNAPSHOTS "genflow_ladx_ready_list_stale.txt", trace);
+}
+
+static void test_ladx_failures(void)
+{
+	static const struct {
+		UiStrId status;
+		const char *snapshot;
+	} cases[] = {
+		{UI_STR_GEN_BASE_MISSING, SNAPSHOTS "genflow_ladx_base_missing.txt"},
+		{UI_STR_LADX_BASE_SHA1, SNAPSHOTS "genflow_ladx_base_wrong.txt"},
+	};
+	size_t i;
+
+	for (i = 0; i < sizeof cases / sizeof cases[0]; i++) {
+		start_ladx();
+		fake.reply = failure();
+		fake.reply.status = cases[i].status;
+		fake.reply.advice = UI_STR_LADX_ADVICE_BASE;
+		keys(UI_BUTTON_START, 1);
+		ui_app_run(&app);
+		CHECK(fake.ladx_run_calls == 1 && fake.ladx_scan_calls == 1);
+		test_snapshot(TEST, cases[i].snapshot, render());
+		keys(UI_BUTTON_B, 1);
+		CHECK(ui_app_view(&app) == UI_APP_VIEW_LADX);
+		test_snapshot(TEST, SNAPSHOTS "ladx_generate_initial.txt", render());
+	}
+}
+
+static void test_round_trip_keeps_ladx(void)
+{
+	start_ladx();
+	keys(UI_BUTTON_R2, 2);
+	keys(UI_BUTTON_RIGHT, 1);
+	remember();
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_UP, 1);
+	keys(UI_BUTTON_A, 1);
+	keys(UI_BUTTON_DOWN, 2);
+	keys(UI_BUTTON_B, 1);
+	keys(UI_BUTTON_DOWN, 1);
+	keys(UI_BUTTON_A, 1);
+	CHECK(ui_app_view(&app) == UI_APP_VIEW_LADX);
+	CHECK(unchanged());
 }
 
 static void test_raw_input_is_filtered(void)
@@ -603,7 +758,10 @@ int main(int argc, char **argv)
 	test_back_inside_history();
 	test_round_trip_keeps_alttp();
 	test_history_fresh_after_round_trip();
-	test_ladx_placeholder();
+	test_ladx_tabs();
+	test_ladx_generation();
+	test_ladx_failures();
+	test_round_trip_keeps_ladx();
 	test_raw_input_is_filtered();
 	printf(TEST ": passed\n");
 	return EXIT_SUCCESS;

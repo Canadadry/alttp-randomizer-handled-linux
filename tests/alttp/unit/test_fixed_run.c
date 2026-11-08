@@ -231,9 +231,14 @@ static void test_apply_all(void)
 	CHECK(date_is(&date, 2026, 11, 1, 14, 3, 27));
 	CHECK(memcmp(shell.gen.source_md5, run.source_md5, RANDO_MD5_SIZE) == 0);
 	CHECK(memcmp(shell.gen.base_md5, run.base_md5, RANDO_MD5_SIZE) == 0);
+	memset(&date, 0, sizeof date);
+	shell.ladx_gen.date(&date);
+	CHECK(date_is(&date, 2026, 11, 1, 14, 3, 27));
+	CHECK(shell.ladx_gen.seed == before.ladx_gen.seed);
 
 	shell.gen.seed = before.gen.seed;
 	shell.gen.date = before.gen.date;
+	shell.ladx_gen.date = before.ladx_gen.date;
 	memcpy(shell.gen.source_md5, before.gen.source_md5, RANDO_MD5_SIZE);
 	memcpy(shell.gen.base_md5, before.gen.base_md5, RANDO_MD5_SIZE);
 	CHECK(memcmp(&shell, &before, sizeof shell) == 0);
@@ -251,6 +256,32 @@ static void test_apply_some(void)
 	CHECK(shell.gen.seed == before.gen.seed && shell.gen.date != before.gen.date);
 	CHECK(memcmp(shell.gen.source_md5, before.gen.source_md5, RANDO_MD5_SIZE) == 0);
 	CHECK(memcmp(shell.gen.base_md5, run.base_md5, RANDO_MD5_SIZE) == 0);
+}
+
+static void test_ladx_seed(void)
+{
+	static const uint8_t want[RANDO_LADX_SEED_BYTES] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+							    0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+	static const char *const bad[] = {"", "00112233445566778899aabbccddeef", "00112233445566778899aabbccddeeff0",
+					  "00112233445566778899aabbccddeefg", "0x112233445566778899aabbccddeeff"};
+	uint8_t seed[RANDO_LADX_SEED_BYTES];
+	RandoFixedRun run;
+	size_t i;
+
+	memset(&run, 0, sizeof run);
+	CHECK(rando_fixed_run_takes("--ladx-seed"));
+	for (i = 0; i < sizeof bad / sizeof bad[0]; i++)
+		CHECK(!rando_fixed_run_option(&run, "--ladx-seed", bad[i]) && !run.has_ladx_seed);
+	CHECK(rando_fixed_run_option(&run, "--ladx-seed", "00112233445566778899AABBccddeeff"));
+	CHECK(run.has_ladx_seed && memcmp(run.ladx_seed, want, sizeof want) == 0);
+	CHECK(!run.has_seed && !run.has_date);
+	start_shell();
+	rando_fixed_run_apply(&run, &shell);
+	memset(seed, 0, sizeof seed);
+	CHECK(shell.ladx_gen.seed(seed) && memcmp(seed, want, sizeof want) == 0);
+	CHECK(shell.gen.seed == before.gen.seed && shell.ladx_gen.date == before.ladx_gen.date);
+	shell.ladx_gen.seed = before.ladx_gen.seed;
+	CHECK(memcmp(&shell, &before, sizeof shell) == 0);
 }
 
 static void test_unsupported(void)
@@ -356,6 +387,7 @@ int main(int argc, char **argv)
 	test_apply_nothing();
 	test_apply_all();
 	test_apply_some();
+	test_ladx_seed();
 	test_unsupported();
 	test_shell_unsupported();
 	return 0;

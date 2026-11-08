@@ -1,0 +1,108 @@
+@ page 0
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Hard-Instruments-3E4F50.gbc            |
+ | Generated 2026-11-07 18:05             |
+ | Seed 00112233445566778899aabbccddeeff  |
+ | Logic                           Hard   |
+ | Accessibility         100% Locations   |
+ | Race Mode                        Off   |
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On  v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+
+@ page 1
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Hard-Instruments-3E4F50.gbc            |
+ | Rooster                           On  ^|
+ | Boomerang Trade                 Gift   |
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Random Start                     Off   |
+ | Dungeon Shuffle                  Off   |
+ | Entrance Shuffle             Default   |
+ | Boss Shuffle                  Normal   |
+ | Miniboss Shuffle              Normal  v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+
+@ page 2
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Hard-Instruments-3E4F50.gbc            |
+ | Enemizer                        None  ^|
+ | Goal                   X Instruments   |
+ | Goal Count                         4   |
+ | Item Pool                     Normal   |
+ | Health Mode                   Normal   |
+ | Hard Mode                   Disabled   |
+ | Shop Stealing                 Normal   |
+ | Evil Shop                   Disabled   |
+ | Good Boy Mode               Disabled   |
+ | Overworld                     Normal   |
+ | Owl Statues                    Never  v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+
+@ page 3
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Hard-Instruments-3E4F50.gbc            |
+ | Keyhole Sanity                   Off  ^|
+ | Shopsanity                  Disabled   |
+ | Super Weapons                    Off   |
+ | Quickswap                   Disabled   |
+ | Text Mode                       Fast   |
+ | Low HP Beeps                    Slow   |
+ | No Flashing                       On   |
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal  v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+
+@ page 4
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Hard-Instruments-3E4F50.gbc            |
+ | Music                        Default  ^|
+ | Spoiler in History                On   |
+ |                                        |
+ | Spoiler                                |
+ | Bosses                                 |
+ |   Ganon: Ganon                         |
+ | Light World                            |
+ |   Mini Moldorm Cave - Far Right:       |
+ |     ProgressiveSword                   |
+ | playthrough                            |
+ |   1                                   v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+
+@ page 5
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Hard-Instruments-3E4F50.gbc            |
+ | Spoiler                               ^|
+ | Bosses                                 |
+ |   Ganon: Ganon                         |
+ | Light World                            |
+ |   Mini Moldorm Cave - Far Right:       |
+ |     ProgressiveSword                   |
+ | playthrough                            |
+ |   1                                    |
+ |     Light World                        |
+ |       Blind's Hideout - Far Left:      |
+ |         Flippers                       |
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+

@@ -1,7 +1,10 @@
+@ start
  +----------------------------------------+
-=|[Generate]                              |
-#| Link's Awakening DX                    |
- | Not available yet                      |
+=|[Generate]  History                     |
+#| Seed Ready                             |
+ | Saved in Roms/GBC/ZeldaRando as:       |
+ | Normal-Vanilla-0A1B2C.gbc              |
+ | Spoiler kept in History                |
  |                                        |
  |                                        |
  |                                        |
@@ -10,8 +13,6 @@
  |                                        |
  |                                        |
  |                                        |
- |                                        |
- |                                        |
- |                                        |
-_| B Back                                 |
+i| Refresh the GBC list to see it         |
+_| A Back                                 |
  +----------------------------------------+

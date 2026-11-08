@@ -32,6 +32,12 @@ ROM[TEXT:TEXT + len(TEXT_BYTES)] = TEXT_BYTES
 ROM[FOUR:FOUR + 64] = bytes(_RNG.choice(b"\x21\x6b\x90\xe7") for _ in range(64))
 NAME, NAME_BYTES = 3600, b"Koholint_Island-Wind_Fish.Egg"
 ROM[NAME:NAME + len(NAME_BYTES)] = NAME_BYTES
+LABEL, LABEL_BYTES = 3700, b"      Seashell Mansion Owner       "
+ROM[LABEL:LABEL + len(LABEL_BYTES)] = LABEL_BYTES
+SHORT, SHORT_BYTES = 3750, b"         Bow Wow          "
+ROM[SHORT:SHORT + len(SHORT_BYTES)] = SHORT_BYTES
+SECRET, SECRET_BYTES = 3800, b"     Koholint's hidden tide maps     "
+ROM[SECRET:SECRET + len(SECRET_BYTES)] = SECRET_BYTES
 ROM = bytes(ROM)
 
 
@@ -162,6 +168,44 @@ class LadxrPublic(unittest.TestCase):
         corpus = self.corpus(nul, invalid)
         self.assertEqual(check(GENERAL, TEXT_BYTES[10:60], corpus)[0], [("raw", 0, 50, "general")])
         self.assertEqual(check(GENERAL, invalid, corpus)[0], [("raw", 0, 40, "general")])
+
+
+class PaddedLabels(unittest.TestCase):
+    """General raw runs whose ASCII spaces are the UI grid's padding around a LADXR label."""
+
+    corpus = nintendo_bytes.Corpus([("settings.py", b"label='Seashell Mansion Owner'\n")])
+
+    def test_a_padded_public_label_is_cleared_as_ladxr_public(self):
+        data = b"|" + LABEL_BYTES[2:-3] + b"|"
+        self.assertEqual(check(GENERAL, data, self.corpus),
+                         ([], [("raw", len(LABEL_BYTES) - 5, "ladxr-public")]))
+
+    def test_a_padded_word_shorter_than_the_threshold_is_cleared(self):
+        self.assertEqual(check(GENERAL, b"|" + SHORT_BYTES + b"|", self.corpus),
+                         ([], [("raw", len(SHORT_BYTES), "ladxr-public")]))
+
+    def test_a_padded_run_of_16_bytes_or_more_not_in_ladxr_is_flagged(self):
+        self.assertEqual(check(GENERAL, b"|" + SECRET_BYTES + b"|", self.corpus),
+                         ([("raw", 1, len(SECRET_BYTES), "general")], []))
+
+    def test_a_padded_public_label_under_a_strict_path_is_flagged(self):
+        literals, _ = check(STRICT, b"|" + LABEL_BYTES + b"|", self.corpus)
+        self.assertEqual(literals, [("raw", 1, len(LABEL_BYTES), "strict")])
+
+    def test_only_the_raw_view_strips_spaces(self):
+        data = b"x = 7" + SHORT_BYTES.hex().encode() + b";\n"
+        literals, _ = check(GENERAL, data, self.corpus)
+        self.assertEqual([(view, length) for view, _, length, _ in literals],
+                         [("hex", len(SHORT_BYTES))])
+
+    def test_only_spaces_are_stripped(self):
+        data = b"|" + LABEL_BYTES[6:-7] + b"|"
+        self.assertEqual(check(GENERAL, data, self.corpus)[1],
+                         [("raw", len(LABEL_BYTES) - 13, "ladxr-public")])
+        dotted = ROM[LABEL - 1:LABEL + len(LABEL_BYTES)]
+        self.assertNotIn(dotted[:1], b" ")
+        self.assertEqual(check(GENERAL, b"|" + dotted + b"|", self.corpus)[0],
+                         [("raw", 1, len(dotted), "general")])
 
 
 def planted_ladxr(directory, files):
@@ -589,15 +633,26 @@ class SelfProof(unittest.TestCase):
     def test_a_broken_policy_fails_the_self_proof_on_the_first_case_it_breaks(self):
         thresholds = dict(nintendo_bytes.THRESHOLDS)
         thresholds[("general", "raw")] = 15
-        low_info_everywhere = lambda run, scope, corpus: real_clearance(run, "general", corpus)
+        low_info_everywhere = lambda run, scope, corpus, *rest: \
+            real_clearance(run, "general", corpus, *rest)
+        no_padding = lambda run, scope, corpus, *rest: real_clearance(run, scope, corpus)
+        any_padded = lambda run, scope, corpus, *rest: \
+            real_clearance(run, scope, corpus, *rest) or \
+            ("ladxr-public" if rest and rest[0] is not None and run[:1] == b" " else None)
+        padded_everywhere = lambda run, scope, corpus, *rest: \
+            real_clearance(run, scope, corpus, *rest) or \
+            ("ladxr-public" if run.strip(b" ") in corpus else None)
         real_clearance = nintendo_bytes._clearance
         no_bytelist = tuple(v for v in nintendo_bytes.VIEWS if v[0] != "bytelist")
         broken = [
             ("check_blob", lambda path, data, index, corpus, *a: ([], []), "strict-raw"),
             ("VIEWS", no_bytelist, "strict-bytelist"),
-            ("_clearance", lambda run, scope, corpus: None, "strict-raw-trivial"),
+            ("_clearance", lambda run, scope, corpus, *rest: None, "strict-raw-trivial"),
             ("_clearance", low_info_everywhere, "strict-raw-low-info"),
             ("THRESHOLDS", thresholds, "general-raw-below"),
+            ("_clearance", no_padding, "general-padded-label"),
+            ("_clearance", padded_everywhere, "strict-padded-label"),
+            ("_clearance", any_padded, "general-padded-rom"),
             ("_is_text", lambda data: True, "general-binary-corpus"),
             ("scope_of", lambda path: "general", "strict-raw"),
             ("scope_of", lambda path: "strict" if path.startswith(nintendo_bytes.STRICT_PREFIXES)

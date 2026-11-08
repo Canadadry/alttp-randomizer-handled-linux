@@ -1,0 +1,180 @@
+@ init
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Main                                   |
+>| Logic                       < Normal > |
+ | Accessibility         100% Locations   |
+ | Race Mode                        Off   |
+ | Items                                  |
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On  v|
+h| Which tricks the logic may expect of ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Main                                   |
+ | Logic                         Normal   |
+ | Accessibility         100% Locations   |
+ | Race Mode                        Off   |
+ | Items                                  |
+>| Heart Pieces                    < On > |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On  v|
+h| Puts the heart pieces in the item pool |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Items                                 ^|
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On   |
+ | Rooster                           On   |
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+>| Dungeon Keys              < Standard >v|
+h| Small keys: in their dungeon, anywher~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Trade Quest                       On  ^|
+ | Witch's Item                      On   |
+ | Rooster                           On   |
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+>| Random Start                   < Off >v|
+h| Randomizes where your starting house ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Dungeon Items                         ^|
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+ | Random Start                     Off   |
+ | Dungeon Shuffle                  Off   |
+ | Entrance Shuffle             Default   |
+ | Gameplay                               |
+>| Boss Shuffle                < Normal >v|
+h| Randomizes each dungeon's boss         |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Gameplay                              ^|
+ | Boss Shuffle                  Normal   |
+ | Miniboss Shuffle              Normal   |
+ | Enemizer                        None   |
+ | Goal                         Vanilla   |
+ | Item Pool                     Normal   |
+ | Health Mode                   Normal   |
+ | Hard Mode                   Disabled   |
+ | Shop Stealing                 Normal   |
+ | Special                                |
+>| Evil Shop                 < Disabled >v|
+h| Grandpa's house becomes a shop buying~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Shop Stealing                 Normal  ^|
+ | Special                                |
+ | Evil Shop                   Disabled   |
+ | Good Boy Mode               Disabled   |
+ | Overworld                     Normal   |
+ | Owl Statues                    Never   |
+ | Keyhole Sanity                   Off   |
+ | Shopsanity                  Disabled   |
+ | Super Weapons                    Off   |
+ | User Options                           |
+>| Quickswap                 < Disabled >v|
+h| SELECT swaps the top inventory item w~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | User Options                          ^|
+ | Quickswap                   Disabled   |
+ | Text Mode                       Fast   |
+ | Low HP Beeps                    Slow   |
+ | No Flashing                       On   |
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal   |
+ | Music                        Default   |
+>| Spoiler in History             < Off >v|
+h| No spoiler is kept. History shows the~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Quickswap                   Disabled  ^|
+ | Text Mode                       Fast   |
+ | Low HP Beeps                    Slow   |
+ | No Flashing                       On   |
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal   |
+ | Music                        Default   |
+ | Spoiler in History               Off   |
+>| Generate Seed                          |
+ |                                        |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ l2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | User Options                          ^|
+>| Quickswap                 < Disabled > |
+ | Text Mode                       Fast   |
+ | Low HP Beeps                    Slow   |
+ | No Flashing                       On   |
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal   |
+ | Music                        Default   |
+ | Spoiler in History               Off  v|
+h| SELECT swaps the top inventory item w~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

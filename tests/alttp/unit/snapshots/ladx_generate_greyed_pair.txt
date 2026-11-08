@@ -1,0 +1,72 @@
+@ right
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+x| Accessibility         100% Locations  ^|
+ | Race Mode                        Off   |
+ | Items                                  |
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On   |
+ | Rooster                           On   |
+X| Boomerang Trade               Normal  v|
+i| LADXR refuses this with Accessibility  |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2*6 down
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Quickswap                   Disabled  ^|
+ | Text Mode                       Fast   |
+ | Low HP Beeps                    Slow   |
+ | No Flashing                       On   |
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal   |
+ | Music                        Default   |
+ | Spoiler in History               Off   |
+X| Generate Seed                          |
+i| LADXR refuses this with Accessibility  |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ a
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Quickswap                   Disabled  ^|
+ | Text Mode                       Fast   |
+ | Low HP Beeps                    Slow   |
+ | No Flashing                       On   |
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal   |
+ | Music                        Default   |
+ | Spoiler in History               Off   |
+X| Generate Seed                          |
+E| LADXR refuses this with Accessibility  |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ up
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Quickswap                   Disabled  ^|
+ | Text Mode                       Fast   |
+ | Low HP Beeps                    Slow   |
+ | No Flashing                       On   |
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal   |
+ | Music                        Default   |
+>| Spoiler in History             < Off > |
+x| Generate Seed                          |
+h| No spoiler is kept. History shows the~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

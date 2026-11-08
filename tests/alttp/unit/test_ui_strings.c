@@ -220,6 +220,12 @@ static void test_check_help_length(void)
 	check_fault(&t, true, UI_STR_HELP_FIRST, UI_STR_FAULT_TOO_LONG, __LINE__);
 	t = english_with(UI_STR_HELP_LAST, text_of(buf, UI_STR_HELP_LEN_MAX + 1, false));
 	check_fault(&t, true, UI_STR_HELP_LAST, UI_STR_FAULT_TOO_LONG, __LINE__);
+	t = english_with(UI_STR_LADX_HELP_FIRST, text_of(buf, UI_STR_HELP_LEN_MAX, false));
+	check_sound(&t, true, __LINE__);
+	t = english_with(UI_STR_LADX_HELP_LAST, text_of(buf, UI_STR_HELP_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_LADX_HELP_LAST, UI_STR_FAULT_TOO_LONG, __LINE__);
+	t = english_with(UI_STR_LADX_SET_MUSIC, text_of(buf, UI_STR_LEN_MAX + 1, false));
+	check_fault(&t, true, UI_STR_LADX_SET_MUSIC, UI_STR_FAULT_TOO_LONG, __LINE__);
 	t = english_with(UI_STR_SPOILER_ON, text_of(buf, UI_STR_LEN_MAX + 1, false));
 	check_fault(&t, true, UI_STR_SPOILER_ON, UI_STR_FAULT_TOO_LONG, __LINE__);
 	t = english_with(UI_STR_GENERATE_TITLE, text_of(buf, UI_STR_LEN_MAX + 1, false));

@@ -258,12 +258,52 @@ static void test_ladx_remembered(void)
 	test_snapshot(TEST, SNAPSHOTS "ui_cli_ladx_remembered.txt", out);
 }
 
+static void run_ladx(const char *keys)
+{
+	char args[1024];
+
+	snprintf(args, sizeof args, "%s --ladx-seed 00112233445566778899aabbccddeeff %s", fixed, keys);
+	run(NULL, args);
+	CHECK(status == 0);
+	CHECK(err[0] == '\0');
+}
+
+/* After test_ladx_remembered: A opens LADX. */
+static void test_ladx_grid(void)
+{
+	run_ladx("--every a r2*3 right l2 l2");
+	test_snapshot(TEST, SNAPSHOTS "ui_cli_ladx_grid.txt", out);
+}
+
+static void test_ladx_base(void)
+{
+	static uint8_t wrong[1024 * 1024];
+	static const char junk[] = "{\"logic\": \"hard\"}\n";
+
+	run_ladx("a right start");
+	test_snapshot(TEST, SNAPSHOTS "genflow_ladx_base_missing.txt", out);
+	CHECK(!exists(RANDO_SD_LADX_SETTINGS_FILE) && !exists(RANDO_SD_LADX_ROM_DIR));
+	make_dir(RANDO_SD_LADX_DIR);
+	memset(wrong, 0x5A, sizeof wrong);
+	write_bytes(RANDO_SD_LADX_BASE_FILE, wrong, sizeof wrong);
+	run_ladx("a right start");
+	test_snapshot(TEST, SNAPSHOTS "genflow_ladx_base_wrong.txt", out);
+	CHECK(exists(RANDO_SD_LADX_SETTINGS_FILE) && !exists(RANDO_SD_LADX_ROM_DIR));
+	run_ladx("a");
+	test_snapshot(TEST, SNAPSHOTS "ui_cli_ladx_restored.txt", out);
+	write_bytes(RANDO_SD_LADX_SETTINGS_FILE, (const uint8_t *)junk, sizeof junk - 1);
+	run_ladx("a");
+	test_snapshot(TEST, SNAPSHOTS "ui_cli_ladx_unreadable.txt", out);
+	run_ladx("a r1");
+	test_snapshot(TEST, SNAPSHOTS "ui_cli_ladx_history_empty.txt", out);
+}
+
 static void test_usage(void)
 {
 	static char before[OUT_MAX], after[OUT_MAX];
 	const char *bad[] = {"bogus", "r1*0", "r1*1000", "--cols 21", "--lines 41", "--date 2026-13-01T00:00:00",
 			     "--date 1969-12-31T23:59:59 --every start a",
-			     "--seed x", "--base-md5 abc", "--every"};
+			     "--seed x", "--base-md5 abc", "--ladx-seed 0011", "--every"};
 	char args[1024];
 	size_t i;
 
@@ -330,6 +370,8 @@ int main(int argc, char **argv)
 	test_usage();
 	test_bad_root();
 	test_ladx_remembered();
+	test_ladx_grid();
+	test_ladx_base();
 	printf(TEST ": passed\n");
 	return EXIT_SUCCESS;
 }

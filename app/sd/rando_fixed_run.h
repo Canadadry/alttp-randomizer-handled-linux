@@ -2,6 +2,7 @@
 #define RANDO_FIXED_RUN_H
 
 #include "rando_app_shell.h"
+#include "rando_ladx_name.h"
 #include "rando_md5.h"
 #include "rando_record.h"
 #include "rando_settings.h"
@@ -34,8 +35,9 @@ typedef struct RandoFixedKeys {
 } RandoFixedKeys;
 
 typedef struct RandoFixedRun {
-	bool has_seed, has_date, has_source_md5, has_base_md5, has_unsupported;
+	bool has_seed, has_date, has_source_md5, has_base_md5, has_unsupported, has_ladx_seed;
 	uint32_t seed;
+	uint8_t ladx_seed[RANDO_LADX_SEED_BYTES];
 	RandoRecordDate date;
 	uint8_t source_md5[RANDO_MD5_SIZE], base_md5[RANDO_MD5_SIZE];
 	RandoSettingPair unsupported;
@@ -64,7 +66,7 @@ bool rando_fixed_run_option(RandoFixedRun *run, const char *option, const char *
    into run, so run must outlive the shell it is handed to. */
 const RandoSettingPair *rando_fixed_run_unsupported(const RandoFixedRun *run);
 
-/* The fixed seed and date live in this module's statics: one fixed run per process. */
+/* The fixed seeds and date live in this module's statics: one fixed run per process. */
 void rando_fixed_run_apply(const RandoFixedRun *run, RandoAppShell *shell);
 
 #endif

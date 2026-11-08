@@ -1,0 +1,17 @@
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Hard-Vanilla-860658.gbc                |
+ | Generated 2026-11-01 14:03             |
+ | Seed abababababababababababababababab  |
+ | Logic                           Hard   |
+ | Accessibility         100% Locations   |
+ | Race Mode                        Off   |
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On  v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+

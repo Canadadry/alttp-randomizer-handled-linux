@@ -80,7 +80,10 @@ bool ui_str_fill(const char *pattern, const char *arg, char *buf, size_t cap)
 
 int ui_str_len_max(UiStrId id)
 {
-	return id >= UI_STR_HELP_FIRST && id <= UI_STR_HELP_LAST ? UI_STR_HELP_LEN_MAX : UI_STR_LEN_MAX;
+	bool help = (id >= UI_STR_HELP_FIRST && id <= UI_STR_HELP_LAST) ||
+		    (id >= UI_STR_LADX_HELP_FIRST && id <= UI_STR_LADX_HELP_LAST);
+
+	return help ? UI_STR_HELP_LEN_MAX : UI_STR_LEN_MAX;
 }
 
 static UiStrFault text_fault(UiStrId id, const char *text, bool complete)
