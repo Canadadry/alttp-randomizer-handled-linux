@@ -317,7 +317,7 @@ const char *const rando_strings_hint[] = {
 	"It\xE2\x80\x99s a secret\nto everybody.\n            >",
 	"Dodongo\ndislikes\nsmoke.      >",
 	"> Digdogger\nhates certain\nkind of sound.",
-	"I bet you\xE2\x80\x99" "d\nlike to have\nmore bombs. >",
+	("I bet you\xE2\x80\x99" "d\nlike to have\nmore bombs. >"),
 	">Secret power\nis said to be\nin the arrow.",
 	"Aim at the\neyes of Gohma.\n            >",
 	"Grumble,\ngrumble\xE2\x80\xA6\n            >",

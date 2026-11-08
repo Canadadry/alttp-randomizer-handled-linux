@@ -419,7 +419,8 @@ echo "stub stdout"
 
 class Launch(unittest.TestCase):
     def test_runs_zrando_from_its_own_folder_with_stderr_in_a_log(self):
-        tmp = tempfile.mkdtemp()
+        # realpath: macOS's /var is a symlink, and the stub records the logical pwd.
+        tmp = os.path.realpath(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, tmp)
         app = os.path.join(tmp, "sd card", "App", "ZeldaRando")
         elsewhere = os.path.join(tmp, "elsewhere")
