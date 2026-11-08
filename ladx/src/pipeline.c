@@ -1,5 +1,6 @@
 #include "ladx_pipeline.h"
 #include "ladx_groups.h"
+#include "ladx_spoiler.h"
 
 #include <string.h>
 
@@ -19,6 +20,7 @@ static const LadxPipelineGroup groups[] = {
 	{"endscreen", 1, ladx_group_endscreen, ladx_group_endscreen_draws},
 	{"sprites", 1, ladx_group_sprites, NULL},
 	{"save", 1, ladx_group_save, NULL},
+	{"spoiler", 1, ladx_group_spoiler, NULL},
 	{"header", 1, ladx_group_header, NULL},
 };
 

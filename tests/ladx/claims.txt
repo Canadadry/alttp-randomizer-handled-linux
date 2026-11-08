@@ -21,3 +21,4 @@ rom-group title
 rom-group sprites
 rom-group save
 rom-group header
+spoiler

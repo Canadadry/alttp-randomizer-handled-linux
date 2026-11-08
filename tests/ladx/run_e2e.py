@@ -137,10 +137,11 @@ def read_lines(path):
 
 
 class Claims:
-    """claims.txt: the stage, the group lines and the rom-group lines, in file order."""
+    """claims.txt: the stage, the group lines and the rom-group lines, in file order, and whether
+    the spoiler line is there."""
 
-    def __init__(self, stage, groups, rom_groups):
-        self.stage, self.groups, self.rom_groups = stage, groups, rom_groups
+    def __init__(self, stage, groups, rom_groups, spoiler=False):
+        self.stage, self.groups, self.rom_groups, self.spoiler = stage, groups, rom_groups, spoiler
 
 
 def read_claims(path, inventory):
@@ -152,12 +153,18 @@ def read_claims(path, inventory):
         raise Usage("cannot read claims %s: %s" % (path, e.strerror))
     stage = None
     groups, rom_groups = [], []
+    spoiler = False
     table = None
     for n, line in enumerate(lines, 1):
         text = line.strip()
         if not text or text.startswith("#"):
             continue
         fields = text.split()
+        if fields == ["spoiler"]:
+            if spoiler:
+                raise Usage("%s:%d: a second spoiler line" % (path, n))
+            spoiler = True
+            continue
         if len(fields) != 2 or fields[0] not in ("stage", "group", "rom-group"):
             raise Usage("%s:%d: malformed line" % (path, n))
         if fields[0] in ("group", "rom-group"):
@@ -182,7 +189,7 @@ def read_claims(path, inventory):
         stage = fields[1]
     if stage is None:
         raise Usage("%s: no stage line" % path)
-    return Claims(stage, groups, rom_groups)
+    return Claims(stage, groups, rom_groups, spoiler)
 
 
 def read_groups_table(inventory):
@@ -267,21 +274,61 @@ def compare_group(group, golden, c, redact=False):
                    record_head if redact else None)
 
 
-def run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom=None, out_root=None, golden_traces=None):
+def golden_spoiler(lines):
+    """run.txt's spoiler line: the spoiler_sha1 digest, "none" for `spoiler none`, None when absent."""
+    for line in lines:
+        fields = line.split(" ")
+        if fields[0] == "spoiler_sha1" and len(fields) == 2:
+            return fields[1]
+        if fields == ["spoiler", "none"]:
+            return "none"
+    return None
+
+
+def _first_line_difference(a, b):
+    a, b = a.split(b"\n"), b.split(b"\n")
+    return next(i for i in range(max(len(a), len(b))) if i >= len(a) or i >= len(b) or a[i] != b[i]) + 1
+
+
+def compare_spoiler(want, out_dir, case_dir):
+    """The spoiler claim's detail lines (digests and a line number only), or [] when C's
+    spoiler.json matches the golden's spoiler line want (a SHA-1, or "none")."""
+    path = os.path.join(out_dir, "spoiler.json")
+    if not os.path.isfile(path):
+        return [] if want == "none" else ["spoiler: c wrote no spoiler.json"]
+    if want == "none":
+        return ["spoiler: c wrote a spoiler.json, golden spoiler none"]
+    with open(path, "rb") as f:
+        data = f.read()
+    got = hashlib.sha1(data).hexdigest()
+    if got == want:
+        return []
+    line = "spoiler: sha1 %s, golden %s" % (got, want)
+    golden = os.path.join(case_dir, "spoiler.json")
+    if os.path.isfile(golden):
+        with open(golden, "rb") as f:
+            line += ", first difference at line %d" % _first_line_difference(f.read(), data)
+    return [line]
+
+
+def run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom=None, out_root=None, golden_traces=None,
+             spoiler=None):
     """The detail lines of a DIVERGENT case, or None when it passes. With rom, the generator gets
-    --rom and writes into out_root/<case>/, the detail lines redacted."""
+    --rom and writes into out_root/<case>/, the detail lines redacted. spoiler: the golden's spoiler
+    line (golden_spoiler) when the spoiler is claimed, else None."""
     if not os.path.isfile(gen) or not os.access(gen, os.X_OK):
         return ["no C generator: %s" % gen]
     if rom is None:
         with tempfile.TemporaryDirectory(prefix="ladx-e2e-") as out_dir:
             return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, None, out_dir,
-                             golden_traces)
+                             golden_traces, spoiler)
     out_dir = os.path.join(out_root, os.path.basename(case_dir))
     os.makedirs(out_dir)
-    return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces)
+    return _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces, spoiler)
 
 
-def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces=None):
+def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, out_dir, golden_traces=None,
+              spoiler=None):
     args = [gen, "--tables", tables] + (["--rom", rom] if rom else []) + [case_dir, out_dir]
     try:
         proc = subprocess.run(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -305,6 +352,8 @@ def _run_case(gen, tables, case_dir, stage, golden, groups, golden_logs, rom, ou
             label = "trace %s" % group
             detail += compare([(label, line) for line in (golden_traces or {}).get(group, [])],
                               [(label, line) for line in group_trace(c_lines, group)]) or []
+    if spoiler is not None:
+        detail += compare_spoiler(spoiler, out_dir, case_dir)
     if groups:
         path = os.path.join(out_dir, "rom_writes.txt")
         if not os.path.isfile(path):
@@ -485,6 +534,12 @@ def run(cases_dir, claims, gen, names, out, tables, inventory, rom=None):
         check_needs_rom(claimed, inventory, cases, logs)
         golden_logs = {case: parsed_projections(logs[case], groups) for case in logs}
         golden_traces = {case: {g: group_trace(raw[case], g, renumber=True) for g in groups} for case in cases}
+        spoilers = {}
+        if claimed.spoiler:
+            for case in cases:
+                spoilers[case] = golden_spoiler(raw[case])
+                if spoilers[case] is None:
+                    raise Usage("%s: golden run.txt: no spoiler_sha1 or spoiler none line" % case)
         data = read_rom(rom.rom, rom.sha1) if rom else None
     except Usage as e:
         print(str(e) if str(e).startswith("setup:") else "run_e2e: %s" % e, file=out)
@@ -502,14 +557,19 @@ def run(cases_dir, claims, gen, names, out, tables, inventory, rom=None):
     header = "%s: claims stage %s, groups %s" % (prefix, stage, " ".join(claimed.groups) or "none")
     if claimed.rom_groups:
         header += ", rom-groups %s%s" % (" ".join(claimed.rom_groups), "" if rom else " skipped")
+    if claimed.spoiler:
+        header += ", spoiler%s" % ("" if rom else " skipped")
     print(header, file=out)
     workers = min(len(cases), os.cpu_count() or 1)
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         results = list(pool.map(lambda c: run_case(gen, tables, os.path.join(cases_dir, c), stage, goldens[c],
                                                    groups, golden_logs.get(c), rom and os.path.abspath(rom.rom),
-                                                   out_root, golden_traces[c]), cases))
+                                                   out_root, golden_traces[c],
+                                                   spoilers.get(c) if rom else None), cases))
     divergent = 0
     label = "%s + %d groups" % (stage, len(groups)) if groups else stage
+    if claimed.spoiler and rom:
+        label += " + spoiler"
     for case, detail in zip(cases, results):
         if detail is None:
             print("PASS %s (%s)" % (case, label), file=out)
@@ -858,11 +918,13 @@ PLANTED_SPANS = "ladx-ks-spans 1\n10 4 texts 1\n12 1 boss item 3\nfailure texts 
 
 
 def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=None, rom=None, rom_log=None,
-                     spans=PLANTED_SPANS, c_run=None, gold_run=None):
+                     spans=PLANTED_SPANS, c_run=None, gold_run=None, gold_spoiler=None, c_spoiler=None):
     """run's (code, text) on one planted case tree whose fake generator writes c_log, or rom_log
     when it receives --rom, the planted spans for --ks-spans, and c_run's lines (default the
     golden's) as run.txt. rom: "ok", "other" (a ROM of another SHA-1) or "missing" for e2e-rom
-    mode, None for e2e. gold_run: the golden's run.txt lines instead of golden."""
+    mode, None for e2e. gold_run: the golden's run.txt lines instead of golden. gold_spoiler: the
+    case folder's spoiler.json bytes; c_spoiler: the spoiler.json bytes the generator writes (None:
+    none)."""
     c_run = c_run if c_run is not None else golden
     golden = gold_run if gold_run is not None else golden
     case = os.path.join(root, "cases", "planted")
@@ -871,7 +933,13 @@ def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=No
     run_path = os.path.join(case, "run.txt")
     _write(run_path, "".join(line + "\n" for line in golden))
     _write(os.path.join(case, "rom_writes.txt"), gold_log)
-    paths = {}
+    if gold_spoiler is not None:
+        with open(os.path.join(case, "spoiler.json"), "wb") as f:
+            f.write(gold_spoiler)
+    paths = {"spoiler": os.path.join(root, "c-spoiler")}
+    if c_spoiler is not None:
+        with open(paths["spoiler"], "wb") as f:
+            f.write(c_spoiler)
     for name, text in (("log", c_log), ("rom-log", rom_log or c_log), ("spans", spans),
                        ("run", "".join(line + "\n" for line in (c_run if c_run is not None else golden)))):
         paths[name] = os.path.join(root, "c-" + name)
@@ -881,7 +949,9 @@ def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=No
                 "if '--ks-spans' in args:\n    shutil.copy(%r, args[args.index('--ks-spans') + 1])\n    sys.exit(0)\n"
                 "shutil.copy(%r, os.path.join(args[-1], 'run.txt'))\n"
                 "shutil.copy(%r if '--rom' in args else %r, os.path.join(args[-1], 'rom_writes.txt'))\n"
-           % (sys.executable, paths["spans"], paths["run"], paths["rom-log"], paths["log"]))
+                "if os.path.isfile(%r):\n    shutil.copy(%r, os.path.join(args[-1], 'spoiler.json'))\n"
+           % (sys.executable, paths["spans"], paths["run"], paths["rom-log"], paths["log"], paths["spoiler"],
+              paths["spoiler"]))
     os.chmod(gen, 0o755)
     claims_path = os.path.join(root, "claims.txt")
     _write(claims_path, claims)
@@ -898,9 +968,9 @@ def _planted_rom_run(root, config, golden, gold_log, c_log, claims, inventory=No
     return code, out.getvalue()
 
 
-def _rom_checks(tmp, config, golden, golden_log):
-    """[(name, failure or None)]: rom-group lines, the two group refusals, e2e-rom mode and the KS
-    comparator."""
+def _rom_checks(tmp, config, golden, golden_log, golden_spoiler_json):
+    """[(name, failure or None)]: rom-group lines, the two group refusals, e2e-rom mode, the spoiler
+    claim and the KS comparator."""
     tables, segments = write_log.parse(golden_log)
     bank3e = max(i for i, (name, _, _) in enumerate(segments) if name == "bank3e")
     changed = _changed(tables, segments, bank3e)
@@ -918,7 +988,38 @@ def _rom_checks(tmp, config, golden, golden_log):
     end = [i for i, line in enumerate(golden) if line.split(" ")[3:4] == [GROUP_TRACE["endscreen"][0]]]
     unported = _drawn_before(golden, end[0], "patches.planted:unported") if end else None
     hinted = _drawn_before(golden, end[0], GROUP_TRACE["hints"][0]) if end else None
+    sj = golden_spoiler_json
+    changed_sj = sj.replace(b"\n", b"\n ", 1)
+    spoiler_none = [l for l in golden if not l.startswith("spoiler_sha1 ")]
+    spoiler_none.insert(len(spoiler_none) - 1, "spoiler none")
+    no_spoiler_line = [l for l in golden if not l.startswith("spoiler_sha1 ")]
+    claims_sp = fill + "spoiler\n"
     runs = [
+        ("spoiler claimed, c's spoiler.json different, skipped by e2e",
+         dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp, gold_spoiler=sj, c_spoiler=changed_sj),
+         "PASS", "groups none, spoiler skipped"),
+        ("spoiler claimed by e2e-rom, c's spoiler.json the golden's",
+         dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp, rom="ok", gold_spoiler=sj, c_spoiler=sj),
+         "PASS", "PASS planted (fill + spoiler)"),
+        ("spoiler claimed by e2e-rom, c's spoiler.json one line different",
+         dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp, rom="ok", gold_spoiler=sj,
+              c_spoiler=changed_sj), "DIVERGENT", ", first difference at line 2"),
+        ("spoiler claimed by e2e-rom, c wrote none",
+         dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp, rom="ok", gold_spoiler=sj), "DIVERGENT",
+         "spoiler: c wrote no spoiler.json"),
+        ("spoiler claimed by e2e-rom, golden spoiler none, c wrote one",
+         dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp, rom="ok", gold_run=spoiler_none,
+              c_spoiler=sj), "DIVERGENT", "golden spoiler none"),
+        ("spoiler claimed by e2e-rom, golden spoiler none, c wrote none",
+         dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp, rom="ok", gold_run=spoiler_none), "PASS",
+         None),
+        ("spoiler claimed, golden run.txt with no spoiler line",
+         dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp, gold_run=no_spoiler_line), "exit 2",
+         "no spoiler_sha1 or spoiler none line"),
+        ("spoiler line twice", dict(gold_log=golden_log, c_log=golden_log, claims=claims_sp + "spoiler\n"),
+         "exit 2", "a second spoiler line"),
+        ("spoiler line with a name", dict(gold_log=golden_log, c_log=golden_log, claims=fill + "spoiler json\n"),
+         "exit 2", "malformed line"),
         # (name, kwargs, expected verdict, a line the output must hold)
         ("rom-group divergent in its group, skipped by e2e",
          dict(gold_log=golden_log, c_log=changed, claims=fill + "rom-group bank3e\n"), "PASS",
@@ -1012,7 +1113,9 @@ def self_test():
             if got_code != code or not ("\n" + text).count("\n" + line):
                 failed.append("%s (expected exit %d and %r, got exit %d)" % (name, code, line, got_code))
         planted += projected
-        for name, failure in _rom_checks(tmp, config, golden, golden_log):
+        with open(os.path.join(HERE, "cases", "baseline", "spoiler.json"), "rb") as f:
+            golden_spoiler_json = f.read()
+        for name, failure in _rom_checks(tmp, config, golden, golden_log, golden_spoiler_json):
             planted.append(name)
             if failure:
                 failed.append("%s (%s)" % (name, failure))

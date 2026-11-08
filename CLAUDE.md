@@ -108,7 +108,12 @@ in `docs/`, then `README.md`.
   the encoder's bytes, `ladx_header_fix`), tested by `test_header`, which
   replays `header_vectors.txt` with `--fixtures`, claimed `rom-group` by
   `e2e-rom`, contract in `tests/ladx/README.md`, "Pipeline" and "Header
-  fixture"; `tables.c`, the patch tables' reader, key, walk, records
+  fixture"; `spoiler.c`, the `C` group `spoiler` (`SpoilerLog` read back
+  from the encoder's state, `outputJson`, `ladx_spoiler.h`; `ladx_gen
+  --rom` writes `spoiler.json`), tested by `test_spoiler`, claimed by
+  `claims.txt`'s `spoiler` line under `e2e-rom`, contract in
+  `tests/ladx/README.md`, "Pipeline", "Spoiler" and "E2E driver and
+  claims"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");

@@ -307,8 +307,9 @@ static void test_registry(void)
 	int count;
 
 	groups = ladx_pipeline_groups(&count);
-	check(count > 1 && strcmp(groups[count - 1].name, "header") == 0 && strcmp(groups[count - 2].name, "save") == 0,
-	      "header registered last, after save");
+	check(count > 2 && strcmp(groups[count - 1].name, "header") == 0 && strcmp(groups[count - 2].name, "spoiler") == 0 &&
+		      strcmp(groups[count - 3].name, "save") == 0,
+	      "header registered last, after save and spoiler");
 	check(groups[count - 1].needs_rom && groups[count - 1].draw == NULL, "a rom-group with no draw");
 	memset(&pipeline, 0, sizeof pipeline);
 	check(!ladx_group_header(&enc, &pipeline), "no ROM: the group fails");

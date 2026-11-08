@@ -93,6 +93,7 @@ struct LadxPipeline {
 	LadxBackground background; /* a C group's, one background being edited */
 	LadxRoom room;		   /* a C group's, one room being edited */
 	LadxPipelineSave save;	   /* save's */
+	struct LadxSpoiler *spoiler; /* the spoiler group's result, the caller's; NULL: not built */
 };
 
 /* enc initialised over p->rom's bytes, KS and tables (or none), its log begun. */

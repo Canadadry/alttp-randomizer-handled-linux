@@ -380,7 +380,7 @@ static void test_errors(void)
 	{
 		const LadxPipelineGroup *g = ladx_pipeline_groups(&count);
 
-		check(count == 16 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
+		check(count == 17 && strcmp(g[0].name, "bank3e") == 0 && g[0].needs_rom && !g[0].draw &&
 			      strcmp(g[1].name, "marin") == 0 && g[1].needs_rom && g[1].draw &&
 			      strcmp(g[2].name, "hints") == 0 && !g[2].needs_rom && !g[2].draw &&
 			      strcmp(g[3].name, "music") == 0 && g[3].needs_rom && g[3].draw &&
@@ -395,9 +395,10 @@ static void test_errors(void)
 			      strcmp(g[12].name, "endscreen") == 0 && g[12].needs_rom && g[12].draw &&
 			      strcmp(g[13].name, "sprites") == 0 && g[13].needs_rom && !g[13].draw &&
 			      strcmp(g[14].name, "save") == 0 && g[14].needs_rom && !g[14].draw &&
-			      strcmp(g[15].name, "header") == 0 && g[15].needs_rom && !g[15].draw,
+			      strcmp(g[15].name, "spoiler") == 0 && g[15].needs_rom && !g[15].draw &&
+			      strcmp(g[16].name, "header") == 0 && g[16].needs_rom && !g[16].draw,
 		      "the library registers bank3e, marin, hints, music, notext, goal, items, entrances, bosses, enemizer, "
-		      "warp-home, title, endscreen, sprites, save then header, "
+		      "warp-home, title, endscreen, sprites, save, spoiler then header, "
 		      "in LADXR's "
 		      "order, hints alone ROM-free, marin, music and endscreen drawing without the ROM");
 	}

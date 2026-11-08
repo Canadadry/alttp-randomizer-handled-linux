@@ -544,7 +544,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_store`, `test_save`, `test_header`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`, `test_store`, `test_header`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_store`, `test_save`, `test_header`, `test_spoiler`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`, `test_store`, `test_header`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -556,7 +556,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_save`, `test_header`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_save`, `test_header`, `test_spoiler`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -806,7 +806,7 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   reads a unit's resolved bank bytes (keep, copy and literal; inside a
   record) and gives 0 for bytes it does not all write, a unit or a group
   out of range; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites`, `save` then `header`,
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites`, `save`, `spoiler` then `header`,
   `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
@@ -1078,8 +1078,8 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   a moved source entry's bytes carrying their source offsets; 544
   distinct indoor values (`ValueError`), other bytes at 0x0DFA
   (`ROM.patch`'s `AssertionError`), an entity over its bank (store's
-  `AssertionError`, LADXR's message); the registry (last, after
-  `sprites`, ROM, no draw) and no ROM failing. It prints `test_save:
+  `AssertionError`, LADXR's message); the registry (after
+  `sprites`, before `spoiler` and `header`, ROM, no draw) and no ROM failing. It prints `test_save:
   ROMWithTables.save's stores on a synthetic ROM, read back (<c>
   checks)`.
   `test_header` checks `ladx_header_fix` through a test-owned I/O over a
@@ -1092,13 +1092,33 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   synthetic ROM after a planted table group writing inside and outside
   the header: the encoder's bytes at 0x134..0x14F equal the function run
   on the image with those writes, the log holds a `header` segment, the
-  group skipped without the ROM; the registry (last, after `save`, ROM,
-  no draw) and no ROM failing. It prints `test_header: ROM.fixHeader's
+  group skipped without the ROM; the registry (last, after `save` and
+  `spoiler`, ROM, no draw) and no ROM failing. It prints `test_header: ROM.fixHeader's
   name and checksums, alone and as the group on a synthetic ROM (<c>
   checks)`; with `--fixtures` it replays every vector of
   `oracle/header_vectors.txt` ("Header fixture") write for write,
   printing `test_header: <n> vectors of oracle/header_vectors.txt
   replayed write for write`.
+  `test_spoiler` checks `ladx/include/ladx_spoiler.h` ("Spoiler") on
+  synthetic data: `ladx_entrance_pos` against LADXR's `ENTRANCE_INFO`
+  (a SHA-1 of each entry's name, `x` and `y`); `ladx_spoiler_begin`, `ladx_spoiler_spheres` and
+  `ladx_spoiler_render` on five fill placements (`ladx_randomize` on
+  planted settings and seeds: the defaults, every spot holding
+  `RUPEES_20`, `accessibility=goal` with `goal=open`, shuffled bosses with
+  `logic=hard` and keysanity keys, removed keys with the witch off), each
+  JSON's length, SHA-1 and item counts equal to LADXR's own
+  `SpoilerLog._loadItems` and `outputJson` on the same placements (the
+  reads replaced by the placed items, recorded in the test); each kind's
+  `read` on planted bytes over the synthetic ROM (the gel disguises, the
+  dungeon numbers, each class's `ValueError` message, the dungeon-item
+  `AssertionError`, the witch flag, both boomerang paths, the shop's
+  index 1, the toadstool's single option, the beach sword's entity, key
+  locations); `readBossMapping`, `readMiniBossMapping` and
+  `readEntrances` on planted rooms and a planted three-entry table; and
+  `ladx_spoiler_build`'s race (none), `RaceRomException`, `readHexSeed`
+  and a room 0x010 with no warp (`FAILED`). It prints `test_spoiler:
+  LADXR's outputJson on 5 fill placements, each kind's read, the world
+  setup read back (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1347,7 +1367,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites`, `save` and `header`, in LADXR's order,
+`rom-group` of `claims.txt` (and for `spoiler`, claimed by the `spoiler` line): today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites`, `save`, `spoiler` and `header`, in `order.txt`'s order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1815,6 +1835,81 @@ writes through `ladx_enc_bank` with no origin. It needs the ROM
 (`rom-group header`, claimed whole, checksums included), draws nothing
 and has no `draw`; without the ROM it is skipped.
 
+**`spoiler`** (`spoilerLog.SpoilerLog(settings, args, rom)`,
+`ladx_group_spoiler`), at `order.txt`'s `C spoiler` row, after `save`
+and before `header`'s first row (LADXR builds it after `fixHeader`; it
+reads no header byte, so the order is equivalent). It writes no ROM byte
+and has no write-log group: `ladx_spoiler_build` ("Spoiler") into the
+caller's `LadxSpoiler` (`p->spoiler`; NULL: nothing done), LADXR's raise
+into `raised`. It needs the ROM, draws nothing and has no `draw`;
+without the ROM it is skipped.
+
+## Spoiler
+
+`ladx/include/ladx_spoiler.h`: `spoilerLog.py`'s `SpoilerLog` at the pin
+with `outputJson`, on an encoder's current state (source bytes through
+the user's ROM), into a caller-owned `LadxSpoiler` (a second
+`LadxLogic` and an explorer as its scratch, 519,016 bytes on the host), no
+allocation, no draw.
+
+- `ladx_spoiler_build`: `NONE` when `race` is on (`randomizer.py` skips
+  the spoiler); else, in LADXR's order: bank 0 offset 7 equal to 1 raises
+  `RaceRomException`; `readHexSeed` (bank 0x3E 0x2F00..0x2F0F, upper-case
+  hex); `loadFromRom`: `WorldSetup()`'s defaults, room 0x010 holding a
+  warp (`isNormalOverworld`, else `FAILED`), `readEntrances`,
+  `readBossMapping`, `readMiniBossMapping`, `goal = 8` (an integer, so
+  the egg needs the eight instruments: C's vanilla goal with count 8);
+  the logic built on it; every spot's `read` in `iteminfo_list` order
+  (the first raise wins); then `_loadItems`' spheres. `OK` sets `built`.
+- Reads: Chest (bank 0x14 room + 0x560), DungeonChest (a generic
+  dungeon item takes the location's dungeon), the `DroppedKey` classes
+  (bank 0x3E room + 0x3800; 0x51..0x56 read `GEL`; a dungeon item takes
+  the dungeon or raises `AssertionError: Dungeon item outside of
+  dungeon? <Class>:<room>`), BeachSword (entity 0x31 in room 0x0F2 reads
+  `SWORD`), Toadstool (one option reads `TOADSTOOL`), KeyHole (bank 0x3E
+  room + 0x3B16, the gel rule), TradeSequenceItem (same table), OwlStatue
+  (same table, the dungeon rule), MadBatter (bank 0x18 0x0F90 + room &
+  0x0F), SeashellMansionBonus (bank 0x3E 0x3E30 + index), ShopItem (bank
+  0x3E room + 0x3800, index 1 bank 0x14 room + 0x560), TunicFairy (bank
+  0x36 0x11BF + index), Witch (bank 5 0x08EF non-zero reads
+  `MAGIC_POWDER`, else 0x08D5), BoomerangGuy (bank 0x19 0x06C5 zero:
+  `CHEST_ITEMS` at 0x072B, else `INVENTORY_MAP` at 0x0640, else
+  `ValueError` with no message), KeyLocation (its key). An unknown byte
+  raises `ValueError: Could not find <what> contents in ROM (0x<nn>)`
+  with each class's `<what>`. `CHEST_ITEMS` and `INVENTORY_MAP` hold
+  unique values at the pin, so the reverse lookups are order-free.
+- World setup: `readBossMapping` (first entity against `BOSS_ENTITIES`'
+  values in order, `ValueError: (<x>, <y>, <type>) is not in list` when
+  none; else the last object a warp to 0x1EF (3) or 0x2F8 (6), else the
+  dungeon; no object `IndexError`; a nightmare `FAILED`);
+  `readMiniBossMapping` (the last entity's type against each miniboss's
+  last entity type, the last match winning; no entity `IndexError`; no
+  match or a nightmare `FAILED`); `readEntrances` over an entrance table
+  and its `x`/`y` (`ladx_entrance_pos`, which `LadxEntranceInfo` lacks),
+  whose result must equal the identity mapping as a dict, else `FAILED`:
+  C's logic takes the identity alone. LADXR's read-back dict has another
+  key order (each key, then its `:inside`); measured with LADXR on the
+  128 golden outputs it equals the identity as a dict on every one, and
+  the e2e-rom claim proves that the order changes no spot or location.
+- `ladx_spoiler_spheres`: `_loadItems`' loop, each round a new explorer
+  from the start, the newly reached locations' spots taking the round's
+  sphere and their item; it stops when no location is new or every spot
+  has its sphere; the accessible spots in `location_list` order (the
+  oracle's `ladxr.patch` fix), and the inaccessible ones when a location
+  is not reached.
+- `ladx_spoiler_render`: `json.dumps(..., indent="  ")`'s text, no
+  trailing newline: `accessibleItems`, `inaccessibleItems` (`id`,
+  `area`, `locationName`, `sphere` or `null`, `itemName`), `options` in
+  LADXR's order (`seed` `""` first, `forwardfactor` `0.0` after `logic`,
+  booleans `true`/`false`, every other value its option string),
+  `entrances` (`{}`: the identity mapping), `seed`. Strings are escaped
+  as `ensure_ascii` does; a non-ASCII byte is refused (0). Names are
+  LADXR-public (`checkMetadata.py`, the item names).
+
+`ladx_gen --tables <dir> --rom <file>` writes `<out_dir>/spoiler.json`
+when the pipeline ran and the spoiler was built. Claimed by `claims.txt`'s
+`spoiler` line under `e2e-rom` ("E2E driver and claims").
+
 ## Room editor
 
 `ladx/include/ladx_room.h`: `roomEditor.py`'s `RoomEditor` at the pin,
@@ -1917,7 +2012,9 @@ e2e` and `e2e-combos`.
   digest, exit 3, as `rom-check`'s refused base; a missing file exits 2),
   its tables parsed (`ladx_rom_tables_parse`), KS built (`ladx_ks_build`),
   and all three given to the encoder and to every ported group, so the
-  `rom-group`s run too.
+  `rom-group`s run too; after an ok pipeline it writes
+  `<out_dir>/spoiler.json` (`ladx_spoiler_render`, "Spoiler") unless
+  `race` is on, nothing when a group raised.
 - `ladx_gen --rom <file> --ks-spans <out>` checks and parses the ROM the
   same way and writes C's KS span list ("KS span list") to `<out>`,
   nothing else; exit 0, else as above.
@@ -1970,7 +2067,8 @@ order: `init`, `ws`, `pool`, `fill`.
 ## E2E driver and claims
 
 `tests/ladx/claims.txt` holds one `stage <name>` line (one of the four
-stages) and zero or more `group <name>` and `rom-group <name>` lines
+stages), zero or more `group <name>` and `rom-group <name>` lines and at
+most one `spoiler` line
 (blank lines and `#` comments skipped), all applying to every case of
 the directory run, cases and combos alike. A group must be in the
 inventory's Groups table (`--inventory`, default
@@ -1996,7 +2094,20 @@ Claimed now: stage `fill`, groups `fixed`, `frame-counter`,
 `rom-group entrances`, `rom-group bosses`, `rom-group enemizer`,
 `rom-group warp-home`, `rom-group title`, `rom-group sprites`,
 `rom-group save` and `rom-group header` (its whole projection, the
-checksum bytes 0x14D..0x14F included).
+checksum bytes 0x14D..0x14F included), and `spoiler`.
+
+The `spoiler` line claims `spoiler.json`: `e2e` and `e2e-combos` skip it
+(the header line ends `, spoiler skipped`), `e2e-rom` claims it on every
+case: a golden `run.txt` holding `spoiler_sha1 <hex>` needs C's
+`<out_dir>/spoiler.json` of that SHA-1, one holding `spoiler none`
+(`race`, or an outcome that is not ok) needs no file. When it is
+claimed, a golden with neither line exits 2, as do a second `spoiler`
+line and `spoiler` with a field. Detail lines, digests and a line number
+only: `spoiler: c wrote no spoiler.json`, `spoiler: c wrote a
+spoiler.json, golden spoiler none`, `spoiler: sha1 <c>, golden <g>[,
+first difference at line <n>]` (against the case folder's
+`spoiler.json`). A passing case under `e2e-rom` prints `PASS <case>
+(<stage> + <n> groups + spoiler)`.
 
 A claimed `C` group that draws also claims its `trace` lines: those of
 `run.txt` whose stage (the 4th field) is one of its LADXR frames
@@ -2075,7 +2186,7 @@ all of them, `music` in 2, `hints` in none.
 
 `run_e2e.py --self-test` builds planted case trees from `cases/baseline`'s
 golden and fake generators (Python scripts copying a planted `run.txt`
-and, when planted, `rom_writes.txt`) and checks 54 verdicts. With no
+and, when planted, `rom_writes.txt`) and checks 63 verdicts. With no
 group claimed (18): identical, a changed `generateRom` trace line, a
 changed `rom_sha1` or `spoiler_sha1`, a claim at `ws` with a changed
 `place` line, and a claim at `init` with C stopping after the seeding
@@ -2102,11 +2213,18 @@ claimed, each exit 2. With `--projections`, on the baseline's
 `rom_writes.txt` and a fake generator copying planted projection files
 (3): `write_log.py`'s own projections exit 0; one projection with a
 changed `G` line, and one group's file missing, each exit 1 with a
-`PROJECTION planted` line. ROM-present and refusals (18), with a fake
+`PROJECTION planted` line. ROM-present, spoiler and refusals (27), with a fake
 generator writing a planted `run.txt` (the golden's unless planted) and a planted log, another one when it receives `--rom`,
+a planted `spoiler.json` when one is planted,
 and a planted span list for `--ks-spans`, a planted 11-byte ROM and its
 SHA-1 injected as the accepted one, and a planted span list as the
-oracle's: a `rom-group bank3e` whose last segment C changed `PASS`es
+oracle's: with the `spoiler` line and the baseline's `spoiler.json`, C's
+one changed `PASS`es under `e2e` (`spoiler skipped`); under `e2e-rom` C's
+equal one `PASS`es (`fill + spoiler`), one with a line changed is
+`DIVERGENT` (`first difference at line 2`), none is `DIVERGENT` (`c
+wrote no spoiler.json`), a golden `spoiler none` against C's file is
+`DIVERGENT` and against none `PASS`es; a golden with no spoiler line, a
+second `spoiler` line and `spoiler json` each exit 2; a `rom-group bank3e` whose last segment C changed `PASS`es
 under `e2e`, its header naming it skipped; the same claimed by `e2e-rom`
 (the changed log written only on `--rom`) is `DIVERGENT` after `KS
 equal, 2 spans, 4 bytes, 1 not rebuilt`, its detail lines holding `
@@ -2126,7 +2244,7 @@ segment exits 2 naming the case; `rom-group fixed`, `group marin` with
 `rom-group marin`, and `rom-group marin` twice each exit 2; and the KS
 comparator on equal lists (no line), one span's length changed (`line
 2: texts 1`) and one span missing (lines 2 to 4). It prints `e2e:
-self-test, 56 planted runs as expected`, else one `e2e: self-test failed: <case> (expected <v>, got
+self-test, 65 planted runs as expected`, else one `e2e: self-test failed: <case> (expected <v>, got
 <w>)` line each, exit 1.
 
 `make -C tests/ladx selftest` runs the self-test; `make -C tests/ladx e2e
@@ -2165,7 +2283,8 @@ passing.
   distinct offsets).
 - Runs `<gen> --tables <dir> --rom <file> <case_dir>
   <work>/runs/<directory>/<case>` per case, in parallel, kept there,
-  claiming the stage, every `group` and every `rom-group`, with `e2e`'s
+  claiming the stage, every `group`, every `rom-group` and the
+  `spoiler` line, with `e2e`'s
   verdict lines prefixed `e2e-rom:`. A divergent projection line shows
   only the record's head and its token count (`B <offset> (<k>
   tokens)`, `T <table> <key> (<k> tokens)`; `G`, `tables` and version

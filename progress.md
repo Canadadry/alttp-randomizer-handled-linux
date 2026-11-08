@@ -146,7 +146,7 @@
     - [x] Step 3.6.16 sprites
     - [x] Step 3.6.17 save
     - [x] Step 3.6.18 header
-    - [ ] Step 3.6.19 spoiler
+    - [x] Step 3.6.19 spoiler
   - [ ] Step 3.7 Assembly pipeline
   - [ ] Step 3.8 LADX-aware debugging skills
   - [ ] Step 3.9 check-e2e on tests/ladx

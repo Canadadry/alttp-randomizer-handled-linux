@@ -2,6 +2,7 @@
 
 #include "ladx_ks.h"
 #include "ladx_pipeline.h"
+#include "ladx_spoiler.h"
 #include "ladx_randomizer.h"
 #include "ladx_rom.h"
 #include "ladx_run_text.h"
@@ -250,6 +251,7 @@ static uint8_t rom_bytes[LADX_ROM_SIZE];
 static LadxRomTables rom_tables;
 static LadxKs ks;
 static LadxPipelineRom rom;
+static LadxSpoiler spoiler;
 
 /* The pipeline's walk into the open log: table entries and the ported C groups (with --rom, every one). */
 /* 1 when it ran, 2 when LADXR raised (pipeline.raised), 0 on a failure. */
@@ -271,6 +273,8 @@ static int run_pipeline(const LadxSettings *settings, LadxRandomizer *r, const L
 	pipeline.rom = given;
 	pipeline.groups = ladx_pipeline_groups(&pipeline.group_count);
 	pipeline.ctx = NULL;
+	spoiler.built = 0;
+	pipeline.spoiler = given ? &spoiler : NULL;
 	switch (ladx_pipeline_run(&pipeline, &encoder, &err)) {
 	case LADX_PIPELINE_OK:
 		return 1;
@@ -321,6 +325,30 @@ static int write_rom_writes(const char *out_dir, const LadxSettings *settings, L
 	}
 	if (sink.failed) {
 		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
+		return 0;
+	}
+	return 1;
+}
+
+/* <out_dir>/spoiler.json, the spoiler group's JSON: 0 on an I/O failure or a name it refuses. */
+static int write_spoiler(const char *out_dir)
+{
+	char path[MAX_PATH];
+	FileSink sink;
+	int ok;
+
+	if (!join(path, out_dir, "spoiler.json"))
+		return 0;
+	sink.f = fopen(path, "w");
+	sink.failed = 0;
+	if (!sink.f) {
+		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
+		return 0;
+	}
+	ok = ladx_spoiler_render(&spoiler, file_sink, &sink);
+	if (fclose(sink.f) != 0 || sink.failed || !ok) {
+		fprintf(stderr, "ladx_gen: cannot write %s\n", path);
+		remove(path);
 		return 0;
 	}
 	return 1;
@@ -427,6 +455,10 @@ static int generate(const char *case_dir, const char *out_dir, const char *table
 			fclose(trace);
 			return written < 0 ? 2 : 1;
 		}
+	}
+	if (written == 1 && spoiler.built && !write_spoiler(out_dir)) {
+		fclose(trace);
+		return 1;
 	}
 	if (sink.failed) {
 		fprintf(stderr, "ladx_gen: a trace line did not render or write\n");
