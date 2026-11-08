@@ -143,7 +143,7 @@
     - [x] Step 3.6.13 bosses
     - [x] Step 3.6.14 enemizer
     - [x] Step 3.6.15 warp-home
-    - [ ] Step 3.6.16 sprites
+    - [x] Step 3.6.16 sprites
     - [ ] Step 3.6.17 save
     - [ ] Step 3.6.18 header
     - [ ] Step 3.6.19 spoiler

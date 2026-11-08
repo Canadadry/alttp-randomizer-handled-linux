@@ -317,4 +317,41 @@ LadxWarpHomeStatus ladx_warp_home_target(const LadxRoom *r, int force_inside, ui
 /* warpHome's edits of background 0x0D's tiles: the S&Q screen's rows moved down, its third option written. */
 LadxWarpHomeStatus ladx_warp_home_edit(LadxBackground *bg, LadxOutcome *raised);
 
+/*
+ * patches/aesthetics.py updateSpriteData (tests/ladx/README.md,
+ * "Pipeline"): data/ladx/sprites.txt's one unit (the exception patches),
+ * then every room 0..0x315 but 0x2FF loaded from the encoder's state and
+ * its four sprite values written to room_sprite_data_overworld or _indoor,
+ * with no origin. Needs p->rom; draws nothing; returns 0 with p->raised
+ * set where LADXR raises, 0 alone on a room that does not load.
+ */
+int ladx_group_sprites(LadxEncoder *enc, LadxPipeline *p);
+
+#define LADX_SPRITES_SLOTS 4
+#define LADX_SPRITES_SET_MAX 4
+#define LADX_SPRITES_ROOMS 0x316
+
+/*
+ * CPython's iteration order of a set of ints 0..255 built by adding
+ * values[0..n-1] in order (n <= LADX_SPRITES_SET_MAX), into out; returns
+ * its size, a repeated value added once.
+ */
+size_t ladx_sprites_set_order(const int *values, size_t n, int *out);
+
+/*
+ * so.intersection(other) of two sets given as their adding orders: CPython
+ * walks the smaller (other on a tie) and adds the members the other holds.
+ * Writes the result's adding order into out; returns its size.
+ */
+size_t ladx_sprites_set_intersection(const int *so, size_t so_n, const int *other, size_t other_n, int *out);
+
+typedef enum LadxSpritesStatus {
+	LADX_SPRITES_OK = 0,
+	LADX_SPRITES_RAISED /* AssertionError (no common graphics) or KeyError (an entity SPRITE_DATA lacks): *raised filled */
+} LadxSpritesStatus;
+
+/* One room's four sprite values as updateSpriteData computes them (evilshop: addEvilShop's SPRITE_DATA). */
+LadxSpritesStatus ladx_sprites_room(const LadxRoom *r, int evilshop, uint8_t out[LADX_SPRITES_SLOTS],
+				    LadxOutcome *raised);
+
 #endif

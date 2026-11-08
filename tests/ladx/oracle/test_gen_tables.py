@@ -762,6 +762,12 @@ class ConstGroups(unittest.TestCase):
         self.assertEqual(own, [("byte", 0x7E39), ("byte", 0x7E3E), ("byte", 0x7E43),
                                ("byte", 0x7E48), ("byte", 0x7E4D), ("T", "background_tiles", 0x0D)])
 
+    def test_sprites_keeps_its_three_patches_and_leaves_the_rooms_to_c(self):
+        (call, own, keep), = gen_tables.CONST_GROUPS["sprites"].calls
+        self.assertEqual(call, "patches.aesthetics.updateSpriteData(rom)")
+        self.assertEqual(own, [])
+        self.assertEqual(keep, [(0x0DAD, 0x2E), (0x20 * 0x4000 + 0x3837, 4), (0x20 * 0x4000 + 0x383B, 4)])
+
     def test_owned_bytes_are_cut_out_of_the_writes_covering_them_and_required(self):
         runs = [[("B", 0x800, b"\xF1\xF2\xF3\xF4"), ("B", 0x900, b"\xE1")]]
         text = gen_tables.calls_group("g", self.ORDER, runs, [[("byte", 0x801), ("byte", 0x803)]],

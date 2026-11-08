@@ -1003,6 +1003,9 @@ CONST_GROUPS = {
     "items": ConstSpec(None, [], [], calls=_items_calls()),
     "bosses": ConstSpec(None, [], [], calls=_bosses_calls()),
     "warp-home": ConstSpec(None, [], [], calls=_warp_home_calls()),
+    "sprites": ConstSpec(None, [], [], calls=[
+        ("patches.aesthetics.updateSpriteData(rom)", [],
+         [(0x0DAD, 0x2E), (0x20 * 0x4000 + 0x3837, 4), (0x20 * 0x4000 + 0x383B, 4)])]),
     "enemizer": ConstSpec(None, [], [], calls=[
         ("patches.enemies.randomizeEnemies(rom, bytes(16))", [],
          [(0x36 * 0x4000 + 0x23DD, 3), (0x36 * 0x4000 + 0x3F00, 16)])]),

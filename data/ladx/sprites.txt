@@ -1,0 +1,7 @@
+ladx-tables 1
+group sprites
+tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b rooms_color_dungeon room_sprite_data_overworld room_sprite_data_indoor background_tiles background_attributes
+unit sprites.1
+E
+B dad =2 2026 =1 f6 =1 c9 =1 0d @dc6+4 =1 2819213778c3 =1 @d1bd+4 d8200d @dd3+6 06213b78c3fe @169a2+5
+B 83837 =1 61 @83838+1 72 =1 c5 =1 70

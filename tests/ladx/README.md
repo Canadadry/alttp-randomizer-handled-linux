@@ -250,7 +250,7 @@ follow the table groups' encoding rule, the fragment rule included
   `tables <table>...` (ROMWithTables' tables in their order, as in a write
   log), then its units.
 - `<group>.txt` for a `C` group, its **constants file** (today
-  `bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt`, `items.txt` and `warp-home.txt`): the settings-only writes of the
+  `bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt`, `items.txt`, `sprites.txt` and `warp-home.txt`): the settings-only writes of the
   group's call that C cannot compute (LADXR's assembler, LADXR's binary
   files), in the same format; below.
 
@@ -405,7 +405,11 @@ at 0x3F00), its rooms dropped. `warp-home` (1 unit, 13 records):
 its handler (bank 1 0x3E39 + 5k, k = 0..4: type, map, room, x, y) and
 background 0x0D's tiles: the S&Q menu's patches (bank 1 0x00B7, 0x012A,
 0x3E02 and the handler at 0x3E20 around its operands) and the menu
-sprite (bank 0x0F 0x08E0, 32 bytes). `tables.py check`
+sprite (bank 0x0F 0x08E0, 32 bytes). `sprites` (1 unit, 2 records):
+`sprites.1` is `updateSpriteData(rom)` kept at its three `rom.patch`
+writes (the assembled exceptions at bank 0 0x0DAD..0x0DDA, the two
+4-byte sprite sets at bank 0x20 0x3837 and 0x383B, one record), its room
+sprite data dropped. `tables.py check`
 accepts at most one such file per `C` group of the inventory (any other
 name is `EXTRA`), checks its domains and duplicates, and matches its
 units to no row.
@@ -540,7 +544,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -552,7 +556,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -741,10 +745,10 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   hand-built graph with `KeyLocation` spots and an unreached one. Then
   it opens the real
   `../../data/ladx/` (`order.txt` and every other `*.txt` as a group
-  file): 12 groups (`bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt`, `items.txt` and `warp-home.txt` included), 399 units, 1008 entries, one unit keyed by `count`; and
+  file): 13 groups (`bank3e.txt`, `bosses.txt`, `endscreen.txt`, `enemizer.txt`, `goal.txt`, `items.txt`, `sprites.txt` and `warp-home.txt` included), 400 units, 1009 entries, one unit keyed by `count`; and
   for every `cases/*/config.txt` and `combos/*/config.txt`, validated and
   supported, every unit without `count` selects an entry. It prints
-  `test_tables: data/ladx opened (12 groups, 399 units, 1008 entries); <n>
+  `test_tables: data/ladx opened (13 groups, 400 units, 1009 entries); <n>
   cases and <m> combos select <e> entries`, then `test_tables: synthetic
   walks, keys, open errors, records, applier and spot count (<c>
   checks)`.
@@ -802,7 +806,7 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   reads a unit's resolved bank bytes (keep, copy and literal; inside a
   record) and gives 0 for bytes it does not all write, a unit or a group
   out of range; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title` then `endscreen`,
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen` then `sprites`,
   `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
@@ -1034,6 +1038,25 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   without 1 unit failing) and the registry (between `enemizer` and
   `title`, ROM, no draw). It prints `test_warp_home: warpHome's target,
   the S&Q background and the group on a synthetic ROM (<c> checks)`.
+  `test_sprites` checks `ladx_sprites_set_order` and
+  `ladx_sprites_set_intersection` against orders CPython 3.13 printed
+  (collisions at slots 0, 1 and 7, three and four colliding values, a
+  repeat; equal sizes walking the argument, the smaller set walked,
+  colliding members re-added, disjoint sets), `ladx_sprites_room` on
+  planted rooms against LADXR's own `updateSpriteData` at the pin run
+  with a stub `RoomEditor` (every slot 0xFF; D7's entrance and its first
+  and last ball rooms; a gravestone, not indoors, never a warp; sets
+  alone, met, narrowed to a member and kept; a `None` entity; 0x77 with
+  and without the evil shop; Marin's lambda; LADXR's `AssertionError`s,
+  empty and with its message, and `KeyError`s), then the group in the
+  pipeline on a synthetic ROM whose 790 rooms are planted with a planted
+  `sprites.txt` (the unit first, then 256 overworld and 533 indoor
+  entries in one segment, 0x2FF skipped and never loaded, the indoor key
+  less 0x100, `evilshop=enabled`; a `KeyError` ending the walk; a room
+  that does not load or a file without 1 unit failing) and the registry
+  (after `endscreen`, last, ROM, no draw). It prints `test_sprites:
+  CPython's set order, every room's sprite values and the group on a
+  synthetic ROM (<c> checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1282,7 +1305,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title` and `endscreen`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen` and `sprites`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1658,6 +1681,39 @@ outcomes: no warp `IndexError`, a room of exactly 0x100 the assembler's
 an absent tile read `KeyError` with its decimal address. It needs the
 ROM (`rom-group warp-home`), draws nothing and has no `draw`.
 
+**`sprites`** (`patches.aesthetics.updateSpriteData(rom)`,
+`ladx_group_sprites`), at `order.txt`'s `C sprites` row, after
+`endscreen` and so after every group whose entities and objects it reads
+(`goal`, `items`, `entrances`, `bosses`, `enemizer`, and the `fixed` and
+`options` tables), with `data/ladx/sprites.txt` ("Patch tables", 1
+unit). First the unit (LADXR's three `rom.patch` calls, old bytes not
+re-checked), then each room 0 to 0x315 but 0x2FF, in order, loaded from
+the encoder's state ("Room editor") and its four values
+(`ladx_sprites_room`) written by `ladx_enc_table` with no origin to
+`room_sprite_data_overworld` (key the room) below 0x100, else
+`room_sprite_data_indoor` (key the room less 0x100). The values are
+LADXR's: slots start as `None`; room 0x00E presets slots 2 and 3 to 0xD6
+and 0xD7, rooms 0x211..0x21E slot 0 to 0x66; a non-warp object 0xC5 below
+room 0x100 sets slot 3 to 0x82; then each entity's `SPRITE_DATA` pairs
+(`ladx_sprite_data.h`, lambdas on the room number, 0x77 as 0x4D with
+`evilshop`; a `None` skipped, an absent key `KeyError` with its decimal
+id) meet the slot in LADXR's chain: `None` takes the value, two sets
+intersect (empty: `AssertionError` with no message), a set holding the
+int becomes it, an int inside the new set or equal stays, else
+`AssertionError` `Room: %03x cannot load graphics for entity: %02x
+(Index: %d Failed: %s, Active: %s)` (a set printed `{a, b}`). A set
+writes `next(iter(...))`, an unset slot 0xFF. Sets follow CPython 3.13:
+a set is kept as its adding order, its iteration order is the 8-slot
+table's (`ladx_sprites_set_order`: slot `v & 7`, each collision
+`perturb >>= 5`, `i = (5i + 1 + perturb) & 7`), and `intersection` walks
+the smaller set (the argument on a tie) and adds the members the other
+holds (`ladx_sprites_set_intersection`). CPython copies a set met with
+itself, which can differ from this walk only for members colliding mod
+8, and no `SPRITE_DATA` set holds such a pair. A raise ends the walk
+`RAISED`; none is reached on the cases. It needs the ROM (`rom-group
+sprites`), draws nothing and has no `draw`; it fails on a room that does
+not load or a file without 1 unit.
+
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
 0x3E 0x2F00, then, unless `race`, the short settings string's length
@@ -1669,7 +1725,7 @@ not matter, since no two writes of the call share a position.
 
 `ladx/include/ladx_room.h`: `roomEditor.py`'s `RoomEditor` at the pin,
 for every `C` group that edits rooms (`goal`, `items`, `entrances`,
-`bosses`, `enemizer`, `warp-home`, and later `sprites`). Caller-owned (`LadxRoom`,
+`bosses`, `enemizer`, `warp-home`, `sprites`). Caller-owned (`LadxRoom`,
 about 10 KB; the pipeline holds one as `p->room`), no allocation.
 `ladx_room_load(r, enc, room, alt)` reads, from the encoder's current
 state, an index room (0..0x31F: objects from `rooms_overworld_top`

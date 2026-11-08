@@ -17,6 +17,7 @@ static const LadxPipelineGroup groups[] = {
 	{"warp-home", 1, ladx_group_warp_home, NULL},
 	{"title", 1, ladx_group_title, NULL},
 	{"endscreen", 1, ladx_group_endscreen, ladx_group_endscreen_draws},
+	{"sprites", 1, ladx_group_sprites, NULL},
 };
 
 const LadxPipelineGroup *ladx_pipeline_groups(int *count)
