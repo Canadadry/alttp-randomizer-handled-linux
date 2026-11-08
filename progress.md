@@ -149,7 +149,7 @@
     - [x] Step 3.6.19 spoiler
   - [x] Step 3.7 Assembly pipeline
   - [x] Step 3.8 LADX-aware debugging skills
-  - [ ] Step 3.9 check-e2e on tests/ladx
+  - [x] Step 3.9 check-e2e on tests/ladx
   - [ ] Step 3.10 Measure
 - [ ] Phase 4 — LADX in the app
   - [ ] Step 4.1 LADX SD side

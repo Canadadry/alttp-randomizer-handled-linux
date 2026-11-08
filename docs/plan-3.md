@@ -511,3 +511,13 @@ ROM-free regression reference: `tests/ladx/synthetic_refs.txt` holds digests of 
 5. `net` last.
 
 The ranker prints a `TOP` block and a `REPRO` single-case command. Each skill also documents where a LADX RED test goes (`tests/ladx/unit/`, synthetic only), the oracle route for ROM-derived defects, and a per-game commit gate. `fix-bug` and `help-me-debug` gained the LADX rules (no ROM byte or link printed, LADXR at the pin as the reference). Verified on a throwaway worktree with three planted divergences: the ranker put the placement failure (`witch-0`) on top over the hints write-log one the driver printed first, and its `REPRO` replayed it alone. Sixteen ranker tests run in `make test`'s `test-template`, and four planted mutations each fail one.
+
+### Step 3.9
+
+`check-e2e` on `tests/ladx` was green on its first run, with no `fix:` commit:
+- `e2e`: 88 pass;
+- `e2e-combos`: 40 pass;
+- `e2e-rom` with the real ROM: 88 and 40 pass, every group, the spoiler and `net` claimed;
+- `rank_e2e.py`: no failure;
+- `rom-check`: 128 ok of 88 cases and 40 combos;
+- `e2e-synthetic`: 128 equal to `synthetic_refs.txt`.
