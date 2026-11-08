@@ -1,14 +1,17 @@
 # Notes for Claude sessions
 
 *Zelda Randomizer on Miyoo*: an on-device randomizer seed generator for the
-Miyoo Mini Flip running OnionOS, for now *A Link to the Past Randomizer* only.
-An Onion app (`App/ZeldaRando/`, binary `zrando`), driven by the d-pad, reads
-a Japanese 1.0 ROM, generates a seed with every alttpr.com setting (a C port
-of VT, frozen at `sporchia/alttp_vt_randomizer`
-`219fcafd029dab597b8db400efafd8f56f8b4edb`), and writes a patched `.sfc` that
-Onion's SNES core plays; a History tab lists and deletes seeds. It also builds
-for PC (SDL) so the owner can check the rendering. Start with the current plan
-in `docs/`, then `README.md`.
+Miyoo Mini Flip running OnionOS, for two games. An Onion app
+(`App/ZeldaRando/`, binary `zrando`), driven by the d-pad, opens on a
+game-choice screen; each game has a Generate and a History tab (lists and
+deletes seeds). *A Link to the Past*: reads a Japanese 1.0 ROM, generates a
+seed with every alttpr.com setting (a C port of VT, frozen at
+`sporchia/alttp_vt_randomizer` `219fcafd029dab597b8db400efafd8f56f8b4edb`)
+and writes a patched `.sfc` for Onion's SNES core. *Link's Awakening DX*:
+reads the English 1.0 GBC ROM, generates a seed (a C port of LADXR, frozen
+at `daid/LADXR` `4325207e`) and writes a patched `.gbc` for Onion's GBC
+core. It also builds for PC (SDL) so the owner can check the rendering.
+Start with the current plan in `docs/`, then `README.md`.
 
 ## Layout
 

@@ -96,7 +96,7 @@ ART_THEME ?= ../../themes/alttp
 # screenshots: the README's pictures, states of golden_states.txt drawn with SHOT_THEME.
 SHOT_THEME := ../../themes/alttp
 SHOT_DIR := ../../docs/screenshots
-SHOT_STATES := generate_top seed_ready history_list history_detail_spoiler
+SHOT_STATES := game_choice ladx_generate_top generate_top seed_ready history_list history_detail_spoiler
 SDL_LIBS = $(shell pkg-config --libs sdl SDL_ttf SDL_image)
 
 # e2e-arm: the generator built by Onion's toolchain with Onion's miyoomini

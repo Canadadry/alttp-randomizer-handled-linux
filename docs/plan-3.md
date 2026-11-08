@@ -559,3 +559,7 @@ Peak RSS of one generation through `ui_cli` (`ru_maxrss`; idle is the same binar
 - ALttP: host 12.8 MiB; qemu-arm 14.6 MiB.
 
 LADX was measured with the real ROM and the zip's tables, and the output matches the golden SHA-1 on host and ARM alike. ALttP was measured on the synthetic `good` SD, because its real base ROM is not available here. Pages allocated but never touched do not count, so LADX stays well under its 25 MiB work area.
+
+### Step 4.5
+
+The README covers both games. A table gives each base ROM's place: ALttP's headerless JP 1.0 in `App/ZeldaRando/alttp/base.sfc`, and LADX's English 1.0 `.gbc` (1,048,576 bytes, SHA-1 `d90ac17e…`) in `App/ZeldaRando/ladx/base.gbc`, either alone being enough. It also covers the Package Manager's SNES and GBC lists, the output folders `Roms/SFC/ZeldaRando/` and `Roms/GBC/ZeldaRando/`, LADX's L2/R2 jumps and greyed reasons, and the old `App/ALttPR/` line. CLAUDE.md's opening paragraph describes both games. Path grep: every README path matches a `RANDO_SD_*` macro of `app/sd/rando_seed_save.h`: the base files at :17 and :29, the ROM folders at :14 and :33, and the app folder at :11. The exceptions are the log (`launch.sh:3`) and the old folder, which has no macro on purpose. `make screenshots` adds `game_choice` and `ladx_generate_top`, both existing golden states (a LADX ready screen would need a real base on the fixture). The six PNGs are drawn twice byte-identical, the four old ones unchanged. 0 literal runs.
