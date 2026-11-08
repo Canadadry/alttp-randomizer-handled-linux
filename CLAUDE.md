@@ -852,22 +852,22 @@ in `docs/`, then `README.md`.
   option).
 - `make sdl-pc` also runs the golden comparison
   (`tests/alttp/sdl/goldens.sh --compare`): it proves itself on a planted
-  flipped pixel, a removed golden and an extra one, then plays the 14 states of
+  flipped pixel, a removed golden and an extra one, then plays the 18 states of
   `sdl/golden_states.txt` (each on a fresh SD from `sd_fixture`, drawn
   through `--theme themes/classic`) and prints
   one `DIFFERENT`, `MISSING` or `EXTRA` line per mismatch (each BMP
   capture's decoded pixels against its lossless PNG golden), else
-  `goldens: 14 states pixel-identical`. The goldens in
+  `goldens: 18 states pixel-identical`. The goldens in
   `tests/alttp/sdl/goldens/` (PNGs) are pinned to the Claude Code cloud container
   (Ubuntu 24.04.5, sdl12-compat 1.2.68 on SDL2 2.30.0, SDL_ttf 2.0.11,
   FreeType 2.13.2), fingerprinted in `goldens/environment.txt`; on another
   host it fails with `setup: goldens pinned to <fp>, this host is <fp>`, a
-  setup problem that verifies nothing, not a bug. Then it draws the same 14
+  setup problem that verifies nothing, not a bug. Then it draws the same 18
   states with `themes/alttp` (`goldens.sh --draw`, the theme in the
   Makefile's `DRAW_THEME`): no comparison and no state strings, each capture
   must be a 640×480 picture of more than one colour; it writes them to
   `tests/alttp/build/sdl/theme-states/alttp/` and prints
-  `goldens: 14 states drawn with alttp in <dir>`.
+  `goldens: 18 states drawn with alttp in <dir>`.
 - `make sdl-goldens`, outside the net, writes the goldens once (every state
   rendered twice, refused unless byte-identical, written as PNGs) and
   refuses a folder that already holds any: goldens are never regenerated to get green.

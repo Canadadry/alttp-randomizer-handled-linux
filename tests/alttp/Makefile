@@ -87,7 +87,7 @@ SDL_APP := $(SDL_DIR)/zrando
 SDL_CFLAGS = $(shell pkg-config --cflags sdl SDL_ttf SDL_image)
 SD_FIXTURE := $(BUILD)/sd_fixture
 GOLDENS_DIR ?= sdl/goldens
-# The theme whose 14 states sdl-pc draws, after the classic comparison.
+# The theme whose 18 states sdl-pc draws, after the classic comparison.
 DRAW_THEME := ../../themes/alttp
 MOCKUP_THEME = ../../themes/alttp
 MOCKUP_OUT := $(BUILD)/mockups
