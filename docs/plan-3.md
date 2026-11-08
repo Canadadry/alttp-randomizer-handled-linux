@@ -587,3 +587,31 @@ End of Phase 4's code steps, reviewed before step 8 so that any fix could still 
 - `ui_app_tab` always returning ALttP's tab.
 
 `plan-review` found no method change for step 8. `ui_app_tab` was a test-only accessor, not a behaviour bug, since every screen goes through `shown_side`. It now reads the shown game's tab, and `test_ui_app`'s expectation after R1 on LADX is corrected to History. The Makefile comment is cut. The other warnings stay open for the PR; they are ROM-free code, snapshot-covered.
+
+### Step 4.8
+
+The ROM-present checks at ea99f39 (HEAD before this note):
+- (a) `e2e-rom: KS equal, 6105 spans, 59971 bytes, 186 not rebuilt`.
+- (b) `e2e-rom: 88 pass, 0 divergent`, then `40 pass, 0 divergent`, every group, rom-group, the spoiler and `net` claimed.
+- (c) Host `ladx_patch`: `rom-check: 88 cases, 40 combos: 128 ok, 0 mismatched, 0 refused, 0 failed, 0 no golden`.
+- (d) The same line with the Onion-toolchain `ladx_patch` under qemu-arm. Its wrapper under `tmp/` must pass `--tables <abs>/data/ladx`, since only the host build compiles the tables path in.
+- (e) One `ui_cli` generation on a fresh SD (the ROM as `App/ZeldaRando/ladx/base.gbc`, the 14 tables in `tables/`, the `baseline` seed): `Normal-Vanilla-0D21D7.gbc`, SHA-1 `a262843c…`, equal to `ladx_patch` and the golden.
+- `synthetic_refs.txt` re-rendered at HEAD is byte-identical (`e7f826a0…`).
+
+What loses ROM-free verification now. `synthetic_refs.txt` is a regression digest on the synthetic base, not proof against the real ROM.
+
+| Part | Last ROM-present run | Covered by `synthetic_refs.txt` |
+|---|---|---|
+| `bank3e`, `endscreen`, `marin`, `music`, `notext`, `title` | (b) (c) (d) | yes, 128/128 |
+| `header`, header checksums | (b) (c) (d) (e) | yes, 128/128 |
+| `goal` | (b) (c) (d) | 127/128 (not `goal-maze`) |
+| `items` | (b) (c) (d) | 121/128 |
+| `enemizer` | (b) (c) (d) | 123/128 |
+| `entrances`, `bosses`, `warp-home`, `sprites`, `save` | (b) (c) (d) | no |
+| `spoiler` | (b) | no |
+| ROM parsers, table applier's source copies | (b) (c) (d) (e) | yes |
+| KS | (a), and (c) (d) (e) through the encoder | yes, on the synthetic base; the span list against `known_source.build` only in (a) |
+
+Nintendo-bytes over plan 3's whole diff: `1811 files, …, 526 literal runs`. This deviates from the step's `0 literal runs`, and it is recorded rather than cut. All 526 runs predate plan 3: 525 in 150 ALttP files plan 3 only renamed (`rando/` to `alttp/`), and one prose run in a skill file, on a line plan 3 did not change. Without the pure renames, only that one run remains. The command and summary are in `notes/ladx-bytes-whole-repo.md`, whose open question for the owner stands.
+
+`git ls-files` holds no ROM-present work file: no `tmp/` path, no span list, no `.gbc`, `.gb`, `.sfc` or `.smc` (`rom_guard: 1905 tracked files, no ROM`). The link search over every branch's `git log -p --text`, and over the working tree outside `tmp/`, finds nothing, counts only. Then `push_gate.py --uninstall` restores the plain `no_claude_branch.sh` hook. `tmp/ladx/` and every ROM copy or ROM-derived output under `tmp/` are deleted. **The owner can now delete the link.**

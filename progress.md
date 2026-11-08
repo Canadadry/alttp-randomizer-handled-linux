@@ -151,7 +151,7 @@
   - [x] Step 3.8 LADX-aware debugging skills
   - [x] Step 3.9 check-e2e on tests/ladx
   - [x] Step 3.10 Measure
-- [ ] Phase 4 — LADX in the app
+- [x] Phase 4 — LADX in the app
   - [x] Step 4.1 LADX SD side
   - [x] Step 4.2 LADX Generate tab
     - [x] Fix: UI text coinciding with ROM text
@@ -162,4 +162,4 @@
   - [x] Step 4.6 check-net
   - [x] Step 4.7 rework-comments
     - [x] Fix: ui_app_tab reads the shown game's tab
-  - [ ] Step 4.8 Close the ROM window
+  - [x] Step 4.8 Close the ROM window

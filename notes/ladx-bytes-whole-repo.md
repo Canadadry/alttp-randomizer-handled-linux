@@ -21,3 +21,21 @@ The push gate checks only the blobs a push uploads, so these files never
 reach it. The check's policy targets LADX-derived artifacts; whether to
 extend a clearance to these ALttP coincidences is an open question for
 the owner, not a Phase 2 defect.
+
+## Plan 3's whole diff, at the close of the ROM window (Phase 4 step 8)
+
+Command, at ea99f39, every existing file plan 3 added, changed or
+renamed:
+
+    python3 -I tests/ladx/oracle/nintendo_bytes.py $(git diff --name-only --diff-filter=AMR fa0039e^ HEAD)
+
+Summary: `nintendo-bytes: 1811 files, rom d90ac17e…, ladxr 4325207e,
+526 literal runs, cleared 14267 trivial, 1042 low-info, 10855
+ladxr-public, 96126 computed, 552 invariant`. All 526 runs are the
+pre-existing ones above: 525 in 150 ALttP files that plan 3 only renamed
+(`rando/` to `alttp/`, unchanged content) and the one prose run of
+`.claude/skills/rework-comments/SKILL.md`, on a line plan 3 did not
+change. Without the pure renames (1022 files) the only run is that
+SKILL.md one. No LADX-derived file holds a literal run, and since the
+owner's decision of commit 782e21a nothing committed holds ROM content
+in another encoding either.
