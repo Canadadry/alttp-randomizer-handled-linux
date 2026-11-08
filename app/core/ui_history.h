@@ -1,8 +1,10 @@
 #ifndef UI_HISTORY_H
 #define UI_HISTORY_H
 
+#include "ladx_settings.h"
 #include "rando_name.h"
 #include "rando_options.h"
+#include "ui_games.h"
 #include "ui_grid.h"
 #include "ui_input.h"
 #include "ui_screen.h"
@@ -18,17 +20,21 @@
 #define UI_HISTORY_WIDTH_MIN 20
 #define UI_HISTORY_WIDTH_MAX (UI_GRID_COLS_MAX - 2)
 #define UI_HISTORY_TEXT_MAX 96
+#define UI_HISTORY_LADX_SEED_MAX 33
 
 typedef struct UiHistoryDate {
 	int year, month, day, hour, minute, second;
 } UiHistoryDate;
 
 typedef struct UiHistoryEntry {
+	UiGame game;
 	RandoName name;
 	UiHistoryDate date;
 	uint32_t seed;
 	RandoOptions options;
 	RandoHeartBeep heart_beep;
+	char ladx_seed[UI_HISTORY_LADX_SEED_MAX];
+	LadxSettings ladx;
 	bool has_spoiler;
 } UiHistoryEntry;
 
@@ -56,6 +62,7 @@ typedef void (*UiHistoryDeleteFn)(void *ctx, const UiHistoryEntry *entry, UiHist
 
 typedef enum UiHistoryEvent {
 	UI_HISTORY_NONE,
+	UI_HISTORY_BACK,
 	UI_HISTORY_QUIT,
 	UI_HISTORY_TAB_NEXT,
 	UI_HISTORY_TAB_PREV
@@ -76,6 +83,7 @@ typedef enum UiHistorySpoilerState {
 
 typedef struct UiHistoryInit {
 	const UiStrTable *strings;
+	UiGame game;
 	int page;
 	int width;
 	const UiHistoryList *list;
@@ -91,6 +99,7 @@ typedef struct UiHistoryLine {
 
 typedef struct UiHistory {
 	const UiStrTable *strings;
+	UiGame game;
 	int page, width;
 	UiHistoryList list;
 	UiHistoryView view, confirm_from;
@@ -98,6 +107,8 @@ typedef struct UiHistory {
 	UiHistorySpoiler spoiler;
 	UiHistoryLine lines[UI_HISTORY_LINES_MAX];
 	int line_count;
+	int detail_settings[LADX_SETTING_COUNT];
+	int detail_setting_count;
 	UiHistorySpoilerState spoiler_state;
 	UiMessageKind message_kind;
 	char message[UI_HISTORY_TEXT_MAX];

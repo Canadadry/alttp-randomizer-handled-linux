@@ -1,0 +1,46 @@
+# Tier-1 settings and values of plan 3 section 2, hand-written; read by gen_settings.py (and every
+# later generator that enumerates tier-1 values), which fails on a key or a value LADXR's Settings
+# does not define, a repeat, or an order other than LADXR's. One line per setting, in LADXR's order:
+#   <key> all              every value LADXR defines (0 1 for a boolean)
+#   <key> <value> ...      only these values, space-separated; "" is the empty string
+# Not listed: seed (always random) and forwardfactor (fixed at 0.0, hidden), and every Entrances,
+# overworld, dungeonchainlength, shopsanity and gfxmod setting (unsupported); music=ffa unsupported;
+# goal=bingo, bingo-double, bingo-triple and bingo-full excluded by the scope cut goal-bingo
+# (notes/plan3-scope-cuts.md).
+logic all
+accessibility all
+race all
+heartpiece all
+seashells all
+heartcontainers all
+instruments all
+tradequest all
+witch all
+rooster all
+boomerang all
+dungeon_keys all
+nightmare_keys all
+dungeon_beaks all
+dungeon_maps all
+boss all
+miniboss all
+enemies all
+goal vanilla instruments specific open open-4 5-8 seashells maze
+goalcount all
+itempool all
+hpmode all
+hardmode all
+steal all
+evilshop all
+bowwow all
+owlstatues all
+keyholesanity all
+superweapons all
+quickswap all
+textmode all
+lowhpbeep all
+noflash all
+nagmessages all
+follower all
+linkspalette all
+music "" random off shifted

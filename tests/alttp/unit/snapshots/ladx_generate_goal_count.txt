@@ -1,0 +1,36 @@
+@ right
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Dungeon Beaks               Standard  ^|
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+ | Random Start                     Off   |
+ | Dungeon Shuffle                  Off   |
+ | Entrance Shuffle             Default   |
+ | Gameplay                               |
+ | Boss Shuffle                  Normal   |
+ | Miniboss Shuffle              Normal   |
+ | Enemizer                        None   |
+>| Goal                 < X Instruments >v|
+h| What opens the egg on top of Mt. Tama~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ down left*2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Maps/Compasses              Standard  ^|
+ | Entrances                              |
+ | Random Start                     Off   |
+ | Dungeon Shuffle                  Off   |
+ | Entrance Shuffle             Default   |
+ | Gameplay                               |
+ | Boss Shuffle                  Normal   |
+ | Miniboss Shuffle              Normal   |
+ | Enemizer                        None   |
+ | Goal                   X Instruments   |
+>| Goal Count                       < 6 >v|
+h| How many instruments open the egg      |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

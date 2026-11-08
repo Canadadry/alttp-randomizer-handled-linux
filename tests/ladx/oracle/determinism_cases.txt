@@ -1,0 +1,25 @@
+# The double run's cases, hand-written; read by determinism.sh. One case per line:
+#   <name> <seed hex bytes> <k=v ...>
+# Each case runs oracle_run.py with its seed and settings (set in this order, then validated).
+# Every seed but pain's places its items; pain's fails the fill (outcome error, on which LADXR's
+# main.py retries), so the error path is double-run too. The cases from enemies-overworld on drive
+# generateRom's RNG and its setting-dependent writes (determinism.sh --full).
+baseline 000102030405060708090a0b0c0d0e0f
+race 4c414458520000000000000000000020 race=1
+accessibility-goal 1f2e3d4c5b6a79881f2e3d4c5b6a7988 accessibility=goal
+hell-keysanity 0123456789abcdef0123456789abcdef logic=hell dungeon_keys=keysanity nightmare_keys=keysanity
+bosses-random 4c414458520000000000000000000021 boss=random miniboss=random
+bingo 4c41445852000000000000000000000a goal=bingo
+maze 4c414458520000000000000000000011 goal=maze
+specific-random 4c41445852000000000000000000000c goal=specific goalcount=random
+casual 4c414458520000000000000000000020 itempool=casual
+pain 4c41445852000000000000000000000e itempool=pain
+owls-beaks 4c41445852000000000000000000000f owlstatues=both dungeon_beaks=keysanity
+5hit 4c414458520000000000000000000010 hpmode=5hit heartpiece=1
+enemies-overworld 4c41445852000000000000001e000000 enemies=overworld
+music-random-notext 4c41445852000000000000001f000000 music=random textmode=none
+music-shifted-ohko 4c414458520000000000000020000002 music=shifted hardmode=ohko
+music-off-notextbox 4c414458520000000000000021000001 music=off textmode=notextbox hardmode=hero
+superweapons-evilshop 4c414458520000000000000000000034 superweapons=1 evilshop=enabled
+bowwow-quickswap-palette 4c414458520000000000000023000000 bowwow=always quickswap=a linkspalette=2
+bowwow-swordless 4c414458520000000000000024000003 bowwow=swordless quickswap=b linkspalette=5 hardmode=oracle

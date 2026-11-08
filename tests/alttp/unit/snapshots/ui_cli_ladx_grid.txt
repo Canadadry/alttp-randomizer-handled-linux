@@ -1,0 +1,144 @@
+@ init
+ +----------------------------------------+
+ |                                        |
+#| Choose a Game                          |
+ | A Link to the Past                     |
+>| Link's Awakening DX                    |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+_| A Open  B Quit                         |
+ +----------------------------------------+
+@ a
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Main                                   |
+>| Logic                       < Normal > |
+ | Accessibility         100% Locations   |
+ | Race Mode                        Off   |
+ | Items                                  |
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On  v|
+h| Which tricks the logic may expect of ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Main                                   |
+ | Logic                         Normal   |
+ | Accessibility         100% Locations   |
+ | Race Mode                        Off   |
+ | Items                                  |
+>| Heart Pieces                    < On > |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On  v|
+h| Puts the heart pieces in the item pool |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Items                                 ^|
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On   |
+ | Rooster                           On   |
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+>| Dungeon Keys              < Standard >v|
+h| Small keys: in their dungeon, anywher~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ r2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Trade Quest                       On  ^|
+ | Witch's Item                      On   |
+ | Rooster                           On   |
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+>| Random Start                   < Off >v|
+h| Randomizes where your starting house ~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ right
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Trade Quest                       On  ^|
+ | Witch's Item                      On   |
+ | Rooster                           On   |
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+ | Dungeon Keys                Standard   |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+X| Random Start                      On  v|
+i| Entrance options are not supported yet |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ l2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Trade Quest                       On  ^|
+ | Witch's Item                      On   |
+ | Rooster                           On   |
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+>| Dungeon Keys              < Standard > |
+ | Nightmare Keys              Standard   |
+ | Dungeon Beaks               Standard   |
+ | Maps/Compasses              Standard   |
+ | Entrances                              |
+x| Random Start                      On  v|
+h| Small keys: in their dungeon, anywher~ |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+
+@ l2
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Link's Awakening DX                    |
+ | Items                                 ^|
+>| Heart Pieces                    < On > |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On   |
+ | Rooster                           On   |
+ | Boomerang Trade                 Gift   |
+ | Dungeon Items                          |
+ | Dungeon Keys                Standard  v|
+h| Puts the heart pieces in the item pool |
+_| </> Change  Y Default  START Generate  |
+ +----------------------------------------+

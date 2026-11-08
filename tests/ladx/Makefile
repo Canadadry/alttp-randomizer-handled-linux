@@ -1,0 +1,227 @@
+.PHONY: help test lint logic unit-arm selftest e2e e2e-arm e2e-combos e2e-rom e2e-synthetic synthetic-refs measure measure-arm rom-check rom-check-selftest
+
+CC ?= gcc
+# -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
+CFLAGS := -std=c99 -Wall -Wextra -Werror -ffp-contract=off
+LADX := ../../ladx
+BUILD := build
+
+UNIT_TESTS := test_sha512 test_store test_sha1 test_rom test_ks test_pyrandom test_rng test_run_text test_settings test_requirements test_logic test_world_setup \
+	test_itempool test_fill test_wlog test_tables test_encoder test_pipeline test_bank3e test_md5 test_background test_title test_text test_marin test_hints test_music test_endscreen test_notext test_room test_goal test_items test_entrances test_bosses test_sprite_data test_enemizer test_warp_home test_sprites test_save test_header test_spoiler test_assemble
+# Run again with --fixtures by make logic and unit-arm.
+LOGIC_TESTS := test_logic test_itempool test_fill test_encoder test_store test_header
+# Linked with the host layer ladx/host/ too.
+HOST_TESTS := test_run_text test_itempool test_fill
+
+LADX_SRC := $(wildcard $(LADX)/src/*.c)
+LADX_HDR := $(wildcard $(LADX)/include/*.h $(LADX)/src/*.h)
+HOST_SRC := $(wildcard $(LADX)/host/*.c)
+HOST_HDR := $(wildcard $(LADX)/host/*.h)
+HOST_OBJ := $(patsubst $(LADX)/host/%.c,$(BUILD)/host/%.o,$(HOST_SRC))
+LADX_OBJ := $(patsubst $(LADX)/src/%.c,$(BUILD)/obj/%.o,$(LADX_SRC))
+LADX_LIB := $(BUILD)/libladx.a
+UNIT_BINS := $(addprefix $(BUILD)/,$(UNIT_TESTS))
+SUPPORT_OBJ := $(BUILD)/support.o
+LOGIC_FIXTURE_OBJ := $(BUILD)/logic_fixture.o
+SYNTH_ROM_OBJ := $(BUILD)/synth_rom.o
+# Linked with the synthetic ROM builder unit/synth_rom.c.
+SYNTH_TESTS := test_rom test_ks test_pipeline test_bank3e test_title test_marin test_music test_endscreen test_notext test_room test_goal test_items test_entrances test_bosses test_enemizer test_warp_home test_sprites test_save test_header test_spoiler test_assemble
+LOGIC_BINS := $(addprefix $(BUILD)/,$(LOGIC_TESTS))
+MAIN_SRC := $(wildcard $(LADX)/host/main/*.c)
+GEN := $(BUILD)/ladx_gen
+PATCH := $(BUILD)/ladx_patch
+SYNTH_REFS := $(BUILD)/synthetic_refs
+SYNTH_REFS_FILE := synthetic_refs.txt
+SYNTH_CASES = $(sort $(wildcard cases/*/)) $(sort $(wildcard combos/*/))
+GEN_DIR := $(BUILD)/gen
+GEN_OBJ := $(patsubst $(LADX)/src/%.c,$(GEN_DIR)/%.o,$(LADX_SRC)) \
+	$(patsubst $(LADX)/host/%.c,$(GEN_DIR)/host/%.o,$(HOST_SRC))
+LINT_DIR := $(BUILD)/lint
+LINT_OBJ := $(patsubst $(LADX)/src/%.c,$(LINT_DIR)/%.o,$(LADX_SRC)) \
+	$(patsubst $(LADX)/host/%.c,$(LINT_DIR)/host/%.o,$(HOST_SRC)) \
+	$(patsubst $(LADX)/host/main/%.c,$(LINT_DIR)/host/main/%.o,$(MAIN_SRC))
+
+TOOLCHAIN := ../../onion-toolchain.sh
+ONION_CFLAGS := -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve
+ARM_UNIT_DIR := $(BUILD)/arm/unit
+
+TOP := $(abspath ../..)
+TABLES := $(TOP)/data/ladx
+LADX_ROM ?= tmp/ladx/base.gbc
+LADX_GEN ?= tests/ladx/build/ladx_patch
+CASES ?=
+
+help:
+	@echo "make test              LADX's unit tests (tests/ladx/unit), built with the ladx/ library, run from tests/ladx"
+	@echo "make logic             LADX's LOGIC_TESTS run with --fixtures from tests/ladx: the oracle's logic fixtures replayed"
+	@echo "make lint              every ladx/ source, ladx/host/ included, built as strict ISO C99 (-pedantic-errors)"
+	@echo "make unit-arm          LADX's unit tests built by Onion's toolchain (-ffp-contract=off kept) and run under qemu-arm from tests/ladx (needs docker, qemu-user)"
+	@echo "make selftest          the e2e driver run_e2e.py's self-test on planted runs and fake generators"
+	@echo "make e2e               build/ladx_gen --project's projection of every golden rom_writes.txt of cases/ compared with write_log.py's, then build/ladx_gen on every case of cases/ (or CASES=\"a b\"), its run.txt's stage projection and claimed groups' rom_writes.txt projections (tables TABLES, default data/ladx) diffed against the golden's per claims.txt"
+	@echo "make e2e-combos        the same on every case of combos/"
+	@echo "make e2e-arm           make e2e's two runs on build/arm/ladx_gen, built by Onion's toolchain (-ffp-contract=off kept) and run under qemu-arm (needs docker, qemu-user); outside the net"
+	@echo "make e2e-rom           with LADX_ROM (default tmp/ladx/base.gbc): C's KS span list compared with known_source.build's, then build/ladx_gen --rom on every case of cases/ and combos/, every group and rom-group of claims.txt claimed; work in tmp/ladx-e2e-rom/; outside the net"
+	@echo "make measure           build/ladx_gen --time (the run stopped after the fill) and, when LADX_ROM exists, build/ladx_patch --time (the whole pipeline) 3 times on every case and combo, the minimum kept, projected onto the Cortex-A7; report in build/measure/report.txt; outside the net"
+	@echo "make measure-arm       make measure with the ROM, plus ladx_patch built by Onion's toolchain timed once per case under qemu-arm (needs docker, qemu-user, the ROM); outside the net"
+	@echo "make e2e-synthetic     build/synthetic_refs: its self-test, then C's outputs (write log, ROM, spoiler) on a synthetic base, every case and combo, against synthetic_refs.txt; in the net"
+	@echo "make synthetic-refs    rewrites synthetic_refs.txt, each case's skipped groups found anew; only after e2e-rom and rom-check are green with the ROM, in its own commit; outside the net"
+	@echo "make rom-check          builds build/ladx_patch, then the generator LADX_GEN (default tests/ladx/build/ladx_patch) run on every case and combo (or CASES=\"a b\") with LADX_ROM (default tmp/ladx/base.gbc), each output's SHA-1 compared with its golden rom_sha1, after the self-test; outside the net"
+	@echo "make rom-check-selftest rom_check.py's self-test alone: a synthetic ROM, a planted case tree and fake generators, no ROM"
+
+selftest:
+	@python3 -I -B run_e2e.py --self-test
+
+e2e: $(GEN)
+	@python3 -I -B run_e2e.py --projections --cases cases --gen $(GEN) $(CASES)
+	@python3 -I -B run_e2e.py --cases cases --gen $(GEN) --tables $(TABLES) $(CASES)
+
+e2e-combos: $(GEN)
+	@echo "e2e-combos: the combination cases"
+	@python3 -I -B run_e2e.py --projections --cases combos --gen $(GEN) $(CASES)
+	@python3 -I -B run_e2e.py --cases combos --gen $(GEN) --tables $(TABLES) $(CASES)
+
+# Paths are repository-relative: the driver runs from the repository's root.
+e2e-rom: $(GEN)
+	@cd $(TOP) && python3 -I -B tests/ladx/run_e2e.py --rom $(LADX_ROM) --cases tests/ladx/cases --gen tests/ladx/$(GEN) --tables data/ladx
+	@cd $(TOP) && python3 -I -B tests/ladx/run_e2e.py --rom $(LADX_ROM) --no-ks --cases tests/ladx/combos --gen tests/ladx/$(GEN) --tables data/ladx
+
+ARM_PATCH := $(BUILD)/arm/ladx_patch
+ARM_GEN := $(BUILD)/arm/ladx_gen
+ARM_GEN_WRAPPER := $(BUILD)/arm/ladx_gen_qemu
+
+# _FILE_OFFSET_BITS=64 as unit-arm's.
+e2e-arm:
+	@command -v qemu-arm >/dev/null 2>&1 || { echo "setup: qemu-arm not found on PATH (install qemu-user)" >&2; exit 1; }
+	@mkdir -p $(BUILD)/arm
+	@echo "e2e-arm: building $(ARM_GEN) with Onion's toolchain"
+	@$(TOOLCHAIN) sh -c '"$${CROSS_COMPILE}gcc" $(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include -I$(LADX)/host -o $(ARM_GEN) $(LADX)/host/main/ladx_gen.c $(LADX_SRC) $(HOST_SRC) -lm'
+	@file $(ARM_GEN) | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_GEN); echo "e2e-arm: $(ARM_GEN) is not a 32-bit ARM EABI executable" >&2; exit 1; }
+	@file $(ARM_GEN)
+	@qemu-arm --version | head -n 1
+	@printf '#!/bin/sh\nexec qemu-arm "%s" "$$@"\n' "$(abspath $(ARM_GEN))" > $(ARM_GEN_WRAPPER)
+	@chmod +x $(ARM_GEN_WRAPPER)
+	@python3 -I -B run_e2e.py --projections --cases cases --gen $(ARM_GEN_WRAPPER) $(CASES)
+	@python3 -I -B run_e2e.py --cases cases --gen $(ARM_GEN_WRAPPER) --tables $(TABLES) $(CASES)
+
+measure: $(GEN) $(PATCH)
+	@if [ -f $(TOP)/$(LADX_ROM) ]; then CC='$(CC)' ./measure.sh --rom $(TOP)/$(LADX_ROM) --patch $(PATCH) $(GEN) $(BUILD)/measure; \
+	else echo "measure: no ROM at $(LADX_ROM), the whole pipeline not timed"; CC='$(CC)' ./measure.sh $(GEN) $(BUILD)/measure; fi
+
+# _FILE_OFFSET_BITS=64 as unit-arm's.
+measure-arm: $(GEN) $(PATCH)
+	@[ -f $(TOP)/$(LADX_ROM) ] || { echo "setup: measure-arm: no ROM at $(LADX_ROM)" >&2; exit 2; }
+	@mkdir -p $(BUILD)/arm
+	@$(TOOLCHAIN) sh -c '"$${CROSS_COMPILE}gcc" $(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include -I$(LADX)/host -o $(ARM_PATCH) $(LADX)/host/main/ladx_patch.c $(LADX_SRC) $(HOST_SRC) -lm'
+	@file $(ARM_PATCH) | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_PATCH); echo "measure-arm: $(ARM_PATCH) is not a 32-bit ARM EABI executable" >&2; exit 1; }
+	@CC='$(CC)' ./measure.sh --rom $(TOP)/$(LADX_ROM) --patch $(PATCH) --qemu $(ARM_PATCH) $(GEN) $(BUILD)/measure
+
+e2e-synthetic: $(SYNTH_REFS)
+	@./$(SYNTH_REFS) --self-test
+	@./$(SYNTH_REFS) --tables $(TABLES) --check $(SYNTH_REFS_FILE) $(SYNTH_CASES)
+
+synthetic-refs: $(SYNTH_REFS)
+	@./$(SYNTH_REFS) --self-test
+	@./$(SYNTH_REFS) --tables $(TABLES) --write $(SYNTH_REFS_FILE) $(SYNTH_CASES)
+
+# Paths are repository-relative: the driver runs from the repository's root.
+rom-check: $(PATCH)
+	cd $(TOP) && python3 -I -B tests/ladx/oracle/rom_check.py --rom $(LADX_ROM) --gen $(LADX_GEN) $(CASES)
+
+rom-check-selftest:
+	cd $(TOP) && python3 -I -B tests/ladx/oracle/rom_check.py --self-test
+
+# test_logic writes a differing graph's text into build/logic.
+test: $(UNIT_BINS)
+	@mkdir -p $(BUILD)/logic
+	@set -e; for t in $(UNIT_BINS); do ./$$t; done
+	@echo "test: $(words $(UNIT_BINS)) LADX unit tests ran"
+
+logic: $(LOGIC_BINS)
+	@mkdir -p $(BUILD)/logic
+	@set -e; for t in $(LOGIC_BINS); do ./$$t --fixtures; done
+	@echo "logic: $(words $(LOGIC_TESTS)) LADX unit tests replayed the oracle fixtures"
+
+lint: $(LINT_OBJ)
+	@echo "lint: $(words $(LADX_SRC)) ladx/ sources and $(words $(HOST_SRC) $(MAIN_SRC)) ladx/host/ sources build with -pedantic-errors"
+
+# _FILE_OFFSET_BITS=64 as tests/alttp's: under qemu-arm a 32-bit readdir fails with EOVERFLOW on ext4.
+unit-arm:
+	@command -v qemu-arm >/dev/null 2>&1 || { echo "setup: qemu-arm not found on PATH (install qemu-user)" >&2; exit 1; }
+	@rm -rf $(ARM_UNIT_DIR) && mkdir -p $(ARM_UNIT_DIR)/obj
+	@echo "unit-arm: building $(words $(UNIT_TESTS)) LADX unit tests in $(ARM_UNIT_DIR) with Onion's toolchain"
+	@$(TOOLCHAIN) sh -c 'set -e; cc="$${CROSS_COMPILE}gcc"; f="$(CFLAGS) -O2 $(ONION_CFLAGS) -static -D_FILE_OFFSET_BITS=64 -I$(LADX)/include -I$(LADX)/host"; \
+		for s in $(LADX_SRC) $(HOST_SRC) unit/support.c unit/logic_fixture.c unit/synth_rom.c; do "$$cc" $$f -c -o $(ARM_UNIT_DIR)/obj/$$(basename $$s .c).o $$s; done; \
+		for t in $(UNIT_TESTS); do "$$cc" $$f -Iunit -o $(ARM_UNIT_DIR)/$$t unit/$$t.c $(ARM_UNIT_DIR)/obj/*.o -lm; done'
+	@file $(ARM_UNIT_DIR)/test_pyrandom | grep -q 'ELF 32-bit LSB executable, ARM, EABI5' || { file $(ARM_UNIT_DIR)/test_pyrandom; echo "unit-arm: $(ARM_UNIT_DIR)/test_pyrandom is not a 32-bit ARM EABI executable" >&2; exit 1; }
+	@qemu-arm --version | head -n 1
+	@mkdir -p $(BUILD)/logic
+	@set -e; for t in $(UNIT_TESTS); do qemu-arm $(ARM_UNIT_DIR)/$$t; done
+	@set -e; for t in $(LOGIC_TESTS); do qemu-arm $(ARM_UNIT_DIR)/$$t --fixtures; done
+	@echo "unit-arm: $(words $(UNIT_TESTS)) LADX unit tests and $(words $(LOGIC_TESTS)) fixture replays passed under qemu-arm"
+
+$(BUILD):
+	@mkdir -p $@
+
+$(BUILD)/obj/%.o: $(LADX)/src/%.c $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -I$(LADX)/include -c -o $@ $<
+
+# rm first: `ar r` would keep the object of a deleted source.
+$(LADX_LIB): $(LADX_OBJ)
+	@rm -f $@
+	ar rcs $@ $^
+
+$(SUPPORT_OBJ): unit/support.c unit/support.h | $(BUILD)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(SYNTH_ROM_OBJ): unit/synth_rom.c unit/synth_rom.h | $(BUILD)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(addprefix $(BUILD)/,$(SYNTH_TESTS)): $(BUILD)/test_%: unit/test_%.c unit/support.h unit/synth_rom.h $(SUPPORT_OBJ) $(SYNTH_ROM_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(SYNTH_ROM_OBJ) $(LADX_LIB)
+
+$(LOGIC_FIXTURE_OBJ): unit/logic_fixture.c unit/logic_fixture.h unit/support.h $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -c -o $@ $<
+
+$(BUILD)/test_logic: unit/test_logic.c unit/support.h unit/logic_fixture.h $(SUPPORT_OBJ) $(LOGIC_FIXTURE_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(LOGIC_FIXTURE_OBJ) $(LADX_LIB)
+
+# The host layer sees ladx/include and itself only.
+$(BUILD)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -I$(LADX)/include -I$(LADX)/host -c -o $@ $<
+
+$(addprefix $(BUILD)/,$(HOST_TESTS)): $(BUILD)/test_%: unit/test_%.c unit/support.h $(SUPPORT_OBJ) $(HOST_OBJ) $(LADX_LIB) $(LADX_HDR) $(HOST_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -I$(LADX)/host -Iunit -o $@ $< $(SUPPORT_OBJ) $(HOST_OBJ) $(LADX_LIB) -lm
+
+$(BUILD)/test_%: unit/test_%.c unit/support.h $(SUPPORT_OBJ) $(LADX_LIB) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(LADX)/include -Iunit -o $@ $< $(SUPPORT_OBJ) $(LADX_LIB)
+
+$(GEN_DIR)/%.o: $(LADX)/src/%.c $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -c -o $@ $<
+
+$(GEN_DIR)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -c -o $@ $<
+
+$(GEN): $(LADX)/host/main/ladx_gen.c $(GEN_OBJ) $(HOST_HDR) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -o $@ $< $(GEN_OBJ) -lm
+
+$(SYNTH_REFS): unit/synthetic_refs.c unit/synth_rom.c unit/synth_rom.h $(GEN_OBJ) $(HOST_HDR) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -Iunit -o $@ unit/synthetic_refs.c unit/synth_rom.c $(GEN_OBJ) -lm
+
+$(PATCH): $(LADX)/host/main/ladx_patch.c $(GEN_OBJ) $(HOST_HDR) $(LADX_HDR) | $(BUILD)
+	$(CC) $(CFLAGS) -O2 -I$(LADX)/include -I$(LADX)/host -DLADX_TABLES_DEFAULT='"$(TABLES)"' -o $@ $< $(GEN_OBJ) -lm
+
+$(LINT_DIR)/%.o: $(LADX)/src/%.c $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors -I$(LADX)/include -c -o $@ $<
+
+$(LINT_DIR)/host/%.o: $(LADX)/host/%.c $(HOST_HDR) $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors -I$(LADX)/include -I$(LADX)/host -c -o $@ $<
+
+$(LINT_DIR)/host/main/%.o: $(LADX)/host/main/%.c $(HOST_HDR) $(LADX_HDR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -pedantic-errors -I$(LADX)/include -I$(LADX)/host -c -o $@ $<

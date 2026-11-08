@@ -1,0 +1,43 @@
+diff --git a/patches/endscreen.py b/patches/endscreen.py
+index abaebb7..097e2af 100644
+--- a/patches/endscreen.py
++++ b/patches/endscreen.py
+@@ -125,7 +125,7 @@ loadLoop2:
+     ret
+     """), fill_nop=True)
+ 
+-    cats = [f for f in os.listdir(os.path.join(os.path.dirname(__file__), "cats")) if f.endswith(".bin")]
++    cats = sorted(f for f in os.listdir(os.path.join(os.path.dirname(__file__), "cats")) if f.endswith(".bin"))
+     filename = random.choice(cats)
+     data = open(os.path.join(os.path.dirname(__file__), "cats", filename), "rb").read()
+     assert len(data) < 0x2400, filename
+diff --git a/patches/titleScreen.py b/patches/titleScreen.py
+index 9972202..319425c 100644
+--- a/patches/titleScreen.py
++++ b/patches/titleScreen.py
+@@ -21,10 +21,7 @@ def _encode(s):
+ 
+ 
+ def setRomInfo(rom, seed, settings):
+-    try:
+-        version = subprocess.run(['git', 'describe', '--tags', '--dirty=-D'], stdout=subprocess.PIPE).stdout.strip().decode("ascii", "replace")
+-    except:
+-        version = ""
++    version = ""  # ladxr.patch: was subprocess.run(['git', 'describe', '--tags', '--dirty=-D']) in the working directory
+ 
+     try:
+         seednr = int(seed, 16)
+diff --git a/spoilerLog.py b/spoilerLog.py
+index 723097d..41dd292 100644
+--- a/spoilerLog.py
++++ b/spoilerLog.py
+@@ -87,7 +87,8 @@ class SpoilerLog:
+         for ii in remainingItems:
+             ii.item = itemContents[ii]
+ 
+-        for location in e.getAccessableLocations():
++        reached = e.getAccessableLocations()
++        for location in [loc for loc in self.logic.location_list if loc in reached]:
+             for ii in location.items:
+                 self.accessibleItems.append(SpoilerItemInfo(ii, rom))
+ 

@@ -1,0 +1,36 @@
+@ a
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Normal-Instruments-3E4F50.gbc          |
+ | Generated 2026-11-07 18:05             |
+ | Seed 00112233445566778899aabbccddeeff  |
+ | Logic                         Normal   |
+ | Accessibility         100% Locations   |
+ | Race Mode                        Off   |
+ | Heart Pieces                      On   |
+ | Hidden Seashells                  On   |
+ | Heart Containers                  On   |
+ | Instruments                      Off   |
+ | Trade Quest                       On   |
+ | Witch's Item                      On  v|
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+
+@ r2*4
+ +----------------------------------------+
+=| Generate  [History]                    |
+#| Normal-Instruments-3E4F50.gbc          |
+ | No Flashing                       On  ^|
+ | Nag Messages                     Off   |
+ | Graphics                     Default   |
+ | Follower                        None   |
+ | Link's Colour                 Normal   |
+ | Music                        Default   |
+ | Spoiler in History                On   |
+ |                                        |
+ | Spoiler                                |
+ | Bosses                                 |
+ |   Ganon: Ganon                         |
+ |                                        |
+_| B Back  X Delete                       |
+ +----------------------------------------+

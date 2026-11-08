@@ -1,0 +1,18 @@
+@ start
+ +----------------------------------------+
+=|[Generate]  History                     |
+#| Seed Ready                             |
+ | Saved in Roms/GBC/ZeldaRando as:       |
+ | Normal-Vanilla-0A1B2C.gbc              |
+ | Spoiler kept in History                |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+ |                                        |
+i| Refresh the GBC list to see it         |
+_| A Back                                 |
+ +----------------------------------------+

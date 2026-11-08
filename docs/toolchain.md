@@ -53,16 +53,16 @@ same miyoomini flags (`src/common/config.mk` and `.github/workflows/` identical)
   32-bit ARM EABI executable, and runs the host e2e driver on it under
   `qemu-arm`. Its comparison is the host's, claims included, so a write-group
   claim (`<case> all <group>`) compares the ARM build's `rom_writes.txt` too.
-- `make unit-arm` builds every unit test of `tests/rando/Makefile`'s
+- `make unit-arm` builds every unit test of `tests/alttp/Makefile`'s
   `UNIT_TESTS` with the same flags plus `-D_FILE_OFFSET_BITS=64`, and runs
-  each under `qemu-arm` from `tests/rando`, then each of `LOGIC_TESTS` with
+  each under `qemu-arm` from `tests/alttp`, then each of `LOGIC_TESTS` with
   `--fixtures`. The extra define is for qemu-user only: on a 64-bit host
   kernel, ext4 hands the 32-bit guest 64-bit directory cookies, and a 32-bit
   `readdir` fails with `EOVERFLOW` (the tests that list `cases/` see an empty
   directory). A 32-bit kernel, as on the device, returns 32-bit cookies.
 - `make sdl-arm` compiles the SDL layer (`app/sdl/`) and the SDL main with
   the host flags, `-pedantic-errors`, `-O2` and Onion's flags, compiles the
-  library, `rando/host` and the app archive's sources with the same flags,
+  library, `alttp/host` and the app archive's sources with the same flags,
   and links them dynamically with `-lSDL -lSDL_ttf` against the image's
   sysroot (SDL 1.2.15, SDL_ttf 2.0.11, the copies Onion ships in
   `/mnt/SDCARD/miyoo/lib/`). It never calls `sdl-config` or `pkg-config`:
@@ -78,7 +78,7 @@ same miyoomini flags (`src/common/config.mk` and `.github/workflows/` identical)
   lists `libSDL-1.2.so.0` and `libSDL_ttf-2.0.so.0` as NEEDED; a miss fails
   with the offending line. It re-checks `data/base.bps` with
   `test_patch_header --file`, then `app/package/build_zip.py` writes
-  `tests/rando/build/package/ALttPR.zip` (`App/ALttPR/`: the binary,
-  `launch.sh`, `config.json`, `icon.png`, `base.bps`, the font and its
+  `tests/alttp/build/package/ZeldaRando.zip` (`App/ZeldaRando/`: the binary,
+  `launch.sh`, `config.json`, `icon.png`, `alttp/base.bps`, the font and its
   licence). The shipped binary has `sdl-arm`'s flags, the same as the code
   `e2e-arm` and `unit-arm` run under qemu; it is not run itself.

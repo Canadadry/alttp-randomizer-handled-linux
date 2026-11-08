@@ -1,0 +1,1354 @@
+ladx-tables 1
+group goal
+tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b rooms_color_dungeon room_sprite_data_overworld room_sprite_data_indoor background_tiles background_attributes
+unit goal.1
+E
+B c04c 94
+B c147 98
+B 30000 cd0641e68028 @10aa7+6 @674c+5 e6 @bafc+4 @1bb49+5 @1bb62+6 f640 @1bb6a+6 11f2 @18026+5 @1c138+4 46 @67a9c+6 @13c30+8 @5f53+4 fe80 @6594a+6 c3984011ee @18026+5 5a3b3009 @13be8+6 @155f+4 @13c2e+a @5f53+4 fe80 @6594a+6 @eec0+5 @1729b+a d0 @13c12+6 d608fe04d0cd0f41cdd0272120b0be202734cd0641cb772008e603c6a9 @622f1+5 20b035 @13f3+4 =1 @64d48+7 90c2193e @d8277+5 20b0cd0f41 @2a7+4 @622ec+9 3e01ea20b018be @1bafb+8 f009f229f409f629 @1baeb+4 =1 0c2220 =1 @1baf4+7 @c860+4 6e26787ec9 @c860+4 6e26797e @90+a =1 @3+1e =4 00 =1 @3+15 =5 00 =1 @3+d =13 0000 =3 00 =1 @3+13 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =16 @3+9 =19 00 =1 @3+f =9 00 =1 00 =1 00 =1 @3+13 =5 00 =1 @3+f =1b 00 =1 @3+5 =11 00 =1 00 =1 00 =1 00 =17 00 =1 @3+9 =13 00 =1 @3+13 =1 @3+9 =9 00 =1 @3+d =15 00 =1 @3+5 =d 00 =1 @3+1d =3 00 =1 @3+5 =1 @3+d =1 00 =1 @3+5 =1 00 =1 @3+1d =3 00 =1 00 =1 @3+15 =1 00 =3 @3+10 =14 00 =1 @3+15 =5 00 =1 @3+7 =d 00 =1 @3+7 =3 00 =1 @3+9 =19 @3+16 =4 @3+16 =a @3+1c =4 @3+1c =8 @3+1a =2 @3+1e =2 @3+1e =2 @3+1e =2 @3+1e =2 @3+1e =2 @3+1e =2 @3+1e =2 @3+1e =2 @3+1e =4 @3+18 =8 @3+18 =10 @3+14 =2 @3+1c =c @3+16 =2 @3+1e =2 @3+1c =4 @3+1c =8 @3+16 =c @3+16 =6 @3+1c =2 @3+16 =11 @3+9 =7 @3+11 =1 00 =6 @3+8 =1 00 =a 00 =1 00 =1 00 =1 00 =1 00 =7 00 =1 00 =1 00 =1 00 =1 00 =f @3+4 =12 00 =1 00 =1 00 =1 00 =1 00 =1 00 =5 00 =1 00 =1 00 =1 00 =1 00 =1 00 =3 00 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =3 00 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =3
+B 33800 @3+20 =2 @3+1e =2 000000 =1 00 =1 00 =1 00 =1 @3+24 =10 @3+10 =10 @3+21 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =1 00 =1 @7e02+130
+B 64ad1 c3 =2
+B 64bd9 18 =1
+B 64cc3 000000
+B 800e4 =1 400c
+B ff700 7f7fff =1 @a49e2+4 ff =1 5f2f5f295f2f5f2adfafdf20ff7fff =1 677be7fb737c7f7fff =1 @a49e2+4 ff =1 5f2f5f2a5f2f5f2adfafdf20ff7fff =1 647be4fb737c =2 ff =1 @a49e2+4 ff =1 5f2f5f295f2f5f2adfafdf20ff7fff =1 @30152+5 =3 ff =1 @a49e2+4 ff =1 5f2f5f2a5f2f5f2adfafdf20ff7fff =1 @15279+5 =1
+unit goal.2
+E
+B 31f5 @3+7
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe =1 da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+B 82dea @3+7
+unit goal.3
+E
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe =1 da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+unit goal.4
+E
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe01da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+unit goal.5
+E
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe02da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+unit goal.6
+E
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe03da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+unit goal.7
+E
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe04da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+unit goal.8
+E
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe05da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+unit goal.9
+E
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe06da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+unit goal.10
+E
+B 64b79 0000
+B 64bf4 =1 e07f
+B 64bfe c32b @2391e+b
+B 67f2b 16 =1 @64bfe+5 @a00c+4 0114231d20f67afe07da1a4cc30b4c
+B 67fe0 2165db @63429+4 09c17ee602c8c3c03b =a
+unit goal.11
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b c30b4c =17
+unit goal.12
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b c30b4c =17
+unit goal.13
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7ee602ca1a4cc30b4c =e
+unit goal.14
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b c30b4c =17
+unit goal.15
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7ee602ca1a4cc30b4c =e
+unit goal.16
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7ee602ca1a4cc30b4c =e
+unit goal.17
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca6e602ca1a4cc30b4c =c
+unit goal.18
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b c30b4c =17
+unit goal.19
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7ee602ca1a4cc30b4c =e
+unit goal.20
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7ee602ca1a4cc30b4c =e
+unit goal.21
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a6e602ca1a4cc30b4c =b
+unit goal.22
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7ee602ca1a4cc30b4c =e
+unit goal.23
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca6e602ca1a4cc30b4c =c
+unit goal.24
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca6e602ca1a4cc30b4c =c
+unit goal.25
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.26
+E
+B 64bf9 =1 04
+B 64bfe c32b @2391e+b
+B 67f2b c30b4c =17
+unit goal.27
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7ee602ca1a4cc30b4c =e
+unit goal.28
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7ee602ca1a4cc30b4c =e
+unit goal.29
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e69a6e602ca1a4cc30b4c =b
+unit goal.30
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7ee602ca1a4cc30b4c =e
+unit goal.31
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a6e602ca1a4cc30b4c =b
+unit goal.32
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a6e602ca1a4cc30b4c =b
+unit goal.33
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e69a6e602ca1a4cc30b4c =9
+unit goal.34
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7ee602ca1a4cc30b4c =e
+unit goal.35
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca6e602ca1a4cc30b4c =c
+unit goal.36
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca6e602ca1a4cc30b4c =c
+unit goal.37
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62ca6e602ca1a4cc30b4c =9
+unit goal.38
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca6e602ca1a4cc30b4c =c
+unit goal.39
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.40
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.41
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.42
+E
+B 64bf9 =1 05
+B 64bfe c32b @2391e+b
+B 67f2b c30b4c =17
+unit goal.43
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7ee602ca1a4cc30b4c =e
+unit goal.44
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7ee602ca1a4cc30b4c =e
+unit goal.45
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e6aa6e602ca1a4cc30b4c =b
+unit goal.46
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7ee602ca1a4cc30b4c =e
+unit goal.47
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6aa6e602ca1a4cc30b4c =b
+unit goal.48
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6aa6e602ca1a4cc30b4c =b
+unit goal.49
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e6aa6e602ca1a4cc30b4c =9
+unit goal.50
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7ee602ca1a4cc30b4c =e
+unit goal.51
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa6e602ca1a4cc30b4c =b
+unit goal.52
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa6e602ca1a4cc30b4c =b
+unit goal.53
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62e6aa6e602ca1a4cc30b4c =8
+unit goal.54
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa6e602ca1a4cc30b4c =b
+unit goal.55
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6aa6e602ca1a4cc30b4c =9
+unit goal.56
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6aa6e602ca1a4cc30b4c =9
+unit goal.57
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62e6aa6e602ca1a4cc30b4c =7
+unit goal.58
+E
+B 64bf9 =1 04
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7ee602ca1a4cc30b4c =e
+unit goal.59
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca6e602ca1a4cc30b4c =c
+unit goal.60
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca6e602ca1a4cc30b4c =c
+unit goal.61
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e69a62ca6e602ca1a4cc30b4c =9
+unit goal.62
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca6e602ca1a4cc30b4c =c
+unit goal.63
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62ca6e602ca1a4cc30b4c =9
+unit goal.64
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62ca6e602ca1a4cc30b4c =9
+unit goal.65
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e69a62ca6e602ca1a4cc30b4c =7
+unit goal.66
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca6e602ca1a4cc30b4c =c
+unit goal.67
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.68
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.69
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62ca62ca6e602ca1a4cc30b4c =7
+unit goal.70
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.71
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.72
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.73
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62ca62ca6e602ca1a4cc30b4c =6
+unit goal.74
+E
+B 64bf9 =1 06
+B 64bfe c32b @2391e+b
+B 67f2b c30b4c =17
+unit goal.75
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7ee602ca1a4cc30b4c =e
+unit goal.76
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7ee602ca1a4cc30b4c =e
+unit goal.77
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.78
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7ee602ca1a4cc30b4c =e
+unit goal.79
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.80
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.81
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e6ba6e602ca1a4cc30b4c =9
+unit goal.82
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7ee602ca1a4cc30b4c =e
+unit goal.83
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.84
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.85
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62e6ba6e602ca1a4cc30b4c =8
+unit goal.86
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.87
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6ba6e602ca1a4cc30b4c =9
+unit goal.88
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6ba6e602ca1a4cc30b4c =9
+unit goal.89
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62e6ba6e602ca1a4cc30b4c =7
+unit goal.90
+E
+B 64bf9 =1 04
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7ee602ca1a4cc30b4c =e
+unit goal.91
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.92
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.93
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e69a62e6ba6e602ca1a4cc30b4c =8
+unit goal.94
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.95
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62e6ba6e602ca1a4cc30b4c =8
+unit goal.96
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62e6ba6e602ca1a4cc30b4c =8
+unit goal.97
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e69a62e6ba6e602ca1a4cc30b4c =6
+unit goal.98
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ba6e602ca1a4cc30b4c =b
+unit goal.99
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ba6e602ca1a4cc30b4c =9
+unit goal.100
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ba6e602ca1a4cc30b4c =9
+unit goal.101
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62ca62e6ba6e602ca1a4cc30b4c =6
+unit goal.102
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ba6e602ca1a4cc30b4c =9
+unit goal.103
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62e6ba6e602ca1a4cc30b4c =7
+unit goal.104
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62e6ba6e602ca1a4cc30b4c =7
+unit goal.105
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62ca62e6ba6e602ca1a4cc30b4c =5
+unit goal.106
+E
+B 64bf9 =1 05
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7ee602ca1a4cc30b4c =e
+unit goal.107
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca6e602ca1a4cc30b4c =c
+unit goal.108
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca6e602ca1a4cc30b4c =c
+unit goal.109
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e6aa62ca6e602ca1a4cc30b4c =9
+unit goal.110
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca6e602ca1a4cc30b4c =c
+unit goal.111
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6aa62ca6e602ca1a4cc30b4c =9
+unit goal.112
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6aa62ca6e602ca1a4cc30b4c =9
+unit goal.113
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e6aa62ca6e602ca1a4cc30b4c =7
+unit goal.114
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca6e602ca1a4cc30b4c =c
+unit goal.115
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62ca6e602ca1a4cc30b4c =9
+unit goal.116
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62ca6e602ca1a4cc30b4c =9
+unit goal.117
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62e6aa62ca6e602ca1a4cc30b4c =6
+unit goal.118
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62ca6e602ca1a4cc30b4c =9
+unit goal.119
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6aa62ca6e602ca1a4cc30b4c =7
+unit goal.120
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6aa62ca6e602ca1a4cc30b4c =7
+unit goal.121
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62e6aa62ca6e602ca1a4cc30b4c =5
+unit goal.122
+E
+B 64bf9 =1 04
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca6e602ca1a4cc30b4c =c
+unit goal.123
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.124
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.125
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e69a62ca62ca6e602ca1a4cc30b4c =7
+unit goal.126
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.127
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62ca62ca6e602ca1a4cc30b4c =7
+unit goal.128
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62ca62ca6e602ca1a4cc30b4c =7
+unit goal.129
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e69a62ca62ca6e602ca1a4cc30b4c =5
+unit goal.130
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.131
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.132
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.133
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62ca62ca62ca6e602ca1a4cc30b4c =5
+unit goal.134
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.135
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62ca62ca6e602ca1a4cc30b4c =6
+unit goal.136
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62ca62ca6e602ca1a4cc30b4c =6
+unit goal.137
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62ca62ca62ca6e602ca1a4cc30b4c =4
+unit goal.138
+E
+B 64bf9 =2
+B 64bfe c32b @2391e+b
+B 67f2b c30b4c =17
+unit goal.139
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 216cdb7ee602ca1a4cc30b4c =e
+unit goal.140
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 216cdb7ee602ca1a4cc30b4c =e
+unit goal.141
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.142
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 216cdb7ee602ca1a4cc30b4c =e
+unit goal.143
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.144
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.145
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.146
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 216cdb7ee602ca1a4cc30b4c =e
+unit goal.147
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.148
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.149
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62e6ca6e602ca1a4cc30b4c =8
+unit goal.150
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.151
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.152
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.153
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62e6ca6e602ca1a4cc30b4c =7
+unit goal.154
+E
+B 64bf9 =1 04
+B 64bfe c32b @2391e+b
+B 67f2b 216cdb7ee602ca1a4cc30b4c =e
+unit goal.155
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.156
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.157
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e69a62e6ca6e602ca1a4cc30b4c =8
+unit goal.158
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.159
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62e6ca6e602ca1a4cc30b4c =8
+unit goal.160
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62e6ca6e602ca1a4cc30b4c =8
+unit goal.161
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e69a62e6ca6e602ca1a4cc30b4c =6
+unit goal.162
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.163
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.164
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.165
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62ca62e6ca6e602ca1a4cc30b4c =6
+unit goal.166
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.167
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62e6ca6e602ca1a4cc30b4c =7
+unit goal.168
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62e6ca6e602ca1a4cc30b4c =7
+unit goal.169
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62ca62e6ca6e602ca1a4cc30b4c =5
+unit goal.170
+E
+B 64bf9 =1 05
+B 64bfe c32b @2391e+b
+B 67f2b 216cdb7ee602ca1a4cc30b4c =e
+unit goal.171
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.172
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.173
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e6aa62e6ca6e602ca1a4cc30b4c =8
+unit goal.174
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.175
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6aa62e6ca6e602ca1a4cc30b4c =8
+unit goal.176
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6aa62e6ca6e602ca1a4cc30b4c =8
+unit goal.177
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e6aa62e6ca6e602ca1a4cc30b4c =6
+unit goal.178
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.179
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62e6ca6e602ca1a4cc30b4c =8
+unit goal.180
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62e6ca6e602ca1a4cc30b4c =8
+unit goal.181
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62e6aa62e6ca6e602ca1a4cc30b4c =5
+unit goal.182
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62e6ca6e602ca1a4cc30b4c =8
+unit goal.183
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6aa62e6ca6e602ca1a4cc30b4c =6
+unit goal.184
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6aa62e6ca6e602ca1a4cc30b4c =6
+unit goal.185
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62e6aa62e6ca6e602ca1a4cc30b4c =4
+unit goal.186
+E
+B 64bf9 =1 04
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2e6ca6e602ca1a4cc30b4c =b
+unit goal.187
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.188
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.189
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e69a62ca62e6ca6e602ca1a4cc30b4c =6
+unit goal.190
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.191
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62ca62e6ca6e602ca1a4cc30b4c =6
+unit goal.192
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62ca62e6ca6e602ca1a4cc30b4c =6
+unit goal.193
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e69a62ca62e6ca6e602ca1a4cc30b4c =4
+unit goal.194
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62e6ca6e602ca1a4cc30b4c =9
+unit goal.195
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62e6ca6e602ca1a4cc30b4c =7
+unit goal.196
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62e6ca6e602ca1a4cc30b4c =7
+unit goal.197
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62ca62ca62e6ca6e602ca1a4cc30b4c =4
+unit goal.198
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62e6ca6e602ca1a4cc30b4c =7
+unit goal.199
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62ca62e6ca6e602ca1a4cc30b4c =5
+unit goal.200
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62ca62e6ca6e602ca1a4cc30b4c =5
+unit goal.201
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62ca62ca62e6ca6e602ca1a4cc30b4c =3
+unit goal.202
+E
+B 64bf9 =1 06
+B 64bfe c32b @2391e+b
+B 67f2b 216cdb7ee602ca1a4cc30b4c =e
+unit goal.203
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7e2ca6e602ca1a4cc30b4c =c
+unit goal.204
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7e2ca6e602ca1a4cc30b4c =c
+unit goal.205
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.206
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7e2ca6e602ca1a4cc30b4c =c
+unit goal.207
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.208
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.209
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e6ba62ca6e602ca1a4cc30b4c =7
+unit goal.210
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7e2ca6e602ca1a4cc30b4c =c
+unit goal.211
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.212
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.213
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62e6ba62ca6e602ca1a4cc30b4c =6
+unit goal.214
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.215
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6ba62ca6e602ca1a4cc30b4c =7
+unit goal.216
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6ba62ca6e602ca1a4cc30b4c =7
+unit goal.217
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62e6ba62ca6e602ca1a4cc30b4c =5
+unit goal.218
+E
+B 64bf9 =1 04
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7e2ca6e602ca1a4cc30b4c =c
+unit goal.219
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.220
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.221
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e69a62e6ba62ca6e602ca1a4cc30b4c =6
+unit goal.222
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.223
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62e6ba62ca6e602ca1a4cc30b4c =6
+unit goal.224
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62e6ba62ca6e602ca1a4cc30b4c =6
+unit goal.225
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e69a62e6ba62ca6e602ca1a4cc30b4c =4
+unit goal.226
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2e6ba62ca6e602ca1a4cc30b4c =9
+unit goal.227
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ba62ca6e602ca1a4cc30b4c =7
+unit goal.228
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ba62ca6e602ca1a4cc30b4c =7
+unit goal.229
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62ca62e6ba62ca6e602ca1a4cc30b4c =4
+unit goal.230
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62e6ba62ca6e602ca1a4cc30b4c =7
+unit goal.231
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62e6ba62ca6e602ca1a4cc30b4c =5
+unit goal.232
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62e6ba62ca6e602ca1a4cc30b4c =5
+unit goal.233
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62ca62e6ba62ca6e602ca1a4cc30b4c =3
+unit goal.234
+E
+B 64bf9 =1 05
+B 64bfe c32b @2391e+b
+B 67f2b 216bdb7e2ca6e602ca1a4cc30b4c =c
+unit goal.235
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.236
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.237
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e6aa62ca62ca6e602ca1a4cc30b4c =7
+unit goal.238
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.239
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6aa62ca62ca6e602ca1a4cc30b4c =7
+unit goal.240
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e6aa62ca62ca6e602ca1a4cc30b4c =7
+unit goal.241
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e6aa62ca62ca6e602ca1a4cc30b4c =5
+unit goal.242
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.243
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62ca62ca6e602ca1a4cc30b4c =7
+unit goal.244
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62ca62ca6e602ca1a4cc30b4c =7
+unit goal.245
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62e6aa62ca62ca6e602ca1a4cc30b4c =4
+unit goal.246
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2e6aa62ca62ca6e602ca1a4cc30b4c =7
+unit goal.247
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6aa62ca62ca6e602ca1a4cc30b4c =5
+unit goal.248
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62e6aa62ca62ca6e602ca1a4cc30b4c =5
+unit goal.249
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62e6aa62ca62ca6e602ca1a4cc30b4c =3
+unit goal.250
+E
+B 64bf9 =1 04
+B 64bfe c32b @2391e+b
+B 67f2b 216adb7e2ca62ca6e602ca1a4cc30b4c =a
+unit goal.251
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.252
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.253
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e69a62ca62ca62ca6e602ca1a4cc30b4c =5
+unit goal.254
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.255
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62ca62ca62ca6e602ca1a4cc30b4c =5
+unit goal.256
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2e69a62ca62ca62ca6e602ca1a4cc30b4c =5
+unit goal.257
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62e69a62ca62ca62ca6e602ca1a4cc30b4c =3
+unit goal.258
+E
+B 64bf9 =1 03
+B 64bfe c32b @2391e+b
+B 67f2b 2169db7e2ca62ca62ca6e602ca1a4cc30b4c =8
+unit goal.259
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62ca62ca6e602ca1a4cc30b4c =6
+unit goal.260
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62ca62ca6e602ca1a4cc30b4c =6
+unit goal.261
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2e68a62ca62ca62ca62ca6e602ca1a4cc30b4c =3
+unit goal.262
+E
+B 64bf9 =1 02
+B 64bfe c32b @2391e+b
+B 67f2b 2168db7e2ca62ca62ca62ca6e602ca1a4cc30b4c =6
+unit goal.263
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62ca62ca62ca6e602ca1a4cc30b4c =4
+unit goal.264
+E
+B 64bf9 =1 01
+B 64bfe c32b @2391e+b
+B 67f2b 2167db7e2ca62ca62ca62ca62ca6e602ca1a4cc30b4c =4
+unit goal.265
+E
+B 64bf9 =1 00
+B 64bfe c32b @2391e+b
+B 67f2b 2166db7e2ca62ca62ca62ca62ca62ca6e602ca1a4cc30b4c =2

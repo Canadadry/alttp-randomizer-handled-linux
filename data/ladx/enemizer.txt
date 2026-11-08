@@ -1,0 +1,7 @@
+ladx-tables 1
+group enemizer
+tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b rooms_color_dungeon room_sprite_data_overworld room_sprite_data_indoor background_tiles background_attributes
+unit enemizer.1
+E
+B da3dd cd007f
+B dbf00 @448c+6 203e @9e23+5 c9 =2

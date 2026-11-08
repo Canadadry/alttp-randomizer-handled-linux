@@ -1,0 +1,14 @@
+ladx-tables 1
+group warp-home
+tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b rooms_color_dungeon room_sprite_data_overworld room_sprite_data_indoor background_tiles background_attributes
+unit warp-home.1
+E
+B 40b7 =3 c3207e00
+B 412a =9 04 =1 01 @12353+4 08280134 @cde+4 023e02 @4347+6 c3027e =1 00
+B 7e02 cb37c648 @4143+b =1 c9 =d fe01caf940a7cabe40 @1870+4 c2be40 @57c3+9
+B 7e3a @64242+4
+B 7e3f @94cf+4
+B 7e44 @57d6+4
+B 7e49 @57db+4
+B 7e4e @57e0+19 @3e85+4 ea8ec1 @6118+7 c3be40 =8
+B 3c8e0 =2 4444 @3c82a+4 @6a889+4 @3c892+4 =2 @3c832+6 @3c83a+6 e4e4

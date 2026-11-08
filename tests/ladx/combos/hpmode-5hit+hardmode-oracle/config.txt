@@ -1,0 +1,2 @@
+hpmode=5hit
+hardmode=oracle

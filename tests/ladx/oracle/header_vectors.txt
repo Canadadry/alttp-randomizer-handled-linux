@@ -1,0 +1,702 @@
+# LADXR's ROM.fixHeader (rom.py at the pin) on synthetic banks; written by gen_header_vectors.py,
+# never by hand. No byte of any real ROM: every image is 64 zero banks of 0x4000 bytes with
+# synthetic fills and plants, hand-written or drawn from random.Random. Lines, hex lowercase,
+# offsets into the 1 MiB image:
+#   ladx-header-vectors 1
+#   V <name>                     a vector: hand-written ones, then random-<nn>
+#   F <offset> <length> <byte>   a fill of the zero image, in order
+#   P <offset> <hex>             planted bytes, after the fills, in order
+#   name <hex>|-                 fixHeader's name as UTF-8 bytes, or None
+#   W <offset> <hex>             every assignment fixHeader made to bank 0, in order
+#   end                          the vector's last line
+ladx-header-vectors 1
+V zero
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e 01
+W 14f e7
+end
+V no-name
+P 134 51525301020304
+name -
+W 14d e7
+W 14e 00
+W 14f 00
+W 14e 01
+W 14f e7
+end
+V empty-name
+P 134 111111111111111111111111111111
+name 
+W 134 000000000000000000000000000000
+W 14d e7
+W 14e 00
+W 14f 00
+W 14e 00
+W 14f e7
+end
+V long-name
+name 4142434445464748494a4b4c4d4e4f5051525354
+W 134 4142434445464748494a4b4c4d4e4f
+W 14d af
+W 14e 00
+W 14f 00
+W 14e 04
+W 14f e7
+end
+V utf8-cut
+name 4142434445464748494a4b4c4d4ec3a9
+W 134 4142434445464748494a4b4c4d4ec3
+W 14d 3b
+W 14e 00
+W 14f 00
+W 14e 04
+W 14f e7
+end
+V all-ff
+F 0 100000 ff
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 76
+W 14e 00
+W 14f 00
+W 14e f0
+W 14f 03
+end
+V old-checksums
+P 14d 778899
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e 01
+W 14f e7
+end
+V header-wraps
+P 143 fffefdfcfbfaf9f8f7f6
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d a3
+W 14e 00
+W 14f 00
+W 14e 0b
+W 14f e7
+end
+V last-byte
+P fffff 01
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e 01
+W 14f e8
+end
+V sum-wraps
+F 4000 8000 81
+F f8000 8000 3c
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e 81
+W 14f e7
+end
+V random-00
+P 13e fff8
+P 34686 1f7253f9e7
+P 674c6 e4dc3c
+P 463d4 cc
+P 4bf90 8abf
+name 5145344c3235
+W 134 5145344c3235000000000000000000
+W 14d 6a
+W 14e 00
+W 14f 00
+W 14e 08
+W 14f bc
+end
+V random-01
+F d7928 2559f bf
+F 428f0 2a611 e6
+F 7fd5d 33eff 73
+P 142 aaac66f141
+P dfa16 35a801684cd5
+P b1f33 6e
+name -
+W 14d f9
+W 14e 00
+W 14f 00
+W 14e 63
+W 14f 43
+end
+V random-02
+F c0ddd 7cfb 5d
+F 8a4e4 10c37 e8
+F d7546 2661d c1
+F ad26c 4c48c 5f
+P cdaa6 5fa8bc43cc
+P 136 770c
+P da746 b61cd37f65e7
+P 13b 8e2b69
+P 137cc 9929
+name -
+W 14d 42
+W 14e 00
+W 14f 00
+W 14e 9b
+W 14f 4d
+end
+V random-03
+F ce08d 242f 66
+F f6bb5 40d8 7f
+F d6286 5755 eb
+F 98a16 37049 16
+F babfe 165bc 5b
+P 133 e8
+P 147 13e5
+P 40664 75213b2c1653
+P 14f da
+P 135 496dd918
+P 14c78 de17a48acc29
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 74
+W 14e 00
+W 14f 00
+W 14e 72
+W 14f 40
+end
+V random-04
+F 7b730 4d35d 7a
+F 46df8 2d8ca fd
+F 4ad3d 60b9e d2
+F fff11 87 b2
+P 43a72 96e7
+P a2928 059f
+P 2489a 8e2518b8e2
+P 977cc 5d
+P fea47 8f6fa8c176
+P 13a 1e3d
+name 5152484938594156565a4758444a
+W 134 5152484938594156565a4758444a00
+W 14d ae
+W 14e 00
+W 14f 00
+W 14e 65
+W 14f b0
+end
+V random-05
+F 8a9c3 98b3 78
+F 846f1 55e59 29
+F acaf9 15481 88
+F e7d29 13b75 75
+P 148 8edca7
+P 73496 ad3ef1740c9a
+P 147 33ce
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d e8
+W 14e 00
+W 14f 00
+W 14e ac
+W 14f 76
+end
+V random-06
+F 16ca9 bafaf 08
+F 93c62 625eb 0e
+P 65f0a a476
+P c089f 08f760c2ab87
+name 52454b4f384f2030354a
+W 134 52454b4f384f2030354a0000000000
+W 14d 60
+W 14e 00
+W 14f 00
+W 14e 97
+W 14f 92
+end
+V random-07
+F 37d09 3bdb3 95
+F b940f 38c16 d1
+F a94d2 2adf8 f1
+F 1560a b3f8c a8
+P 140 921ef5
+P be266 d58ed007
+P 317bc 9e
+P 131 cd
+P 14f c87e06bc
+P 142 6a36b87b0285
+name 37342056544553514a43484a355257
+W 134 37342056544553514a43484a355257
+W 14d dc
+W 14e 00
+W 14f 00
+W 14e 81
+W 14f a3
+end
+V random-08
+F 7c09f 7df8b 31
+F ab1e0 3a7bb 9d
+F ce95 55808 4c
+F 34306 74f3 fb
+P 148 e0bd1bdd
+P 6fc03 8a7122
+P 136 b5cefbd893
+P b50b7 b4
+P 33dbd c2
+P 144 baa444
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 35
+W 14e 00
+W 14f 00
+W 14e a8
+W 14f 8d
+end
+V random-09
+F 1709a 4fab fc
+F afa98 b253 ce
+P 132 6d82dcf2
+P 133 5b8439398868
+name 305657555735484459375953485a32384138
+W 134 305657555735484459375953485a32
+W 14d 8d
+W 14e 00
+W 14f 00
+W 14e f0
+W 14f cd
+end
+V random-10
+F 6965f 53967 63
+P 142 37
+P 67609 3940c8ac8a95
+P 145 c22d
+P 13f 5d279f2c4395
+P 149 070f46d3bb4d
+name 5654355349334c595a4656554f4539395258
+W 134 5654355349334c595a4656554f4539
+W 14d 86
+W 14e 00
+W 14f 00
+W 14e 3d
+W 14f c8
+end
+V random-11
+F 7fde8 1503e 2a
+P 13c b8ed0a88
+P 145 1b88d2dbe36e
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d cb
+W 14e 00
+W 14f 00
+W 14e 30
+W 14f 13
+end
+V random-12
+F f9fe7 c89 c8
+P b95d6 6c9deae8a1bc
+P 27cbd 085328
+P dc132 0ad000
+name 5a464e5245364757
+W 134 5a464e524536475700000000000000
+W 14d 8e
+W 14e 00
+W 14f 00
+W 14e d3
+W 14f 84
+end
+V random-13
+F ce71e 21a36 35
+F ded6a 12d4d 9e
+F da59c 13335 16
+P bc38d 09420b8b
+name 4c5a49583156424d4155334e4a494a595351
+W 134 4c5a49583156424d4155334e4a494a
+W 14d 96
+W 14e 00
+W 14f 00
+W 14e 88
+W 14f 60
+end
+V random-14
+P b9efc 46a9
+P 137 49
+P cc92e 39
+P 3f8e1 076898
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e 04
+W 14f 16
+end
+V random-15
+F 74e9b 2bd32 e2
+F 4fc07 82643 66
+F 94d6b 2f79e c2
+F a05a2 5e2c4 c8
+P 6b73b e420
+P 145 901a
+name -
+W 14d 3d
+W 14e 00
+W 14f 00
+W 14e 31
+W 14f c5
+end
+V random-16
+F 95e3 1d9f2 81
+F 4bcb6 43778 03
+F 50a9e 4b379 c7
+F 2ab41 591fe 4c
+P 144 e83981
+P 13f 2fffe20b6726
+P d744d 98d5152c42
+P 2d94c 50e3ac2793
+name -
+W 14d 85
+W 14e 00
+W 14f 00
+W 14e 59
+W 14f 36
+end
+V random-17
+F 26d36 19895 b4
+F 3324 5321 63
+F a6002 54145 b5
+F 7d7ef 7d787 1e
+P 13f 04158ae5
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e b2
+W 14f 40
+end
+V random-18
+F 440f2 93525 04
+F eeada 10024 41
+F 5e225 2fbc0 b0
+F e4f68 1237 a2
+P 14a 38bb9c54b9
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d dd
+W 14e 00
+W 14f 00
+W 14e 8d
+W 14f 6d
+end
+V random-19
+F bfd5e 3cb9f 51
+F 43cce ad21d 82
+P 14a cfd6e103
+P 138 00b0b415
+P 144 4e3b6064ae
+P 14f 1d7b03d8
+name 425643573944
+W 134 425643573944000000000000000000
+W 14d b7
+W 14e 00
+W 14f 00
+W 14e 9a
+W 14f a9
+end
+V random-20
+F 696ca e560 81
+F b32d7 1dfaa 6b
+F 3153b 2a72f bb
+F 9bb48 8d8a a3
+P 4ee3e 2232de0f
+P 140 c2b7
+P 84dce d7
+P 73603 6c83
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e 50
+W 14f a1
+end
+V random-21
+P 4a3b8 9a73870add
+name 534c514348
+W 134 534c51434800000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e 04
+W 14f 62
+end
+V random-22
+P ac65a 209c1f
+P 13f ac
+name 304142543132
+W 134 304142543132000000000000000000
+W 14d 7d
+W 14e 00
+W 14f 00
+W 14e 02
+W 14f c2
+end
+V random-23
+F cae4c 325ec 52
+F d4401 286fa 16
+F 18b55 80ea3 98
+F 8576a 64895 41
+F 2cb82 72b9d a2
+P 14d 8db29e8b
+P 26699 b84bb08b
+P 134 48da4aeb228e
+P 142 53e495048e
+P 78120 5c117318
+P 134 1e98fa
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 61
+W 14e 00
+W 14f 00
+W 14e 3e
+W 14f e4
+end
+V random-24
+F a225e 57f03 2b
+F 936d4 59304 94
+F e29ed 15901 45
+P 137 8d81a633ea
+P 51d31 f270bceba279
+P 13b 73
+P 5e113 d4c4f6
+P 5216c 01bf5df34ca8
+P e3eef 6c3d2600
+name 
+W 134 000000000000000000000000000000
+W 14d e7
+W 14e 00
+W 14f 00
+W 14e af
+W 14f 62
+end
+V random-25
+F 26262 b24cf 87
+P 22cc1 c598
+P 141 fe
+P 6931a bc550574a2a9
+name 572039493220344b4d384232445141363342
+W 134 572039493220344b4d384232445141
+W 14d 4e
+W 14e 00
+W 14f 00
+W 14e 6e
+W 14f 18
+end
+V random-26
+F 72b32 31b9c 02
+F 983ec 5271a 08
+P 6e0a8 b1d0b1
+name 365146585356385934414457384b
+W 134 365146585356385934414457384b00
+W 14d f5
+W 14e 00
+W 14f 00
+W 14e f1
+W 14f 5d
+end
+V random-27
+F d4642 7635 db
+P c3fcd 8e25
+P 42c6 96339cfaaf3e
+P 142 caaf03d4d4
+P 145 a2b1615ecd17
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d c4
+W 14e 00
+W 14f 00
+W 14e 29
+W 14f 3d
+end
+V random-28
+F 7b53a 3e12b 83
+P 195a6 b3dfbb
+P 131 6d67
+P 137 a0b9
+P a8419 3b
+name 5956374a4e38474820444c444a33395355
+W 134 5956374a4e38474820444c444a3339
+W 14d f8
+W 14e 00
+W 14f 00
+W 14e 40
+W 14f c1
+end
+V random-29
+F 43ca5 24f80 d5
+F 4395 c8735 e6
+F 36346 74b07 a6
+F 36324 25702 33
+F b4ce0 17294 e8
+P 735ec 5c
+P 13c eb6ebf
+P 146 755fbb04
+P 138 75340a4a
+P 4763c a895f263
+name 56504b205643373031305049
+W 134 56504b205643373031305049000000
+W 14d 49
+W 14e 00
+W 14f 00
+W 14e 85
+W 14f 03
+end
+V random-30
+F d48be 21945 f5
+P 13e c298bd
+P 7215c 0db7cce08d
+P 182d8 7c19
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e 34
+W 14f 82
+end
+V random-31
+F b7787 e587 68
+F e5b06 46a2 d2
+F 5850b 721db bf
+F 6df48 27157 61
+F b85d b636a 77
+P 135 e6
+name 35375a515056545330325635
+W 134 35375a515056545330325635000000
+W 14d 96
+W 14e 00
+W 14f 00
+W 14e f7
+W 14f 32
+end
+V random-32
+F 89bed 6e0fc 98
+P 18cc9 b2c5
+P 14c 2c46e98c38cf
+P 14b 19
+P 66eae 54
+P 7692d a898c1630e95
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 27
+W 14e 00
+W 14f 00
+W 14e 9d
+W 14f 60
+end
+V random-33
+F c2f30 9740 83
+F d4634 6538 6d
+P 71a19 a91a5f9a
+P fe900 4a
+P 2d356 bcc804
+P c5a63 f2ac1aaee3
+P 62e55 bc5deb161d
+P 142 ec0ed45f
+name 3852505a57574a444930
+W 134 3852505a57574a4449300000000000
+W 14d bd
+W 14e 00
+W 14f 00
+W 14e 89
+W 14f fe
+end
+V random-34
+F c515a 2a915 e6
+F d4228 11062 79
+F 270ad 25848 a5
+F 2f46b 43cfb d2
+P 836ec e0c0545c
+P f68a0 b406812dd858
+P 8393c 92c35f2979
+P b5cf0 eff1bfd910
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e eb
+W 14f 2d
+end
+V random-35
+F 75aaa 776e0 67
+P 13a 25c0208f
+P db571 8b3b
+P 14a 89
+P 9acec cc394973
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d e3
+W 14e 00
+W 14f 00
+W 14e d7
+W 14f 24
+end
+V random-36
+F ca1ad 108ac f8
+F eafbd f19c 20
+F 150f7 512b9 00
+F 4fee3 1dedc 6c
+F 62dc5 277f1 7f
+P 132 1bed
+name 4c41445852
+W 134 4c4144585200000000000000000000
+W 14d 6c
+W 14e 00
+W 14f 00
+W 14e e4
+W 14f f6
+end
+V random-37
+F b8f3c 11c74 b3
+P 141 fd5c3d09c9
+P 855cc ae6fd607
+name 374c454e574e44504a59305745
+W 134 374c454e574e44504a593057450000
+W 14d 1a
+W 14e 00
+W 14f 00
+W 14e eb
+W 14f fd
+end
+V random-38
+F 14d27 dc3cf f4
+F 7dd7d 4d499 94
+F b585f 12396 62
+P 140 eb2a97
+name 54443958594b4e5a4448514e35325550
+W 134 54443958594b4e5a4448514e353255
+W 14d 8b
+W 14e 00
+W 14f 00
+W 14e f9
+W 14f 87
+end
+V random-39
+P a3e10 67
+P 135 1186e1
+name 38503031495058505930
+W 134 385030314950585059300000000000
+W 14d 34
+W 14e 00
+W 14f 00
+W 14e 03
+W 14f 4e
+end

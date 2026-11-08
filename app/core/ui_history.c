@@ -1,10 +1,10 @@
 #include "ui_history.h"
+#include "ui_ladx_settings.h"
 #include "ui_settings.h"
 
 #include <assert.h>
 #include <string.h>
 
-#define DETAIL_HEAD (RANDO_SETTING_COUNT + 4)
 #define WRAP_MIN 8
 
 static char *put_digits(char *out, long value, int n)
@@ -72,6 +72,7 @@ void ui_history_init(UiHistory *state, const UiHistoryInit *init)
 	assert(list != NULL && list->count >= 0 && list->count <= UI_HISTORY_MAX);
 	assert(init->spoiler_fn != NULL && init->delete_fn != NULL);
 	state->strings = init->strings;
+	state->game = init->game;
 	state->page = init->page;
 	state->width = init->width;
 	state->list = *list;
@@ -83,6 +84,7 @@ void ui_history_init(UiHistory *state, const UiHistoryInit *init)
 	state->spoiler.len = 0;
 	state->spoiler.cut = false;
 	state->line_count = 0;
+	state->detail_setting_count = 0;
 	state->spoiler_state = UI_HISTORY_SPOILER_NONE;
 	state->spoiler_fn = init->spoiler_fn;
 	state->delete_fn = init->delete_fn;
@@ -161,10 +163,31 @@ static void wrap_spoiler(UiHistory *state)
 	}
 }
 
+static void list_settings(UiHistory *state, const UiHistoryEntry *entry)
+{
+	int id;
+
+	state->detail_setting_count = 0;
+	if (entry->game == UI_GAME_ALTTP) {
+		for (id = 0; id < RANDO_SETTING_COUNT; id++)
+			state->detail_settings[state->detail_setting_count++] = id;
+		return;
+	}
+	for (id = 0; id < LADX_SETTING_COUNT; id++)
+		if (ui_ladx_setting_shown(&entry->ladx, (LadxSettingId)id))
+			state->detail_settings[state->detail_setting_count++] = id;
+}
+
+static int detail_head(const UiHistory *state)
+{
+	return state->detail_setting_count + 4;
+}
+
 static void open_detail(UiHistory *state)
 {
 	const UiHistoryEntry *entry = &state->list.entries[state->cursor];
 
+	list_settings(state, entry);
 	state->view = UI_HISTORY_VIEW_DETAIL;
 	state->detail_scroll = 0;
 	state->line_count = 0;
@@ -184,12 +207,12 @@ static void open_detail(UiHistory *state)
 static int detail_rows(const UiHistory *state)
 {
 	switch (state->spoiler_state) {
-	case UI_HISTORY_SPOILER_OK: return DETAIL_HEAD + 1 + state->line_count;
-	case UI_HISTORY_SPOILER_CUT: return DETAIL_HEAD + 2 + state->line_count;
+	case UI_HISTORY_SPOILER_OK: return detail_head(state) + 1 + state->line_count;
+	case UI_HISTORY_SPOILER_CUT: return detail_head(state) + 2 + state->line_count;
 	case UI_HISTORY_SPOILER_NONE:
 	case UI_HISTORY_SPOILER_UNREADABLE: break;
 	}
-	return DETAIL_HEAD + 1;
+	return detail_head(state) + 1;
 }
 
 static int clamp(int value, int low, int high)
@@ -240,7 +263,11 @@ static void delete_entry(UiHistory *state)
 	} else {
 		move_to(state, clamp(state->cursor, 0, state->list.count - 1));
 	}
-	set_message(state, UI_MESSAGE_INFO, outcome.list_stale ? UI_STR_HISTORY_DELETED_REFRESH : UI_STR_HISTORY_DELETED);
+	if (!outcome.list_stale)
+		set_message(state, UI_MESSAGE_INFO, UI_STR_HISTORY_DELETED);
+	else
+		set_message(state, UI_MESSAGE_INFO,
+			    state->game == UI_GAME_LADX ? UI_STR_HISTORY_DELETED_REFRESH_GBC : UI_STR_HISTORY_DELETED_REFRESH);
 }
 
 static UiHistoryEvent tab_event(UiButton button)
@@ -277,7 +304,7 @@ static UiHistoryEvent list_key(UiHistory *state, UiButton button)
 		if (count > 0)
 			confirm(state);
 		break;
-	case UI_BUTTON_B:
+	case UI_BUTTON_B: return UI_HISTORY_BACK;
 	case UI_BUTTON_MENU: return UI_HISTORY_QUIT;
 	case UI_BUTTON_L1:
 	case UI_BUTTON_R1: return tab_event(button);
@@ -422,30 +449,41 @@ static void detail_row(UiHistory *state, int index, UiScreen *out)
 		add_text(out, state->date_line);
 	} else if (index == 1) {
 		char number[16];
+		const char *seed = entry->ladx_seed;
 
-		put_decimal(number, (unsigned long)entry->seed);
-		ui_str_fill(ui_str(t, UI_STR_HISTORY_SEED), number, state->seed_line, sizeof state->seed_line);
+		if (entry->game == UI_GAME_ALTTP) {
+			put_decimal(number, (unsigned long)entry->seed);
+			seed = number;
+		}
+		ui_str_fill(ui_str(t, UI_STR_HISTORY_SEED), seed, state->seed_line, sizeof state->seed_line);
 		add_text(out, state->seed_line);
-	} else if (index < 2 + RANDO_SETTING_COUNT) {
-		RandoSettingId id = (RandoSettingId)(index - 2);
+	} else if (index < 2 + state->detail_setting_count) {
+		int id = state->detail_settings[index - 2];
 
-		row.label = ui_str(t, ui_setting_label(id));
-		row.value = ui_str(t, ui_setting_value(id, rando_setting_get(&entry->options, entry->heart_beep, id)));
+		if (entry->game == UI_GAME_ALTTP) {
+			row.label = ui_str(t, ui_setting_label((RandoSettingId)id));
+			row.value = ui_str(t, ui_setting_value((RandoSettingId)id,
+							       rando_setting_get(&entry->options, entry->heart_beep,
+										 (RandoSettingId)id)));
+		} else {
+			row.label = ui_str(t, ui_ladx_setting_label((LadxSettingId)id));
+			row.value = ui_str(t, ui_ladx_setting_value((LadxSettingId)id, entry->ladx.value[id]));
+		}
 		ui_screen_add_row(out, row);
-	} else if (index == 2 + RANDO_SETTING_COUNT) {
+	} else if (index == 2 + state->detail_setting_count) {
 		row.label = ui_str(t, UI_STR_SETTING_SPOILER);
 		row.value = ui_str(t, entry->has_spoiler ? UI_STR_SPOILER_ON : UI_STR_SPOILER_OFF);
 		ui_screen_add_row(out, row);
-	} else if (index == 3 + RANDO_SETTING_COUNT) {
+	} else if (index == 3 + state->detail_setting_count) {
 		add_text(out, "");
 	} else if (state->spoiler_state == UI_HISTORY_SPOILER_NONE) {
 		add_text(out, ui_str(t, UI_STR_HISTORY_NO_SPOILER));
 	} else if (state->spoiler_state == UI_HISTORY_SPOILER_UNREADABLE) {
 		add_text(out, ui_str(t, UI_STR_HISTORY_SPOILER_UNREADABLE));
-	} else if (index == DETAIL_HEAD) {
+	} else if (index == detail_head(state)) {
 		add_text(out, ui_str(t, UI_STR_HISTORY_SPOILER_TITLE));
-	} else if (index - DETAIL_HEAD - 1 < state->line_count) {
-		const UiHistoryLine *line = &state->lines[index - DETAIL_HEAD - 1];
+	} else if (index - detail_head(state) - 1 < state->line_count) {
+		const UiHistoryLine *line = &state->lines[index - detail_head(state) - 1];
 
 		memset(buf, ' ', line->indent);
 		memcpy(buf + line->indent, state->spoiler.text + line->offset, line->len);

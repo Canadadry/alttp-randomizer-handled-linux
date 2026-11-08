@@ -24,9 +24,10 @@
 #define CWD_MAX 4096
 #define DEFAULT_THEME "themes/default"
 
-static const char usage[] = "usage: alttpr [--sd <root>] [--theme <dir>] [--frames <n>] [--shot <file.bmp>] "
+static const char usage[] = "usage: zrando [--sd <root>] [--theme <dir>] [--frames <n>] [--shot <file.bmp>] "
 			    "[--shot-text <file>] [--seed <n>] [--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] "
-			    "[--base-md5 <32 hex>] [--unsupported <setting>=<value>,<setting>=<value>] [--] [<key>...]\n"
+			    "[--base-md5 <32 hex>] [--unsupported <setting>=<value>,<setting>=<value>] [--ladx-seed <32 hex>] "
+			    "[--] [<key>...]\n"
 			    "keys: up down left right a b x y l1 r1 l2 r2 select start menu, <key>*<n> repeats, "
 			    "- reads keys from standard input; with keys, the run ends after the last one\n";
 
@@ -43,7 +44,6 @@ typedef struct ScriptPos {
 	int key, repeat;
 } ScriptPos;
 
-/* tab_count is that of the screen render refused. */
 typedef struct Presenter {
 	SdlRender *render;
 	SDL_Surface *offscreen, *screen;
@@ -63,7 +63,7 @@ static char default_theme[CWD_MAX];
 
 static void fail_usage(const char *what, const char *arg)
 {
-	fprintf(stderr, "alttpr: %s%s%s\n%s", what, arg != NULL ? ": " : "", arg != NULL ? arg : "", usage);
+	fprintf(stderr, "zrando: %s%s%s\n%s", what, arg != NULL ? ": " : "", arg != NULL ? arg : "", usage);
 	exit(2);
 }
 
@@ -72,7 +72,7 @@ static void fail_setup(const char *what, const char *why)
 {
 	static char line[CWD_MAX + 64];
 
-	snprintf(line, sizeof line, "alttpr: %s%s%s\n", what, why != NULL ? ": " : "", why != NULL ? why : "");
+	snprintf(line, sizeof line, "zrando: %s%s%s\n", what, why != NULL ? ": " : "", why != NULL ? why : "");
 	IMG_Quit();
 	TTF_Quit();
 	SDL_Quit();
@@ -151,7 +151,6 @@ static void parse_args(int argc, char **argv)
 	}
 }
 
-/* Without --theme: themes/default next to the binary, argv[0]'s directory, or . when it has no slash. */
 static void use_default_theme(const char *argv0)
 {
 	const char *slash = argv0 != NULL ? strrchr(argv0, '/') : NULL;

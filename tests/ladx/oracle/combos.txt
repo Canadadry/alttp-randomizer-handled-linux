@@ -1,0 +1,31 @@
+# The LADX combos, hand-written; read by ladx_cases.py, which expands them into the expected
+# tests/ladx/combos/ directories. One line each:
+#   cross <keyA> <keyB>          every non-default tier-1 value of A with every one of B (cells with
+#                                a default are the baseline or a single case); a cell whose pair
+#                                vector in settings_validate.txt changes its own values is skipped
+#   case <k=v> <k=v> ...         one combo of two or more non-default tier-1 values, distinct keys
+#   refused <k=v>                a tier-1 value LADXR refuses on every seed with the other settings
+#                                at their defaults: no single case, at least one combo holds it
+#   sample <nn> <k=v> ...        a random sample combo, folder sample-<nn>, written once by
+#                                gen_tables.sh --sample (gen_tables.py's draw) and never re-drawn
+# Names and config.txt follow LADXR's settings order, whatever the order here.
+cross logic dungeon_keys
+cross goal accessibility
+cross hardmode hpmode
+case dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=keysanity dungeon_maps=keysanity keyholesanity=1
+# boomerang=default with accessibility=all: LADXR's fill asserts on every seed (D7's Pit Switch
+# (Range) key location is unreachable without the boomerang in the pool); fine with accessibility=goal.
+refused boomerang=default
+case accessibility=goal boomerang=default
+sample 01 logic=hard seashells=0 heartcontainers=0 instruments=1 rooster=0 boomerang=trade nightmare_keys=removed dungeon_beaks=removed dungeon_maps=keysanity boss=random goal=instruments goalcount=2 itempool=pain hpmode=inverted hardmode=hero steal=never owlstatues=dungeon keyholesanity=1 quickswap=b textmode=none lowhpbeep=default noflash=0 linkspalette=4 music=shifted
+sample 02 logic=glitched accessibility=goal race=1 instruments=1 witch=0 rooster=0 boomerang=default dungeon_keys=keysanity dungeon_beaks=removed boss=shuffle miniboss=random goal=instruments goalcount=1 itempool=keyup hpmode=inverted hardmode=oracle steal=never evilshop=enabled bowwow=swordless keyholesanity=1 superweapons=1 quickswap=b lowhpbeep=none noflash=0 linkspalette=6 music=off
+sample 03 logic=hell accessibility=goal seashells=0 heartcontainers=0 instruments=1 witch=0 rooster=0 boomerang=default nightmare_keys=removed dungeon_maps=removed boss=shuffle miniboss=shuffle goal=specific goalcount=random itempool=casual hardmode=ohko steal=never bowwow=always keyholesanity=1 superweapons=1 textmode=notextbox nagmessages=1 follower=yipyip music=off
+sample 04 logic=casual seashells=0 heartcontainers=0 instruments=1 rooster=0 boomerang=trade nightmare_keys=keysanity dungeon_beaks=keysanity itempool=pain hpmode=5hit steal=never bowwow=always owlstatues=both keyholesanity=1 textmode=default lowhpbeep=none nagmessages=1 follower=yipyip linkspalette=4
+sample 05 logic=hard accessibility=goal race=1 seashells=0 heartcontainers=0 instruments=1 tradequest=0 boomerang=default dungeon_keys=keysanity nightmare_keys=keysanity dungeon_maps=keysanity boss=shuffle goal=5-8 goalcount=6 itempool=pain hardmode=ohko steal=always bowwow=always owlstatues=both superweapons=1 quickswap=b textmode=default lowhpbeep=default follower=yipyip linkspalette=4 music=random
+sample 06 logic=hard race=1 heartpiece=0 instruments=1 rooster=0 boomerang=trade dungeon_keys=keysanity nightmare_keys=removed dungeon_beaks=keysanity dungeon_maps=removed goal=open goalcount=0 itempool=keyup hpmode=inverted steal=never bowwow=swordless superweapons=1 quickswap=b textmode=notextbox lowhpbeep=default noflash=0 nagmessages=1 follower=navi linkspalette=3 music=off
+sample 07 logic=glitched accessibility=goal seashells=0 instruments=1 tradequest=0 witch=0 dungeon_keys=keysanity nightmare_keys=keysanity dungeon_beaks=removed boss=random miniboss=random enemies=overworld goal=specific goalcount=random itempool=casual hpmode=low hardmode=ohko steal=ggs bowwow=swordless owlstatues=dungeon quickswap=b textmode=default noflash=0 nagmessages=1 follower=fox linkspalette=7 music=shifted
+sample 08 logic=casual race=1 instruments=1 tradequest=0 witch=0 rooster=0 dungeon_keys=keysanity dungeon_maps=keysanity miniboss=shuffle goal=specific itempool=keyup hpmode=5hit hardmode=oracle steal=always superweapons=1 textmode=notextbox lowhpbeep=none nagmessages=1 follower=ghost linkspalette=6
+sample 09 seashells=0 witch=0 rooster=0 dungeon_keys=removed nightmare_keys=keysanity dungeon_beaks=keysanity miniboss=random enemies=overworld goal=open-4 goalcount=random itempool=casual hpmode=1 hardmode=ohko steal=never bowwow=always quickswap=a textmode=none noflash=0 follower=navi linkspalette=5
+sample 10 logic=glitched seashells=0 instruments=1 witch=0 rooster=0 boomerang=trade nightmare_keys=removed dungeon_beaks=removed dungeon_maps=removed enemies=overworld goalcount=1 itempool=pain hpmode=1 steal=always evilshop=enabled quickswap=a textmode=default follower=ghost linkspalette=5 music=shifted
+sample 11 logic=glitched race=1 seashells=0 heartcontainers=0 tradequest=0 witch=0 boomerang=trade dungeon_keys=removed dungeon_beaks=keysanity boss=random goal=instruments goalcount=random hpmode=inverted hardmode=oracle steal=never bowwow=always owlstatues=overworld keyholesanity=1 quickswap=a textmode=default noflash=0 nagmessages=1 follower=fox linkspalette=2 music=shifted
+sample 12 logic=hell accessibility=goal heartpiece=0 seashells=0 instruments=1 tradequest=0 dungeon_keys=keysanity nightmare_keys=removed dungeon_beaks=keysanity dungeon_maps=removed boss=shuffle miniboss=shuffle enemies=overworld goal=specific goalcount=1 itempool=keyup hpmode=inverted hardmode=oracle steal=always owlstatues=overworld superweapons=1 lowhpbeep=default noflash=0 follower=fox linkspalette=4 music=off

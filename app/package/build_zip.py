@@ -1,12 +1,14 @@
-"""Usage: python3 -I build_zip.py [--check] ALTTPR PACKAGE_DIR DATA_DIR THEME_DIR ZIP
+"""Usage: python3 -I build_zip.py [--check] ZRANDO PACKAGE_DIR DATA_DIR THEME_DIR ZIP
 
-Writes ZIP, the release whose only top-level folder is App/ALttPR/: ALTTPR (the device binary),
-launch.sh, config.json and icon.png from PACKAGE_DIR, base.bps from DATA_DIR, and every file of
-THEME_DIR as App/ALttPR/themes/default/. THEME_DIR must hold theme.ini and only regular, non-hidden
-files: a subfolder, a symlink or a name starting with "." is refused. The same inputs give the same
-bytes. After writing, reads ZIP back and checks its entry list, every file's bytes against its
-source and the modes. --check only reads an existing ZIP back against the inputs. Exits non-zero
-with one line on error.
+Writes ZIP, the release whose only top-level folder is App/ZeldaRando/: ZRANDO (the device binary),
+launch.sh, config.json and icon.png from PACKAGE_DIR, base.bps from DATA_DIR as
+App/ZeldaRando/alttp/base.bps, every patch table of DATA_DIR/ladx/ as App/ZeldaRando/ladx/tables/
+(only regular, non-hidden .txt files, order.txt among them: the app reads every .txt there), and every
+file of THEME_DIR as App/ZeldaRando/themes/default/.
+THEME_DIR must hold theme.ini and only regular, non-hidden files: a subfolder, a symlink or a name
+starting with "." is refused. The same inputs give the same bytes. After writing, reads ZIP back and
+checks its entry list, every file's bytes against its source and the modes. --check only reads an
+existing ZIP back against the inputs. Exits non-zero with one line on error.
 """
 
 import os
@@ -14,9 +16,12 @@ import stat
 import sys
 import zipfile
 
-ROOT = "App/ALttPR/"
+ROOT = "App/ZeldaRando/"
 THEMES = ROOT + "themes/"
 THEME = THEMES + "default/"
+ALTTP = ROOT + "alttp/"
+LADX = ROOT + "ladx/"
+TABLES = LADX + "tables/"
 EPOCH = (1980, 1, 1, 0, 0, 0)
 UNIX = 3
 DIR_MODE = 0o40755
@@ -30,7 +35,6 @@ class PackageError(Exception):
 
 
 def theme_sources(theme_dir):
-    """{entry name: (source path, mode)} for every file of theme_dir, refused unless the folder is a flat theme."""
     if not os.path.isdir(theme_dir):
         raise PackageError("theme folder not found: %s" % theme_dir)
     files = {}
@@ -49,19 +53,40 @@ def theme_sources(theme_dir):
     return files
 
 
+def tables_sources(tables_dir):
+    if not os.path.isdir(tables_dir):
+        raise PackageError("tables folder not found: %s" % tables_dir)
+    files = {}
+    for name in sorted(os.listdir(tables_dir)):
+        path = os.path.join(tables_dir, name)
+        if name.startswith("."):
+            raise PackageError("hidden file in the tables: %s" % path)
+        st = os.lstat(path)
+        if stat.S_ISDIR(st.st_mode):
+            raise PackageError("subfolder in the tables (tables are flat): %s" % path)
+        if not stat.S_ISREG(st.st_mode):
+            raise PackageError("not a regular file in the tables: %s" % path)
+        if not name.endswith(".txt"):
+            raise PackageError("not a .txt table: %s" % path)
+        files[TABLES + name] = (path, FILE_MODE)
+    if TABLES + "order.txt" not in files:
+        raise PackageError("missing input: %s" % os.path.join(tables_dir, "order.txt"))
+    return files
+
+
 def sources(binary, package_dir, data_dir, theme_dir):
-    """{entry name: (source path, mode)} for every file entry."""
-    files = {"alttpr": (binary, EXEC_MODE)}
+    files = {"zrando": (binary, EXEC_MODE)}
     for name, mode in (("launch.sh", EXEC_MODE), ("config.json", FILE_MODE), ("icon.png", FILE_MODE)):
         files[name] = (os.path.join(package_dir, name), mode)
-    files["base.bps"] = (os.path.join(data_dir, "base.bps"), FILE_MODE)
     files = {ROOT + name: src for name, src in files.items()}
+    files[ALTTP + "base.bps"] = (os.path.join(data_dir, "base.bps"), FILE_MODE)
+    files.update(tables_sources(os.path.join(data_dir, "ladx")))
     files.update(theme_sources(theme_dir))
     return files
 
 
 def expected_entries(files):
-    return sorted(["App/", ROOT, THEMES, THEME] + list(files))
+    return sorted(["App/", ROOT, ALTTP, LADX, TABLES, THEMES, THEME] + list(files))
 
 
 def entry(name, mode):

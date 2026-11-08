@@ -1,0 +1,249 @@
+ladx-tables 1
+group goal-fixed
+tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b rooms_color_dungeon room_sprite_data_overworld room_sprite_data_indoor background_tiles background_attributes
+unit goal-fixed.1 goal
+E 5-8
+nothing
+E instruments
+nothing
+E maze
+nothing
+E open
+nothing
+E open-4
+nothing
+E seashells
+nothing
+E specific
+nothing
+E vanilla
+nothing
+unit goal-fixed.2 rooster goal evilshop bowwow asm:DUNGEON_CHAIN
+E 0 5-8 "" always 0
+nothing
+E 0 5-8 "" normal 0
+nothing
+E 0 5-8 "" swordless 0
+nothing
+E 0 5-8 enabled always 0
+nothing
+E 0 5-8 enabled normal 0
+nothing
+E 0 5-8 enabled swordless 0
+nothing
+E 0 instruments "" always 0
+nothing
+E 0 instruments "" normal 0
+nothing
+E 0 instruments "" swordless 0
+nothing
+E 0 instruments enabled always 0
+nothing
+E 0 instruments enabled normal 0
+nothing
+E 0 instruments enabled swordless 0
+nothing
+E 0 maze "" always 0
+nothing
+E 0 maze "" normal 0
+nothing
+E 0 maze "" swordless 0
+nothing
+E 0 maze enabled always 0
+nothing
+E 0 maze enabled normal 0
+nothing
+E 0 maze enabled swordless 0
+nothing
+E 0 open "" always 0
+nothing
+E 0 open "" normal 0
+nothing
+E 0 open "" swordless 0
+nothing
+E 0 open enabled always 0
+nothing
+E 0 open enabled normal 0
+nothing
+E 0 open enabled swordless 0
+nothing
+E 0 open-4 "" always 0
+nothing
+E 0 open-4 "" normal 0
+nothing
+E 0 open-4 "" swordless 0
+nothing
+E 0 open-4 enabled always 0
+nothing
+E 0 open-4 enabled normal 0
+nothing
+E 0 open-4 enabled swordless 0
+nothing
+E 0 seashells "" always 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 0 seashells "" normal 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 0 seashells "" swordless 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 0 seashells enabled always 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 0 seashells enabled normal 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 0 seashells enabled swordless 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 0 specific "" always 0
+nothing
+E 0 specific "" normal 0
+nothing
+E 0 specific "" swordless 0
+nothing
+E 0 specific enabled always 0
+nothing
+E 0 specific enabled normal 0
+nothing
+E 0 specific enabled swordless 0
+nothing
+E 0 vanilla "" always 0
+nothing
+E 0 vanilla "" normal 0
+nothing
+E 0 vanilla "" swordless 0
+nothing
+E 0 vanilla enabled always 0
+nothing
+E 0 vanilla enabled normal 0
+nothing
+E 0 vanilla enabled swordless 0
+nothing
+E 1 5-8 "" always 0
+nothing
+E 1 5-8 "" normal 0
+nothing
+E 1 5-8 "" swordless 0
+nothing
+E 1 5-8 enabled always 0
+nothing
+E 1 5-8 enabled normal 0
+nothing
+E 1 5-8 enabled swordless 0
+nothing
+E 1 instruments "" always 0
+nothing
+E 1 instruments "" normal 0
+nothing
+E 1 instruments "" swordless 0
+nothing
+E 1 instruments enabled always 0
+nothing
+E 1 instruments enabled normal 0
+nothing
+E 1 instruments enabled swordless 0
+nothing
+E 1 maze "" always 0
+nothing
+E 1 maze "" normal 0
+nothing
+E 1 maze "" swordless 0
+nothing
+E 1 maze enabled always 0
+nothing
+E 1 maze enabled normal 0
+nothing
+E 1 maze enabled swordless 0
+nothing
+E 1 open "" always 0
+nothing
+E 1 open "" normal 0
+nothing
+E 1 open "" swordless 0
+nothing
+E 1 open enabled always 0
+nothing
+E 1 open enabled normal 0
+nothing
+E 1 open enabled swordless 0
+nothing
+E 1 open-4 "" always 0
+nothing
+E 1 open-4 "" normal 0
+nothing
+E 1 open-4 "" swordless 0
+nothing
+E 1 open-4 enabled always 0
+nothing
+E 1 open-4 enabled normal 0
+nothing
+E 1 open-4 enabled swordless 0
+nothing
+E 1 seashells "" always 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 1 seashells "" normal 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 1 seashells "" swordless 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 1 seashells enabled always 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 1 seashells enabled normal 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 1 seashells enabled swordless 0
+B 64acb @b9c1+5 @541d6+4 4a =1 4a0d4b1f4b334b @1a8c3+6 99fe70 @61f96+5 050c20453610cd344b @c94d+4 =1 41dbbeca123b7e3c27 @15c0c+6 @b865+4 c9fa41 @672a4+5 =1 @15c4b+7 c3344b @9703+4 =1 @64d1b+7 @548e5+5 c32e4c @62c26+7 1438023e14a7c84f21494b @6af4+4 101e9e04102a9e0410369e0410429e04104e9e04105a9e0410669e04 =1 729e04107e9e04108a9e04241e9e04242a9e0424369e0424429e04244e9e04245a9e0424669e0424729e04247e9e04248a9e @8e4b3+89
+T texts 1a3 @26981+4 @272de+5 @5991b+7 @5b9ba+f 73ff
+T entities 2e9 4435 @59131+1
+T rooms_indoor_b e9 @2f72b+38
+E 1 specific "" always 0
+nothing
+E 1 specific "" normal 0
+nothing
+E 1 specific "" swordless 0
+nothing
+E 1 specific enabled always 0
+nothing
+E 1 specific enabled normal 0
+nothing
+E 1 specific enabled swordless 0
+nothing
+E 1 vanilla "" always 0
+nothing
+E 1 vanilla "" normal 0
+nothing
+E 1 vanilla "" swordless 0
+nothing
+E 1 vanilla enabled always 0
+nothing
+E 1 vanilla enabled normal 0
+nothing
+E 1 vanilla enabled swordless 0
+nothing

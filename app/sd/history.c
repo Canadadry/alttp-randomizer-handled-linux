@@ -180,90 +180,28 @@ UiStrId rando_history_delete_text(RandoHistoryDeleteStatus status)
 	return delete_texts[status];
 }
 
-/* 512: "/states/<core>/" plus any file name (NAME_MAX 255); a shorter one skips long state files. */
-#define DELETE_PATH_MAX (RANDO_SEED_PATH_MAX + 512)
-
-static bool present(const char *path)
-{
-	struct stat st;
-
-	return lstat(path, &st) == 0;
-}
-
-static bool gone(const char *dir, const char *name, const char *ext)
-{
-	char path[DELETE_PATH_MAX];
-
-	snprintf(path, sizeof path, "%s/%s%s", dir, name, ext);
-	remove(path);
-	return !present(path);
-}
-
-static bool find_state(const char *dir, const char *prefix, char path[DELETE_PATH_MAX])
-{
-	size_t n = strlen(prefix);
-	DIR *d = opendir(dir);
-	struct dirent *ent;
-	bool found = false;
-
-	if (d == NULL)
-		return false;
-	while (!found && (ent = readdir(d)) != NULL) {
-		struct stat st;
-		int len;
-
-		if (strncmp(ent->d_name, prefix, n) != 0)
-			continue;
-		len = snprintf(path, DELETE_PATH_MAX, "%s/%s", dir, ent->d_name);
-		if (len < 0 || len >= DELETE_PATH_MAX)
-			continue;
-		found = lstat(path, &st) == 0 && S_ISREG(st.st_mode);
-	}
-	closedir(d);
-	return found;
-}
-
-static bool delete_profile(const char *profile, const char *base)
-{
-	char dir[DELETE_PATH_MAX], prefix[RANDO_NAME_ROM_MAX + 8], path[DELETE_PATH_MAX];
-	struct stat st;
-	bool ok;
-
-	if (stat(profile, &st) != 0 || !S_ISDIR(st.st_mode))
-		return true;
-	snprintf(dir, sizeof dir, "%s/" RANDO_SD_SAVES_DIR "/" RANDO_SD_CORE_DIR, profile);
-	ok = gone(dir, base, ".srm");
-	snprintf(dir, sizeof dir, "%s/" RANDO_SD_STATES_DIR "/" RANDO_SD_CORE_DIR, profile);
-	snprintf(prefix, sizeof prefix, "%s.state", base);
-	/* One rescan per removal: removing while dir is open leaves readdir's result unspecified. */
-	while (find_state(dir, prefix, path)) {
-		remove(path);
-		if (present(path))
-			return false;
-	}
-	return ok;
-}
-
 static RandoHistoryDeleteStatus delete_files(RandoHistory *h, const UiHistoryEntry *entry)
 {
-	char base[RANDO_NAME_ROM_MAX];
-	size_t n = strlen(entry->name.rom);
-	bool ok;
+	static const char *const save_exts[] = {".srm"};
+	static const char *const record_exts[] = {".json"};
+	const char *profiles[RANDO_HISTORY_PROFILES];
+	RandoSeedPlace place;
 	int i;
 
-	assert(rando_name_code_valid(entry->name.code));
-	assert(n > 4 && n < sizeof base && strcmp(entry->name.rom + n - 4, ".sfc") == 0);
-	memcpy(base, entry->name.rom, n - 4);
-	base[n - 4] = '\0';
-	if (!gone(h->rom_dir, entry->name.rom, ""))
-		return RANDO_HISTORY_DELETE_ROM;
-	ok = gone(h->game_config_dir, base, ".cfg");
 	for (i = 0; i < RANDO_HISTORY_PROFILES; i++)
-		if (!delete_profile(h->profiles[i], base))
-			ok = false;
-	if (!ok)
-		return RANDO_HISTORY_DELETE_FILES;
-	return gone(h->history_dir, entry->name.code, ".json") ? RANDO_HISTORY_DELETE_OK : RANDO_HISTORY_DELETE_RECORD;
+		profiles[i] = h->profiles[i];
+	place.rom_dir = h->rom_dir;
+	place.game_config_dir = h->game_config_dir;
+	place.history_dir = h->history_dir;
+	place.profiles = profiles;
+	place.profile_count = RANDO_HISTORY_PROFILES;
+	place.core = RANDO_SD_CORE_DIR;
+	place.rom_ext = ".sfc";
+	place.save_exts = save_exts;
+	place.save_ext_count = 1;
+	place.record_exts = record_exts;
+	place.record_ext_count = 1;
+	return rando_seed_files_delete(&place, &entry->name);
 }
 
 void rando_history_delete(void *ctx, const UiHistoryEntry *entry, UiHistoryDeleteOutcome *outcome)

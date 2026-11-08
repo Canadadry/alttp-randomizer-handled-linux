@@ -1,0 +1,23 @@
+ladx-tables 1
+group bosses
+tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b rooms_color_dungeon room_sprite_data_overworld room_sprite_data_indoor background_tiles background_attributes
+unit bosses.1
+E
+B cbe0 @d08a+5 @ce00+5 00
+B 18533 =1 20
+B 514ac c3 @50b97+4 @3+4
+B 53fe0 @b5bd+4 @ae49+5 f6fe45c8fe7fc8c3b554 =d
+B d94f7 18 =1
+B d953b 00
+B d9c14 00
+unit bosses.2
+E
+B 9fc8 =2
+B 10521 =1 91
+unit bosses.3
+E
+B da04 =1 2bd9
+B da0f =1 06 =1
+B 1121d =1 00
+B 11226 =1 00
+B 1127f =1 00

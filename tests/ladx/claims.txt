@@ -1,0 +1,25 @@
+# The stage and the write-log groups every case and combo is claimed at (tests/ladx/README.md, "E2E driver and claims").
+stage fill
+group fixed
+group frame-counter
+group goal-fixed
+group music-fixed
+group options
+group hints
+rom-group bank3e
+rom-group endscreen
+rom-group marin
+rom-group music
+rom-group notext
+rom-group goal
+rom-group items
+rom-group entrances
+rom-group bosses
+rom-group enemizer
+rom-group warp-home
+rom-group title
+rom-group sprites
+rom-group save
+rom-group header
+spoiler
+net

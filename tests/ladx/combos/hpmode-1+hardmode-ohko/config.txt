@@ -1,0 +1,2 @@
+hpmode=1
+hardmode=ohko

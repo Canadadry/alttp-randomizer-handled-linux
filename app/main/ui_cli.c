@@ -14,7 +14,7 @@
 
 static const char usage[] = "usage: ui_cli --sd <root> [--every] [--cols <n>] [--lines <n>] [--seed <n>] "
 			    "[--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] [--base-md5 <32 hex>] "
-			    "[--unsupported <setting>=<value>,<setting>=<value>] [--] <key>...\n"
+			    "[--unsupported <setting>=<value>,<setting>=<value>] [--ladx-seed <32 hex>] [--] <key>...\n"
 			    "keys: up down left right a b x y l1 r1 l2 r2 select start menu, <key>*<n> repeats, "
 			    "- reads keys from standard input\n";
 

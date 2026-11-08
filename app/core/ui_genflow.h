@@ -1,9 +1,11 @@
 #ifndef UI_GENFLOW_H
 #define UI_GENFLOW_H
 
+#include "ladx_settings.h"
 #include "rando_name.h"
 #include "rando_options.h"
 #include "rando_settings.h"
+#include "ui_games.h"
 #include "ui_input.h"
 #include "ui_screen.h"
 #include "ui_strings.h"
@@ -13,8 +15,10 @@
 #define UI_GENFLOW_STATUS_MAX 96
 
 typedef struct UiGenRequest {
+	UiGame game;
 	RandoOptions options;
 	RandoHeartBeep heart_beep;
+	LadxSettings ladx;
 	bool spoiler;
 } UiGenRequest;
 

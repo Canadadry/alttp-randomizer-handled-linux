@@ -1,0 +1,2 @@
+logic=glitched
+dungeon_keys=removed

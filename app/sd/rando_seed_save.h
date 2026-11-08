@@ -8,11 +8,14 @@
 
 #include <stdbool.h>
 
-#define RANDO_SD_ROM_DIR "Roms/SFC/ALttPR"
-#define RANDO_SD_HISTORY_DIR "App/ALttPR/history"
-#define RANDO_SD_SETTINGS_FILE "App/ALttPR/settings.json"
-#define RANDO_SD_BASE_ROM_FILE "App/ALttPR/base.sfc"
-#define RANDO_SD_BASE_PATCH_FILE "App/ALttPR/base.bps"
+#define RANDO_SD_APP_DIR "App/ZeldaRando"
+#define RANDO_SD_LAST_GAME_FILE RANDO_SD_APP_DIR "/settings.json"
+#define RANDO_SD_ALTTP_DIR RANDO_SD_APP_DIR "/alttp"
+#define RANDO_SD_ROM_DIR "Roms/SFC/ZeldaRando"
+#define RANDO_SD_HISTORY_DIR RANDO_SD_ALTTP_DIR "/history"
+#define RANDO_SD_SETTINGS_FILE RANDO_SD_ALTTP_DIR "/settings.json"
+#define RANDO_SD_BASE_ROM_FILE RANDO_SD_ALTTP_DIR "/base.sfc"
+#define RANDO_SD_BASE_PATCH_FILE RANDO_SD_ALTTP_DIR "/base.bps"
 #define RANDO_SD_LIST_CACHE6 "Roms/SFC/SFC_cache6.db"
 #define RANDO_SD_LIST_CACHE2 "Roms/SFC/SFC_cache2.db"
 #define RANDO_SD_PROFILE_CURRENT "Saves/CurrentProfile"
@@ -22,6 +25,16 @@
 #define RANDO_SD_SAVES_DIR "saves"
 #define RANDO_SD_STATES_DIR "states"
 #define RANDO_SD_GAME_CONFIG_DIR RANDO_SD_ROM_DIR "/.game_config"
+#define RANDO_SD_LADX_DIR RANDO_SD_APP_DIR "/ladx"
+#define RANDO_SD_LADX_BASE_FILE RANDO_SD_LADX_DIR "/base.gbc"
+#define RANDO_SD_LADX_TABLES_DIR RANDO_SD_LADX_DIR "/tables"
+#define RANDO_SD_LADX_HISTORY_DIR RANDO_SD_LADX_DIR "/history"
+#define RANDO_SD_LADX_SETTINGS_FILE RANDO_SD_LADX_DIR "/settings.json"
+#define RANDO_SD_LADX_ROM_DIR "Roms/GBC/ZeldaRando"
+#define RANDO_SD_LADX_GAME_CONFIG_DIR RANDO_SD_LADX_ROM_DIR "/.game_config"
+#define RANDO_SD_LADX_LIST_CACHE6 "Roms/GBC/GBC_cache6.db"
+#define RANDO_SD_LADX_LIST_CACHE2 "Roms/GBC/GBC_cache2.db"
+#define RANDO_SD_LADX_CORE_DIR "Gambatte"
 #define RANDO_SEED_PATH_MAX 1024
 #define RANDO_SEED_DIR_MAX (RANDO_SEED_PATH_MAX - RANDO_NAME_ROM_MAX - 2)
 

@@ -12,6 +12,7 @@ typedef char key_names_match_buttons[sizeof key_names / sizeof key_names[0] == U
 
 static uint32_t fixed_seed_value;
 static RandoRecordDate fixed_date_value;
+static uint8_t fixed_ladx_seed_value[RANDO_LADX_SEED_BYTES];
 
 static uint32_t fixed_seed(void)
 {
@@ -21,6 +22,12 @@ static uint32_t fixed_seed(void)
 static void fixed_date(RandoRecordDate *out)
 {
 	*out = fixed_date_value;
+}
+
+static bool fixed_ladx_seed(uint8_t seed[RANDO_LADX_SEED_BYTES])
+{
+	memcpy(seed, fixed_ladx_seed_value, RANDO_LADX_SEED_BYTES);
+	return true;
 }
 
 const char *rando_fixed_key_name(UiButton button)
@@ -121,22 +128,27 @@ static int hex_digit(char c)
 	return -1;
 }
 
-static bool parse_md5(const char *s, uint8_t out[RANDO_MD5_SIZE])
+static bool parse_hex(const char *s, uint8_t *out, int n)
 {
-	uint8_t md5[RANDO_MD5_SIZE];
+	uint8_t bytes[RANDO_LADX_SEED_BYTES > RANDO_MD5_SIZE ? RANDO_LADX_SEED_BYTES : RANDO_MD5_SIZE];
 	int i;
 
-	if (strlen(s) != 2 * RANDO_MD5_SIZE)
+	if (n > (int)sizeof bytes || strlen(s) != 2 * (size_t)n)
 		return false;
-	for (i = 0; i < RANDO_MD5_SIZE; i++) {
+	for (i = 0; i < n; i++) {
 		int hi = hex_digit(s[2 * i]), lo = hex_digit(s[2 * i + 1]);
 
 		if (hi < 0 || lo < 0)
 			return false;
-		md5[i] = (uint8_t)(hi * 16 + lo);
+		bytes[i] = (uint8_t)(hi * 16 + lo);
 	}
-	memcpy(out, md5, RANDO_MD5_SIZE);
+	memcpy(out, bytes, (size_t)n);
 	return true;
+}
+
+static bool parse_md5(const char *s, uint8_t out[RANDO_MD5_SIZE])
+{
+	return parse_hex(s, out, RANDO_MD5_SIZE);
 }
 
 static bool field(const char *s, int from, int n, int min, int max, int *out)
@@ -165,7 +177,6 @@ static bool parse_date(const char *s, RandoRecordDate *out)
 	return true;
 }
 
-/* <setting>=<value> in s[0..len), both library names; false on anything else. */
 static bool parse_setting(const char *s, size_t len, RandoSettingId *id, int *value)
 {
 	char buf[RANDO_FIXED_TOKEN_MAX + 1];
@@ -202,7 +213,7 @@ bool rando_fixed_run_takes(const char *option)
 {
 	return strcmp(option, "--seed") == 0 || strcmp(option, "--date") == 0 ||
 	       strcmp(option, "--source-md5") == 0 || strcmp(option, "--base-md5") == 0 ||
-	       strcmp(option, "--unsupported") == 0;
+	       strcmp(option, "--unsupported") == 0 || strcmp(option, "--ladx-seed") == 0;
 }
 
 bool rando_fixed_run_option(RandoFixedRun *run, const char *option, const char *value)
@@ -220,6 +231,10 @@ bool rando_fixed_run_option(RandoFixedRun *run, const char *option, const char *
 		if (!parse_md5(value, run->source_md5))
 			return false;
 		run->has_source_md5 = true;
+	} else if (strcmp(option, "--ladx-seed") == 0) {
+		if (!parse_hex(value, run->ladx_seed, RANDO_LADX_SEED_BYTES))
+			return false;
+		run->has_ladx_seed = true;
 	} else if (strcmp(option, "--base-md5") == 0) {
 		if (!parse_md5(value, run->base_md5))
 			return false;
@@ -246,6 +261,11 @@ void rando_fixed_run_apply(const RandoFixedRun *run, RandoAppShell *shell)
 	if (run->has_date) {
 		fixed_date_value = run->date;
 		shell->gen.date = fixed_date;
+		shell->ladx_gen.date = fixed_date;
+	}
+	if (run->has_ladx_seed) {
+		memcpy(fixed_ladx_seed_value, run->ladx_seed, RANDO_LADX_SEED_BYTES);
+		shell->ladx_gen.seed = fixed_ladx_seed;
 	}
 	if (run->has_source_md5)
 		memcpy(shell->gen.source_md5, run->source_md5, RANDO_MD5_SIZE);

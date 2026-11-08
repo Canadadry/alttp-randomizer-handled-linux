@@ -1,0 +1,23 @@
+ladx-tables 1
+group music-fixed
+tables texts entities rooms_overworld_top rooms_overworld_bottom rooms_indoor_a rooms_indoor_b rooms_color_dungeon room_sprite_data_overworld room_sprite_data_indoor background_tiles background_attributes
+unit music-fixed.1 music
+E ""
+nothing
+E off
+B 6c01e af000000
+B 7801e af000000
+E random
+nothing
+E shifted
+nothing
+unit music-fixed.2 music
+E ""
+nothing
+E off
+nothing
+E random
+nothing
+E shifted
+B 6c9c2 ff0722 =1 8c =1 f10051 =1 aa =1 00 =1 4f =1 9a =1 e30223 =1 65 =1 a1 =1 da030f =1 41 =1 71 =1 9e =1 c804f00416 =1 3a =1 5b =1 7c =1 99 =1 b505d005ea0502 =1 17 =1 2d =1 41 =1 54 =1 65 =1 76 =1 87 =1 96 =1 a406b106be06c906d406df06e906f306fb0604 =1 0d =1 13 =1 1b =1 21 =1 27 =1 2e =1 33 =1 38 =1 3d =1 42 =1 46 =1 4b =1 4f =1 53 =1 56 =1 59 =1 5c =1 5f =1 62 =1 65 =1 68 =1 6a =1 6c =1 6e =1 70 =1 72 =1 20 =1
+B 789bf ff0722 =1 8c =1 f10051 =1 aa =1 00 =1 4f =1 9a =1 e30223 =1 65 =1 a1 =1 da030f =1 41 =1 71 =1 9e =1 c804f00416 =1 3a =1 5b =1 7c =1 99 =1 b505d005ea0502 =1 17 =1 2d =1 41 =1 54 =1 65 =1 76 =1 87 =1 96 =1 a406b106be06c906d406df06e906f306fb0604 =1 0d =1 13 =1 1b =1 21 =1 27 =1 2e =1 33 =1 38 =1 3d =1 42 =1 46 =1 4b =1 4f =1 53 =1 56 =1 59 =1 5c =1 5f =1 62 =1 65 =1 68 =1 6a =1 6c =1 6e =1 70 =1 72 =1 20 =1
