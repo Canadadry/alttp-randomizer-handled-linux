@@ -354,4 +354,15 @@ typedef enum LadxSpritesStatus {
 LadxSpritesStatus ladx_sprites_room(const LadxRoom *r, int evilshop, uint8_t out[LADX_SPRITES_SLOTS],
 				    LadxOutcome *raised);
 
+/*
+ * romTables.py ROMWithTables.save: the eleven tables' storage regions as
+ * LADXR's parse computes them from p->rom->tables, then each table stored
+ * (ladx_store_table) in LADXR's order on its entries' current values and
+ * origins in enc; the overworld sprite data's leftover added to the indoor
+ * table, the ld hl at bank 0 0x0DFA patched to its start | 0x4000 and the
+ * indoor data_addr moved there. Returns 0 with p->raised set when LADXR
+ * raises. Needs p->rom; draws nothing.
+ */
+int ladx_group_save(LadxEncoder *enc, LadxPipeline *p);
+
 #endif

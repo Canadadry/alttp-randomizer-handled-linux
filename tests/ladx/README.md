@@ -544,7 +544,7 @@ The C library `ladx/` (public headers `ladx/include/`, sources
 `alttp/` or `app/`) is tested by `tests/ladx/unit/test_<module>.c`, one
 binary per module, listed in `tests/ladx/Makefile`'s `UNIT_TESTS`
 (`test_sha512`, `test_sha1`, `test_rom`, `test_ks`, `test_pyrandom`, `test_rng`, `test_run_text`,
-`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`),
+`test_settings`, `test_requirements`, `test_logic`, `test_world_setup`, `test_itempool`, `test_fill`, `test_wlog`, `test_tables`, `test_encoder`, `test_pipeline`, `test_bank3e`, `test_md5`, `test_background`, `test_title`, `test_text`, `test_marin`, `test_hints`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_sprite_data`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_store`, `test_save`; `LOGIC_TESTS`, run again with `--fixtures`: `test_logic`, `test_itempool`, `test_fill`, `test_encoder`, `test_store`),
 failing through `unit/support.h`'s `test_fail` (`<test>: FAIL
 <message>`, exit 1). Every LADX build, host, lint and ARM, uses `-std=c99 -Wall -Wextra -Werror -ffp-contract=off`:
 GCC fuses `a * b + c` into an FMA in its GNU modes and Onion's VFPv4 has
@@ -556,7 +556,7 @@ library) sees `-I ladx/include -I ladx/host`; the tests add
 `-I tests/ladx/unit`, and those linking the host layer (`HOST_TESTS`:
 `test_run_text`, `test_itempool`, `test_fill`) `-I ladx/host` and `-lm`;
 those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
-`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`) its object. Build output goes to `tests/ladx/build/`.
+`test_rom`, `test_ks`, `test_pipeline`, `test_bank3e`, `test_title`, `test_marin`, `test_music`, `test_endscreen`, `test_notext`, `test_room`, `test_goal`, `test_items`, `test_entrances`, `test_bosses`, `test_enemizer`, `test_warp_home`, `test_sprites`, `test_save`) its object. Build output goes to `tests/ladx/build/`.
 
 - `make -C tests/ladx test` (root `make test-ladx`, run by `make test`):
   builds `build/libladx.a` and the unit tests with host `cc`, runs each
@@ -806,7 +806,7 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   reads a unit's resolved bank bytes (keep, copy and literal; inside a
   record) and gives 0 for bytes it does not all write, a unit or a group
   out of range; the library's registry is
-  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen` then `sprites`,
+  `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites` then `save`,
   `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a
   draw-only run. It
   prints `test_pipeline: <c> checks ok`.
@@ -1054,9 +1054,34 @@ those linking the synthetic ROM builder `unit/synth_rom.c` (`SYNTH_TESTS`:
   entries in one segment, 0x2FF skipped and never loaded, the indoor key
   less 0x100, `evilshop=enabled`; a `KeyError` ending the walk; a room
   that does not load or a file without 1 unit failing) and the registry
-  (after `endscreen`, last, ROM, no draw). It prints `test_sprites:
+  (after `endscreen`, ROM, no draw). It prints `test_sprites:
   CPython's set order, every room's sprite values and the group on a
   synthetic ROM (<c> checks)`.
+  `test_store` checks `ladx_store` (`ladx/include/ladx_store.h`) on
+  hand-made tables (a one-byte gap merged and a two-byte one not, expand
+  and claim gaps, an equal entry shared and the newest tail winning, a
+  sprite index misaligned and out of byte range, `ValueError`'s message,
+  the no-room message and its cut length) and prints `test_store: <c>
+  checks passed`; with `--fixtures` it replays every vector of
+  `oracle/store_vectors.txt` ("Store fixture"): the parse's regions, then
+  every write in order and the storage left, or the exception's type and
+  message, printing `test_store: <n> vectors of oracle/store_vectors.txt
+  replayed write for write (<r> raising)`.
+  `test_save` runs `ladx_group_save` on the synthetic ROM with LADXR's
+  `ld hl, $763B` planted at 0x0DFA and its sprite data set to a few
+  values: the image built from the encoder's bytes parses back every
+  entry's current value (integer pointers as their two written bytes,
+  indoor sprite data from the patched base, which is the overworld
+  leftover's start `| 0x4000`); a grown text, a text equal to its tail
+  (pointing inside it), an entity equal to another (stored once), equal
+  sprite data (one index), an integer pointer, a one-byte background;
+  a moved source entry's bytes carrying their source offsets; 544
+  distinct indoor values (`ValueError`), other bytes at 0x0DFA
+  (`ROM.patch`'s `AssertionError`), an entity over its bank (store's
+  `AssertionError`, LADXR's message); the registry (last, after
+  `sprites`, ROM, no draw) and no ROM failing. It prints `test_save:
+  ROMWithTables.save's stores on a synthetic ROM, read back (<c>
+  checks)`.
   `test_itempool` checks the item pool (`ladx/include/ladx_itempool.h`,
   `ItemPool` and `readItemPool`) through its headers: Python's dict
   semantics on hand-made sequences (`add` keeps a key's position and
@@ -1305,7 +1330,7 @@ and `global` from where LADXR has them, with or without the ROM. A group's
 returned 0, the group named), `BAD_INPUT` (over 32 groups).
 `ladx_pipeline_groups` is the library's registry, in which each `C`
 group's sub-step adds its group, `needs_rom` true exactly for a
-`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen` and `sprites`, in LADXR's order,
+`rom-group` of `claims.txt`: today `bank3e`, `marin`, `hints`, `music`, `notext`, `goal`, `items`, `entrances`, `bosses`, `enemizer`, `warp-home`, `title`, `endscreen`, `sprites` and `save`, in LADXR's order,
 `hints` alone needing no ROM and `marin`, `music` and `endscreen` alone with a `draw`
 (`ladx/include/ladx_groups.h`).
 
@@ -1713,6 +1738,44 @@ itself, which can differ from this walk only for members colliding mod
 `RAISED`; none is reached on the cases. It needs the ROM (`rom-group
 sprites`), draws nothing and has no `draw`; it fails on a room that does
 not load or a file without 1 unit.
+
+**`save`** (`ROMWithTables.save`, `ladx_group_save`), at `order.txt`'s
+first `C save` row (`rom.save(...)`), after every group writing a `T`
+record. It computes each table's storage regions from the parsed spans
+as LADXR's parse does (`ladx_store_regions`: `_addStorage` of each span,
+alt keys first, integer pointers none; merged until none merge, a
+one-byte gap included; sorted stably by start; then
+`claim_storage_gaps` and `expand_to_end_of_bank`, flags `LadxRomTable`
+carries), then stores the eleven tables in LADXR's order
+(`ladx_store_table`): every entry's current value read from the encoder
+(`ladx_enc_entry_pointer`, `ladx_enc_entry_value` with its origins),
+alt entries first, each into the first region of its bank with room,
+then every index entry, de-duplicated (the `done` dict: the newest
+stored entry of the bank whose tail it is, a whole equal entry only for
+sprite data, an empty entry only an empty one, with `store`'s readback
+assert) or placed, then its pointer (two bytes, the high one `| 0x40`,
+integers included; for sprite data one index byte from `data_addr`).
+Entry bytes are written by `ladx_enc_bank` with their origins, an empty
+entry writes nothing, pointer bytes with no origin. After the overworld
+sprite data, the indoor table's regions get its leftover
+(`ladx_store_add_storage`), `ROM.patch(0x00, 0x0DFA, ...)` writes `ld hl`
+of the leftover's first start `| 0x4000` as one 3-byte write (other old
+bytes: no write when already the new ones, else `AssertionError` `Patch
+mismatch:...`), and the indoor `data_addr` moves there. LADXR's raises
+become outcomes: `AssertionError` (no room, with `store`'s message, cut
+at the outcome's 95 characters; readback; misalignment) and
+`ValueError` `byte must be in range(0, 256)`; none is reached on the
+cases. It needs the ROM (`rom-group save`), draws nothing and has no
+`draw`. The scratch for one table's entries (128 KiB of bytes and their
+origins) is `LadxPipeline.save`. The store module `ladx_store` needs no
+encoder and no ROM: its writes and readback go through caller callbacks.
+
+The encoder gives every `KNOWN` byte of a `C` group's entry write a write
+identity of its own (counted down from the top of the identity range,
+apart from those callers allocate), as the oracle's trace does, so
+`save`'s copy of a computed entry carries the encoding that entry got,
+KS-match and the fragment rule's renames included; the entry queries
+return those identities. Bank writes keep `KNOWN`.
 
 **`bank3e`** (`addBank3E`): its constants, then text 0xBE written as
 entry 0x111's current value with its origins, then `seed[:0x20]` at bank
@@ -2197,6 +2260,66 @@ entry with one byte changed, pointers). 216 vectors, about 195 KB;
   KS entries among them, and each hand-written vector's pinned record.
 - C side: `test_encoder --fixtures` ("Unit tests and lint", `make logic`
   and `make unit-arm`) replays every vector byte for byte.
+
+## Store fixture
+
+`tests/ladx/oracle/store_vectors.txt` holds LADXR's own `PointerTable`
+(`pointerTable.py` at the pin) parsing and storing synthetic tables, the
+reference `ladx_store` replays. Nothing in it comes from a ROM: each
+vector plants synthetic entries into 64 zero banks of 0x4000 bytes, every
+value hand-written or drawn from `random.Random(0x1ADE5A7E)`. A vector's
+table is a plain `PointerTable` (`END_OF_DATA` 0xFF, a data bank, alt
+pointers possible), a texts-style one (0xFE and 0xFF, a banks table with
+high bits set) or sprite data (`data_addr`, `data_size` 4,
+`claim_storage_gaps` mostly). The generator records the parse's
+`_addStorage` calls and its regions (`_PointerTable__storage`), sets some
+entries to new values (another entry's tail, a new body, an integer,
+empty), applies `addStorage` and `adjustDataStart` (from a first sprite
+table's store, as `ROMWithTables.save` does), then runs `store` on banks
+that record every slice and item assignment in order. The format, after
+a `#` header documenting it (hex lowercase, in-bank offsets):
+
+    ladx-store-vectors 1
+    V <name>                     hand-written ones by rule, then random-<nn>
+    info <count> <pointers bank> <pointers addr> <data bank|-1> <data addr|-> <data size|0> <claim gaps> <expand>
+    alt <bank> <addr>            one per alt pointer, in dict order
+    S <bank> <start> <end>       each _addStorage of the parse, in order
+    R <bank> <start> <end>       the parse's regions, in order
+    add <bank> <start> <end>     addStorage's regions (sprite chains)
+    adjust <data addr>           adjustDataStart before the store
+    E <bank> <hex> | E int <v>   each entry's value at store time, alt keys first
+    W <bank> <addr> <hex>        each assignment store made, in order
+    L <bank> <start> <end>       the storage store returned, after an ok store
+    raise <type> <message>       the exception it raised, after its writes
+    end
+
+Vectors: 17 hand-written ones (`merge-one-byte-gap`,
+`sort-stable-banks`, `contained-span`, `claim-gaps`, `expand`,
+`alt-first`, `suffix-newest`, `sprite-whole-only`, `integer-pointer`,
+`empty-entry`, `no-room-index`, `no-room-alt`, `readback` (the pointer
+table inside its own storage), `misaligned`, `byte-range`,
+`byte-range-negative`, `add-adjust`), then 60 random ones; 77 vectors,
+about 75 KB, 15 raising; `nintendo_bytes.py` on it (general scope)
+reports 0 literal runs.
+
+- `python3 tests/ladx/oracle/gen_store_vectors.py [--ladxr <dir>] [--out
+  <file>]` (the LADXR checkout at the pin, else `setup: store-vectors:
+  ...`, exit 2; no ROM, no network) writes the fixture (default
+  `tests/ladx/oracle/store_vectors.txt`) and prints `store-vectors: <n>
+  vectors written to <file>`; about a second.
+- `gen_store_vectors.py --check` renders it again in memory and prints
+  one `DIFFERENT line <n>` line per differing line (the first 20) and
+  `store-vectors: <k> lines differ from <file>` (exit 1), `MISSING
+  <file>` (exit 1), else `store-vectors: <n> vectors byte-identical to
+  <file>`.
+- `test_gen_store_vectors.py` (`make test-ladx-oracle`, no LADXR): a
+  planted parse, truncated and stray lines refused, `compare`, the `info`
+  and `E` lines, and the committed fixture's shape (under 300 KB, its
+  header, names unique, the hand-written ones first in order, then the
+  60 random ones, each error vector's raise, more than 40 random vectors
+  ending ok, the pinned merge, chain and integer lines).
+- C side: `test_store --fixtures` ("Unit tests and lint", `make logic`
+  and `make unit-arm`) replays every vector write for write.
 
 ## Measure
 

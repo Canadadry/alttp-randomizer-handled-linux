@@ -481,8 +481,7 @@ static void test_registry(void)
 		if (strcmp(groups[g].name, "sprites") == 0)
 			sprites = g;
 	}
-	check(endscreen >= 0 && sprites == endscreen + 1 && sprites == count - 1,
-	      "sprites registered after endscreen, LADXR's order");
+	check(endscreen >= 0 && sprites == endscreen + 1, "sprites registered after endscreen, LADXR's order");
 	check(groups[sprites].needs_rom && groups[sprites].draw == NULL, "a rom-group with no draw");
 }
 

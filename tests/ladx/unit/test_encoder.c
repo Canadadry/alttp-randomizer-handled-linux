@@ -531,6 +531,25 @@ static void test_rename_after_fragment(void)
 	       HEADER "G ca\nT entities 8 @986+2 00\nG cb\nB 7c0 @986+2\n");
 }
 
+/* A C group's KNOWN entry bytes, renamed by KS-match, carried by a later copy of the entry (save's packing). */
+static void test_known_bytes_carried(void)
+{
+	static const uint32_t spans[] = {0xb00, 0xb10};
+	static const int32_t known[6] = {K, K, K, K, K, K};
+	uint8_t v[6];
+	int32_t o[6];
+	size_t n;
+
+	begin_with(make_ks(spans, N(spans), NULL, 0));
+	memcpy(v, rom + 0xb04, 6);
+	entry("ca", 9, v, known, 6);
+	check(ladx_enc_entry_value(&enc, ENTITIES, key(9), v, o, 6, &n) == 1 && n == 6, "the entry's value is read back");
+	check(o[0] != K && o[5] != K, "a C group's KNOWN bytes have write identities");
+	bank("cb", 0x700, v, o, 6);
+	expect("a copy of KNOWN entry bytes carries their KS-match reference",
+	       HEADER "G ca\nT entities 9 @b04+6\nG cb\nB 700 @b04+6\n");
+}
+
 static void test_refusals(void)
 {
 	static const LadxAtom atoms[] = {LIT(1)};
@@ -1154,6 +1173,7 @@ int main(int argc, char **argv)
 	test_fragment_repeat();
 	test_rename_after_ks_match();
 	test_rename_after_fragment();
+	test_known_bytes_carried();
 	printf("%s: the C-group encoding rule, KS-match and the fragment rule on hand-written streams (%d checks)\n", TEST, checks);
 	if (fixtures)
 		replay_vectors();

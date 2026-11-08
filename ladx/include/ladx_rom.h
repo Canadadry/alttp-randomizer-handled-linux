@@ -24,7 +24,7 @@ LadxRomCheck ladx_rom_check(const uint8_t *bytes, size_t len, uint8_t digest[LAD
  * The eleven tables of LADXR's ROMWithTables (romTables.py at the pin),
  * parsed from the source ROM as PointerTable parses them: each entry's
  * absolute source span or integer pointer, its bank and its pointer's
- * place. Storage regions are not computed.
+ * place, and each table's layout. Storage regions: ladx_store_regions.
  */
 #define LADX_ROM_TABLES 11
 #define LADX_ROM_ENTRY_MAX 3200 /* LADXR's layout has 3160 */
@@ -53,6 +53,11 @@ typedef struct LadxRomTable {
 	const char *name; /* ROMWithTables' attribute, as the write log's tables line */
 	LadxRomKind kind;
 	uint32_t data_addr, data_size; /* the sprite tables' info, 0 elsewhere */
+	uint8_t pointers_bank;
+	uint32_t pointers_addr;
+	int data_bank;	  /* -1: each entry's bank from the banks table (texts) */
+	int claim_gaps;	  /* claim_storage_gaps */
+	int expand;	  /* expand_to_end_of_bank */
 	uint32_t count;	    /* index keys */
 	uint32_t alt_count; /* alt keys, after the index keys, in LADXR's dict order */
 	uint32_t first;	    /* the table's first entry in LadxRomTables.entry */

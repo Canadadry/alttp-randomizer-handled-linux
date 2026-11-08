@@ -11,6 +11,7 @@
 #include "ladx_rom.h"
 #include "ladx_room.h"
 #include "ladx_settings.h"
+#include "ladx_store.h"
 #include "ladx_tables.h"
 
 /*
@@ -30,6 +31,18 @@ typedef struct LadxPipelineRom {
 } LadxPipelineRom;
 
 typedef struct LadxPipeline LadxPipeline;
+
+#define LADX_SAVE_BYTES_MAX 131072 /* one table's entry bytes at save time: LADXR's texts hold about 58 KiB */
+
+/* save's scratch: one table's entries at store time. */
+typedef struct LadxPipelineSave {
+	uint8_t bytes[LADX_SAVE_BYTES_MAX];
+	int32_t origins[LADX_SAVE_BYTES_MAX];
+	uint32_t at[LADX_STORE_ENTRY_MAX]; /* each entry's first byte in bytes */
+	LadxStoreEntry entries[LADX_STORE_ENTRY_MAX];
+	LadxStoreSpan spans[LADX_STORE_ENTRY_MAX];
+	LadxStoreDone done;
+} LadxPipelineSave;
 
 /* The run's pipeline: p->rom NULL when no ROM is given (never for a needs_rom group); returns 1 on success. */
 typedef int (*LadxPipelineRun)(LadxEncoder *enc, LadxPipeline *p);
@@ -79,6 +92,7 @@ struct LadxPipeline {
 	int32_t origins[LADX_WLOG_ATOM_MAX];
 	LadxBackground background; /* a C group's, one background being edited */
 	LadxRoom room;		   /* a C group's, one room being edited */
+	LadxPipelineSave save;	   /* save's */
 };
 
 /* enc initialised over p->rom's bytes, KS and tables (or none), its log begun. */

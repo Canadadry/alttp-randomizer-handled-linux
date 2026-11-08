@@ -317,7 +317,8 @@ static void test_update_overlay(void)
 	for (i = 0; i < 80; i++) {
 		int want = i == 21 ? 0x30 : (i >= 14 && i < 17) ? 0x40 : (i == 37 || i == 47) ? 0x50 : 0x22;
 
-		ok &= room.overlay[i] == want && room.overlay_origin[i] == LADX_ENC_KNOWN;
+		/* the planted entries' computed bytes carry write identities (the encoder's own) */
+		ok &= room.overlay[i] == want && room.overlay_origin[i] < LADX_ENC_KNOWN;
 	}
 	check(ok, "updateOverlay: the floor, then each object, the warps skipped");
 	load_planted();

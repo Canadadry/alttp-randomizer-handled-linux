@@ -27,28 +27,29 @@ typedef struct Layout {
 	int alt_count;
 	const char *alt[ALT_MAX];
 	uint32_t alt_bank[ALT_MAX], alt_addr[ALT_MAX];
+	int claim_gaps, expand;
 } Layout;
 
 /* romTables.py at the pin; alt keys in their dict order. */
 static const Layout layout[LADX_ROM_TABLES] = {
-	{ "texts", LADX_ROM_KIND_TEXT, 0x2B0, 0x1C, 1, -1, 0x1C, 0x741, 0, 0, 0, { 0 }, { 0 }, { 0 } },
-	{ "entities", LADX_ROM_KIND_DATA, 0x320, 0x16, 0, 0x16, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 } },
+	{ "texts", LADX_ROM_KIND_TEXT, 0x2B0, 0x1C, 1, -1, 0x1C, 0x741, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0 },
+	{ "entities", LADX_ROM_KIND_DATA, 0x320, 0x16, 0, 0x16, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0 },
 	{ "rooms_overworld_top", LADX_ROM_KIND_ROOMS, 0x080, 0x09, 0x000, 0x09, 0, 0, 0, 0, 5,
-	  { "Alt06", "Alt0E", "Alt1B", "Alt2B", "Alt79" }, { 0, 0, 0, 0, 0 }, { 0x31FD, 0x31CD, 0x320D, 0x321D, 0x31ED } },
+	  { "Alt06", "Alt0E", "Alt1B", "Alt2B", "Alt79" }, { 0, 0, 0, 0, 0 }, { 0x31FD, 0x31CD, 0x320D, 0x321D, 0x31ED }, 0, 0 },
 	{ "rooms_overworld_bottom", LADX_ROM_KIND_ROOMS, 0x080, 0x09, 0x100, 0x1A, 0, 0, 0, 0, 1, { "Alt8C" }, { 0 },
-	  { 0x31DD } },
+	  { 0x31DD }, 0, 0 },
 	{ "rooms_indoor_a", LADX_ROM_KIND_ROOMS, 0x100, 0x0A, 0x000, 0x0A, 0, 0, 0, 0, 1, { "Alt1F5" }, { 0 },
-	  { 0x31A1 } },
-	{ "rooms_indoor_b", LADX_ROM_KIND_ROOMS, 0x0FF, 0x0B, 0x000, 0x0B, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 } },
-	{ "rooms_color_dungeon", LADX_ROM_KIND_ROOMS, 0x016, 0x0A, 0x3B77, 0x0A, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 } },
+	  { 0x31A1 }, 0, 0 },
+	{ "rooms_indoor_b", LADX_ROM_KIND_ROOMS, 0x0FF, 0x0B, 0x000, 0x0B, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0 },
+	{ "rooms_color_dungeon", LADX_ROM_KIND_ROOMS, 0x016, 0x0A, 0x3B77, 0x0A, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 1 },
 	{ "room_sprite_data_overworld", LADX_ROM_KIND_SPRITE, 0x100, 0x20, 0x30D3, 0x20, 0, 0, 0x33F3, 4, 0, { 0 },
-	  { 0 }, { 0 } },
+	  { 0 }, { 0 }, 1, 0 },
 	{ "room_sprite_data_indoor", LADX_ROM_KIND_SPRITE, 0x220, 0x20, 0x31D3, 0x20, 0, 0, 0x363B, 4, 0, { 0 },
-	  { 0 }, { 0 } },
+	  { 0 }, { 0 }, 1, 0 },
 	{ "background_tiles", LADX_ROM_KIND_BACKGROUND, 0x26, 0x20, 0x052B, 0x08, 0, 0, 0, 0, 0, { 0 }, { 0 },
-	  { 0 } },
+	  { 0 }, 0, 1 },
 	{ "background_attributes", LADX_ROM_KIND_BACKGROUND, 0x26, 0x24, 0x1C4B, 0x24, 0, 0, 0, 0, 0, { 0 }, { 0 },
-	  { 0 } },
+	  { 0 }, 0, 1 },
 };
 
 /* A bank's byte at addr, -1 past its end (Python's IndexError). */
@@ -143,6 +144,11 @@ static LadxRomParseStatus parse_table(const uint8_t *rom, int t, LadxRomTables *
 	table->kind = l->kind;
 	table->data_addr = l->data_addr;
 	table->data_size = l->data_size;
+	table->pointers_bank = (uint8_t)l->pointers_bank;
+	table->pointers_addr = l->pointers_addr;
+	table->data_bank = l->data_bank;
+	table->claim_gaps = l->claim_gaps;
+	table->expand = l->expand;
 	table->count = l->count;
 	table->alt_count = (uint32_t)l->alt_count;
 	table->first = out->entry_count;

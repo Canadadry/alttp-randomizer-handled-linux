@@ -87,6 +87,14 @@ static void test_parse(void)
 	      "the synthetic ROM parses");
 	check(tables.failed_table == -1, "no failed table on success");
 	check(tables.entry_count == (uint32_t)synth.entry_count, "as many entries as the builder placed");
+	check(tables.table[0].data_bank == -1 && tables.table[0].pointers_bank == 0x1C && tables.table[0].pointers_addr == 1 &&
+		      tables.table[1].data_bank == 0x16 && tables.table[3].data_bank == 0x1A &&
+		      tables.table[3].pointers_addr == 0x100 && tables.table[8].pointers_addr == 0x31D3,
+	      "each table's pointers and data bank, romTables.py's");
+	for (t = 0; t < LADX_ROM_TABLES; t++)
+		check(tables.table[t].claim_gaps == (t == 7 || t == 8) &&
+			      tables.table[t].expand == (t == 6 || t == 9 || t == 10),
+		      "claim_storage_gaps on the sprite data, expand_to_end_of_bank on colour dungeon rooms and backgrounds");
 	for (t = 0; t < LADX_ROM_TABLES; t++) {
 		const LadxRomTable *table = &tables.table[t];
 

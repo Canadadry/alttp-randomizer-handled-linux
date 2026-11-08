@@ -51,7 +51,7 @@ static LadxAtom carried(const LadxEncoder *enc, int32_t q)
 
 static void see(LadxEncoder *enc, int32_t q)
 {
-	if (q < LADX_ENC_KNOWN && (uint32_t)(-2 - q) >= enc->next_identity)
+	if (q < LADX_ENC_KNOWN && (uint32_t)(-2 - q) >= enc->next_identity && (uint32_t)(-2 - q) < enc->auto_low)
 		enc->next_identity = (uint32_t)(-2 - q) + 1;
 }
 
@@ -65,6 +65,22 @@ static void rename_to(LadxEncoder *enc, int32_t q, LadxAtom a)
 {
 	if (q < LADX_ENC_KNOWN && a >= 0)
 		enc->written[-2 - q] = a;
+}
+
+/* origins with every KNOWN byte given a write identity of its own, into out; 0 on overflow. */
+static int own_identities(LadxEncoder *enc, const int32_t *origins, int32_t *out, size_t n)
+{
+	size_t i;
+
+	for (i = 0; i < n; i++) {
+		out[i] = origins[i];
+		if (origins[i] != LADX_ENC_KNOWN)
+			continue;
+		if (enc->auto_low <= enc->next_identity)
+			return 0;
+		out[i] = LADX_ENC_IDENTITY(--enc->auto_low);
+	}
+	return 1;
 }
 
 static LadxEncStatus check_origins(const int32_t *origins, size_t n)
@@ -81,7 +97,7 @@ int32_t ladx_enc_fresh(LadxEncoder *enc, uint32_t n)
 {
 	int32_t first;
 
-	if (enc->failed || (uint64_t)enc->next_identity + n > LADX_ENC_IDENTITY_MAX) {
+	if (enc->failed || (uint64_t)enc->next_identity + n > enc->auto_low) {
 		enc->failed = LADX_ENC_OVERFLOW;
 		return LADX_ENC_KNOWN;
 	}
@@ -280,6 +296,7 @@ LadxEncStatus ladx_enc_init(LadxEncoder *enc, const uint8_t *rom, size_t rom_len
 	for (p = 0; p < LADX_ENC_IDENTITY_MAX; p++)
 		enc->written[p] = UNSET;
 	enc->next_identity = 0;
+	enc->auto_low = LADX_ENC_IDENTITY_MAX;
 	enc->entry_count = 0;
 	for (p = 0; p < 2 * LADX_ENC_ENTRY_MAX; p++)
 		enc->slot[p] = -1;
@@ -784,8 +801,10 @@ LadxEncStatus ladx_enc_table(LadxEncoder *enc, LadxSpan group, int table, LadxWl
 		return LADX_ENC_BAD_INPUT;
 	if ((st = open_segment(enc, group, SIDE_C)) != LADX_ENC_OK)
 		return st;
-	if (!pool_room(enc, n) || !(e = get_entry(enc, table, key)) || enc->seg_entry_count == LADX_ENC_ENTRY_MAX)
+	if (!pool_room(enc, n) || !(e = get_entry(enc, table, key)) || enc->seg_entry_count == LADX_ENC_ENTRY_MAX ||
+	    !own_identities(enc, origins, enc->own, n))
 		return fail(enc, LADX_ENC_OVERFLOW);
+	origins = enc->own;
 	if (!e->pointer) {
 		old = enc->pool_atom + e->first;
 		m = e->count;

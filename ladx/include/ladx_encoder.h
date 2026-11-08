@@ -19,7 +19,10 @@
  *
  * Origins, per byte: q >= 0 an unchanged copy of source byte q;
  * LADX_ENC_KNOWN no carried origin; LADX_ENC_IDENTITY(i) the computed byte
- * of write identity i, whose first write names its encoding.
+ * of write identity i, whose first write names its encoding. A C group's
+ * KNOWN entry byte is stored with a write identity of its own, as the
+ * oracle's trace gives one, so a later copy of it (save's packing) carries
+ * its encoding; the entry queries return it.
  */
 #define LADX_ENC_KNOWN (-1)
 #define LADX_ENC_IDENTITY(i) ((int32_t)(-2 - (int32_t)(i)))
@@ -60,6 +63,7 @@ typedef struct LadxEncoder {
 	uint32_t touched_count, touched_low, touched_high;
 	LadxAtom written[LADX_ENC_IDENTITY_MAX];
 	uint32_t next_identity;
+	uint32_t auto_low; /* identities given to C groups' KNOWN entry bytes count down from the top */
 	LadxEncEntry entry[LADX_ENC_ENTRY_MAX];
 	uint32_t entry_count;
 	int32_t slot[2 * LADX_ENC_ENTRY_MAX];
@@ -72,6 +76,7 @@ typedef struct LadxEncoder {
 	LadxAtom atoms[LADX_WLOG_BANK_MAX];
 	uint8_t bytes[LADX_WLOG_BANK_MAX];
 	int32_t bytes_origin[LADX_ENC_VALUE_MAX];
+	int32_t own[LADX_ENC_VALUE_MAX]; /* one C entry write's origins, KNOWN bytes given identities */
 } LadxEncoder;
 
 /*

@@ -98,7 +98,12 @@ in `docs/`, then `README.md`.
   the `C` group `sprites` (`updateSpriteData`, every room's sprite data,
   CPython's set order, patches from `data/ladx/sprites.txt`), tested by
   `test_sprites`, claimed `rom-group` by `e2e-rom`, contract in
-  `tests/ladx/README.md`, "Pipeline" and "Patch tables"; `tables.c`, the patch tables' reader, key, walk, records
+  `tests/ladx/README.md`, "Pipeline" and "Patch tables"; `save.c`, the `C`
+  group `save` (`ROMWithTables.save`'s eleven stores) on `store.c`,
+  LADXR's `PointerTable` storage and `store` (`ladx_store.h`), tested by
+  `test_save` and `test_store`, which replays `store_vectors.txt` with
+  `--fixtures`, claimed `rom-group` by `e2e-rom`, contract in
+  `tests/ladx/README.md`, "Pipeline" and "Store fixture"; `tables.c`, the patch tables' reader, key, walk, records
   and applier, `ladx_tables.h`, tested by `test_tables`, contract in
   `tests/ladx/README.md`, "Table application"; contract in
   `tests/ladx/README.md`, "Unit tests and lint");
@@ -242,6 +247,11 @@ in `docs/`, then `README.md`.
   re-renders it; tested by `test_gen_encoder_vectors.py`), replayed by
   `test_encoder --fixtures`; contract in `tests/ladx/README.md`,
   "Encoder fixture".
+  `tests/ladx/oracle/store_vectors.txt`, LADXR's own `PointerTable` on
+  synthetic tables (no ROM), is written only by `gen_store_vectors.py`
+  (the LADXR checkout; `--check` re-renders it; tested by
+  `test_gen_store_vectors.py`), replayed by `test_store --fixtures`;
+  outside the net; contract in `tests/ladx/README.md`, "Store fixture".
 
 ## Checks
 
@@ -881,7 +891,7 @@ in `docs/`, then `README.md`.
 - Not in the net, on purpose: `tests/alttp/oracle/gen_golden.sh` (the PHP VT
   oracle) runs only to regenerate goldens; the LADX oracle's `setup.sh`,
   `gen_fixtures.sh`, `determinism.sh`, `gen_golden.sh`, `gen_tables.sh`,
-  `table_replay.py`, `gen_fill_outcomes.py`, `gen_encoder_vectors.py` and `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
+  `table_replay.py`, `gen_fill_outcomes.py`, `gen_encoder_vectors.py`, `gen_store_vectors.py` and `audit_order.py` run only to regenerate or re-prove its fixtures and outputs; `nintendo_bytes.py` needs the ROM,
   which only Phase 2 holds, and the LADXR checkout, `fetch_rom.sh` fetches it, and `push_gate.py`
   guards Phase 2's pushes, `read_trace.py` traces LADXR's ROM reads and
   `key_trace.py` its settings and constant reads,
