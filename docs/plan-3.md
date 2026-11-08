@@ -500,3 +500,14 @@ Results with the real ROM:
 - `e2e-rom`: 88 and 40 pass, every group, the spoiler and `net` claimed.
 
 ROM-free regression reference: `tests/ladx/synthetic_refs.txt` holds digests of C's log, ROM and spoiler on a well-formed synthetic LADX base (PRNG, no ROM byte). It is recorded after `e2e-rom` and `rom-check` were green, and `make check`'s new `e2e-synthetic` checks it. The synthetic base cannot drive `entrances`, `bosses`, `warp-home`, `sprites` or `save` in any case, nor `spoiler` in 122, `items` in 7, `enemizer` in 5 or `goal` in 1, since they need the real ROM's meaning. Those parts keep only the ROM-present checks, as the owner accepted. Eleven planted mutations are caught. `make unit-arm`: 41 LADX unit tests.
+
+### Step 3.8
+
+`check-e2e` takes the game's test directory (`tests/alttp` by default, or `tests/ladx`). Its first commands save each target's output to `tmp/check-e2e/` (`e2e-rom` only when the ROM is present) and run the new ranker, `.claude/skills/check-e2e/scripts/rank_e2e.py`, shared by both games. LADX's ranking goes cheapest first:
+1. tool-level failures (`KS DIFFERENT`, `PROJECTION`, driver errors);
+2. `baseline`;
+3. the generator and the `run.txt` stage projection (placement and the fill's RNG trace);
+4. the write log in the order of each group's first row in `data/ladx/order.txt` (the inventory's Groups table is alphabetical), a group's trace before its records;
+5. `net` last.
+
+The ranker prints a `TOP` block and a `REPRO` single-case command. Each skill also documents where a LADX RED test goes (`tests/ladx/unit/`, synthetic only), the oracle route for ROM-derived defects, and a per-game commit gate. `fix-bug` and `help-me-debug` gained the LADX rules (no ROM byte or link printed, LADXR at the pin as the reference). Verified on a throwaway worktree with three planted divergences: the ranker put the placement failure (`witch-0`) on top over the hints write-log one the driver printed first, and its `REPRO` replayed it alone. Sixteen ranker tests run in `make test`'s `test-template`, and four planted mutations each fail one.

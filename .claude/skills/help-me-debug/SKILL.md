@@ -37,6 +37,11 @@ Follow this loop, returning to it as many times as needed:
 
 You do, in this session's environment: nobody else is there, and there is no access to production or to the reporter's machine. Reproduce through the build and the checks (`make test`, `make check`, a single test), a debugger, logs, throwaway programs. Throwaway programs and instrumented copies go in `tmp/`; never change anything outside it.
 
+For LADX (`ladx/`, `tests/ladx/`), two more rules:
+
+- **Never print a ROM byte.** The ROM (`tmp/ladx/base.gbc`) is the user's Nintendo ROM. A program that reads it, or reads C's output of a `--rom` run (which may hold ROM bytes when C is wrong), prints offsets, lengths, counts, kinds and digests only, never a byte value; compare C against a golden through `tests/ladx/run_e2e.py` or by digest. Never write or echo `LADX_ROM_URL`. ROM-free outputs (`ladx_gen` without `--rom`, the committed goldens and tables) may be shown.
+- **LADXR is the reference.** The expected behaviour is LADXR at its pin, cloned in `tests/ladx/oracle/ladxr/` (`tests/ladx/oracle/setup.sh`): a claim about what LADXR does is proven by a file excerpt of that checkout or by running it (`tests/ladx/oracle/oracle_run.py`, under `tmp/`), never from memory. Where a golden, a table of `data/ladx/` or `notes/ladx-inventory.md` disagrees with it, that artifact is a hypothesis to test like any other.
+
 Your environment differs from the reporter's. A test that only their environment could run is not a proof you can get: name it as the missing observation, never presume its result.
 
 ## When the report jumps to a conclusion

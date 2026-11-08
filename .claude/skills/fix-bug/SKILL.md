@@ -38,6 +38,12 @@ Put these in each sub-agent prompt — a fresh agent knows none of them:
 - **The suites are `make test` (the fast loop) and `make check` (the net, `CLAUDE.md` § Checks; a failure naming a missing service or input is setup, not the bug)** — prefer the Makefile targets over invoking a runner directly.
 - **The reference is the expected behavior**: the tests, the documentation, the PRD or plan that specified it, and the repository's own conventions, cited from a real site in the tree.
 - Throwaway repro programs go in `tmp/`, never in the source or test directories.
+- **The game's test directory** (`tests/alttp` or `tests/ladx`; the report names it, else the failing paths do): its `make -C <game> test` is that game's dev loop, and the RED unit test goes where it runs it, `<game>/unit/test_<module>.c` in that Makefile's `UNIT_TESTS` (`check-e2e`, "Where the RED test goes").
+- **LADX, whenever the bug touches `ladx/` or `tests/ladx/`** (`docs/plan-3.md` §2, `CLAUDE.md` § Ground rules):
+  - Never print a ROM byte: with the ROM (`tmp/ladx/base.gbc`) read, programs print offsets, lengths, counts and digests only, and C's outputs from a `--rom` run are compared through the e2e driver or by digest, never shown. Never write or echo `LADX_ROM_URL`.
+  - RED tests use synthetic data only (hand-built states, `tests/ladx/unit/synth_rom.c`'s synthetic ROM): never a golden, a table of `data/ladx/`, the ROM or anything derived from it.
+  - A cause proven to sit in a ROM-derived artifact (a golden, a table of `data/ladx/`, an inventory Side, Group or coverage) is fixed at the oracle (its scripts or `ladxr.patch`, RED test a `tests/ladx/oracle/test_*.py`), the artifact regenerated with the ROM in its own commit; never edited by hand, never cut.
+  - `make -C tests/ladx e2e-rom` and `rom-check` need the ROM; without it their `setup:` line is not the bug.
 
 ## Pipeline
 
@@ -76,7 +82,7 @@ Reporting contract: `DONE:` plus what the test asserts, which files and lines ch
 Spawn a third fresh, memoryless agent. It is not handed the implementer's reasoning as truth; it re-establishes the facts itself:
 
 1. **Prove the new test actually detects the bug**: rebuild a throwaway copy of the pre-fix code under `tmp/` (or revert the fix in a scratch copy) and show the new test failing against it, then passing against the tree. A test that passes both ways proves nothing — this is the most common way a fix pipeline fools itself.
-2. Run `make test` and `make check` in full.
+2. Run `make test` and `make check` in full; for LADX with the ROM present, also `make -C tests/ladx e2e-rom` and `make -C tests/ladx rom-check`.
 3. Read the diff: it must touch only what the proven cause justifies, and nothing else.
 
 Reporting contract: `VERIFIED:` plus the evidence for each point, or `FAILED:` plus what broke.

@@ -51,10 +51,11 @@ test-ladx:
 	$(MAKE) -C tests/ladx test
 
 # The template's tooling under .claude/: the pre-push hook and plan-pilot's
-# progress.md hook. Kept apart from the project's own tests.
+# progress.md hook, check-e2e's failure ranker. Kept apart from the project's own tests.
 test-template:
 	python3 -m unittest discover -s .claude/hooks/tests
 	python3 -m unittest discover -s .claude/skills/plan-pilot/tests
+	python3 -m unittest discover -s .claude/skills/check-e2e/tests
 
 rom-guard:
 	python3 -I tests/rom_guard.py

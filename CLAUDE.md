@@ -303,7 +303,9 @@ in `docs/`, then `README.md`.
   table `ui_strings_en.c`, or under `app/sdl/`, after proving itself on
   planted sources; and `ui_cli`, built from `make test`'s
   own objects, with its smoke test `unit/smoke_ui_cli.c`) plus `test-ladx`
-  plus `test-template` (the tooling under `.claude/`) plus `rom-guard`
+  plus `test-template` (the tooling under `.claude/`: the pre-push hook,
+  plan-pilot's `progress.md` hook and `check-e2e`'s failure ranker
+  `rank_e2e.py`, contract in its `SKILL.md`, "The ranker") plus `rom-guard`
   (`tests/rom_guard.py`, git and python3 only): it fails, one
   `rom_guard: <path>: <reason>` line per hit, when git's index (the staged
   blob, not the working tree) holds a `.gb`, `.gbc`, `.sfc` or `.smc` path in
