@@ -39,3 +39,27 @@ change. Without the pure renames (1022 files) the only run is that
 SKILL.md one. No LADX-derived file holds a literal run, and since the
 owner's decision of commit 782e21a nothing committed holds ROM content
 in another encoding either.
+
+## What the ALttP runs are (examined after the ROM window, without the ROM)
+
+The long runs come from one record. Every hex run of 85 bytes or more
+(85, 312, 390, 399, 876 and 880 bytes, 65 to 70 copies each) lies in
+the `183000 writeInitialSram` line of an ALttP golden `rom_writes.txt`:
+the initial save RAM image VT writes, the same in every case. Counted in
+`tests/alttp/cases/accessibility-locations/rom_writes.txt`:
+
+| Run | Zero bytes | Other bytes |
+|---|---|---|
+| 880 bytes | 875 | 5 (`f0` ×2, `18` ×2, `20`) |
+| 876 bytes | 872 | 4 |
+| 312 bytes | 308 | 4 |
+| 85 bytes | 82 | 3 |
+
+So they are long zero runs with 3 to 5 other bytes, matching the LADX
+ROM's own zero regions. The `low-info` clearance (at most 3 distinct
+values) misses them only because they hold 4 or 5 distinct values. They
+are coincidences, not LADX content. The 239 short runs (8 to 22 bytes) sit
+in ALttP's `rom_buffers.txt`, `text_tables.txt`, `hint_names.c` and
+`text_defaults.c`, and the one raw run is English prose in a skill file:
+short coincidences of the same kind. Nothing to remove; whether the check
+should clear mostly-zero runs is left open.
