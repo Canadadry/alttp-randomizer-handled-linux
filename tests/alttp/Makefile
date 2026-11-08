@@ -1,5 +1,9 @@
 CC ?= gcc
 CFLAGS := -std=c99 -Wall -Wextra -Werror -DRANDO_FAULTS
+# macOS hides mkdtemp under _POSIX_C_SOURCE unless _DARWIN_C_SOURCE is set.
+ifeq ($(shell uname -s),Darwin)
+CFLAGS += -D_DARWIN_C_SOURCE
+endif
 RANDO := ../../alttp
 APP := ../../app
 BUILD := build

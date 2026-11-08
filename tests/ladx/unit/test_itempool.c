@@ -193,7 +193,7 @@ static int c_lines(void)
 static void replay_pools(void)
 {
 	static char want[EXPECT_MAX][TEXT_MAX];
-	char name[256], hex[80], short_want[LADX_SETTINGS_SHORT_MAX + 3], short_got[LADX_SETTINGS_SHORT_MAX + 1];
+	char name[256], hex[80], short_want[LADX_SETTINGS_SHORT_MAX + 4], short_got[LADX_SETTINGS_SHORT_MAX + 1];
 	uint8_t seed[64];
 	size_t seed_len;
 	LadxSettings s;

@@ -3,6 +3,10 @@
 CC ?= gcc
 # -ffp-contract=off: GCC fuses a*b+c into an FMA by default, and Onion's VFPv4 has one; CPython's floats are never fused.
 CFLAGS := -std=c99 -Wall -Wextra -Werror -ffp-contract=off
+# macOS hides snprintf and ru_maxrss under _POSIX_C_SOURCE unless _DARWIN_C_SOURCE is set.
+ifeq ($(shell uname -s),Darwin)
+CFLAGS += -D_DARWIN_C_SOURCE
+endif
 LADX := ../../ladx
 BUILD := build
 
