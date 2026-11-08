@@ -5,6 +5,7 @@
 #include "rando_fixed_run.h"
 #include "sdl_loop.h"
 #include "sdl_render.h"
+#include "sdl_rotate.h"
 #include "theme.h"
 #include "ui_grid.h"
 #include "ui_history.h"
@@ -24,7 +25,7 @@
 #define CWD_MAX 4096
 #define DEFAULT_THEME "themes/default"
 
-static const char usage[] = "usage: zrando [--sd <root>] [--theme <dir>] [--frames <n>] [--shot <file.bmp>] "
+static const char usage[] = "usage: zrando [--sd <root>] [--theme <dir>] [--rotate 0|180] [--frames <n>] [--shot <file.bmp>] "
 			    "[--shot-text <file>] [--seed <n>] [--date <YYYY-MM-DDTHH:MM:SS>] [--source-md5 <32 hex>] "
 			    "[--base-md5 <32 hex>] [--unsupported <setting>=<value>,<setting>=<value>] [--ladx-seed <32 hex>] "
 			    "[--] [<key>...]\n"
@@ -34,7 +35,7 @@ static const char usage[] = "usage: zrando [--sd <root>] [--theme <dir>] [--fram
 typedef struct Options {
 	const char *sd, *theme, *shot, *shot_text;
 	long frames;
-	bool scripted;
+	bool scripted, rotate;
 	RandoFixedRun run;
 	RandoFixedKeys keys;
 } Options;
@@ -46,7 +47,7 @@ typedef struct ScriptPos {
 
 typedef struct Presenter {
 	SdlRender *render;
-	SDL_Surface *offscreen, *screen;
+	SDL_Surface *offscreen, *screen, *turned;
 	int tab_count;
 } Presenter;
 
@@ -126,6 +127,15 @@ static void parse_args(int argc, char **argv)
 			opt.sd = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--theme") == 0) {
 			opt.theme = value_of(argc, argv, &i);
+		} else if (strcmp(a, "--rotate") == 0) {
+			const char *v = value_of(argc, argv, &i);
+
+			if (strcmp(v, "180") == 0)
+				opt.rotate = true;
+			else if (strcmp(v, "0") == 0)
+				opt.rotate = false;
+			else
+				fail_usage("bad --rotate", v);
 		} else if (strcmp(a, "--shot") == 0) {
 			opt.shot = value_of(argc, argv, &i);
 		} else if (strcmp(a, "--shot-text") == 0) {
@@ -236,7 +246,13 @@ static bool present(void *ctx, const UiScreen *screen, const UiGrid *g)
 		p->tab_count = screen->tab_count;
 		return false;
 	}
-	SDL_BlitSurface(p->offscreen, NULL, p->screen, NULL);
+	if (p->turned == NULL) {
+		SDL_BlitSurface(p->offscreen, NULL, p->screen, NULL);
+	} else {
+		SDL_BlitSurface(p->offscreen, NULL, p->turned, NULL);
+		if (!sdl_rotate_180(p->turned, p->screen))
+			fail_setup("--rotate 180", "the screen is not 32 bits per pixel");
+	}
 	SDL_Flip(p->screen);
 	return true;
 }
@@ -306,6 +322,17 @@ int main(int argc, char **argv)
 					   0x000000FF, 0);
 	if (p.offscreen == NULL)
 		fail_setup("SDL_CreateRGBSurface", SDL_GetError());
+	p.turned = NULL;
+	if (opt.rotate) {
+		const SDL_PixelFormat *f = p.screen->format;
+
+		if (f->BytesPerPixel != 4)
+			fail_setup("--rotate 180", "the screen is not 32 bits per pixel");
+		p.turned = SDL_CreateRGBSurface(SDL_SWSURFACE, p.screen->w, p.screen->h, 32, f->Rmask, f->Gmask, f->Bmask,
+						f->Amask);
+		if (p.turned == NULL)
+			fail_setup("SDL_CreateRGBSurface", SDL_GetError());
+	}
 	p.render = &render;
 	p.tab_count = 0;
 	result = sdl_loop_run(&shell.app, &grid, present, &p, opt.frames, opt.scripted ? &script : NULL);
@@ -324,6 +351,8 @@ int main(int argc, char **argv)
 		write_shot_text(opt.shot_text);
 	sdl_render_close(&render);
 	SDL_FreeSurface(p.offscreen);
+	if (p.turned != NULL)
+		SDL_FreeSurface(p.turned);
 	IMG_Quit();
 	TTF_Quit();
 	SDL_Quit();

@@ -412,6 +412,7 @@ class RealPackage(unittest.TestCase):
 
 STUB = b"""#!/bin/sh
 pwd >started_in
+echo "$@" >args
 echo "stub stderr" >&2
 echo "stub stdout"
 """
@@ -434,6 +435,7 @@ class Launch(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(read(os.path.join(app, "started_in")).decode().strip(), os.path.realpath(app))
         self.assertEqual(read(os.path.join(app, "zrando.log")), b"stub stderr\n")
+        self.assertEqual(read(os.path.join(app, "args")), b"--rotate 180\n")
         self.assertEqual(r.stderr, "")
         self.assertEqual(os.listdir(elsewhere), [])
 

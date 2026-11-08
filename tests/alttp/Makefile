@@ -81,7 +81,7 @@ LINT_APP_OBJ := $(patsubst $(APP)/%.c,$(LINT_APP_DIR)/%.o,$(APP_SRC) $(APP_MAIN_
 
 # sdl-pc: the SDL layer, built and tested on the host's SDL 1.2, SDL_ttf 2.0 and SDL_image 1.2.
 # The SDL flags are expanded by sdl-pc's rules only, so test never calls pkg-config.
-SDL_TESTS := test_sdl_keys test_sdl_loop test_sdl_classic test_sdl_render test_sdl_alttp
+SDL_TESTS := test_sdl_keys test_sdl_loop test_sdl_classic test_sdl_render test_sdl_alttp test_sdl_rotate
 SDL_SRC := $(wildcard $(APP)/sdl/*.c)
 SDL_HDR := $(wildcard $(APP)/sdl/*.h)
 SDL_DIR := $(BUILD)/sdl

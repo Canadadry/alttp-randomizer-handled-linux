@@ -67,6 +67,9 @@ picture "$tmp/frame.bmp"
 (cd "$tree/App/ZeldaRando" && expect 0 --theme "$theme" --frames 1)
 [ "$(listing)" = "$before" ] || fail "starting from App/ZeldaRando changed the SD tree"
 
+expect 0 --sd "$tree" --theme "$theme" --rotate 180 --frames 1 --shot "$tmp/turned.bmp"
+cmp -s "$tmp/frame.bmp" "$tmp/turned.bmp" || fail "--rotate 180 changed the --shot capture"
+expect 2 --sd "$tree" --theme "$theme" --rotate 90
 expect 2 --sd "$tree" --theme "$theme" --bogus
 expect 2 --sd "$tree" --theme "$theme" --frames 0
 expect 2 --sd "$tree" --theme "$theme" --frames 1x
